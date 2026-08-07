@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import type { Locale } from '../app/types';
-import type { ViewProjection } from '../course/types';
+import type { EntityViewState, ViewProjection } from '../course/types';
 import type { EntityId } from '../world/types';
 import { samplePolyline } from './relations/polyline';
 import type { RelationLayer } from './relations/RelationLayer';
 import type { SceneRegistry } from './SceneRegistry';
+import type { EntityVisualHandle } from './visuals/BaseVisualHandle';
 
 export interface LabelSafeRect {
   readonly x: number;
@@ -62,7 +63,7 @@ const labelPriority = (kind: string, emphasis: string, selected: boolean): numbe
   if (kind === 'ControllerManager' || kind === 'KubeControllerManager') return 68;
   if (kind === 'Scheduler') return 65;
   if (kind === 'Node') return 62;
-  // The D/C/R counters are a core teaching fact, so keep the ReplicaSet label
+  // The SPEC/OBSERVED/READY counters are a core teaching fact, so keep the ReplicaSet label
   // ahead of interchangeable worker labels when the desktop density cap applies.
   if (kind === 'ReplicaSet') return 66;
   if (kind === 'Pod') return 54;
@@ -226,6 +227,34 @@ const hideRecord = (record: LabelRecord, reason: string): void => {
   delete record.element.dataset.screenHeight;
 };
 
+const entityLabelText = (handle: EntityVisualHandle, state: EntityViewState): string => {
+  const entity = handle.entity;
+  const domLabel = handle.root.userData.domLabel;
+  const semanticShortName =
+    domLabel &&
+    typeof domLabel === 'object' &&
+    'text' in domLabel &&
+    typeof domLabel.text === 'string'
+      ? domLabel.text
+      : entity.name;
+  const counters = handle.root.userData.counters;
+  const replicaCounterSuffix =
+    entity.kind === 'ReplicaSet' &&
+    counters &&
+    typeof counters === 'object' &&
+    'spec' in counters &&
+    'observed' in counters &&
+    'ready' in counters &&
+    typeof counters.spec === 'number' &&
+    typeof counters.observed === 'number' &&
+    typeof counters.ready === 'number'
+      ? state.labelMode === 'full'
+        ? ` · SPEC ${counters.spec} OBSERVED ${counters.observed} READY ${counters.ready}`
+        : ` · S${counters.spec} O${counters.observed} R${counters.ready}`
+      : '';
+  return `${semanticShortName}${replicaCounterSuffix}`;
+};
+
 /** Owns deterministic collision-aware DOM labels. Visual-handle badges retain separate ownership. */
 export class LabelManager {
   private readonly labels = new Map<string, LabelRecord>();
@@ -268,31 +297,10 @@ export class LabelManager {
       record.entityId = handle.entityId;
       record.worldPosition = undefined;
       const entity = handle.entity;
-      const domLabel = handle.root.userData.domLabel;
-      const semanticShortName =
-        domLabel &&
-        typeof domLabel === 'object' &&
-        'text' in domLabel &&
-        typeof domLabel.text === 'string'
-          ? domLabel.text
-          : entity.name;
-      const counters = handle.root.userData.counters;
-      const replicaCounterSuffix =
-        entity.kind === 'ReplicaSet' &&
-        counters &&
-        typeof counters === 'object' &&
-        'desired' in counters &&
-        'current' in counters &&
-        'ready' in counters &&
-        typeof counters.desired === 'number' &&
-        typeof counters.current === 'number' &&
-        typeof counters.ready === 'number'
-          ? ` · D${counters.desired} C${counters.current} R${counters.ready}`
-          : '';
       record.element.lang = locale;
       // Scene labels stay glanceable. Kind, status, UID, and counters belong to
       // Evidence/Inspector, not a metadata slab floating over the teaching object.
-      record.element.textContent = `${semanticShortName}${replicaCounterSuffix}`;
+      record.element.textContent = entityLabelText(handle, state);
       record.element.dataset.mode = state.labelMode;
       record.element.dataset.emphasis = state.emphasis;
       record.priority =
@@ -435,6 +443,11 @@ export class LabelManager {
       ) {
         hideRecord(record, 'inactive');
         continue;
+      }
+      if (record.source === 'entity' && handle && state) {
+        // Counter cues update the visual handle after the projection sync. Refresh the DOM label
+        // every frame so a settled screenshot cannot retain the cue's previous counter values.
+        record.element.textContent = entityLabelText(handle, state);
       }
       const worldPoint =
         record.source === 'entity' ? handle?.getAnchor('label') : record.worldPosition;

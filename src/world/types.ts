@@ -11,6 +11,7 @@ export interface LocalizedText {
 export const WORLD_ENTITY_CATEGORIES = [
   'api-object',
   'runtime-instance',
+  'runtime-status',
   'runtime-component',
   'infrastructure',
   'external',
@@ -140,18 +141,52 @@ export interface PodData {
   readonly nodeName?: string;
   readonly phase: 'Pending' | 'Running' | 'Succeeded' | 'Failed' | 'Unknown';
   readonly restartPolicy: 'Always' | 'OnFailure' | 'Never';
+  readonly conditions: PodConditions;
 }
+
+export interface PodConditions {
+  readonly podScheduled: boolean;
+  readonly initialized: boolean;
+  readonly containersReady: boolean;
+  readonly ready: boolean;
+}
+
+export interface RunningContainerState {
+  readonly kind: 'running';
+  readonly startedAt: string;
+}
+
+export interface TerminatedContainerState {
+  readonly kind: 'terminated';
+  readonly reason: string;
+  readonly exitCode: number;
+  readonly finishedAt: string;
+  readonly containerID: string;
+}
+
+export interface WaitingContainerState {
+  readonly kind: 'waiting';
+  readonly reason: string;
+}
+
+export type ContainerState =
+  RunningContainerState | TerminatedContainerState | WaitingContainerState;
 
 export interface ContainerData {
   readonly podId: EntityId;
-  readonly restartCount: number;
-  readonly instanceGeneration: number;
+  readonly name: string;
   readonly image: string;
+  readonly containerID?: string;
+  readonly restartCount: number;
+  readonly ready: boolean;
+  readonly started: boolean;
+  readonly state: ContainerState;
+  readonly lastState?: TerminatedContainerState;
 }
 
 export interface ReplicaSetData {
-  readonly desiredReplicas: number;
-  readonly currentReplicas: number;
+  readonly specReplicas: number;
+  readonly statusReplicas: number;
   readonly readyReplicas: number;
 }
 

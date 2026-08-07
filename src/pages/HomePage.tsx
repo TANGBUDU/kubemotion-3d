@@ -217,7 +217,7 @@ export function HomePage() {
         <article>
           <GitBranch aria-hidden="true" />
           <h2>{t.flows}</h2>
-          <p>See Pod identity, Node placement, Container generation, and replica counts change.</p>
+          <p>See Pod identity, Node placement, Container ID, and replica counts change.</p>
         </article>
         <article>
           <ShieldCheck aria-hidden="true" />

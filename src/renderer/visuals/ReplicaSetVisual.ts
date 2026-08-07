@@ -32,7 +32,7 @@ const SEGMENT_TRANSFORMS = [
 ] as const;
 
 interface CounterDisplay {
-  readonly metric: 'desired' | 'current' | 'ready';
+  readonly metric: 'spec' | 'observed' | 'ready';
   readonly root: THREE.Group;
   readonly digits: readonly (readonly THREE.Mesh[])[];
   readonly activeMaterial: THREE.MeshBasicMaterial;
@@ -42,8 +42,8 @@ interface CounterDisplay {
 type ReplicaMetric = CounterDisplay['metric'];
 
 const metricForField = (field: string): ReplicaMetric | undefined => {
-  if (field.endsWith('desiredReplicas')) return 'desired';
-  if (field.endsWith('currentReplicas')) return 'current';
+  if (field.endsWith('specReplicas')) return 'spec';
+  if (field.endsWith('statusReplicas')) return 'observed';
   if (field.endsWith('readyReplicas')) return 'ready';
   return undefined;
 };
@@ -82,8 +82,8 @@ export class ReplicaSetVisualHandle extends BaseVisualHandle {
     this.addContent(inset);
 
     this.displays = [
-      this.createCounterDisplay('desired', -1.05, palette.controlFlow),
-      this.createCounterDisplay('current', 0, palette.dataFlow),
+      this.createCounterDisplay('spec', -1.05, palette.controlFlow),
+      this.createCounterDisplay('observed', 0, palette.dataFlow),
       this.createCounterDisplay('ready', 1.05, palette.healthy),
     ];
     for (const display of this.displays) this.addContent(display.root);
@@ -191,21 +191,21 @@ export class ReplicaSetVisualHandle extends BaseVisualHandle {
     this.addContent(this.deficitGroup);
   }
 
-  private renderCounts(desired: number, current: number, ready: number): void {
-    const values = [desired, current, ready] as const;
+  private renderCounts(spec: number, observed: number, ready: number): void {
+    const values = [spec, observed, ready] as const;
     this.displays.forEach((display, index) => this.setCounter(display, values[index] ?? 0));
-    const deficit = current < desired || ready < desired;
+    const deficit = observed < spec || ready < spec;
     this.deficitGroup.visible = deficit;
-    this.deficitGroup.userData.deficit = Math.max(0, desired - Math.min(current, ready));
+    this.deficitGroup.userData.deficit = Math.max(0, spec - Math.min(observed, ready));
     this.podMarkerMaterials.forEach((material, index) => {
       if (index < ready) material.color.setHex(palette.healthy);
-      else if (index < current) material.color.setHex(palette.pending);
-      else if (index < desired) material.color.setHex(palette.controlFlow);
+      else if (index < observed) material.color.setHex(palette.pending);
+      else if (index < spec) material.color.setHex(palette.controlFlow);
       else material.color.setHex(palette.surfaceElevated);
     });
     this.root.userData.counters = Object.freeze({
-      desired,
-      current,
+      spec,
+      observed,
       ready,
     });
     this.root.userData.hasDeficit = deficit;
@@ -219,8 +219,8 @@ export class ReplicaSetVisualHandle extends BaseVisualHandle {
     else this.animatedCounters.set(metric, Math.max(0, Math.round(value)));
     const data = getReplicaSetData(this.entity);
     this.renderCounts(
-      this.animatedCounters.get('desired') ?? data.desiredReplicas,
-      this.animatedCounters.get('current') ?? data.currentReplicas,
+      this.animatedCounters.get('spec') ?? data.specReplicas,
+      this.animatedCounters.get('observed') ?? data.statusReplicas,
       this.animatedCounters.get('ready') ?? data.readyReplicas,
     );
     return true;
@@ -229,7 +229,7 @@ export class ReplicaSetVisualHandle extends BaseVisualHandle {
   protected override updateVisual(entity: WorldEntity): void {
     const data = getReplicaSetData(entity);
     this.animatedCounters.clear();
-    this.renderCounts(data.desiredReplicas, data.currentReplicas, data.readyReplicas);
+    this.renderCounts(data.specReplicas, data.statusReplicas, data.readyReplicas);
     this.root.userData.shortLabel = `ReplicaSet · ${entity.name}`;
     this.root.userData.domLabel = Object.freeze({
       labelClass: 'entity-short-name',

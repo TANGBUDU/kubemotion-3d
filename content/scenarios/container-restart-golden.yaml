@@ -168,8 +168,8 @@ entities:
     labels: { app.kubernetes.io/name: api }
     status: ready
     data:
-      desiredReplicas: 3
-      currentReplicas: 3
+      specReplicas: 3
+      statusReplicas: 3
       readyReplicas: 3
     title: { en: api ReplicaSet, ja: api ReplicaSet, zh-CN: api ReplicaSet }
     summary:
@@ -192,6 +192,11 @@ entities:
       nodeName: worker-a
       phase: Running
       restartPolicy: Always
+      conditions:
+        podScheduled: true
+        initialized: true
+        containersReady: true
+        ready: true
     title: { en: api-7f8d9-a Pod, ja: api-7f8d9-a Pod, zh-CN: api-7f8d9-a Pod }
     summary:
       {
@@ -201,17 +206,23 @@ entities:
       }
     sourceIds: [k8s-pods, k8s-pod-lifecycle]
     visual: { archetype: pod, size: md, group: api }
-  - id: runtime-instance:shop:Pod:api-a-old:Container:api
-    category: runtime-instance
+  - id: container-status:shop:Pod:api-a-old:Container:api
+    category: runtime-status
     kind: Container
     name: api
     namespace: shop
     status: running
     data:
       podId: api-object:namespaced:shop:Pod:api-a-old
+      name: api
       image: registry.example.invalid/shop/api:v1
+      containerID: containerd://synthetic-api-a-old-01
       restartCount: 0
-      instanceGeneration: 1
+      ready: true
+      started: true
+      state:
+        kind: running
+        startedAt: 2026-08-08T00:00:00Z
     title:
       {
         en: api container · api-7f8d9-a,
@@ -238,6 +249,11 @@ entities:
       nodeName: worker-b
       phase: Running
       restartPolicy: Always
+      conditions:
+        podScheduled: true
+        initialized: true
+        containersReady: true
+        ready: true
     title: { en: api-7f8d9-b Pod, ja: api-7f8d9-b Pod, zh-CN: api-7f8d9-b Pod }
     summary:
       {
@@ -247,17 +263,23 @@ entities:
       }
     sourceIds: [k8s-pods, k8s-replicasets]
     visual: { archetype: pod, size: md, group: api }
-  - id: runtime-instance:shop:Pod:api-b:Container:api
-    category: runtime-instance
+  - id: container-status:shop:Pod:api-b:Container:api
+    category: runtime-status
     kind: Container
     name: api
     namespace: shop
     status: running
     data:
       podId: api-object:namespaced:shop:Pod:api-b
+      name: api
       image: registry.example.invalid/shop/api:v1
+      containerID: containerd://synthetic-api-b-01
       restartCount: 0
-      instanceGeneration: 1
+      ready: true
+      started: true
+      state:
+        kind: running
+        startedAt: 2026-08-08T00:00:00Z
     title:
       {
         en: api container · api-7f8d9-b,
@@ -284,6 +306,11 @@ entities:
       nodeName: worker-b
       phase: Running
       restartPolicy: Always
+      conditions:
+        podScheduled: true
+        initialized: true
+        containersReady: true
+        ready: true
     title: { en: api-7f8d9-c Pod, ja: api-7f8d9-c Pod, zh-CN: api-7f8d9-c Pod }
     summary:
       {
@@ -293,17 +320,23 @@ entities:
       }
     sourceIds: [k8s-pods, k8s-replicasets]
     visual: { archetype: pod, size: md, group: api }
-  - id: runtime-instance:shop:Pod:api-c:Container:api
-    category: runtime-instance
+  - id: container-status:shop:Pod:api-c:Container:api
+    category: runtime-status
     kind: Container
     name: api
     namespace: shop
     status: running
     data:
       podId: api-object:namespaced:shop:Pod:api-c
+      name: api
       image: registry.example.invalid/shop/api:v1
+      containerID: containerd://synthetic-api-c-01
       restartCount: 0
-      instanceGeneration: 1
+      ready: true
+      started: true
+      state:
+        kind: running
+        startedAt: 2026-08-08T00:00:00Z
     title:
       {
         en: api container · api-7f8d9-c,
@@ -370,7 +403,7 @@ relations:
   - id: contains-api-a-old-container-api
     type: contains-runtime
     from: api-object:namespaced:shop:Pod:api-a-old
-    to: runtime-instance:shop:Pod:api-a-old:Container:api
+    to: container-status:shop:Pod:api-a-old:Container:api
     directed: true
     semantic: composition
     title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }
@@ -378,7 +411,7 @@ relations:
   - id: contains-api-b-container-api
     type: contains-runtime
     from: api-object:namespaced:shop:Pod:api-b
-    to: runtime-instance:shop:Pod:api-b:Container:api
+    to: container-status:shop:Pod:api-b:Container:api
     directed: true
     semantic: composition
     title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }
@@ -386,7 +419,7 @@ relations:
   - id: contains-api-c-container-api
     type: contains-runtime
     from: api-object:namespaced:shop:Pod:api-c
-    to: runtime-instance:shop:Pod:api-c:Container:api
+    to: container-status:shop:Pod:api-c:Container:api
     directed: true
     semantic: composition
     title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }

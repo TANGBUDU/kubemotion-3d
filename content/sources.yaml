@@ -88,6 +88,30 @@ sources:
       verifiedAt: '2026-08-07',
       type: official-documentation,
     }
+  k8s-replicaset-api:
+    {
+      title: ReplicaSet v1 API,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/reference/kubernetes-api/apps/replica-set-v1/,
+      verifiedAt: '2026-08-08',
+      type: official-documentation,
+    }
+  k8s-container-status-api:
+    {
+      title: Kubernetes API Reference — ContainerStatus,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/reference/generated/kubernetes-api/,
+      verifiedAt: '2026-08-08',
+      type: official-documentation,
+    }
+  k8s-pod-conditions:
+    {
+      title: Pod Conditions,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/workloads/pods/pod-condition/,
+      verifiedAt: '2026-08-08',
+      type: official-documentation,
+    }
   k8s-services:
     {
       title: 'Services, Load Balancing, and Networking',
@@ -102,6 +126,14 @@ sources:
       authority: Kubernetes Documentation,
       url: https://kubernetes.io/docs/concepts/services-networking/endpoint-slices/,
       verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-endpoint-slice-api:
+    {
+      title: EndpointSlice v1 API,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/reference/kubernetes-api/discovery/endpoint-slice-v1/,
+      verifiedAt: '2026-08-08',
       type: official-documentation,
     }
   k8s-networking-overview:

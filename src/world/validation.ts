@@ -340,18 +340,72 @@ const validateEntity = (
       issues,
       'invalid-kubernetes-data',
       `${path}.data`,
-      'Pod data must contain uid, phase, and restartPolicy; nodeName is optional.',
+      'Pod data must contain uid, phase, restartPolicy, and all four Pod conditions; nodeName is optional.',
     );
+  }
+  if (value.kind === 'Pod' && isPodData(value.data)) {
+    const scheduled = typeof value.data.nodeName === 'string';
+    if (value.data.conditions.podScheduled !== scheduled) {
+      addIssue(
+        issues,
+        'invalid-kubernetes-data',
+        `${path}.data.conditions.podScheduled`,
+        'PodScheduled must agree with whether nodeName is assigned in a settled teaching snapshot.',
+      );
+    }
+    if (
+      value.data.conditions.ready &&
+      (!value.data.conditions.initialized || !value.data.conditions.containersReady)
+    ) {
+      addIssue(
+        issues,
+        'invalid-kubernetes-data',
+        `${path}.data.conditions.ready`,
+        'A Ready Pod must also be Initialized and ContainersReady.',
+      );
+    }
+    if (
+      value.data.conditions.ready &&
+      ['not-ready', 'pending', 'waiting', 'failed', 'terminated'].includes(String(value.status))
+    ) {
+      addIssue(
+        issues,
+        'invalid-kubernetes-data',
+        `${path}.status`,
+        'Pod status contradicts data.conditions.ready=true.',
+      );
+    }
+    if (!value.data.conditions.ready && ['ready', 'healthy'].includes(String(value.status))) {
+      addIssue(
+        issues,
+        'invalid-kubernetes-data',
+        `${path}.status`,
+        'Pod status contradicts data.conditions.ready=false.',
+      );
+    }
   }
   if (
     value.kind === 'Container' &&
-    (value.category !== 'runtime-instance' || !isContainerData(value.data))
+    (value.category !== 'runtime-status' || !isContainerData(value.data))
   ) {
     addIssue(
       issues,
       'invalid-kubernetes-data',
       `${path}.data`,
-      'Container must be a runtime-instance with podId, image, restartCount, and instanceGeneration.',
+      'Container must be a runtime-status entity with ContainerStatus identity, state, readiness, and restart data.',
+    );
+  }
+  if (
+    value.kind === 'Container' &&
+    value.category === 'runtime-status' &&
+    isContainerData(value.data) &&
+    value.status !== value.data.state.kind
+  ) {
+    addIssue(
+      issues,
+      'invalid-kubernetes-data',
+      `${path}.status`,
+      'Container entity status must match data.state.kind.',
     );
   }
   if (value.kind === 'ReplicaSet' && !isReplicaSetData(value.data)) {
@@ -359,7 +413,7 @@ const validateEntity = (
       issues,
       'invalid-kubernetes-data',
       `${path}.data`,
-      'ReplicaSet data must contain valid desired, current, and ready replica counts.',
+      'ReplicaSet data must contain valid spec, observed status, and ready replica counts.',
     );
   }
 

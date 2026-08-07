@@ -1,4 +1,12 @@
-import type { ContainerData, PodData, ReplicaSetData, WorldEntity } from './types';
+import type {
+  ContainerData,
+  ContainerState,
+  PodConditions,
+  PodData,
+  ReplicaSetData,
+  TerminatedContainerState,
+  WorldEntity,
+} from './types';
 
 export const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
@@ -14,6 +22,36 @@ const isNonEmptyString = (value: unknown): value is string =>
 
 const isNonNegativeInteger = (value: unknown): value is number =>
   typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+
+const isPodConditions = (value: unknown): value is PodConditions =>
+  isPlainRecord(value) &&
+  typeof value.podScheduled === 'boolean' &&
+  typeof value.initialized === 'boolean' &&
+  typeof value.containersReady === 'boolean' &&
+  typeof value.ready === 'boolean';
+
+const isTerminatedContainerState = (value: unknown): value is TerminatedContainerState =>
+  isPlainRecord(value) &&
+  value.kind === 'terminated' &&
+  isNonEmptyString(value.reason) &&
+  isNonNegativeInteger(value.exitCode) &&
+  isNonEmptyString(value.finishedAt) &&
+  isNonEmptyString(value.containerID);
+
+const isContainerState = (value: unknown): value is ContainerState => {
+  if (!isPlainRecord(value)) return false;
+
+  switch (value.kind) {
+    case 'running':
+      return isNonEmptyString(value.startedAt);
+    case 'terminated':
+      return isTerminatedContainerState(value);
+    case 'waiting':
+      return isNonEmptyString(value.reason);
+    default:
+      return false;
+  }
+};
 
 const POD_PHASES: ReadonlySet<PodData['phase']> = new Set([
   'Pending',
@@ -44,7 +82,8 @@ export const isPodData = (value: unknown): value is PodData => {
     typeof value.phase === 'string' &&
     POD_PHASES.has(value.phase as PodData['phase']) &&
     typeof value.restartPolicy === 'string' &&
-    RESTART_POLICIES.has(value.restartPolicy as PodData['restartPolicy'])
+    RESTART_POLICIES.has(value.restartPolicy as PodData['restartPolicy']) &&
+    isPodConditions(value.conditions)
   );
 };
 
@@ -55,10 +94,24 @@ export const isContainerData = (value: unknown): value is ContainerData => {
 
   return (
     isNonEmptyString(value.podId) &&
+    isNonEmptyString(value.name) &&
+    isNonEmptyString(value.image) &&
+    (!Object.hasOwn(value, 'containerID') ||
+      value.containerID === '' ||
+      isNonEmptyString(value.containerID)) &&
     isNonNegativeInteger(value.restartCount) &&
-    isNonNegativeInteger(value.instanceGeneration) &&
-    value.instanceGeneration >= 1 &&
-    isNonEmptyString(value.image)
+    typeof value.ready === 'boolean' &&
+    typeof value.started === 'boolean' &&
+    isContainerState(value.state) &&
+    (!Object.hasOwn(value, 'lastState') ||
+      (isTerminatedContainerState(value.lastState) &&
+        value.lastState.containerID !== value.containerID)) &&
+    (value.state.kind === 'waiting'
+      ? !value.containerID && !value.ready && !value.started
+      : isNonEmptyString(value.containerID)) &&
+    (value.state.kind === 'terminated'
+      ? value.containerID === value.state.containerID && !value.ready && !value.started
+      : true)
   );
 };
 
@@ -68,10 +121,10 @@ export const isReplicaSetData = (value: unknown): value is ReplicaSetData => {
   }
 
   return (
-    isNonNegativeInteger(value.desiredReplicas) &&
-    isNonNegativeInteger(value.currentReplicas) &&
+    isNonNegativeInteger(value.specReplicas) &&
+    isNonNegativeInteger(value.statusReplicas) &&
     isNonNegativeInteger(value.readyReplicas) &&
-    value.readyReplicas <= value.currentReplicas
+    value.readyReplicas <= value.statusReplicas
   );
 };
 
@@ -98,7 +151,7 @@ export const getPodData = (entity: WorldEntity): PodData => {
 export const getContainerData = (entity: WorldEntity): ContainerData => {
   if (
     entity.kind !== 'Container' ||
-    entity.category !== 'runtime-instance' ||
+    entity.category !== 'runtime-status' ||
     !isContainerData(entity.data)
   ) {
     throw new WorldDataError(entity, 'ContainerData');
