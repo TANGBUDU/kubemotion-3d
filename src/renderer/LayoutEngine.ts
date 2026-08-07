@@ -8,12 +8,19 @@ import type {
   WorldRelation,
   WorldSnapshot,
 } from '../world/types';
-import { NodeVisualHandle } from './VisualHandles';
+import { NodeVisualHandle } from './visuals/NodeVisual';
 
 export type Position = readonly [number, number, number];
 
 export type LayoutLane =
-  'node' | 'pod-slot' | 'node-agent' | 'pending' | 'control' | 'composition' | 'semantic';
+  | 'node'
+  | 'pod-slot'
+  | 'node-agent'
+  | 'pending'
+  | 'control'
+  | 'workload-state'
+  | 'composition'
+  | 'semantic';
 
 export interface EntityLayout {
   readonly entityId: EntityId;
@@ -38,10 +45,18 @@ export interface LayoutSlot {
 
 export interface LayoutContainer {
   readonly id: string;
-  readonly kind: 'node-rack' | 'pending-lane' | 'control-lane' | 'semantic-lane';
+  readonly kind:
+    | 'node-rack'
+    | 'pending-lane'
+    | 'control-lane'
+    | 'workload-lane'
+    | 'worker-lane'
+    | 'semantic-lane';
   readonly label: string;
   readonly bounds: LayoutBounds;
   readonly entityId?: EntityId;
+  readonly zoneId?: 'control-plane' | 'workload-state' | 'worker-nodes';
+  readonly labelAnchor?: Position;
   readonly slots: readonly LayoutSlot[];
 }
 
@@ -76,6 +91,14 @@ const SLOT_OFFSETS: readonly Position[] = [
   [-1.22, 0.38, 0.82],
   [1.22, 0.38, 0.82],
 ];
+
+const TEACHING_ZONES = Object.freeze({
+  controlPlane: Object.freeze({ centerZ: -5.25, depth: 2.55 }),
+  workloadState: Object.freeze({ centerZ: -2.05, depth: 2.35 }),
+  workerNodes: Object.freeze({ centerZ: 2.85, depth: 5.55 }),
+});
+
+const PENDING_TRAY_CENTER_X = 4.6;
 
 const byId = (left: WorldEntity, right: WorldEntity): number => left.id.localeCompare(right.id);
 
@@ -269,11 +292,31 @@ export class PlacementLayout implements LayoutModule {
       nodeXById.set(node.id, x);
       layouts.set(node.id, {
         entityId: node.id,
-        position: [x, 0, 0],
+        position: [x, 0, TEACHING_ZONES.workerNodes.centerZ],
         lane: 'node',
         containerId: `node:${node.id}`,
       });
     });
+
+    if (visibleNodes.length > 0) {
+      containers.push({
+        id: 'worker-nodes-zone',
+        kind: 'worker-lane',
+        label: 'WORKER NODES',
+        zoneId: 'worker-nodes',
+        labelAnchor: [-9.4, 0.12, 0.28],
+        bounds: {
+          center: [0, 0.025, TEACHING_ZONES.workerNodes.centerZ],
+          size: [20, 0.05, TEACHING_ZONES.workerNodes.depth],
+        },
+        slots: visibleNodes.map((node, index) => ({
+          id: `worker-nodes-zone:slot:${index}`,
+          index,
+          position: [nodeXById.get(node.id) ?? 0, 0, TEACHING_ZONES.workerNodes.centerZ],
+          occupiedBy: node.id,
+        })),
+      });
+    }
 
     const scheduledPods = new Map<EntityId, WorldEntity[]>();
     const pendingPods: WorldEntity[] = [];
@@ -305,7 +348,7 @@ export class PlacementLayout implements LayoutModule {
         const [offsetX, offsetY, offsetZ] = overflowSlotOffset(slotIndex);
         layouts.set(pod.id, {
           entityId: pod.id,
-          position: [x + offsetX, offsetY, offsetZ],
+          position: [x + offsetX, offsetY, TEACHING_ZONES.workerNodes.centerZ + offsetZ],
           lane: 'pod-slot',
           parentId: node.id,
           containerId,
@@ -320,7 +363,7 @@ export class PlacementLayout implements LayoutModule {
         slots.push({
           id: `${containerId}:slot:${slotIndex}`,
           index: slotIndex,
-          position: [x + offsetX, offsetY, offsetZ],
+          position: [x + offsetX, offsetY, TEACHING_ZONES.workerNodes.centerZ + offsetZ],
           ...(occupiedBy ? { occupiedBy } : {}),
         });
       }
@@ -330,7 +373,7 @@ export class PlacementLayout implements LayoutModule {
         label: node.name,
         entityId: node.id,
         bounds: {
-          center: [x, 0.2, 0],
+          center: [x, 0.2, TEACHING_ZONES.workerNodes.centerZ],
           size: [NodeVisualHandle.footprint.width, 0.5, NodeVisualHandle.footprint.depth],
         },
         slots,
@@ -343,44 +386,20 @@ export class PlacementLayout implements LayoutModule {
       const node = nodeName ? nodesByName.get(nodeName) : undefined;
       if (!node) continue;
       const x = nodeXById.get(node.id) ?? 0;
+      const [kubeletX, kubeletY, kubeletZ] = NodeVisualHandle.kubeletOffset;
       layouts.set(agent.id, {
         entityId: agent.id,
-        position: [x, 0.22, -2.42],
+        position: [x + kubeletX, kubeletY, TEACHING_ZONES.workerNodes.centerZ + kubeletZ],
         lane: 'node-agent',
         parentId: node.id,
         containerId: `node:${node.id}`,
       });
     }
 
-    if (pendingPods.length > 0) {
-      const spacing = 2.3;
-      const width = Math.max(6, pendingPods.length * spacing + 1.8);
-      pendingPods.forEach((pod, index) => {
-        const x = (index - (pendingPods.length - 1) / 2) * spacing;
-        layouts.set(pod.id, {
-          entityId: pod.id,
-          position: [x, 0.18, 4.65],
-          lane: 'pending',
-          containerId: 'pending-lane',
-          slotIndex: index,
-        });
-      });
-      containers.push({
-        id: 'pending-lane',
-        kind: 'pending-lane',
-        label: 'Pending / Unscheduled',
-        bounds: { center: [0, 0.08, 4.65], size: [width, 0.16, 2.5] },
-        slots: pendingPods.map((pod, index) => ({
-          id: `pending-lane:slot:${index}`,
-          index,
-          position: [(index - (pendingPods.length - 1) / 2) * spacing, 0.18, 4.65],
-          occupiedBy: pod.id,
-        })),
-      });
-    }
-
     const controlKinds = new Set([
-      'ReplicaSet',
+      'KubeAPIServer',
+      'ApiServer',
+      'APIServer',
       'ControllerManager',
       'KubeControllerManager',
       'Scheduler',
@@ -389,40 +408,150 @@ export class PlacementLayout implements LayoutModule {
       .filter((entity) => controlKinds.has(entity.kind))
       .sort((left, right) => {
         const order = (entity: WorldEntity): number => {
-          if (entity.kind === 'ControllerManager' || entity.kind === 'KubeControllerManager')
+          if (
+            entity.kind === 'KubeAPIServer' ||
+            entity.kind === 'ApiServer' ||
+            entity.kind === 'APIServer'
+          )
             return 0;
-          if (entity.kind === 'ReplicaSet') return 1;
+          if (entity.kind === 'ControllerManager' || entity.kind === 'KubeControllerManager')
+            return 1;
           return 2;
         };
         return order(left) - order(right) || left.id.localeCompare(right.id);
       });
     if (controlEntities.length > 0) {
-      const spacing = 3.25;
+      const spacing = 5.15;
       controlEntities.forEach((entity, index) => {
         layouts.set(entity.id, {
           entityId: entity.id,
-          position: [(index - (controlEntities.length - 1) / 2) * spacing, 0.08, -5.25],
+          position: [
+            (index - (controlEntities.length - 1) / 2) * spacing,
+            0.08,
+            TEACHING_ZONES.controlPlane.centerZ,
+          ],
           lane: 'control',
-          containerId: 'control-lane',
+          containerId: 'control-plane-zone',
           slotIndex: index,
         });
       });
       containers.push({
-        id: 'control-lane',
+        id: 'control-plane-zone',
         kind: 'control-lane',
-        label: 'Control plane / reconciliation',
+        label: 'CONTROL PLANE',
+        zoneId: 'control-plane',
+        labelAnchor: [-9.4, 0.12, -6.38],
         bounds: {
-          center: [0, 0.04, -5.25],
-          size: [Math.max(10, controlEntities.length * spacing + 1.5), 0.12, 2.8],
+          center: [0, 0.025, TEACHING_ZONES.controlPlane.centerZ],
+          size: [20, 0.05, TEACHING_ZONES.controlPlane.depth],
         },
         slots: controlEntities.map((entity, index) => ({
-          id: `control-lane:slot:${index}`,
+          id: `control-plane-zone:slot:${index}`,
           index,
-          position: [(index - (controlEntities.length - 1) / 2) * spacing, 0.08, -5.25],
+          position: [
+            (index - (controlEntities.length - 1) / 2) * spacing,
+            0.08,
+            TEACHING_ZONES.controlPlane.centerZ,
+          ],
           occupiedBy: entity.id,
         })),
       });
     }
+
+    const kubectlEntities = visibleEntities
+      .filter((entity) => entity.kind === 'Kubectl')
+      .sort(byId);
+    kubectlEntities.forEach((entity, index) => {
+      layouts.set(entity.id, {
+        entityId: entity.id,
+        position: [-8.8, 0.08, TEACHING_ZONES.controlPlane.centerZ + index * 1.4],
+        lane: 'control',
+        containerId: 'external-control-input',
+        slotIndex: index,
+      });
+    });
+
+    const replicaSets = visibleEntities.filter((entity) => entity.kind === 'ReplicaSet').sort(byId);
+    replicaSets.forEach((entity, index) => {
+      layouts.set(entity.id, {
+        entityId: entity.id,
+        position: [-5.55 + index * 3.9, 0.08, TEACHING_ZONES.workloadState.centerZ],
+        lane: 'workload-state',
+        containerId: 'workload-state-zone',
+        slotIndex: index,
+      });
+    });
+    containers.push({
+      id: 'workload-state-zone',
+      kind: 'workload-lane',
+      label: 'WORKLOAD STATE / UNSCHEDULED QUEUE',
+      zoneId: 'workload-state',
+      labelAnchor: [-9.4, 0.12, -3.12],
+      bounds: {
+        center: [0, 0.025, TEACHING_ZONES.workloadState.centerZ],
+        size: [20, 0.05, TEACHING_ZONES.workloadState.depth],
+      },
+      slots: replicaSets.map((entity, index) => ({
+        id: `workload-state-zone:slot:${index}`,
+        index,
+        position: [-5.55 + index * 3.9, 0.08, TEACHING_ZONES.workloadState.centerZ],
+        occupiedBy: entity.id,
+      })),
+    });
+
+    const pendingSlotCount = Math.max(3, pendingPods.length);
+    const pendingSlotSpacing = 1.95;
+    const pendingSlotPositions: Position[] = Array.from(
+      { length: pendingSlotCount },
+      (_, index) => [
+        PENDING_TRAY_CENTER_X + (index - (pendingSlotCount - 1) / 2) * pendingSlotSpacing,
+        0.28,
+        TEACHING_ZONES.workloadState.centerZ,
+      ],
+    );
+    const assignedSlotIndices =
+      pendingPods.length === 1
+        ? [1]
+        : pendingPods.length === 2
+          ? [0, 2]
+          : pendingPods.map((_, index) => index);
+    const pendingOccupancy = new Map<number, EntityId>();
+    pendingPods.forEach((pod, index) => {
+      const slotIndex = assignedSlotIndices[index] ?? index;
+      const position = pendingSlotPositions[slotIndex] ?? [
+        PENDING_TRAY_CENTER_X,
+        0.28,
+        TEACHING_ZONES.workloadState.centerZ,
+      ];
+      pendingOccupancy.set(slotIndex, pod.id);
+      layouts.set(pod.id, {
+        entityId: pod.id,
+        position,
+        lane: 'pending',
+        containerId: 'pending-lane',
+        slotIndex,
+      });
+    });
+    containers.push({
+      id: 'pending-lane',
+      kind: 'pending-lane',
+      label: 'UNSCHEDULED PODS',
+      zoneId: 'workload-state',
+      labelAnchor: [1.4, 0.48, -3.02],
+      bounds: {
+        center: [PENDING_TRAY_CENTER_X, 0.1, TEACHING_ZONES.workloadState.centerZ],
+        size: [Math.max(6.45, pendingSlotCount * pendingSlotSpacing + 0.7), 0.2, 1.82],
+      },
+      slots: pendingSlotPositions.map((position, index) => {
+        const occupiedBy = pendingOccupancy.get(index);
+        return {
+          id: `pending-lane:slot:${index}`,
+          index,
+          position,
+          ...(occupiedBy ? { occupiedBy } : {}),
+        };
+      }),
+    });
 
     const containsRelations = allRelations
       .filter((relation) => relation.semantic === 'composition')
@@ -508,31 +637,140 @@ abstract class SemanticLaneLayout implements LayoutModule {
   }
 }
 
-export class OverviewLayout extends SemanticLaneLayout {
+abstract class StableTeachingStageLayout implements LayoutModule {
+  public abstract readonly view: ViewMode;
+
+  public calculate(input: LayoutInput): LayoutResult {
+    return new PlacementLayout().calculate(input);
+  }
+}
+
+export class OverviewLayout extends StableTeachingStageLayout {
   public readonly view = 'overview' as const;
-  protected laneKey(entity: WorldEntity): string {
-    return entity.category;
-  }
 }
 
-export class LogicalLayout extends SemanticLaneLayout {
+export class LogicalLayout extends StableTeachingStageLayout {
   public readonly view = 'logical' as const;
-  protected laneKey(entity: WorldEntity): string {
-    return entity.namespace ?? 'cluster-scoped';
-  }
 }
 
-export class ControlFlowLayout extends SemanticLaneLayout {
+export class ControlFlowLayout extends StableTeachingStageLayout {
   public readonly view = 'control-flow' as const;
-  protected laneKey(entity: WorldEntity): string {
-    return entity.category === 'runtime-component' ? 'runtime-components' : entity.category;
-  }
 }
 
-export class TrafficLayout extends SemanticLaneLayout {
+export class TrafficLayout implements LayoutModule {
   public readonly view = 'traffic' as const;
-  protected laneKey(entity: WorldEntity): string {
-    return entity.visual.group ?? entity.kind;
+
+  public calculate(input: LayoutInput): LayoutResult {
+    const visible = Object.values(input.world.entities)
+      .filter((entity) => isVisible(entity, input.view))
+      .sort(byId);
+    const service = visible.find((entity) => entity.kind === 'Service');
+    const endpointSlice = visible.find((entity) => entity.kind === 'EndpointSlice');
+    const clients = visible.filter((entity) => entity.data.trafficRole === 'client');
+    const backends = visible.filter((entity) => entity.data.trafficRole === 'backend');
+
+    // Other traffic views retain the golden teaching-stage geometry. The dedicated lanes only
+    // activate for the verified Service/EndpointSlice scenario.
+    if (!service || !endpointSlice || clients.length === 0 || backends.length === 0) {
+      return new PlacementLayout().calculate(input);
+    }
+
+    const layouts = new Map<EntityId, EntityLayout>();
+    clients.forEach((entity, index) => {
+      layouts.set(entity.id, {
+        entityId: entity.id,
+        position: [-7.5, 0.18, (index - (clients.length - 1) / 2) * 2.3],
+        lane: 'semantic',
+        containerId: 'traffic-client-lane',
+        slotIndex: index,
+      });
+    });
+    layouts.set(service.id, {
+      entityId: service.id,
+      position: [-2.4, 0.18, 0.75],
+      lane: 'semantic',
+      containerId: 'traffic-service-context',
+      slotIndex: 0,
+    });
+    layouts.set(endpointSlice.id, {
+      entityId: endpointSlice.id,
+      position: [-1.1, 0.18, -2.25],
+      lane: 'semantic',
+      containerId: 'traffic-service-context',
+      slotIndex: 1,
+    });
+    backends.forEach((entity, index) => {
+      layouts.set(entity.id, {
+        entityId: entity.id,
+        position: [4.8, 0.18, (index - (backends.length - 1) / 2) * 2.75],
+        lane: 'semantic',
+        containerId: 'traffic-backend-lane',
+        slotIndex: index,
+      });
+    });
+
+    const reserved = new Set(layouts.keys());
+    const remainder = visible.filter((entity) => !reserved.has(entity.id));
+    remainder.forEach((entity, index) => {
+      layouts.set(entity.id, {
+        entityId: entity.id,
+        position: [0.5 + (index % 3) * 2.1, 0.18, 4.25 + Math.floor(index / 3) * 1.8],
+        lane: 'semantic',
+        containerId: 'traffic-context',
+        slotIndex: index,
+      });
+    });
+
+    const containers: LayoutContainer[] = [
+      {
+        id: 'traffic-client-lane',
+        kind: 'semantic-lane',
+        label: 'CLIENT',
+        labelAnchor: [-8.75, 0.1, -3.25],
+        bounds: { center: [-7.5, 0.025, 0], size: [2.9, 0.05, 7.4] },
+        slots: clients.map((entity, index) => ({
+          id: `traffic-client-lane:slot:${index}`,
+          index,
+          position: [-7.5, 0.18, (index - (clients.length - 1) / 2) * 2.3],
+          occupiedBy: entity.id,
+        })),
+      },
+      {
+        id: 'traffic-service-context',
+        kind: 'semantic-lane',
+        label: 'STABLE ENTRY / ENDPOINT STATE',
+        labelAnchor: [-4.25, 0.1, -3.25],
+        bounds: { center: [-1.75, 0.025, 0], size: [5.3, 0.05, 7.4] },
+        slots: [
+          {
+            id: 'traffic-service-context:slot:0',
+            index: 0,
+            position: [-2.4, 0.18, 0.75],
+            occupiedBy: service.id,
+          },
+          {
+            id: 'traffic-service-context:slot:1',
+            index: 1,
+            position: [-1.1, 0.18, -2.25],
+            occupiedBy: endpointSlice.id,
+          },
+        ],
+      },
+      {
+        id: 'traffic-backend-lane',
+        kind: 'semantic-lane',
+        label: 'BACKEND PODS',
+        labelAnchor: [2.85, 0.1, -3.25],
+        bounds: { center: [4.8, 0.025, 0], size: [4.2, 0.05, 7.4] },
+        slots: backends.map((entity, index) => ({
+          id: `traffic-backend-lane:slot:${index}`,
+          index,
+          position: [4.8, 0.18, (index - (backends.length - 1) / 2) * 2.75],
+          occupiedBy: entity.id,
+        })),
+      },
+    ];
+    return completeResult(input.world, input.view, layouts, containers);
   }
 }
 

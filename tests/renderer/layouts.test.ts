@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { EntityViewState, RelationViewState, ViewProjection } from '../../src/course/types';
+import type {
+  EntityViewState,
+  RelationViewState,
+  ViewMode,
+  ViewProjection,
+} from '../../src/course/types';
 import { calculateLayout } from '../../src/renderer/LayoutEngine';
 import type {
   EntityId,
@@ -24,9 +29,14 @@ const entity = (
       ? 'runtime-instance'
       : kind === 'Node'
         ? 'infrastructure'
-        : kind === 'Kubelet' || kind === 'ControllerManager' || kind === 'Scheduler'
-          ? 'runtime-component'
-          : 'api-object',
+        : kind === 'Kubectl'
+          ? 'external'
+          : kind === 'Kubelet' ||
+              kind === 'KubeAPIServer' ||
+              kind === 'ControllerManager' ||
+              kind === 'Scheduler'
+            ? 'runtime-component'
+            : 'api-object',
   kind,
   name,
   status: kind === 'Pod' ? 'running' : 'healthy',
@@ -46,7 +56,9 @@ const entity = (
               ? 'replicaset'
               : kind === 'Kubelet'
                 ? 'runtime'
-                : 'control-plane',
+                : kind === 'Kubectl'
+                  ? 'external'
+                  : 'control-plane',
   },
 });
 
@@ -102,6 +114,8 @@ const replicaSet = entity('rs:api', 'ReplicaSet', 'api-rs', {
 });
 const controller = entity('component:controller', 'ControllerManager', 'controller-manager', {});
 const scheduler = entity('component:scheduler', 'Scheduler', 'scheduler', {});
+const apiServer = entity('component:api-server', 'KubeAPIServer', 'kube-apiserver', {});
+const kubectl = entity('external:kubectl', 'Kubectl', 'kubectl', {});
 const kubeletMoon = entity('component:kubelet-moon', 'Kubelet', 'kubelet-moon', {
   nodeName: 'moon-node',
 });
@@ -114,8 +128,10 @@ const entities = [
   podPending,
   containerMoon,
   replicaSet,
+  apiServer,
   controller,
   scheduler,
+  kubectl,
   kubeletMoon,
 ];
 const relations = [
@@ -132,7 +148,7 @@ const world: WorldSnapshot = {
   relations: Object.fromEntries(relations.map((item) => [item.id, item])),
 };
 
-const projection = (snapshot: WorldSnapshot): ViewProjection => {
+const projection = (snapshot: WorldSnapshot, view: ViewMode = 'placement'): ViewProjection => {
   const entityStates: Record<EntityId, EntityViewState> = {};
   for (const item of Object.values(snapshot.entities)) {
     entityStates[item.id] = { visible: true, emphasis: 'normal', labelMode: 'short' };
@@ -142,11 +158,12 @@ const projection = (snapshot: WorldSnapshot): ViewProjection => {
     relationStates[item.id] = { visible: true, emphasis: 'normal' };
   }
   return {
-    view: 'placement',
-    cameraPresetId: 'placement',
+    view,
+    cameraPresetId: view,
     entityStates,
     relationStates,
     callouts: [],
+    activeRoutes: [],
   };
 };
 
@@ -183,15 +200,56 @@ describe('PlacementLayout', () => {
   it('uses dedicated pending and control lanes and attaches kubelet to its Node', () => {
     const layout = calculateLayout({ world, view: projection(world) });
     expect(layout.entities.get(podPending.id)?.lane).toBe('pending');
+    expect(layout.entities.get(podPending.id)?.parentId).toBeUndefined();
     expect(layout.containers.find((container) => container.kind === 'pending-lane')?.label).toBe(
-      'Pending / Unscheduled',
+      'UNSCHEDULED PODS',
     );
-    expect(layout.entities.get(replicaSet.id)?.lane).toBe('control');
+    expect(layout.entities.get(replicaSet.id)?.lane).toBe('workload-state');
+    expect(layout.entities.get(apiServer.id)?.lane).toBe('control');
     expect(layout.entities.get(controller.id)?.lane).toBe('control');
     expect(layout.entities.get(scheduler.id)?.lane).toBe('control');
+    expect(layout.entities.get(kubectl.id)?.containerId).toBe('external-control-input');
     expect(layout.containers.some((container) => container.kind === 'control-lane')).toBe(true);
+    expect(layout.containers.some((container) => container.kind === 'workload-lane')).toBe(true);
+    expect(layout.containers.some((container) => container.kind === 'worker-lane')).toBe(true);
     expect(layout.entities.get(kubeletMoon.id)?.parentId).toBe(nodeMoon.id);
     expect(layout.entities.get(kubeletMoon.id)?.lane).toBe('node-agent');
+  });
+
+  it('orders semantic zones and keeps an empty unscheduled tray visible', () => {
+    const view = projection(world);
+    const layout = calculateLayout({ world, view });
+    const control = layout.containers.find((container) => container.kind === 'control-lane');
+    const workload = layout.containers.find((container) => container.kind === 'workload-lane');
+    const workers = layout.containers.find((container) => container.kind === 'worker-lane');
+    expect(control?.bounds.center[2]).toBeLessThan(
+      workload?.bounds.center[2] ?? Number.NEGATIVE_INFINITY,
+    );
+    expect(workload?.bounds.center[2]).toBeLessThan(
+      workers?.bounds.center[2] ?? Number.NEGATIVE_INFINITY,
+    );
+
+    const hiddenPending: ViewProjection = {
+      ...view,
+      entityStates: {
+        ...view.entityStates,
+        [podPending.id]: { visible: false, emphasis: 'hidden', labelMode: 'none' },
+      },
+    };
+    const withoutPending = calculateLayout({ world, view: hiddenPending });
+    const tray = withoutPending.containers.find((container) => container.kind === 'pending-lane');
+    expect(tray?.label).toBe('UNSCHEDULED PODS');
+    expect(tray?.slots).toHaveLength(3);
+    expect(tray?.slots.every((slot) => slot.occupiedBy === undefined)).toBe(true);
+  });
+
+  it('keeps the same teaching-stage geometry across golden lesson view modes', () => {
+    const reference = calculateLayout({ world, view: projection(world, 'placement') });
+    for (const viewMode of ['overview', 'logical', 'control-flow', 'traffic'] as const) {
+      const candidate = calculateLayout({ world, view: projection(world, viewMode) });
+      expect(candidate.entities).toEqual(reference.entities);
+      expect(candidate.containers).toEqual(reference.containers);
+    }
   });
 
   it('keeps slots stable across status/data-only updates and composes Containers in Pods', () => {
