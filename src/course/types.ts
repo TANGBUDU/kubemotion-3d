@@ -1,137 +1,243 @@
 import type {
-  EntityCategory,
   EntityId,
   EntityStatus,
   LocalizedText,
   RelationId,
   SourceId,
-} from '../domain/types';
+  WorldDiff,
+  WorldPatch,
+  WorldSnapshot,
+} from '../world/types';
 
-export type ViewMode = 'overview' | 'logical' | 'placement' | 'control-flow' | 'traffic';
+export type ViewMode =
+  | 'overview'
+  | 'logical'
+  | 'placement'
+  | 'control-flow'
+  | 'traffic'
+  | 'storage';
 export type Emphasis = 'normal' | 'focused' | 'dimmed' | 'hidden';
+export type LabelMode = 'none' | 'short' | 'full';
 
-export interface EntityProjection {
-  visible: boolean;
-  emphasis: Emphasis;
-  statusOverride?: EntityStatus | undefined;
-  labelMode?: 'none' | 'short' | 'full' | undefined;
+export interface EntityViewState {
+  readonly visible: boolean;
+  readonly emphasis: Emphasis;
+  readonly labelMode: LabelMode;
+  readonly inspectorMode?: 'none' | 'compact' | 'expanded';
 }
-export interface RelationProjection {
-  visible: boolean;
-  emphasis: Exclude<Emphasis, 'hidden'>;
+
+export interface RelationViewState {
+  readonly visible: boolean;
+  readonly emphasis: Exclude<Emphasis, 'hidden'>;
 }
+
 export interface SceneCallout {
-  entityId: EntityId;
-  text: LocalizedText;
+  readonly id: string;
+  readonly entityId: EntityId;
+  readonly text: LocalizedText;
 }
-export interface SceneProjection {
-  view: ViewMode;
-  entityStates: Readonly<Record<EntityId, EntityProjection>>;
-  relationStates: Readonly<Record<RelationId, RelationProjection>>;
-  callouts: readonly SceneCallout[];
-  cameraPresetId: string;
+
+export interface ComparisonRowModel {
+  readonly property: LocalizedText;
+  readonly containerRestart: string;
+  readonly podReplacement: string;
+}
+
+export interface ComparisonPanelModel {
+  readonly title: LocalizedText;
+  readonly rows: readonly ComparisonRowModel[];
+}
+
+export interface ViewProjection {
+  readonly view: ViewMode;
+  readonly cameraPresetId: string;
+  readonly entityStates: Readonly<Record<EntityId, EntityViewState>>;
+  readonly relationStates: Readonly<Record<RelationId, RelationViewState>>;
+  readonly callouts: readonly SceneCallout[];
+  readonly comparison?: ComparisonPanelModel;
 }
 
 export type EntitySelector =
-  | { byIds: EntityId[] }
-  | { byKind: string; namespace?: string | undefined }
-  | { byLabel: { key: string; value: string }; namespace?: string | undefined }
-  | { byCategory: EntityCategory }
-  | { byNode: string };
+  | { readonly byIds: readonly EntityId[] }
+  | { readonly byKind: string; readonly namespace?: string }
+  | {
+      readonly byLabel: { readonly key: string; readonly value: string };
+      readonly namespace?: string;
+    }
+  | {
+      readonly byCategory:
+        | 'api-object'
+        | 'runtime-instance'
+        | 'runtime-component'
+        | 'infrastructure'
+        | 'external';
+    }
+  | { readonly byNode: string };
 
-export interface ProjectionRule {
-  selector: EntitySelector;
-  visible?: boolean | undefined;
-  emphasis?: Emphasis | undefined;
-  statusOverride?: EntityStatus | undefined;
-  labelMode?: 'none' | 'short' | 'full' | undefined;
-  allowEmpty?: boolean | undefined;
-}
-export interface RelationProjectionRule {
-  byType?: string | undefined;
-  byIds?: RelationId[] | undefined;
-  visible?: boolean | undefined;
-  emphasis?: Exclude<Emphasis, 'hidden'> | undefined;
-  allowEmpty?: boolean | undefined;
-}
-export interface SceneProjectionPatch {
-  view?: ViewMode | undefined;
-  cameraPresetId?: string | undefined;
-  resetEntities?: boolean | undefined;
-  entityRules?: ProjectionRule[] | undefined;
-  relationRules?: RelationProjectionRule[] | undefined;
-  callouts?: SceneCallout[] | undefined;
+export interface EntityViewRule {
+  readonly selector: EntitySelector;
+  readonly visible?: boolean;
+  readonly emphasis?: Emphasis;
+  readonly labelMode?: LabelMode;
+  readonly inspectorMode?: 'none' | 'compact' | 'expanded';
+  readonly allowEmpty?: boolean;
 }
 
-export type FlowKind = 'data-packet' | 'dns-query' | 'api-request';
+export interface RelationViewRule {
+  readonly byType?: string;
+  readonly byIds?: readonly RelationId[];
+  readonly visible?: boolean;
+  readonly emphasis?: Exclude<Emphasis, 'hidden'>;
+  readonly allowEmpty?: boolean;
+}
+
+export interface ComparisonRequest {
+  readonly type: 'container-restart-vs-pod-replacement';
+  readonly restartStepId: string;
+  readonly replacementStepId: string;
+}
+
+export interface ViewProjectionPatch {
+  readonly view?: ViewMode;
+  readonly cameraPresetId?: string;
+  readonly resetEntities?: boolean;
+  readonly entityRules?: readonly EntityViewRule[];
+  readonly relationRules?: readonly RelationViewRule[];
+  readonly callouts?: readonly SceneCallout[];
+  readonly comparison?: ComparisonRequest;
+}
+
+interface TimedCue {
+  readonly durationMs: number;
+}
+
 export type TransitionCue =
-  | { type: FlowKind; path: EntityId[]; label: LocalizedText; durationMs: number }
-  | { type: 'focus-camera'; entityId: EntityId; durationMs: number }
-  | { type: 'layout-transition'; durationMs: number }
-  | { type: 'reconcile-pulse'; entityId: EntityId; durationMs: number }
-  | { type: 'lifecycle'; entityId: EntityId; state: EntityStatus; durationMs: number }
-  | { type: 'status-change'; entityId: EntityId; state: EntityStatus; durationMs: number }
-  | { type: 'relation-reveal'; relationId: RelationId; durationMs: number }
-  | { type: 'callout'; entityId: EntityId; label: LocalizedText; durationMs: number };
+  | ({
+      readonly type: 'data-packet' | 'dns-query' | 'api-request';
+      readonly path: readonly EntityId[];
+      readonly label: LocalizedText;
+    } & TimedCue)
+  | ({ readonly type: 'focus-camera'; readonly entityId: EntityId } & TimedCue)
+  | ({ readonly type: 'layout-transition' } & TimedCue)
+  | ({ readonly type: 'container-failure'; readonly entityId: EntityId } & TimedCue)
+  | ({ readonly type: 'container-restart'; readonly entityId: EntityId } & TimedCue)
+  | ({ readonly type: 'entity-exit'; readonly entityId: EntityId } & TimedCue)
+  | ({ readonly type: 'entity-enter'; readonly entityId: EntityId } & TimedCue)
+  | ({
+      readonly type: 'reconcile-pulse';
+      readonly fromEntityId: EntityId;
+      readonly toEntityId: EntityId;
+    } & TimedCue)
+  | ({
+      readonly type: 'scheduler-assignment';
+      readonly schedulerId: EntityId;
+      readonly podId: EntityId;
+      readonly nodeId: EntityId;
+    } & TimedCue)
+  | ({
+      readonly type: 'counter-change';
+      readonly entityId: EntityId;
+      readonly field: string;
+      readonly from: number;
+      readonly to: number;
+    } & TimedCue)
+  | ({ readonly type: 'relation-reveal'; readonly relationId: RelationId } & TimedCue)
+  | ({
+      readonly type: 'callout';
+      readonly entityId: EntityId;
+      readonly label: LocalizedText;
+    } & TimedCue);
 
-export interface LessonStep {
-  id: string;
-  title: LocalizedText;
-  learningOutcome: LocalizedText;
-  narration: LocalizedText;
-  introducesTerms: string[];
-  usesTerms: string[];
-  sourceIds: SourceId[];
-  projectionPatch: SceneProjectionPatch;
-  transition: TransitionCue[];
+export interface TransitionPlan {
+  readonly cues: readonly TransitionCue[];
 }
-export interface Lesson {
-  schemaVersion: 1;
-  id: string;
-  scenarioId: string;
-  chapterId: string;
-  title: LocalizedText;
-  summary: LocalizedText;
-  learningOutcome: LocalizedText;
-  prerequisites: string[];
-  sourceIds: SourceId[];
-  verifiedAt: string;
-  baseProjection: SceneProjectionPatch;
-  steps: LessonStep[];
+
+export interface PlaybackRequest {
+  readonly stepKey: string;
+  readonly playbackId: number;
+  readonly transition: TransitionPlan;
 }
-export interface LessonManifestEntry {
-  id: string;
-  chapterId: string;
-  status: 'available' | 'planned';
-  prerequisites: string[];
-  title: LocalizedText;
-  learningOutcome: LocalizedText;
-  estimatedMinutes: number;
+
+export interface LessonStepV2 {
+  readonly id: string;
+  readonly title: LocalizedText;
+  readonly learningOutcome: LocalizedText;
+  readonly narration: LocalizedText;
+  readonly introducesTerms: readonly string[];
+  readonly usesTerms: readonly string[];
+  readonly sourceIds: readonly SourceId[];
+  readonly worldPatch?: WorldPatch;
+  readonly viewPatch: ViewProjectionPatch;
+  readonly transition?: TransitionPlan;
 }
-export interface CourseManifest {
-  schemaVersion: 1;
-  id: string;
-  title: LocalizedText;
-  summary: LocalizedText;
-  lessonOrder: string[];
-  lessons: LessonManifestEntry[];
+
+export interface LessonV2 {
+  readonly schemaVersion: 2;
+  readonly id: string;
+  readonly scenarioId: string;
+  readonly chapterId: string;
+  readonly title: LocalizedText;
+  readonly summary: LocalizedText;
+  readonly learningOutcome: LocalizedText;
+  readonly prerequisites: readonly string[];
+  readonly sourceIds: readonly SourceId[];
+  readonly verifiedAt: string;
+  readonly baseView: ViewProjectionPatch;
+  readonly steps: readonly LessonStepV2[];
 }
-export interface SourceEntry {
-  id: SourceId;
-  title: string;
-  authority: string;
-  url: string;
-  verifiedAt: string;
-  type: 'official-documentation';
+
+export interface CompiledStep {
+  readonly lessonId: string;
+  readonly stepId: string;
+  readonly index: number;
+  readonly beforeWorld: WorldSnapshot;
+  readonly world: WorldSnapshot;
+  readonly worldDiff: WorldDiff;
+  readonly view: ViewProjection;
+  readonly transition: TransitionPlan;
 }
-export interface GlossaryTerm {
-  id: string;
-  term: LocalizedText;
-  definition: LocalizedText;
-  sourceIds: SourceId[];
-}
+
 export interface CompiledLesson {
-  lesson: Lesson;
-  projections: readonly SceneProjection[];
-  transitions: readonly (readonly TransitionCue[])[];
+  readonly lesson: LessonV2;
+  readonly initialWorld: WorldSnapshot;
+  readonly steps: readonly CompiledStep[];
+}
+
+export interface LessonManifestEntry {
+  readonly id: string;
+  readonly chapterId: string;
+  readonly status: 'available' | 'planned';
+  readonly prerequisites: readonly string[];
+  readonly title: LocalizedText;
+  readonly learningOutcome: LocalizedText;
+  readonly estimatedMinutes: number;
+}
+
+export interface CourseManifest {
+  readonly schemaVersion: 1;
+  readonly id: string;
+  readonly title: LocalizedText;
+  readonly summary: LocalizedText;
+  readonly lessonOrder: readonly string[];
+  readonly lessons: readonly LessonManifestEntry[];
+}
+
+export interface SourceEntry {
+  readonly id: SourceId;
+  readonly title: string;
+  readonly authority: string;
+  readonly url: string;
+  readonly verifiedAt: string;
+  readonly type: 'official-documentation';
+}
+
+export interface GlossaryTerm {
+  readonly id: string;
+  readonly term: LocalizedText;
+  readonly definition: LocalizedText;
+  readonly sourceIds: readonly SourceId[];
+}
+
+export function isStatus(value: unknown): value is EntityStatus {
+  return typeof value === 'string';
 }

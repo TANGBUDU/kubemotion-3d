@@ -90,9 +90,7 @@ sources:
     }
   k8s-services:
     {
-      title: Services,
-      Load Balancing,
-      and Networking,
+      title: 'Services, Load Balancing, and Networking',
       authority: Kubernetes Documentation,
       url: https://kubernetes.io/docs/concepts/services-networking/service/,
       verifiedAt: '2026-08-07',
@@ -108,9 +106,7 @@ sources:
     }
   k8s-networking-overview:
     {
-      title: Services,
-      Networking,
-      and Storage,
+      title: 'Services, Networking, and Storage',
       authority: Kubernetes Documentation,
       url: https://kubernetes.io/docs/concepts/services-networking/,
       verifiedAt: '2026-08-07',
@@ -118,9 +114,7 @@ sources:
     }
   k8s-probes:
     {
-      title: Liveness,
-      Readiness,
-      and Startup Probes,
+      title: 'Liveness, Readiness, and Startup Probes',
       authority: Kubernetes Documentation,
       url: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes,
       verifiedAt: '2026-08-07',

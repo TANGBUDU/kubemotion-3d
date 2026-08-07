@@ -1,0 +1,361 @@
+schemaVersion: 2
+scenarioId: container-restart-golden
+revision: 0
+entities:
+  - id: infrastructure:cluster:global:Node:worker-a
+    category: infrastructure
+    kind: Node
+    name: worker-a
+    status: ready
+    data:
+      rackOrder: 1
+      podSlotCount: 4
+    title: { en: worker-a, ja: worker-a, zh-CN: worker-a }
+    summary:
+      {
+        en: Worker Node that initially runs the focused Pod.,
+        ja: 最初に注目対象の Pod を実行する worker Node です。,
+        zh-CN: 最初运行焦点 Pod 的工作 Node。,
+      }
+    sourceIds: [k8s-nodes]
+    visual: { archetype: node, size: xl, group: workers }
+  - id: infrastructure:cluster:global:Node:worker-b
+    category: infrastructure
+    kind: Node
+    name: worker-b
+    status: ready
+    data:
+      rackOrder: 2
+      podSlotCount: 4
+    title: { en: worker-b, ja: worker-b, zh-CN: worker-b }
+    summary:
+      {
+        en: Worker Node that runs the two unchanged peer Pods.,
+        ja: 変更されない二つの Pod を実行する worker Node です。,
+        zh-CN: 运行另外两个不变 Pod 的工作 Node。,
+      }
+    sourceIds: [k8s-nodes]
+    visual: { archetype: node, size: xl, group: workers }
+  - id: infrastructure:cluster:global:Node:worker-c
+    category: infrastructure
+    kind: Node
+    name: worker-c
+    status: ready
+    data:
+      rackOrder: 3
+      podSlotCount: 4
+    title: { en: worker-c, ja: worker-c, zh-CN: worker-c }
+    summary:
+      {
+        en: Worker Node selected later for the replacement Pod.,
+        ja: 後で置換 Pod の配置先として選ばれる worker Node です。,
+        zh-CN: 稍后被选为替换 Pod 放置位置的工作 Node。,
+      }
+    sourceIds: [k8s-nodes]
+    visual: { archetype: node, size: xl, group: workers }
+  - id: runtime-component:node:worker-a:Kubelet:kubelet
+    category: runtime-component
+    kind: Kubelet
+    name: kubelet
+    status: healthy
+    data: { nodeName: worker-a }
+    title: { en: kubelet · worker-a, ja: kubelet · worker-a, zh-CN: kubelet · worker-a }
+    summary:
+      {
+        en: Maintains containers for Pods assigned to worker-a.,
+        ja: worker-a に割り当てられた Pod のコンテナを維持します。,
+        zh-CN: 维护分配到 worker-a 的 Pod 容器。,
+      }
+    sourceIds: [k8s-components, k8s-pod-lifecycle]
+    visual: { archetype: runtime, size: sm, group: worker-a }
+  - id: runtime-component:node:worker-b:Kubelet:kubelet
+    category: runtime-component
+    kind: Kubelet
+    name: kubelet
+    status: healthy
+    data: { nodeName: worker-b }
+    title: { en: kubelet · worker-b, ja: kubelet · worker-b, zh-CN: kubelet · worker-b }
+    summary:
+      {
+        en: Maintains containers for Pods assigned to worker-b.,
+        ja: worker-b に割り当てられた Pod のコンテナを維持します。,
+        zh-CN: 维护分配到 worker-b 的 Pod 容器。,
+      }
+    sourceIds: [k8s-components, k8s-pod-lifecycle]
+    visual: { archetype: runtime, size: sm, group: worker-b }
+  - id: runtime-component:node:worker-c:Kubelet:kubelet
+    category: runtime-component
+    kind: Kubelet
+    name: kubelet
+    status: healthy
+    data: { nodeName: worker-c }
+    title: { en: kubelet · worker-c, ja: kubelet · worker-c, zh-CN: kubelet · worker-c }
+    summary:
+      {
+        en: Starts the replacement Pod container after scheduling.,
+        ja: スケジューリング後に置換 Pod のコンテナを起動します。,
+        zh-CN: 调度完成后启动替换 Pod 的容器。,
+      }
+    sourceIds: [k8s-components, k8s-pod-lifecycle]
+    visual: { archetype: runtime, size: sm, group: worker-c }
+  - id: runtime-component:cluster:global:ControllerManager:kube-controller-manager
+    category: runtime-component
+    kind: ControllerManager
+    name: kube-controller-manager
+    status: healthy
+    data: { role: reconciliation }
+    title: { en: Controller manager, ja: コントローラーマネージャー, zh-CN: Controller Manager }
+    summary:
+      {
+        en: Runs the reconciliation loop that restores ReplicaSet replica count.,
+        ja: ReplicaSet のレプリカ数を復元する調整ループを実行します。,
+        zh-CN: 运行协调循环以恢复 ReplicaSet 的副本数量。,
+      }
+    sourceIds: [k8s-components, k8s-replicasets]
+    visual: { archetype: control-plane, size: md, group: control }
+  - id: runtime-component:cluster:global:Scheduler:kube-scheduler
+    category: runtime-component
+    kind: Scheduler
+    name: kube-scheduler
+    status: healthy
+    data: { role: scheduling }
+    title: { en: Scheduler, ja: スケジューラー, zh-CN: Scheduler }
+    summary:
+      {
+        en: Selects a Node for the newly created unscheduled Pod.,
+        ja: 新しく作成された未スケジュール Pod の Node を選びます。,
+        zh-CN: 为新创建且尚未调度的 Pod 选择 Node。,
+      }
+    sourceIds: [k8s-components]
+    visual: { archetype: control-plane, size: md, group: control }
+  - id: api-object:namespaced:shop:ReplicaSet:api-rs
+    category: api-object
+    kind: ReplicaSet
+    name: api-rs
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      desiredReplicas: 3
+      currentReplicas: 3
+      readyReplicas: 3
+    title: { en: api ReplicaSet, ja: api ReplicaSet, zh-CN: api ReplicaSet }
+    summary:
+      {
+        en: Maintains three replaceable api Pod replicas.,
+        ja: 置換可能な api Pod レプリカを三つ維持します。,
+        zh-CN: 维持三个可替换的 api Pod 副本。,
+      }
+    sourceIds: [k8s-replicasets]
+    visual: { archetype: replicaset, size: md, group: control }
+  - id: api-object:namespaced:shop:Pod:api-a-old
+    category: api-object
+    kind: Pod
+    name: api-7f8d9-a
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      uid: synthetic-uid-old-a1
+      nodeName: worker-a
+      phase: Running
+      restartPolicy: Always
+    title: { en: api-7f8d9-a Pod, ja: api-7f8d9-a Pod, zh-CN: api-7f8d9-a Pod }
+    summary:
+      {
+        en: The original Pod whose container first restarts in place.,
+        ja: 最初に内部のコンテナが再起動する元の Pod です。,
+        zh-CN: 其内部容器先进行原地重启的原始 Pod。,
+      }
+    sourceIds: [k8s-pods, k8s-pod-lifecycle]
+    visual: { archetype: pod, size: md, group: api }
+  - id: runtime-instance:shop:Pod:api-a-old:Container:api
+    category: runtime-instance
+    kind: Container
+    name: api
+    namespace: shop
+    status: running
+    data:
+      podId: api-object:namespaced:shop:Pod:api-a-old
+      image: registry.example.invalid/shop/api:v1
+      restartCount: 0
+      instanceGeneration: 1
+    title:
+      {
+        en: api container · api-7f8d9-a,
+        ja: api コンテナ · api-7f8d9-a,
+        zh-CN: api 容器 · api-7f8d9-a,
+      }
+    summary:
+      {
+        en: Runtime container inside the original Pod.,
+        ja: 元の Pod 内で動くランタイムコンテナです。,
+        zh-CN: 原始 Pod 内部的运行时容器。,
+      }
+    sourceIds: [k8s-pods, k8s-pod-lifecycle]
+    visual: { archetype: container, size: sm, group: api-a-old }
+  - id: api-object:namespaced:shop:Pod:api-b
+    category: api-object
+    kind: Pod
+    name: api-7f8d9-b
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      uid: synthetic-uid-peer-b1
+      nodeName: worker-b
+      phase: Running
+      restartPolicy: Always
+    title: { en: api-7f8d9-b Pod, ja: api-7f8d9-b Pod, zh-CN: api-7f8d9-b Pod }
+    summary:
+      {
+        en: An unchanged peer replica on worker-b.,
+        ja: worker-b 上で変更されない同僚レプリカです。,
+        zh-CN: worker-b 上保持不变的同组副本。,
+      }
+    sourceIds: [k8s-pods, k8s-replicasets]
+    visual: { archetype: pod, size: md, group: api }
+  - id: runtime-instance:shop:Pod:api-b:Container:api
+    category: runtime-instance
+    kind: Container
+    name: api
+    namespace: shop
+    status: running
+    data:
+      podId: api-object:namespaced:shop:Pod:api-b
+      image: registry.example.invalid/shop/api:v1
+      restartCount: 0
+      instanceGeneration: 1
+    title:
+      {
+        en: api container · api-7f8d9-b,
+        ja: api コンテナ · api-7f8d9-b,
+        zh-CN: api 容器 · api-7f8d9-b,
+      }
+    summary:
+      {
+        en: Runtime container inside the unchanged api-b Pod.,
+        ja: 変更されない api-b Pod 内のランタイムコンテナです。,
+        zh-CN: 保持不变的 api-b Pod 内部运行时容器。,
+      }
+    sourceIds: [k8s-pods]
+    visual: { archetype: container, size: sm, group: api-b }
+  - id: api-object:namespaced:shop:Pod:api-c
+    category: api-object
+    kind: Pod
+    name: api-7f8d9-c
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      uid: synthetic-uid-peer-c1
+      nodeName: worker-b
+      phase: Running
+      restartPolicy: Always
+    title: { en: api-7f8d9-c Pod, ja: api-7f8d9-c Pod, zh-CN: api-7f8d9-c Pod }
+    summary:
+      {
+        en: A second unchanged peer replica on worker-b.,
+        ja: worker-b 上で変更されないもう一つのレプリカです。,
+        zh-CN: worker-b 上另一个保持不变的副本。,
+      }
+    sourceIds: [k8s-pods, k8s-replicasets]
+    visual: { archetype: pod, size: md, group: api }
+  - id: runtime-instance:shop:Pod:api-c:Container:api
+    category: runtime-instance
+    kind: Container
+    name: api
+    namespace: shop
+    status: running
+    data:
+      podId: api-object:namespaced:shop:Pod:api-c
+      image: registry.example.invalid/shop/api:v1
+      restartCount: 0
+      instanceGeneration: 1
+    title:
+      {
+        en: api container · api-7f8d9-c,
+        ja: api コンテナ · api-7f8d9-c,
+        zh-CN: api 容器 · api-7f8d9-c,
+      }
+    summary:
+      {
+        en: Runtime container inside the unchanged api-c Pod.,
+        ja: 変更されない api-c Pod 内のランタイムコンテナです。,
+        zh-CN: 保持不变的 api-c Pod 内部运行时容器。,
+      }
+    sourceIds: [k8s-pods]
+    visual: { archetype: container, size: sm, group: api-c }
+relations:
+  - id: owns-api-a-old
+    type: owns
+    from: api-object:namespaced:shop:ReplicaSet:api-rs
+    to: api-object:namespaced:shop:Pod:api-a-old
+    directed: true
+    semantic: ownership
+    title: { en: owns, ja: 所有, zh-CN: 拥有 }
+    sourceIds: [k8s-replicasets]
+  - id: owns-api-b
+    type: owns
+    from: api-object:namespaced:shop:ReplicaSet:api-rs
+    to: api-object:namespaced:shop:Pod:api-b
+    directed: true
+    semantic: ownership
+    title: { en: owns, ja: 所有, zh-CN: 拥有 }
+    sourceIds: [k8s-replicasets]
+  - id: owns-api-c
+    type: owns
+    from: api-object:namespaced:shop:ReplicaSet:api-rs
+    to: api-object:namespaced:shop:Pod:api-c
+    directed: true
+    semantic: ownership
+    title: { en: owns, ja: 所有, zh-CN: 拥有 }
+    sourceIds: [k8s-replicasets]
+  - id: scheduled-api-a-old
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:api-a-old
+    to: infrastructure:cluster:global:Node:worker-a
+    directed: true
+    semantic: placement
+    title: { en: scheduled on, ja: 配置先, zh-CN: 调度到 }
+    sourceIds: [k8s-nodes]
+  - id: scheduled-api-b
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:api-b
+    to: infrastructure:cluster:global:Node:worker-b
+    directed: true
+    semantic: placement
+    title: { en: scheduled on, ja: 配置先, zh-CN: 调度到 }
+    sourceIds: [k8s-nodes]
+  - id: scheduled-api-c
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:api-c
+    to: infrastructure:cluster:global:Node:worker-b
+    directed: true
+    semantic: placement
+    title: { en: scheduled on, ja: 配置先, zh-CN: 调度到 }
+    sourceIds: [k8s-nodes]
+  - id: contains-api-a-old-container-api
+    type: contains-runtime
+    from: api-object:namespaced:shop:Pod:api-a-old
+    to: runtime-instance:shop:Pod:api-a-old:Container:api
+    directed: true
+    semantic: composition
+    title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }
+    sourceIds: [k8s-pods]
+  - id: contains-api-b-container-api
+    type: contains-runtime
+    from: api-object:namespaced:shop:Pod:api-b
+    to: runtime-instance:shop:Pod:api-b:Container:api
+    directed: true
+    semantic: composition
+    title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }
+    sourceIds: [k8s-pods]
+  - id: contains-api-c-container-api
+    type: contains-runtime
+    from: api-object:namespaced:shop:Pod:api-c
+    to: runtime-instance:shop:Pod:api-c:Container:api
+    directed: true
+    semantic: composition
+    title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }
+    sourceIds: [k8s-pods]

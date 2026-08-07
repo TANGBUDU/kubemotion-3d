@@ -1,274 +1,376 @@
 import { z } from 'zod';
-import type { EntityId, RelationId, SourceId } from '../domain/types';
+import {
+  VISUAL_ARCHETYPES,
+  WORLD_ENTITY_CATEGORIES,
+  WORLD_ENTITY_STATUSES,
+  WORLD_RELATION_SEMANTICS,
+  WORLD_RELATION_TYPES,
+} from '../world/types';
 
-const localizedText = z
+export const localizedTextSchema = z
   .object({
     en: z.string().min(1),
     ja: z.string().min(1),
     'zh-CN': z.string().min(1),
   })
   .strict();
-const entityId = z.custom<EntityId>(
-  (value) => typeof value === 'string' && value.split(':').length >= 5,
-);
-const relationId = z.custom<RelationId>((value) => typeof value === 'string' && value.length > 0);
-const sourceId = z.custom<SourceId>((value) => typeof value === 'string' && value.length > 0);
-const status = z.enum([
-  'healthy',
-  'ready',
-  'not-ready',
-  'pending',
-  'starting',
-  'terminating',
-  'failed',
-  'unknown',
+
+const entityIdSchema = z
+  .string()
+  .min(3)
+  .refine((value) => value.includes(':'), 'Entity IDs must be semantic, colon-delimited IDs');
+const relationIdSchema = z.string().min(1);
+const sourceIdSchema = z.string().min(1);
+const dataSchema = z.record(z.string(), z.unknown());
+
+export const worldEntitySchema = z
+  .object({
+    id: entityIdSchema,
+    category: z.enum(WORLD_ENTITY_CATEGORIES),
+    kind: z.string().min(1),
+    name: z.string().min(1),
+    namespace: z.string().min(1).optional(),
+    labels: z.record(z.string(), z.string()).optional(),
+    status: z.enum(WORLD_ENTITY_STATUSES),
+    data: dataSchema,
+    title: localizedTextSchema,
+    summary: localizedTextSchema,
+    sourceIds: z.array(sourceIdSchema),
+    visual: z
+      .object({
+        archetype: z.enum(VISUAL_ARCHETYPES),
+        size: z.enum(['xs', 'sm', 'md', 'lg', 'xl']).optional(),
+        group: z.string().optional(),
+      })
+      .strict(),
+  })
+  .strict();
+
+export const worldRelationSchema = z
+  .object({
+    id: relationIdSchema,
+    type: z.enum(WORLD_RELATION_TYPES),
+    from: entityIdSchema,
+    to: entityIdSchema,
+    directed: z.boolean(),
+    semantic: z.enum(WORLD_RELATION_SEMANTICS),
+    title: localizedTextSchema,
+    sourceIds: z.array(sourceIdSchema),
+    data: dataSchema.optional(),
+  })
+  .strict();
+
+export const scenarioV2AuthorSchema = z
+  .object({
+    schemaVersion: z.literal(2),
+    scenarioId: z.string().min(1),
+    revision: z.number().int().nonnegative(),
+    entities: z.array(worldEntitySchema),
+    relations: z.array(worldRelationSchema),
+  })
+  .strict();
+
+const entityPatchSchema = z
+  .object({
+    category: z.enum(WORLD_ENTITY_CATEGORIES).optional(),
+    kind: z.string().min(1).optional(),
+    name: z.string().min(1).optional(),
+    namespace: z.string().min(1).nullable().optional(),
+    labels: z.record(z.string(), z.string().nullable()).nullable().optional(),
+    status: z.enum(WORLD_ENTITY_STATUSES).optional(),
+    data: dataSchema.optional(),
+    title: localizedTextSchema.optional(),
+    summary: localizedTextSchema.optional(),
+    sourceIds: z.array(sourceIdSchema).optional(),
+    visual: z
+      .object({
+        archetype: z.enum(VISUAL_ARCHETYPES).optional(),
+        size: z.enum(['xs', 'sm', 'md', 'lg', 'xl']).nullable().optional(),
+        group: z.string().nullable().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
+const relationPatchSchema = z
+  .object({
+    type: z.enum(WORLD_RELATION_TYPES).optional(),
+    from: entityIdSchema.optional(),
+    to: entityIdSchema.optional(),
+    directed: z.boolean().optional(),
+    semantic: z.enum(WORLD_RELATION_SEMANTICS).optional(),
+    title: localizedTextSchema.optional(),
+    sourceIds: z.array(sourceIdSchema).optional(),
+    data: dataSchema.nullable().optional(),
+  })
+  .strict();
+
+const worldOperationSchema = z.discriminatedUnion('op', [
+  z.object({ op: z.literal('add-entity'), entity: worldEntitySchema }).strict(),
+  z
+    .object({
+      op: z.literal('remove-entity'),
+      entityId: entityIdSchema,
+      allowMissing: z.literal(true).optional(),
+    })
+    .strict(),
+  z
+    .object({ op: z.literal('patch-entity'), entityId: entityIdSchema, patch: entityPatchSchema })
+    .strict(),
+  z.object({ op: z.literal('add-relation'), relation: worldRelationSchema }).strict(),
+  z
+    .object({
+      op: z.literal('remove-relation'),
+      relationId: relationIdSchema,
+      allowMissing: z.literal(true).optional(),
+    })
+    .strict(),
+  z
+    .object({
+      op: z.literal('patch-relation'),
+      relationId: relationIdSchema,
+      patch: relationPatchSchema,
+    })
+    .strict(),
 ]);
 
-export const entitySchema = z.object({
-  id: entityId,
-  category: z.enum(['api-object', 'runtime-component', 'infrastructure', 'external']),
-  kind: z.string().min(1),
-  name: z.string().min(1),
-  scope: z.enum(['namespaced', 'cluster', 'node', 'external']),
-  namespace: z.string().min(1).optional(),
-  nodeName: z.string().min(1).optional(),
-  labels: z.record(z.string(), z.string()).optional(),
-  annotations: z.record(z.string(), z.string()).optional(),
-  status,
-  semantics: z.object({
-    participatesInDataPath: z.boolean(),
-    participatesInControlPath: z.boolean(),
-    isConfiguration: z.boolean(),
-    isRuntime: z.boolean(),
-  }),
-  title: localizedText,
-  summary: localizedText,
-  details: localizedText.optional(),
-  sourceIds: z.array(sourceId),
-  visual: z.object({
-    archetype: z.enum([
-      'cluster',
-      'control-plane',
-      'node',
-      'namespace',
-      'pod',
-      'container',
-      'deployment',
-      'replicaset',
-      'service',
-      'endpointslice',
-      'runtime',
-      'config',
-      'storage',
-      'gateway',
-      'external',
-    ]),
-    size: z.enum(['xs', 'sm', 'md', 'lg', 'xl']).optional(),
-    group: z.string().optional(),
-  }),
-  data: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
-});
-
-export const relationSchema = z.object({
-  id: relationId,
-  type: z.enum([
-    'owns',
-    'scoped-by',
-    'scheduled-on',
-    'selects',
-    'contains-endpoint-for',
-    'references',
-    'configured-by',
-    'implemented-by',
-    'mounts',
-    'binds-to',
-    'stores-in',
-    'watches',
-    'reports-to',
-  ]),
-  from: entityId,
-  to: entityId,
-  semantic: z.enum([
-    'ownership',
-    'scope',
-    'placement',
-    'selection',
-    'configuration',
-    'storage',
-    'control-observation',
-  ]),
-  directed: z.boolean(),
-  title: localizedText,
-  sourceIds: z.array(sourceId),
-});
-
-export const scenarioSchema = z.object({
-  schemaVersion: z.literal(1),
-  id: z.string(),
-  title: localizedText,
-  description: localizedText,
-  generatedAt: z.iso.datetime(),
-  synthetic: z.literal(true),
-  entities: z.array(entitySchema),
-  relations: z.array(relationSchema),
-  sourceIds: z.array(sourceId),
-});
+export const worldPatchSchema = z
+  .object({ operations: z.array(worldOperationSchema) })
+  .strict();
 
 const selectorSchema = z.union([
-  z.object({ byIds: z.array(entityId) }),
-  z.object({ byKind: z.string(), namespace: z.string().optional() }),
-  z.object({
-    byLabel: z.object({ key: z.string(), value: z.string() }),
-    namespace: z.string().optional(),
-  }),
-  z.object({
-    byCategory: z.enum(['api-object', 'runtime-component', 'infrastructure', 'external']),
-  }),
-  z.object({ byNode: z.string() }),
-]);
-const entityRuleSchema = z.object({
-  selector: selectorSchema,
-  visible: z.boolean().optional(),
-  emphasis: z.enum(['normal', 'focused', 'dimmed', 'hidden']).optional(),
-  statusOverride: status.optional(),
-  labelMode: z.enum(['none', 'short', 'full']).optional(),
-  allowEmpty: z.boolean().optional(),
-});
-const relationRuleSchema = z.object({
-  byType: z.string().optional(),
-  byIds: z.array(relationId).optional(),
-  visible: z.boolean().optional(),
-  emphasis: z.enum(['normal', 'focused', 'dimmed']).optional(),
-  allowEmpty: z.boolean().optional(),
-});
-const patchSchema = z.object({
-  view: z.enum(['overview', 'logical', 'placement', 'control-flow', 'traffic']).optional(),
-  cameraPresetId: z.string().optional(),
-  resetEntities: z.boolean().optional(),
-  entityRules: z.array(entityRuleSchema).optional(),
-  relationRules: z.array(relationRuleSchema).optional(),
-  callouts: z.array(z.object({ entityId, text: localizedText })).optional(),
-});
-const flowTransition = (type: 'data-packet' | 'dns-query' | 'api-request') =>
-  z.object({
-    type: z.literal(type),
-    path: z.array(entityId).min(2),
-    label: localizedText,
-    durationMs: z.number().int().min(300).max(4000),
-  });
-const transitionSchema = z.discriminatedUnion('type', [
-  flowTransition('data-packet'),
-  flowTransition('dns-query'),
-  flowTransition('api-request'),
-  z.object({
-    type: z.literal('focus-camera'),
-    entityId,
-    durationMs: z.number().int().min(300).max(4000),
-  }),
-  z.object({
-    type: z.literal('layout-transition'),
-    durationMs: z.number().int().min(300).max(4000),
-  }),
-  z.object({
-    type: z.literal('reconcile-pulse'),
-    entityId,
-    durationMs: z.number().int().min(300).max(4000),
-  }),
-  z.object({
-    type: z.literal('lifecycle'),
-    entityId,
-    state: status,
-    durationMs: z.number().int().min(300).max(4000),
-  }),
-  z.object({
-    type: z.literal('status-change'),
-    entityId,
-    state: status,
-    durationMs: z.number().int().min(300).max(4000),
-  }),
-  z.object({
-    type: z.literal('relation-reveal'),
-    relationId,
-    durationMs: z.number().int().min(300).max(4000),
-  }),
-  z.object({
-    type: z.literal('callout'),
-    entityId,
-    label: localizedText,
-    durationMs: z.number().int().min(300).max(4000),
-  }),
+  z.object({ byIds: z.array(entityIdSchema) }).strict(),
+  z.object({ byKind: z.string(), namespace: z.string().optional() }).strict(),
+  z
+    .object({
+      byLabel: z.object({ key: z.string(), value: z.string() }).strict(),
+      namespace: z.string().optional(),
+    })
+    .strict(),
+  z.object({ byCategory: z.enum(WORLD_ENTITY_CATEGORIES) }).strict(),
+  z.object({ byNode: z.string() }).strict(),
 ]);
 
-export const lessonSchema = z.object({
-  schemaVersion: z.literal(1),
-  id: z.string(),
-  scenarioId: z.string(),
-  chapterId: z.string(),
-  title: localizedText,
-  summary: localizedText,
-  learningOutcome: localizedText,
-  prerequisites: z.array(z.string()),
-  sourceIds: z.array(sourceId),
-  verifiedAt: z.iso.date(),
-  baseProjection: patchSchema,
-  steps: z
-    .array(
-      z.object({
-        id: z.string(),
-        title: localizedText,
-        learningOutcome: localizedText,
-        narration: localizedText,
-        introducesTerms: z.array(z.string()),
-        usesTerms: z.array(z.string()),
-        sourceIds: z.array(sourceId),
-        projectionPatch: patchSchema,
-        transition: z.array(transitionSchema),
-      }),
-    )
-    .min(1),
-});
+const entityViewRuleSchema = z
+  .object({
+    selector: selectorSchema,
+    visible: z.boolean().optional(),
+    emphasis: z.enum(['normal', 'focused', 'dimmed', 'hidden']).optional(),
+    labelMode: z.enum(['none', 'short', 'full']).optional(),
+    inspectorMode: z.enum(['none', 'compact', 'expanded']).optional(),
+    allowEmpty: z.boolean().optional(),
+  })
+  .strict();
 
-const manifestEntrySchema = z.object({
-  id: z.string(),
-  chapterId: z.string(),
-  status: z.enum(['available', 'planned']),
-  prerequisites: z.array(z.string()),
-  title: localizedText,
-  learningOutcome: localizedText,
-  estimatedMinutes: z.number().int().positive(),
-});
-export const courseSchema = z.object({
-  schemaVersion: z.literal(1),
-  id: z.string(),
-  title: localizedText,
-  summary: localizedText,
-  lessonOrder: z.array(z.string()),
-  lessons: z.array(manifestEntrySchema),
-});
-export const sourcesSchema = z.object({
-  schemaVersion: z.literal(1),
-  sources: z.record(
-    z.string(),
-    z.object({
-      title: z.string(),
-      authority: z.string(),
-      url: z.url().startsWith('https://'),
-      verifiedAt: z.iso.date(),
-      type: z.literal('official-documentation'),
-    }),
-  ),
-});
-export const glossarySchema = z.object({
-  schemaVersion: z.literal(1),
-  terms: z.array(
-    z.object({
-      id: z.string(),
-      term: localizedText,
-      definition: localizedText.refine(
-        (value) => Object.values(value).every((text) => text.length <= 240),
-        'Glossary definitions must be at most 240 characters',
-      ),
-      sourceIds: z.array(sourceId),
-    }),
-  ),
-});
+const relationViewRuleSchema = z
+  .object({
+    byType: z.string().optional(),
+    byIds: z.array(relationIdSchema).optional(),
+    visible: z.boolean().optional(),
+    emphasis: z.enum(['normal', 'focused', 'dimmed']).optional(),
+    allowEmpty: z.boolean().optional(),
+  })
+  .strict()
+  .refine((value) => Boolean(value.byType || value.byIds), 'Relation rules need byType or byIds');
+
+const calloutSchema = z
+  .object({ id: z.string().min(1), entityId: entityIdSchema, text: localizedTextSchema })
+  .strict();
+
+const comparisonRequestSchema = z
+  .object({
+    type: z.literal('container-restart-vs-pod-replacement'),
+    restartStepId: z.string().min(1),
+    replacementStepId: z.string().min(1),
+  })
+  .strict();
+
+export const viewProjectionPatchSchema = z
+  .object({
+    view: z
+      .enum(['overview', 'logical', 'placement', 'control-flow', 'traffic', 'storage'])
+      .optional(),
+    cameraPresetId: z.string().min(1).optional(),
+    resetEntities: z.boolean().optional(),
+    entityRules: z.array(entityViewRuleSchema).optional(),
+    relationRules: z.array(relationViewRuleSchema).optional(),
+    callouts: z.array(calloutSchema).optional(),
+    comparison: comparisonRequestSchema.optional(),
+  })
+  .strict();
+
+const durationMs = z.number().int().min(80).max(6000);
+const transitionCueSchema = z.discriminatedUnion('type', [
+  z
+    .object({
+      type: z.literal('data-packet'),
+      path: z.array(entityIdSchema).min(2),
+      label: localizedTextSchema,
+      durationMs,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('dns-query'),
+      path: z.array(entityIdSchema).min(2),
+      label: localizedTextSchema,
+      durationMs,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('api-request'),
+      path: z.array(entityIdSchema).min(2),
+      label: localizedTextSchema,
+      durationMs,
+    })
+    .strict(),
+  z.object({ type: z.literal('focus-camera'), entityId: entityIdSchema, durationMs }).strict(),
+  z.object({ type: z.literal('layout-transition'), durationMs }).strict(),
+  z.object({ type: z.literal('container-failure'), entityId: entityIdSchema, durationMs }).strict(),
+  z.object({ type: z.literal('container-restart'), entityId: entityIdSchema, durationMs }).strict(),
+  z.object({ type: z.literal('entity-exit'), entityId: entityIdSchema, durationMs }).strict(),
+  z.object({ type: z.literal('entity-enter'), entityId: entityIdSchema, durationMs }).strict(),
+  z
+    .object({
+      type: z.literal('reconcile-pulse'),
+      fromEntityId: entityIdSchema,
+      toEntityId: entityIdSchema,
+      durationMs,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('scheduler-assignment'),
+      schedulerId: entityIdSchema,
+      podId: entityIdSchema,
+      nodeId: entityIdSchema,
+      durationMs,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('counter-change'),
+      entityId: entityIdSchema,
+      field: z.string().min(1),
+      from: z.number(),
+      to: z.number(),
+      durationMs,
+    })
+    .strict(),
+  z
+    .object({ type: z.literal('relation-reveal'), relationId: relationIdSchema, durationMs })
+    .strict(),
+  z
+    .object({
+      type: z.literal('callout'),
+      entityId: entityIdSchema,
+      label: localizedTextSchema,
+      durationMs,
+    })
+    .strict(),
+]);
+
+export const transitionPlanSchema = z
+  .object({ cues: z.array(transitionCueSchema) })
+  .strict();
+
+export const lessonV2Schema = z
+  .object({
+    schemaVersion: z.literal(2),
+    id: z.string().min(1),
+    scenarioId: z.string().min(1),
+    chapterId: z.string().min(1),
+    title: localizedTextSchema,
+    summary: localizedTextSchema,
+    learningOutcome: localizedTextSchema,
+    prerequisites: z.array(z.string()),
+    sourceIds: z.array(sourceIdSchema),
+    verifiedAt: z.iso.date(),
+    baseView: viewProjectionPatchSchema,
+    steps: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1),
+            title: localizedTextSchema,
+            learningOutcome: localizedTextSchema,
+            narration: localizedTextSchema,
+            introducesTerms: z.array(z.string()),
+            usesTerms: z.array(z.string()),
+            sourceIds: z.array(sourceIdSchema),
+            worldPatch: worldPatchSchema.optional(),
+            viewPatch: viewProjectionPatchSchema,
+            transition: transitionPlanSchema.optional(),
+          })
+          .strict(),
+      )
+      .min(1),
+  })
+  .strict();
+
+/** Identifies retained v1 lesson files without reinterpreting them as v2. */
+export const legacyLessonMarkerSchema = z
+  .object({ schemaVersion: z.literal(1), id: z.string().min(1), scenarioId: z.string().min(1) })
+  .passthrough();
+
+const manifestEntrySchema = z
+  .object({
+    id: z.string(),
+    chapterId: z.string(),
+    status: z.enum(['available', 'planned']),
+    prerequisites: z.array(z.string()),
+    title: localizedTextSchema,
+    learningOutcome: localizedTextSchema,
+    estimatedMinutes: z.number().int().positive(),
+  })
+  .strict();
+
+export const courseSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    id: z.string(),
+    title: localizedTextSchema,
+    summary: localizedTextSchema,
+    lessonOrder: z.array(z.string()),
+    lessons: z.array(manifestEntrySchema),
+  })
+  .strict();
+
+export const sourcesSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    sources: z.record(
+      z.string(),
+      z
+        .object({
+          title: z.string(),
+          authority: z.string(),
+          url: z.url().startsWith('https://'),
+          verifiedAt: z.iso.date(),
+          type: z.literal('official-documentation'),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+export const glossarySchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    terms: z.array(
+      z
+        .object({
+          id: z.string(),
+          term: localizedTextSchema,
+          definition: localizedTextSchema.refine(
+            (value) => Object.values(value).every((text) => text.length <= 240),
+            'Glossary definitions must be at most 240 characters',
+          ),
+          sourceIds: z.array(sourceIdSchema),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
