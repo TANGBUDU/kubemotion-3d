@@ -33,6 +33,7 @@ export default defineConfig({
     },
     {
       name: 'desktop-1280-chromium',
+      metadata: { screenshotPlatform: process.platform },
       use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 720 } },
     },
     {

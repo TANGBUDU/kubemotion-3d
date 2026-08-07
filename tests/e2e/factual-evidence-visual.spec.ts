@@ -9,6 +9,9 @@ const tightScreenshot = {
   maxDiffPixelRatio: 0.01,
 };
 
+const focusedScreenshotName = (name: string, platform: unknown) =>
+  platform === 'linux' ? name.replace(/\.png$/, '-linux.png') : name;
+
 test.describe('focused factual evidence', () => {
   test.beforeEach(({ page }, testInfo) => {
     void page;
@@ -18,31 +21,37 @@ test.describe('focused factual evidence', () => {
     );
   });
 
-  test('Container exit evidence locks Pod and ReplicaSet readiness', async ({ page }) => {
+  test('Container exit evidence locks Pod and ReplicaSet readiness', async ({ page }, testInfo) => {
     await gotoGoldenStep(page, 2);
     const evidence = page.getByTestId('evidence-panel');
     await expect(evidence).toContainText('Container state');
     await expect(evidence).toContainText('Pod Ready');
     await expect(evidence).toContainText('ReplicaSet SPEC / OBSERVED / READY');
     await expect(evidence).toHaveScreenshot(
-      'evidence-golden-step-02-1280x720.png',
+      focusedScreenshotName(
+        'evidence-golden-step-02-1280x720.png',
+        testInfo.project.metadata.screenshotPlatform,
+      ),
       tightScreenshot,
     );
   });
 
-  test('local restart evidence locks runtime identity replacement', async ({ page }) => {
+  test('local restart evidence locks runtime identity replacement', async ({ page }, testInfo) => {
     await gotoGoldenStep(page, 3);
     const evidence = page.getByTestId('evidence-panel');
     await expect(evidence).toContainText('Container ID');
     await expect(evidence).toContainText('Restart count');
     await expect(evidence).toContainText('Pod Ready');
     await expect(evidence).toHaveScreenshot(
-      'evidence-golden-step-03-1280x720.png',
+      focusedScreenshotName(
+        'evidence-golden-step-03-1280x720.png',
+        testInfo.project.metadata.screenshotPlatform,
+      ),
       tightScreenshot,
     );
   });
 
-  test('EndpointSlice evidence locks non-serving readiness', async ({ page }) => {
+  test('EndpointSlice evidence locks non-serving readiness', async ({ page }, testInfo) => {
     await gotoServiceStep(page, 4);
     const evidence = page.getByTestId('evidence-panel');
     await expect(evidence).toContainText('Endpoint readiness');
@@ -63,12 +72,17 @@ test.describe('focused factual evidence', () => {
     );
     await expect(page.locator('#scene-accessible-summary')).not.toContainText('Pod status');
     await expect(evidence).toHaveScreenshot(
-      'evidence-service-step-04-1280x720.png',
+      focusedScreenshotName(
+        'evidence-service-step-04-1280x720.png',
+        testInfo.project.metadata.screenshotPlatform,
+      ),
       tightScreenshot,
     );
   });
 
-  test('later-request evidence is distinct from the completed request', async ({ page }) => {
+  test('later-request evidence is distinct from the completed request', async ({
+    page,
+  }, testInfo) => {
     await gotoServiceStep(page, 5);
     const evidence = page.getByTestId('evidence-panel');
     await expect(page.getByTestId('teaching-step-heading')).toContainText('later request');
@@ -76,12 +90,15 @@ test.describe('focused factual evidence', () => {
       page.locator('.scene-route-label:not([hidden])').filter({ hasText: 'New request' }),
     ).toHaveCount(1);
     await expect(evidence).toHaveScreenshot(
-      'evidence-service-step-05-1280x720.png',
+      focusedScreenshotName(
+        'evidence-service-step-05-1280x720.png',
+        testInfo.project.metadata.screenshotPlatform,
+      ),
       tightScreenshot,
     );
   });
 
-  test('comparison panel locks corrected identities and counters', async ({ page }) => {
+  test('comparison panel locks corrected identities and counters', async ({ page }, testInfo) => {
     await gotoGoldenStep(page, 9);
     const comparison = page.getByTestId('comparison-panel');
     await expect(comparison).toContainText('Container ID');
@@ -104,7 +121,10 @@ test.describe('focused factual evidence', () => {
     ]);
     await expect(comparison.locator('.replacement-runtime')).toHaveCount(1);
     await expect(comparison).toHaveScreenshot(
-      'comparison-golden-step-09-1280x720.png',
+      focusedScreenshotName(
+        'comparison-golden-step-09-1280x720.png',
+        testInfo.project.metadata.screenshotPlatform,
+      ),
       tightScreenshot,
     );
   });
