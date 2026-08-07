@@ -1,13 +1,21 @@
 # Architecture
 
 ```mermaid
-flowchart LR
+flowchart TD
   Authoring["YAML authoring"] --> Schema["Zod schema validation"]
-  Schema --> Snapshot["immutable WorldSnapshot"]
-  Snapshot --> Patch["typed atomic WorldPatch"]
-  Patch --> Diff["deterministic WorldDiff"]
-  Diff --> View["ViewProjection"]
-  View --> Scene["SceneController"]
+  Schema --> Before["beforeWorld: immutable WorldSnapshot"]
+  Schema --> Patch["typed atomic WorldPatch"]
+  Before --> Apply["applyWorldPatch"]
+  Patch --> Apply
+  Apply --> World["world: immutable WorldSnapshot"]
+  Before --> Diff["deterministic WorldDiff"]
+  World --> Diff
+  Schema --> ViewPatch["ViewProjectionPatch"]
+  World --> View["ViewProjection"]
+  ViewPatch --> View
+  World --> Scene["SceneController"]
+  Diff --> Scene
+  View --> Scene
   Scene --> Registries["entity / relation / label / callout registries"]
   Registries --> Three["Three.js + DOM overlays"]
 ```

@@ -64,5 +64,6 @@ test('20 navigation/replay/locale/selection/reset cycles keep resources bounded'
   expect(after?.geometries).toBeLessThanOrEqual((baseline?.geometries ?? 0) + 2);
   expect(after?.textures).toBeLessThanOrEqual((baseline?.textures ?? 0) + 2);
   expect(after?.programs).toBeLessThanOrEqual((baseline?.programs ?? 0) + 2);
+  expect(after?.drawCalls).toBeLessThanOrEqual((baseline?.drawCalls ?? 0) + 2);
   expect(after?.pooledTokens).toBeLessThanOrEqual((baseline?.pooledTokens ?? 0) + 2);
 });

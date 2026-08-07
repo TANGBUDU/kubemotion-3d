@@ -23,13 +23,21 @@ The golden lesson shows Node racks with Pod slots, Pods as shells containing chi
 ## Architecture
 
 ```mermaid
-flowchart LR
+flowchart TD
   YAML["YAML lesson + scenario"] --> Validate["Zod + semantic validation"]
-  Validate --> Snapshot["WorldSnapshot"]
-  Snapshot --> Patch["typed atomic WorldPatch"]
-  Patch --> Diff["WorldDiff"]
-  Diff --> Projection["ViewProjection"]
-  Projection --> Renderer["Three.js renderer registries"]
+  Validate --> Before["beforeWorld: WorldSnapshot"]
+  Validate --> Patch["typed atomic WorldPatch"]
+  Before --> Apply["applyWorldPatch"]
+  Patch --> Apply
+  Apply --> World["world: WorldSnapshot"]
+  Before --> Diff["WorldDiff"]
+  World --> Diff
+  Validate --> ViewPatch["ViewProjectionPatch"]
+  World --> Projection["ViewProjection"]
+  ViewPatch --> Projection
+  World --> Renderer["Three.js renderer registries"]
+  Diff --> Renderer
+  Projection --> Renderer
 ```
 
 `WorldSnapshot` is the factual source of truth. `ViewProjection` can hide, dim, label, or frame facts, but it cannot override them. Every `CompiledStep` includes `beforeWorld`, `world`, `worldDiff`, `view`, and `transition`. Animations are cancellable explanations between settled states and never become factual state.
