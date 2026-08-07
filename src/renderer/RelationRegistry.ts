@@ -379,7 +379,7 @@ export interface RelationSyncResult {
 export class RelationRegistry {
   private readonly handles = new Map<RelationId, RelationVisualHandle>();
 
-  public constructor(private readonly scene: THREE.Scene) {}
+  public constructor(private readonly scene: THREE.Object3D) {}
 
   public get(relationId: RelationId): RelationVisualHandle | undefined {
     return this.handles.get(relationId);
