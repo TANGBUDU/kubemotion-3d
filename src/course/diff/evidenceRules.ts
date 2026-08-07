@@ -60,6 +60,11 @@ function pointerValue(entity: WorldEntity, pointer: string): unknown {
   return current;
 }
 
+/** Renderer-facing summary state is never a learner-facing Kubernetes fact. */
+export function isFactualEvidencePath(path: string): boolean {
+  return path !== '/status';
+}
+
 function row(
   entity: WorldEntity,
   path: string,
@@ -231,7 +236,7 @@ export function snapshotEvidence(entity: WorldEntity): readonly EvidenceRow[] {
       ),
     ];
   }
-  return [row(entity, '/status', 'unchanged', undefined, valueText(entity.status, '/status'))];
+  return [row(entity, '/name', 'unchanged', undefined, valueText(entity.name, '/name'))];
 }
 
 export function addedEntityEvidence(entity: WorldEntity): EvidenceRow {
@@ -261,9 +266,12 @@ export function updatedEntityEvidence(
   after: WorldEntity,
   changedPaths: readonly string[],
 ): readonly EvidenceRow[] {
+  const factualChangedPaths = changedPaths.filter(isFactualEvidencePath);
   if (
     after.kind === 'EndpointSlice' &&
-    changedPaths.some((path) => path === '/data/endpoints' || path.startsWith('/data/endpoints/'))
+    factualChangedPaths.some(
+      (path) => path === '/data/endpoints' || path.startsWith('/data/endpoints/'),
+    )
   ) {
     const beforeEndpoints = Array.isArray(before.data.endpoints) ? before.data.endpoints : [];
     const afterEndpoints = Array.isArray(after.data.endpoints) ? after.data.endpoints : [];
@@ -336,14 +344,14 @@ export function updatedEntityEvidence(
   }
   if (
     after.kind === 'ReplicaSet' &&
-    changedPaths.some((path) =>
+    factualChangedPaths.some((path) =>
       ['/data/specReplicas', '/data/statusReplicas', '/data/readyReplicas'].includes(path),
     )
   ) {
     return [row(after, '/data/replicas', 'changed', replicaValue(before), replicaValue(after))];
   }
 
-  return changedPaths.flatMap((path) => {
+  return factualChangedPaths.flatMap((path) => {
     if (after.kind === 'Container' && path === '/data/lastState') {
       return ['/data/lastState/reason', '/data/lastState/exitCode'].map((nestedPath) =>
         row(

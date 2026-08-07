@@ -45,7 +45,6 @@ const evidencePathPriority: Readonly<Record<string, number>> = {
   '/data/endpoints': 100,
   '/data/clusterIP': 98,
   '/data/ports/0': 96,
-  '/status': 76,
 };
 
 function prioritizeContextEvidence(rows: readonly EvidenceRow[]): readonly EvidenceRow[] {
@@ -72,13 +71,9 @@ function prioritizeContextEvidence(rows: readonly EvidenceRow[]): readonly Evide
     hasContainerLifecycleChange && !hasContainerIdChange
       ? rows.filter(
           (row) =>
-            ![
-              '/data/containerID',
-              '/data/restartCount',
-              '/data/ready',
-              '/data/started',
-              '/status',
-            ].includes(row.path ?? ''),
+            !['/data/containerID', '/data/restartCount', '/data/ready', '/data/started'].includes(
+              row.path ?? '',
+            ),
         )
       : rows;
   return relevantRows
@@ -161,7 +156,9 @@ export function humanizeWorldDiff(
       : request.mode === 'diff'
         ? changedRows(request, diff)
         : [...changedRows(request, diff), ...contextRows(request, beforeWorld, world)];
-  const deduplicated = deduplicate(rows);
+  // Defense in depth: no evidence producer may leak renderer-only WorldEntity.status.
+  const factualRows = rows.filter((row) => row.path !== '/status');
+  const deduplicated = deduplicate(factualRows);
   const ordered =
     request.mode === 'diff-with-context' ? prioritizeContextEvidence(deduplicated) : deduplicated;
   return deepFreeze(ordered.slice(0, MAX_EVIDENCE_ROWS));

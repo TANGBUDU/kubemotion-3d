@@ -257,7 +257,6 @@ export function LearnPage() {
     ? [
         { label: 'Name', value: selectedEntity.name },
         { label: 'Kind', value: selectedEntity.kind },
-        { label: 'Status', value: selectedEntity.status },
         ...(selectedEntity.namespace
           ? [{ label: 'Namespace', value: selectedEntity.namespace }]
           : []),
@@ -352,6 +351,28 @@ export function LearnPage() {
           })
           .join('; ')
       : '';
+  const changedPodSummary = step.worldDiff.updatedEntities
+    .flatMap((update) => {
+      if (update.after.kind !== 'Pod') return [];
+      const hasRelevantChange = update.changedPaths.some(
+        (path) =>
+          path === '/status' || path === '/data/phase' || path.startsWith('/data/conditions/'),
+      );
+      if (!hasRelevantChange) return [];
+      const data = getPodData(update.after);
+      return [
+        `Pod ${update.after.name}: phase ${data.phase}; ContainersReady ${data.conditions.containersReady}; Ready ${data.conditions.ready}.`,
+      ];
+    })
+    .join(' ');
+  const pendingContainerStatusSummary = Object.values(step.world.entities)
+    .filter((entity) => {
+      if (entity.kind !== 'Container') return false;
+      const data = getContainerData(entity);
+      return !data.containerID && data.state.kind === 'waiting';
+    })
+    .map((entity) => entity.summary[locale])
+    .join(' ');
   const sceneSummary = [
     authoredStep.title[locale],
     authoredStep.teaching.whatChanged[locale],
@@ -359,6 +380,8 @@ export function LearnPage() {
     replicaCounts
       ? `ReplicaSet SPEC ${replicaCounts.specReplicas}, OBSERVED ${replicaCounts.statusReplicas}, READY ${replicaCounts.readyReplicas}.`
       : '',
+    changedPodSummary,
+    pendingContainerStatusSummary,
     endpointSummary ? `EndpointSlice conditions: ${endpointSummary}.` : '',
     routeSummary ? `Visible ${routeSummary}.` : '',
   ]

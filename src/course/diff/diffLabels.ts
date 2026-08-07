@@ -13,7 +13,6 @@ export const diffLabels = {
   podUid: text('Pod UID', 'Pod UID', 'Pod UID'),
   node: text('Node', 'Node', 'Node'),
   podPhase: text('Pod phase', 'Pod phase', 'Pod 阶段'),
-  podStatus: text('Pod status', 'Pod status', 'Pod 状态'),
   podScheduled: text('PodScheduled', 'PodScheduled', 'PodScheduled'),
   initialized: text('Initialized', 'Initialized', 'Initialized'),
   containersReady: text('ContainersReady', 'ContainersReady', 'ContainersReady'),
@@ -78,10 +77,6 @@ export function labelForPath(entity: WorldEntity, path: string): LocalizedText |
       return diffLabels.replicaCounts;
     case '/name':
       return diffLabels.name;
-    case '/status':
-      if (entity.kind === 'Pod') return diffLabels.podStatus;
-      if (entity.kind === 'Container') return diffLabels.containerStatus;
-      return diffLabels.entityStatus;
     default:
       return undefined;
   }

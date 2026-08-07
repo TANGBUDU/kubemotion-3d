@@ -58,7 +58,14 @@ Direct links and arbitrary jumps therefore compile to the same settled state wit
 `ViewProjection` controls visibility, emphasis, labels, inspector detail, camera preset, relation
 emphasis, callouts, active teaching routes, and the comparison panel. It has no factual status
 override. The comparison table is derived from compiled snapshots and diffs rather than duplicated
-prose constants.
+prose constants. Its six rows cover Pod name, Pod UID, Node, Container ID, Container restart count,
+and Pod object; it deliberately makes no storage-persistence claim.
+
+`WorldEntity.status` is a renderer-facing summary used for color, silhouette, and status badges. It
+remains available to rendering code, but it is never promoted to learner-facing Evidence,
+comparison rows, or accessible factual summaries. Kubernetes facts come from the kind-specific
+`data` fields: Pod phase and conditions, ContainerStatus fields, ReplicaSet counters, and the
+Service or EndpointSlice data model.
 
 Settled semantic relations and active teaching routes are separate layers. An active route has an
 explicit semantic, ordered hops, source/target entity IDs, semantic anchors, optional short hop
