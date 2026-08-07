@@ -21,7 +21,7 @@ const scenario = scenarioById.get(lesson.scenarioId);
 if (!scenario) throw new Error('Service scenario is missing');
 const compiled = courseEngine.compileLesson(lesson, scenario);
 const baseline = compiled.steps[0]!;
-const rerouted = compiled.steps[4]!;
+const notReady = compiled.steps[4]!;
 
 function roles(root: THREE.Object3D): string[] {
   const values: string[] = [];
@@ -80,10 +80,22 @@ describe('Service lesson specialized visuals', () => {
       baseline.view.entityStates[SLICE]!,
     );
     const slotUuids = handle.endpointSlots.map((slot) => slot.uuid);
-    handle.update(rerouted.world.entities[SLICE]!, rerouted.view.entityStates[SLICE]!);
+    handle.update(notReady.world.entities[SLICE]!, notReady.view.entityStates[SLICE]!);
     expect(handle.endpointSlots.map((slot) => slot.uuid)).toEqual(slotUuids);
     expect(handle.root.userData.readyEndpointCount).toBe(2);
-    expect(handle.endpointSlots[0]?.userData.ready).toBe(false);
+    expect(handle.endpointSlots[0]?.userData).toMatchObject({
+      targetRef: API_A,
+      ready: false,
+      serving: false,
+      terminating: false,
+    });
+    expect(handle.root.userData.endpointStates[0]).toEqual({
+      address: '192.0.2.11',
+      targetRef: API_A,
+      ready: false,
+      serving: false,
+      terminating: false,
+    });
     const notReadyRoles: string[] = [];
     handle.endpointSlots[0]?.traverse((object) => {
       if (object.visible && typeof object.userData.role === 'string') {
@@ -97,11 +109,35 @@ describe('Service lesson specialized visuals', () => {
     handle.dispose();
   });
 
+  it('treats an omitted EndpointConditions.ready value as true', () => {
+    const entity = structuredClone(baseline.world.entities[SLICE]!);
+    const endpoints = entity.data.endpoints;
+    if (!Array.isArray(endpoints)) throw new Error('EndpointSlice endpoints are missing');
+    const first = endpoints[0];
+    if (!first || typeof first !== 'object' || Array.isArray(first)) {
+      throw new Error('First EndpointSlice endpoint is missing');
+    }
+    const conditions = first.conditions;
+    if (!conditions || typeof conditions !== 'object' || Array.isArray(conditions)) {
+      throw new Error('First EndpointSlice conditions are missing');
+    }
+    delete (conditions as Record<string, unknown>).ready;
+
+    const handle = new EndpointSliceVisualHandle(entity, baseline.view.entityStates[SLICE]!);
+    expect(handle.endpointSlots[0]?.userData).toMatchObject({
+      ready: true,
+      serving: true,
+      terminating: false,
+    });
+    expect(handle.root.userData.readyEndpointCount).toBe(3);
+    handle.dispose();
+  });
+
   it('uses a stable left-to-right traffic layout and does not move objects on readiness updates', () => {
     const before = calculateLayout({ world: baseline.world, view: baseline.view });
     const after = calculateLayout({
-      world: rerouted.world,
-      view: rerouted.view,
+      world: notReady.world,
+      view: notReady.view,
       previous: before,
     });
     expect(before.entities.get(CLIENT)?.position[0]).toBeLessThan(

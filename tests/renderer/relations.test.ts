@@ -94,7 +94,13 @@ const serializePoints = (points: readonly THREE.Vector3[]): readonly number[][] 
 
 describe('RelationStyleCatalog', () => {
   it('enforces readable active-route hierarchy and containment-by-nesting', () => {
-    const semantics: readonly RouteSemantic[] = ['control', 'scheduling', 'data-flow', 'dns'];
+    const semantics: readonly RouteSemantic[] = [
+      'control',
+      'scheduling',
+      'data-flow',
+      'dns',
+      'node-runtime',
+    ];
     for (const semantic of semantics) {
       const style = getTeachingRouteStyle(semantic);
       expect(isActiveRouteWidth(style)).toBe(true);
@@ -106,6 +112,19 @@ describe('RelationStyleCatalog', () => {
     expect(getTeachingRouteStyle('dns').dashed).toBe(true);
     expect(getTeachingRouteStyle('data-flow').chevrons).toBe(true);
     expect(getTeachingRouteStyle('scheduling').color).not.toBe(
+      getTeachingRouteStyle('control').color,
+    );
+    expect(getTeachingRouteStyle('node-runtime')).toMatchObject({
+      semantic: 'node-runtime',
+      dashed: true,
+      widthCssPx: 4.75,
+      arrowhead: true,
+      tokenCount: 1,
+    });
+    expect(getTeachingRouteStyle('node-runtime').dashSize).toBeLessThan(
+      getTeachingRouteStyle('control').dashSize,
+    );
+    expect(getTeachingRouteStyle('node-runtime').color).not.toBe(
       getTeachingRouteStyle('control').color,
     );
     expect(getContextRelationStyle('composition').externalLine).toBe(false);
@@ -467,6 +486,31 @@ describe('RelationLayer and RouteHandle', () => {
     expect(handle?.root.visible).toBe(true);
     expect(handle?.arrowheadCount).toBeGreaterThan(0);
     expect(layer.sampleRoute('traffic', 1)?.toArray()).toEqual([10, 0.5, 0]);
+    layer.dispose();
+  });
+
+  it('binds request identity to the route and its pooled flow tokens', () => {
+    const scene = new THREE.Scene();
+    const layer = new RelationLayer(scene, new RoutePlanner(basicAnchors()), {
+      width: 800,
+      height: 600,
+      pixelRatio: 1,
+    });
+    const route = {
+      ...oneHopRoute('request-b-route', 'data-flow'),
+      requestId: 'request-b',
+    } as ActiveTeachingRoute & { readonly requestId: string };
+
+    layer.syncActiveRoutes([route]);
+    const handle = layer.getRoute(route.id);
+    expect(handle?.root.userData.requestId).toBe('request-b');
+    layer.setFlowProgress(route.id, 0);
+    const tokens = handle?.root.children.filter((child) => child.name === 'route-flow-token') ?? [];
+    expect(tokens).toHaveLength(2);
+    expect(tokens.every((token) => token.userData.requestId === 'request-b')).toBe(true);
+
+    handle?.clearFlowTokens();
+    expect(tokens.every((token) => token.userData.requestId === undefined)).toBe(true);
     layer.dispose();
   });
 

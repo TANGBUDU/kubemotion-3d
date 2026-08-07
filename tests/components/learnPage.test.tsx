@@ -53,6 +53,9 @@ describe('LearnPage lesson information architecture', () => {
     expect(screen.getByTestId('evidence-panel')).toBeVisible();
     expect(screen.getByTestId('teaching-takeaway')).toHaveTextContent('Takeaway');
     expect(
+      within(screen.getByLabelText('Scene legend')).getByText('Local node runtime'),
+    ).toBeVisible();
+    expect(
       within(screen.getByTestId('step-timeline')).getAllByRole('button', {
         name: /Go to step/i,
       }),

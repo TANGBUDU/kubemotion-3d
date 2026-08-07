@@ -16,7 +16,7 @@ interface TestHandle extends EntityVisualHandle {
 
 const createEntity = (id: string): WorldEntity => ({
   id,
-  category: 'runtime-instance',
+  category: 'runtime-status',
   kind: 'Container',
   name: id,
   status: 'running',
@@ -195,6 +195,15 @@ const cueCases: readonly [string, TransitionCue][] = [
   ['camera focus', { type: 'focus-camera', entityId: 'a', durationMs: 1_000 }],
   ['layout', { type: 'layout-transition', durationMs: 1_000 }],
   ['container failure', { type: 'container-failure', entityId: 'a', durationMs: 1_000 }],
+  [
+    'node runtime restart',
+    {
+      type: 'node-runtime-restart',
+      routeId: 'route:main',
+      entityId: 'a',
+      durationMs: 1_000,
+    },
+  ],
   ['container restart', { type: 'container-restart', entityId: 'a', durationMs: 1_000 }],
   ['container start', { type: 'container-start', entityId: 'a', durationMs: 1_000 }],
   ['entity exit', { type: 'entity-exit', entityId: 'a', durationMs: 1_000 }],
@@ -247,6 +256,28 @@ describe('AnimationCoordinator cue lifecycle', () => {
     harness.dispose();
   });
 
+  it('drives the local route and replacement runtime Container from one causal cue', () => {
+    const harness = createHarness();
+    const baseline = snapshot(harness.handles.a);
+    const cue: TransitionCue = {
+      type: 'node-runtime-restart',
+      routeId: 'route:main',
+      entityId: 'a',
+      durationMs: 1_000,
+    };
+
+    harness.coordinator.play(request(cue));
+    expect(harness.routeProgress).toEqual([0]);
+    expect(harness.handles.a.mesh.material.opacity).toBeLessThan(baseline.opacity);
+    harness.coordinator.update(500);
+    expect(harness.routeProgress.at(-1)).toBeCloseTo(0.5);
+    expect(harness.handles.a.root.scale.y).not.toBe(baseline.scale[1]);
+    harness.coordinator.finish();
+    expect(harness.routeFinishes.value).toBe(1);
+    expect(snapshot(harness.handles.a)).toEqual(baseline);
+    harness.dispose();
+  });
+
   it('reports start, update, finish and committed numeric values through host callbacks', () => {
     const harness = createHarness();
     const cue: TransitionCue = {
@@ -275,6 +306,12 @@ describe('AnimationCoordinator cue lifecycle', () => {
   it('cancels to exact transform, visibility, and material baselines', () => {
     const mutatingCues: readonly TransitionCue[] = [
       { type: 'container-failure', entityId: 'a', durationMs: 1_000 },
+      {
+        type: 'node-runtime-restart',
+        routeId: 'route:main',
+        entityId: 'a',
+        durationMs: 1_000,
+      },
       { type: 'container-restart', entityId: 'a', durationMs: 1_000 },
       { type: 'container-start', entityId: 'a', durationMs: 1_000 },
       { type: 'entity-enter', entityId: 'a', durationMs: 1_000 },

@@ -13,33 +13,42 @@ test('all ten steps expose the correct causal and factual timeline', async ({ pa
   await expect(page.getByTestId('evidence-panel')).toContainText('synthetic-uid-old-a1');
   await expect(page.getByTestId('evidence-panel')).toContainText('worker-a');
   await expect(page.getByTestId('evidence-panel')).toContainText('Restart count0');
-  await expect(page.getByTestId('replica-counts')).toHaveText(/Desired 3.*Current 3.*Ready 3/);
+  await expect(page.getByTestId('replica-counts')).toHaveText(/SPEC 3.*OBSERVED 3.*READY 3/);
 
   await gotoGoldenStep(page, 2);
   await expect(page.getByTestId('teaching-what-changed')).toContainText(
-    'running to terminated inside the unchanged Pod shell',
+    'Container state changed from running to terminated',
   );
+  await expect(page.getByTestId('teaching-what-changed')).toContainText('Pod became NotReady');
   await expect(page.getByTestId('teaching-why-it-happened')).toContainText(
     'no action deleted or replaced the Pod API object',
   );
 
   await gotoGoldenStep(page, 3);
   await expect(page.getByTestId('evidence-panel')).toContainText('Restart count0→1');
-  await expect(page.getByTestId('evidence-panel')).toContainText('Generation1→2');
+  await expect(page.getByTestId('evidence-panel')).toContainText('Container ID');
+  await expect(page.getByTestId('evidence-panel')).toContainText(
+    'Last termination reasonAbsent→Error',
+  );
   await expect(page.getByTestId('evidence-panel')).toContainText('synthetic-uid-old-a1');
   await expect(page.getByTestId('evidence-panel')).toContainText('worker-a');
-  await expect(page.getByTestId('replica-counts')).toHaveText(/Desired 3.*Current 3.*Ready 3/);
+  await expect(page.getByTestId('replica-counts')).toHaveText(/SPEC 3.*OBSERVED 3.*READY 3/);
 
   await gotoGoldenStep(page, 4);
   await expect(page.getByTestId('evidence-panel')).toContainText('removed');
-  await expect(page.getByTestId('evidence-panel')).toContainText('D3 · C3 · R3→D3 · C2 · R2');
-  await expect(page.getByTestId('replica-counts')).toHaveText(/Desired 3.*Current 2.*Ready 2/);
+  await expect(page.getByTestId('evidence-panel')).toContainText(
+    'ReplicaSet SPEC / OBSERVED / READY',
+  );
+  await expect(page.getByTestId('evidence-panel')).toContainText(/3\/3\/3.*3\/2\/2/);
+  await expect(page.getByTestId('replica-counts')).toHaveText(/SPEC 3.*OBSERVED 2.*READY 2/);
 
   await gotoGoldenStep(page, 5);
   await expect(page.getByTestId('evidence-panel')).toContainText('synthetic-uid-new-d1');
-  await expect(page.getByTestId('evidence-panel')).toContainText('Pending');
-  await expect(page.getByTestId('evidence-panel')).toContainText('Unscheduled');
-  await expect(page.getByTestId('replica-counts')).toHaveText(/Desired 3.*Current 3.*Ready 2/);
+  await expect(page.getByTestId('evidence-panel')).toContainText('Container statewaiting');
+  await expect(page.getByTestId('teaching-what-changed')).toContainText(
+    'Pending, unscheduled, NotReady Pod',
+  );
+  await expect(page.getByTestId('replica-counts')).toHaveText(/SPEC 3.*OBSERVED 3.*READY 2/);
 
   await gotoGoldenStep(page, 6);
   await expect(page.getByTestId('evidence-panel')).toContainText('synthetic-uid-new-d1');
@@ -48,13 +57,18 @@ test('all ten steps expose the correct causal and factual timeline', async ({ pa
 
   await gotoGoldenStep(page, 7);
   await expect(page.getByTestId('evidence-panel')).toContainText('Unscheduled→worker-c');
-  await expect(page.getByTestId('evidence-panel')).toContainText('Pending');
-  await expect(page.getByTestId('replica-counts')).toHaveText(/Desired 3.*Current 3.*Ready 2/);
+  await expect(page.getByTestId('evidence-panel')).toContainText('Container statewaiting');
+  await expect(page.getByTestId('teaching-what-changed')).toContainText(
+    'Pending Pod gained nodeName worker-c',
+  );
+  await expect(page.getByTestId('replica-counts')).toHaveText(/SPEC 3.*OBSERVED 3.*READY 2/);
 
   await gotoGoldenStep(page, 8);
   await expect(page.getByTestId('evidence-panel')).toContainText('waiting→running');
-  await expect(page.getByTestId('evidence-panel')).toContainText('Pending→Running');
-  await expect(page.getByTestId('replica-counts')).toHaveText(/Desired 3.*Current 3.*Ready 3/);
+  await expect(page.getByTestId('teaching-what-changed')).toContainText(
+    'Pod became Running and ready',
+  );
+  await expect(page.getByTestId('replica-counts')).toHaveText(/SPEC 3.*OBSERVED 3.*READY 3/);
 
   await gotoGoldenStep(page, 9);
   await expect(page.getByTestId('comparison-panel')).toContainText('Container restart');

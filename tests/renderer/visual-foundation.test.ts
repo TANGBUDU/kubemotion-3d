@@ -41,7 +41,7 @@ const makeEntity = (
   id,
   category:
     kind === 'Container'
-      ? 'runtime-instance'
+      ? 'runtime-status'
       : kind === 'Node'
         ? 'infrastructure'
         : kind === 'Kubectl'
@@ -84,16 +84,21 @@ const pod = makeEntity('pod:api-old', 'Pod', {
   nodeName: node.name,
   phase: 'Running',
   restartPolicy: 'Always',
+  conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true },
 });
 const container = makeEntity('container:api-old', 'Container', {
   podId: pod.id,
+  name: 'api',
   image: 'example/api:v1',
+  containerID: 'containerd://visual-api-old-01',
   restartCount: 0,
-  instanceGeneration: 1,
+  ready: true,
+  started: true,
+  state: { kind: 'running', startedAt: '2026-08-08T00:00:00Z' },
 });
 const replicaSet = makeEntity('rs:api', 'ReplicaSet', {
-  desiredReplicas: 3,
-  currentReplicas: 3,
+  specReplicas: 3,
+  statusReplicas: 3,
   readyReplicas: 3,
 });
 const kubelet = makeEntity('component:kubelet', 'Kubelet', { nodeName: node.name });
@@ -257,7 +262,7 @@ describe('visual factory foundation', () => {
     });
     const deficitReplicaSet: WorldEntity = {
       ...replicaSet,
-      data: { desiredReplicas: 3, currentReplicas: 2, readyReplicas: 2 },
+      data: { specReplicas: 3, statusReplicas: 2, readyReplicas: 2 },
     };
     handle.update(deficitReplicaSet, normal);
     const updatedSegmentUuids: string[] = [];
@@ -267,14 +272,48 @@ describe('visual factory foundation', () => {
       if (object.userData.role === 'replicaset-deficit') deficitVisible = object.visible;
     });
     expect(updatedSegmentUuids).toEqual(segmentUuids);
-    expect(handle.root.userData.counters).toEqual({ desired: 3, current: 2, ready: 2 });
+    expect(handle.root.userData.counters).toEqual({ spec: 3, observed: 2, ready: 2 });
     expect(handle.root.userData.hasDeficit).toBe(true);
     expect(deficitVisible).toBe(true);
-    expect(handle.setCounterAnimation('data.currentReplicas', 3)).toBe(true);
-    expect(handle.root.userData.counters).toEqual({ desired: 3, current: 3, ready: 2 });
-    expect(handle.setCounterAnimation('data.currentReplicas')).toBe(true);
-    expect(handle.root.userData.counters).toEqual({ desired: 3, current: 2, ready: 2 });
+    expect(handle.setCounterAnimation('data.statusReplicas', 3)).toBe(true);
+    expect(handle.root.userData.counters).toEqual({ spec: 3, observed: 3, ready: 2 });
+    expect(handle.setCounterAnimation('data.statusReplicas')).toBe(true);
+    expect(handle.root.userData.counters).toEqual({ spec: 3, observed: 2, ready: 2 });
     expect(handle.setCounterAnimation('data.unknownCounter', 9)).toBe(false);
+    handle.dispose();
+  });
+
+  it('keeps a Running-but-NotReady Pod shell intact and exposes a NOT READY rail state', () => {
+    const handle = new PodVisualHandle(pod, normal);
+    const shellUuid = handle.shell.uuid;
+    const notReady: WorldEntity = {
+      ...pod,
+      status: 'not-ready',
+      data: {
+        ...pod.data,
+        conditions: {
+          podScheduled: true,
+          initialized: true,
+          containersReady: false,
+          ready: false,
+        },
+      },
+    };
+
+    handle.update(notReady, normal);
+    let runningMarkerVisible = true;
+    let notReadyMarkerVisible = false;
+    handle.root.traverse((object) => {
+      if (object.userData.role === 'pod-running-marker') runningMarkerVisible = object.visible;
+      if (object.userData.role === 'pod-pending-marker') notReadyMarkerVisible = object.visible;
+    });
+
+    expect(handle.shell.uuid).toBe(shellUuid);
+    expect(handle.root.userData.phase).toBe('Running');
+    expect(handle.root.userData.statusText).toBe('NOT READY');
+    expect(handle.root.userData.visibleText).toContain('RUNNING · NOT READY');
+    expect(runningMarkerVisible).toBe(false);
+    expect(notReadyMarkerVisible).toBe(true);
     handle.dispose();
   });
 
@@ -313,7 +352,19 @@ describe('visual factory foundation', () => {
 
     const restarted: WorldEntity = {
       ...container,
-      data: { ...container.data, restartCount: 1, instanceGeneration: 2 },
+      data: {
+        ...container.data,
+        containerID: 'containerd://visual-api-old-02',
+        restartCount: 1,
+        state: { kind: 'running', startedAt: '2026-08-08T00:00:12Z' },
+        lastState: {
+          kind: 'terminated',
+          reason: 'Error',
+          exitCode: 1,
+          finishedAt: '2026-08-08T00:00:10Z',
+          containerID: 'containerd://visual-api-old-01',
+        },
+      },
     };
     const after = snapshot(
       [node, pod, restarted, replicaSet, kubelet, apiServer, controller, scheduler, kubectl],
@@ -326,7 +377,7 @@ describe('visual factory foundation', () => {
     expect(podHandle.shell.uuid).toBe(shellUuid);
     expect(containerHandle.root.uuid).toBe(containerUuid);
     expect(podHandle.root.userData.restartCount).toBe(1);
-    expect(containerHandle.root.userData.instanceGeneration).toBe(2);
+    expect(containerHandle.root.userData.containerID).toBe('containerd://visual-api-old-02');
     registry.clear();
   });
 });

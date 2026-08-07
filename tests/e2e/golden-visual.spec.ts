@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { STEP_TITLES, gotoGoldenStep } from './helpers';
+import { STEP_TITLES, gotoGoldenStep, revealEvidence } from './helpers';
 
 const desktopProjects = new Set(['desktop-chromium', 'desktop-1280-chromium']);
 const mobileSteps = new Set([0, 3, 6, 8, 9]);
@@ -11,6 +11,7 @@ for (let stepIndex = 0; stepIndex < STEP_TITLES.length; stepIndex += 1) {
     test.skip(!desktop && !mobile, 'Not a required visual-acceptance capture');
 
     await gotoGoldenStep(page, stepIndex);
+    if (mobile && [2, 3, 6, 8, 9].includes(stepIndex)) await revealEvidence(page);
     const viewport = page.viewportSize();
     if (!viewport) throw new Error('Visual acceptance requires an explicit viewport');
     await expect(page).toHaveScreenshot(

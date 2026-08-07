@@ -15,11 +15,16 @@ const lesson: LessonV2 = loadedLesson;
 const compiled = courseEngine.compileLesson(lesson, scenario);
 
 const OLD_POD = 'api-object:namespaced:shop:Pod:api-a-old';
-const OLD_CONTAINER = 'runtime-instance:shop:Pod:api-a-old:Container:api';
+const OLD_CONTAINER = 'container-status:shop:Pod:api-a-old:Container:api';
 const NEW_POD = 'api-object:namespaced:shop:Pod:api-d-new';
-const NEW_CONTAINER = 'runtime-instance:shop:Pod:api-d-new:Container:api';
+const NEW_CONTAINER = 'container-status:shop:Pod:api-d-new:Container:api';
 const REPLICA_SET = 'api-object:namespaced:shop:ReplicaSet:api-rs';
 const API_SERVER = 'runtime-component:cluster:global:KubeAPIServer:kube-apiserver';
+const KUBELET_A = 'runtime-component:node:worker-a:Kubelet:kubelet';
+const KUBELET_B = 'runtime-component:node:worker-b:Kubelet:kubelet';
+const CONTROLLER_MANAGER =
+  'runtime-component:cluster:global:ControllerManager:kube-controller-manager';
+const SCHEDULER = 'runtime-component:cluster:global:Scheduler:kube-scheduler';
 const KUBECTL = 'external:external:global:Kubectl:kubectl';
 
 const EXPECTED_STEPS = [
@@ -59,6 +64,56 @@ function lessonWithSchedulerRoutes(routes: readonly ActiveTeachingRoute[]): Less
   };
 }
 
+const RESTART_STEP_ID = 'container-restarted';
+const localRestartRoute: ActiveTeachingRoute = {
+  id: 'route-local-container-restart',
+  semantic: 'node-runtime',
+  label: {
+    en: 'restart locally',
+    ja: 'ローカルで再起動',
+    'zh-CN': '本地重启',
+  },
+  persistAfterAnimation: true,
+  hops: [
+    {
+      fromEntityId: KUBELET_A,
+      fromAnchor: 'control',
+      toEntityId: OLD_CONTAINER,
+      toAnchor: 'control',
+    },
+  ],
+};
+
+function lessonWithLocalRestartRoute(route: ActiveTeachingRoute): LessonV2 {
+  return {
+    ...lesson,
+    steps: lesson.steps.map((candidate) => {
+      if (candidate.id !== RESTART_STEP_ID) return candidate;
+      const retainedCues = (candidate.transition?.cues ?? []).filter(
+        (cue) =>
+          cue.type !== 'reconcile-pulse' &&
+          cue.type !== 'container-restart' &&
+          cue.type !== 'node-runtime-restart',
+      );
+      return {
+        ...candidate,
+        viewPatch: { ...candidate.viewPatch, activeRoutes: [route] },
+        transition: {
+          cues: [
+            {
+              type: 'node-runtime-restart',
+              routeId: route.id,
+              entityId: OLD_CONTAINER,
+              durationMs: 760,
+            },
+            ...retainedCues,
+          ],
+        },
+      };
+    }),
+  };
+}
+
 describe('CourseEngine v2 factual timeline', () => {
   it('compiles the required ten-step lesson sequence', () => {
     expect(compiled.steps.map((candidate) => candidate.stepId)).toEqual(EXPECTED_STEPS);
@@ -90,41 +145,98 @@ describe('CourseEngine v2 factual timeline', () => {
       uid: 'synthetic-uid-old-a1',
       nodeName: 'worker-a',
       phase: 'Running',
+      conditions: {
+        podScheduled: true,
+        initialized: true,
+        containersReady: true,
+        ready: true,
+      },
     });
     expect(getContainerData(baseline.entities[OLD_CONTAINER]!)).toMatchObject({
+      name: 'api',
+      containerID: 'containerd://synthetic-api-a-old-01',
       restartCount: 0,
-      instanceGeneration: 1,
+      ready: true,
+      started: true,
+      state: { kind: 'running', startedAt: '2026-08-08T00:00:00Z' },
     });
     expect(baseline.entities[OLD_CONTAINER]?.status).toBe('running');
     expect(getReplicaSetData(baseline.entities[REPLICA_SET]!)).toEqual({
-      desiredReplicas: 3,
-      currentReplicas: 3,
+      specReplicas: 3,
+      statusReplicas: 3,
       readyReplicas: 3,
     });
   });
 
-  it('terminates only the child Container', () => {
+  it('keeps the Pod Running but NotReady when the runtime Container exits', () => {
     const crashed = step('container-exits');
     expect(getPodData(crashed.world.entities[OLD_POD]!)).toMatchObject({
       uid: 'synthetic-uid-old-a1',
       nodeName: 'worker-a',
+      phase: 'Running',
+      conditions: {
+        podScheduled: true,
+        initialized: true,
+        containersReady: false,
+        ready: false,
+      },
     });
     expect(crashed.world.entities[OLD_CONTAINER]?.status).toBe('terminated');
+    expect(getContainerData(crashed.world.entities[OLD_CONTAINER]!)).toMatchObject({
+      containerID: 'containerd://synthetic-api-a-old-01',
+      restartCount: 0,
+      ready: false,
+      started: false,
+      state: {
+        kind: 'terminated',
+        reason: 'Error',
+        exitCode: 1,
+        finishedAt: '2026-08-08T00:00:10Z',
+        containerID: 'containerd://synthetic-api-a-old-01',
+      },
+    });
+    expect(getReplicaSetData(crashed.world.entities[REPLICA_SET]!)).toEqual({
+      specReplicas: 3,
+      statusReplicas: 3,
+      readyReplicas: 2,
+    });
     expect(crashed.world.entities[NEW_POD]).toBeUndefined();
     expect(crashed.worldDiff.addedEntities).toHaveLength(0);
     expect(crashed.worldDiff.removedEntities).toHaveLength(0);
   });
 
-  it('restarts a new Container generation inside the same Pod', () => {
+  it('starts a replacement runtime Container inside the same Pod status slot', () => {
     const restarted = step('container-restarted');
     expect(getPodData(restarted.world.entities[OLD_POD]!)).toMatchObject({
       uid: 'synthetic-uid-old-a1',
       nodeName: 'worker-a',
+      phase: 'Running',
+      conditions: {
+        podScheduled: true,
+        initialized: true,
+        containersReady: true,
+        ready: true,
+      },
     });
     expect(restarted.world.entities[OLD_CONTAINER]?.status).toBe('running');
     expect(getContainerData(restarted.world.entities[OLD_CONTAINER]!)).toMatchObject({
+      containerID: 'containerd://synthetic-api-a-old-02',
       restartCount: 1,
-      instanceGeneration: 2,
+      ready: true,
+      started: true,
+      state: { kind: 'running', startedAt: '2026-08-08T00:00:12Z' },
+      lastState: {
+        kind: 'terminated',
+        reason: 'Error',
+        exitCode: 1,
+        finishedAt: '2026-08-08T00:00:10Z',
+        containerID: 'containerd://synthetic-api-a-old-01',
+      },
+    });
+    expect(getReplicaSetData(restarted.world.entities[REPLICA_SET]!)).toEqual({
+      specReplicas: 3,
+      statusReplicas: 3,
+      readyReplicas: 3,
     });
     expect(restarted.worldDiff.addedEntities).toHaveLength(0);
     expect(restarted.worldDiff.removedEntities).toHaveLength(0);
@@ -140,8 +252,8 @@ describe('CourseEngine v2 factual timeline', () => {
     expect(deleted.world.relations['owns-api-a-old']).toBeUndefined();
     expect(deleted.world.relations['scheduled-api-a-old']).toBeUndefined();
     expect(getReplicaSetData(deleted.world.entities[REPLICA_SET]!)).toEqual({
-      desiredReplicas: 3,
-      currentReplicas: 2,
+      specReplicas: 3,
+      statusReplicas: 2,
       readyReplicas: 2,
     });
 
@@ -163,17 +275,30 @@ describe('CourseEngine v2 factual timeline', () => {
     expect(getPodData(created.world.entities[NEW_POD]!)).toMatchObject({
       uid: 'synthetic-uid-new-d1',
       phase: 'Pending',
+      conditions: {
+        podScheduled: false,
+        initialized: true,
+        containersReady: false,
+        ready: false,
+      },
     });
     expect(getPodData(created.world.entities[NEW_POD]!).nodeName).toBeUndefined();
     expect(created.world.entities[NEW_CONTAINER]?.status).toBe('waiting');
+    expect(getContainerData(created.world.entities[NEW_CONTAINER]!)).toMatchObject({
+      restartCount: 0,
+      ready: false,
+      started: false,
+      state: { kind: 'waiting', reason: 'Pending' },
+    });
+    expect(getContainerData(created.world.entities[NEW_CONTAINER]!).containerID).toBeUndefined();
     expect(created.world.relations['owns-api-d-new']).toBeDefined();
     expect(created.world.relations['scheduled-api-d-new']).toBeUndefined();
     expect(created.worldDiff.addedEntities.map((entity) => entity.id)).toEqual(
       expect.arrayContaining([NEW_POD, NEW_CONTAINER]),
     );
     expect(getReplicaSetData(created.world.entities[REPLICA_SET]!)).toEqual({
-      desiredReplicas: 3,
-      currentReplicas: 3,
+      specReplicas: 3,
+      statusReplicas: 3,
       readyReplicas: 2,
     });
   });
@@ -193,6 +318,12 @@ describe('CourseEngine v2 factual timeline', () => {
       uid: 'synthetic-uid-new-d1',
       nodeName: 'worker-c',
       phase: 'Pending',
+      conditions: {
+        podScheduled: true,
+        initialized: true,
+        containersReady: false,
+        ready: false,
+      },
     });
     expect(scheduled.world.relations['scheduled-api-d-new']).toBeDefined();
     expect(scheduled.world.entities[NEW_CONTAINER]?.status).toBe('waiting');
@@ -211,12 +342,24 @@ describe('CourseEngine v2 factual timeline', () => {
       uid: 'synthetic-uid-new-d1',
       nodeName: 'worker-c',
       phase: 'Running',
+      conditions: {
+        podScheduled: true,
+        initialized: true,
+        containersReady: true,
+        ready: true,
+      },
     });
     expect(started.world.entities[NEW_CONTAINER]?.status).toBe('running');
-    expect(getContainerData(started.world.entities[NEW_CONTAINER]!).restartCount).toBe(0);
+    expect(getContainerData(started.world.entities[NEW_CONTAINER]!)).toMatchObject({
+      containerID: 'containerd://synthetic-api-d-new-01',
+      restartCount: 0,
+      ready: true,
+      started: true,
+      state: { kind: 'running', startedAt: '2026-08-08T00:00:30Z' },
+    });
     expect(getReplicaSetData(started.world.entities[REPLICA_SET]!)).toEqual({
-      desiredReplicas: 3,
-      currentReplicas: 3,
+      specReplicas: 3,
+      statusReplicas: 3,
       readyReplicas: 3,
     });
     expect(started.transition.cues).toContainEqual(
@@ -229,7 +372,6 @@ describe('CourseEngine v2 factual timeline', () => {
 
   it('authors visible causal offsets instead of completing every visual simultaneously', () => {
     const causalPairs = [
-      ['container-restarted', 'reconcile-pulse', 'container-restart'],
       ['kubectl-delete-pod', 'api-request', 'entity-exit'],
       ['controller-creates-replacement', 'reconcile-pulse', 'entity-enter'],
       ['scheduler-binds-worker-c', 'scheduler-assignment', 'layout-transition'],
@@ -243,6 +385,17 @@ describe('CourseEngine v2 factual timeline', () => {
       expect(effect).toBeDefined();
       expect(effect?.delayMs ?? 0).toBeGreaterThan(cause?.delayMs ?? 0);
     }
+    const restartTransition = step('container-restarted').transition;
+    const restartCause = restartTransition.cues.find((cue) => cue.type === 'node-runtime-restart');
+    const restartCount = restartTransition.cues.find(
+      (cue) =>
+        cue.type === 'counter-change' &&
+        cue.entityId === OLD_CONTAINER &&
+        cue.field === 'data.restartCount',
+    );
+    expect(restartCause).toBeDefined();
+    expect(restartCount).toBeDefined();
+    expect(restartCount?.delayMs ?? 0).toBeGreaterThan(restartCause?.delayMs ?? 0);
     expect(
       step('scheduler-binds-worker-c').transition.cues.find(
         (cue) => cue.type === 'layout-transition',
@@ -256,7 +409,7 @@ describe('CourseEngine v2 factual timeline', () => {
         (update) => update.id === REPLICA_SET,
       );
       for (const path of replicaSetUpdate?.changedPaths ?? []) {
-        if (!/^\/data\/(desiredReplicas|currentReplicas|readyReplicas)$/.test(path)) continue;
+        if (!/^\/data\/(specReplicas|statusReplicas|readyReplicas)$/.test(path)) continue;
         const field = path.slice(1).replace('/', '.');
         expect(candidate.transition.cues).toContainEqual(
           expect.objectContaining({ type: 'counter-change', entityId: REPLICA_SET, field }),
@@ -328,18 +481,95 @@ describe('CourseEngine v2 factual timeline', () => {
     );
   });
 
-  it('resolves every routed cue against an authored API-mediated route', () => {
+  it('resolves routed cues against their authored semantic cause', () => {
     for (const candidate of compiled.steps) {
       const routes = new Map(candidate.view.activeRoutes.map((route) => [route.id, route]));
       for (const cue of candidate.transition.cues) {
         if (!('routeId' in cue)) continue;
         expect(routes.has(cue.routeId)).toBe(true);
-        expect(
-          routes
-            .get(cue.routeId)
-            ?.hops.some((hop) => hop.fromEntityId === API_SERVER || hop.toEntityId === API_SERVER),
-        ).toBe(true);
+        const route = routes.get(cue.routeId);
+        if (cue.type === 'node-runtime-restart') {
+          expect(route?.semantic).toBe('node-runtime');
+          expect(route?.hops[0]?.fromEntityId).toBe(KUBELET_A);
+          expect(route?.hops.at(-1)?.toEntityId).toBe(cue.entityId);
+          expect(route?.hops.flatMap((hop) => [hop.fromEntityId, hop.toEntityId])).not.toContain(
+            API_SERVER,
+          );
+        } else {
+          expect(
+            route?.hops.some(
+              (hop) => hop.fromEntityId === API_SERVER || hop.toEntityId === API_SERVER,
+            ),
+          ).toBe(true);
+        }
       }
+    }
+  });
+
+  it('accepts only a node-local kubelet causal route for same-Pod restart', () => {
+    const local = courseEngine.compileLesson(
+      lessonWithLocalRestartRoute(localRestartRoute),
+      scenario,
+    );
+    const restarted = local.steps.find((candidate) => candidate.stepId === RESTART_STEP_ID);
+    const route = restarted?.view.activeRoutes[0];
+    expect(route?.semantic).toBe('node-runtime');
+    expect(route?.hops[0]?.fromEntityId).toBe(KUBELET_A);
+    expect(route?.hops.at(-1)?.toEntityId).toBe(OLD_CONTAINER);
+    expect(restarted?.transition.cues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'node-runtime-restart',
+          routeId: localRestartRoute.id,
+          entityId: OLD_CONTAINER,
+        }),
+      ]),
+    );
+  });
+
+  it('rejects API/control-plane participation and cross-Node hops in the local restart route', () => {
+    const withIntermediate = (entityId: string): ActiveTeachingRoute => ({
+      ...localRestartRoute,
+      hops: [
+        {
+          fromEntityId: KUBELET_A,
+          fromAnchor: 'control',
+          toEntityId: entityId,
+          toAnchor: 'control',
+        },
+        {
+          fromEntityId: entityId,
+          fromAnchor: 'control',
+          toEntityId: OLD_CONTAINER,
+          toAnchor: 'control',
+        },
+      ],
+    });
+
+    expect(() =>
+      courseEngine.compileLesson(
+        lessonWithLocalRestartRoute({
+          ...localRestartRoute,
+          hops: [
+            {
+              fromEntityId: API_SERVER,
+              fromAnchor: 'control',
+              toEntityId: OLD_CONTAINER,
+              toAnchor: 'control',
+            },
+          ],
+        }),
+        scenario,
+      ),
+    ).toThrow('must start at the kubelet');
+
+    for (const forbidden of [API_SERVER, SCHEDULER, CONTROLLER_MANAGER, REPLICA_SET, KUBELET_B]) {
+      expect(() =>
+        courseEngine.compileLesson(
+          lessonWithLocalRestartRoute(withIntermediate(forbidden)),
+          scenario,
+        ),
+      ).toThrow('must stay on worker-a');
     }
   });
 
@@ -439,6 +669,29 @@ describe('CourseEngine v2 factual timeline', () => {
         }),
       ]),
     );
+    expect(step('container-exits').evidence.map((row) => row.path)).toEqual(
+      expect.arrayContaining([
+        '/data/state/kind',
+        '/data/conditions/containersReady',
+        '/data/conditions/ready',
+        '/data/replicas',
+        '/data/uid',
+        '/data/nodeName',
+        '/data/phase',
+      ]),
+    );
+    expect(step('container-restarted').evidence.map((row) => row.path)).toEqual(
+      expect.arrayContaining([
+        '/data/containerID',
+        '/data/restartCount',
+        '/data/lastState/reason',
+        '/data/lastState/exitCode',
+        '/data/conditions/ready',
+        '/data/replicas',
+        '/data/uid',
+        '/data/nodeName',
+      ]),
+    );
     expect(step('kubectl-delete-pod').evidence).toEqual(
       expect.arrayContaining([expect.objectContaining({ entityId: OLD_POD, change: 'removed' })]),
     );
@@ -449,8 +702,15 @@ describe('CourseEngine v2 factual timeline', () => {
     const restartCount = comparison?.rows.find(
       (row) => row.property.en === 'Container restart count',
     );
+    const containerId = comparison?.rows.find((row) => row.property.en === 'Container ID');
+    const podName = comparison?.rows.find((row) => row.property.en === 'Pod name');
     expect(restartCount?.containerRestart.en).toContain('0');
     expect(restartCount?.containerRestart.en).toContain('1');
+    expect(containerId?.containerRestart.en).toContain('synthetic-api-a-old-01');
+    expect(containerId?.containerRestart.en).toContain('synthetic-api-a-old-02');
+    expect(containerId?.podReplacement.en).toContain('synthetic-api-d-new-01');
+    expect(podName?.containerRestart.en).toContain('api-7f8d9-a');
+    expect(podName?.containerRestart.en).not.toContain('api-object:');
     expect(comparison?.rows.map((row) => row.podReplacement.en).join(' ')).toContain(
       'synthetic-uid-new-d1',
     );

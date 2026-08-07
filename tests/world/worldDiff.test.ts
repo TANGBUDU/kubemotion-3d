@@ -26,7 +26,7 @@ const deletionPatch: WorldPatch = {
     {
       op: 'patch-entity',
       entityId: IDS.replicaSet,
-      patch: { data: { desiredReplicas: 3, currentReplicas: 2, readyReplicas: 2 } },
+      patch: { data: { specReplicas: 3, statusReplicas: 2, readyReplicas: 2 } },
     },
   ],
 };
@@ -52,7 +52,7 @@ const replacementCreationPatch: WorldPatch = {
     {
       op: 'patch-entity',
       entityId: IDS.replicaSet,
-      patch: { data: { desiredReplicas: 3, currentReplicas: 3, readyReplicas: 2 } },
+      patch: { data: { specReplicas: 3, statusReplicas: 3, readyReplicas: 2 } },
     },
   ],
 };
@@ -64,13 +64,30 @@ const schedulingPatch: WorldPatch = {
       entityId: IDS.newPod,
       patch: {
         status: 'ready',
-        data: { nodeName: 'worker-c', phase: 'Running' },
+        data: {
+          nodeName: 'worker-c',
+          phase: 'Running',
+          conditions: {
+            podScheduled: true,
+            initialized: true,
+            containersReady: true,
+            ready: true,
+          },
+        },
       },
     },
     {
       op: 'patch-entity',
       entityId: IDS.newContainer,
-      patch: { status: 'running' },
+      patch: {
+        status: 'running',
+        data: {
+          containerID: 'containerd://synthetic-api-d-new-01',
+          ready: true,
+          started: true,
+          state: { kind: 'running', startedAt: '2026-08-08T00:00:30Z' },
+        },
+      },
     },
     {
       op: 'add-relation',
@@ -79,7 +96,7 @@ const schedulingPatch: WorldPatch = {
     {
       op: 'patch-entity',
       entityId: IDS.replicaSet,
-      patch: { data: { desiredReplicas: 3, currentReplicas: 3, readyReplicas: 3 } },
+      patch: { data: { specReplicas: 3, statusReplicas: 3, readyReplicas: 3 } },
     },
   ],
 };
@@ -97,7 +114,20 @@ describe('computeWorldDiff (directive 12.3)', () => {
         {
           op: 'patch-entity',
           entityId: IDS.oldContainer,
-          patch: { status: 'terminated' },
+          patch: {
+            status: 'terminated',
+            data: {
+              ready: false,
+              started: false,
+              state: {
+                kind: 'terminated',
+                reason: 'Error',
+                exitCode: 1,
+                finishedAt: '2026-08-08T00:00:10Z',
+                containerID: 'containerd://synthetic-api-a-old-01',
+              },
+            },
+          },
         },
       ],
     });
@@ -108,7 +138,20 @@ describe('computeWorldDiff (directive 12.3)', () => {
           entityId: IDS.oldContainer,
           patch: {
             status: 'running',
-            data: { restartCount: 1, instanceGeneration: 2 },
+            data: {
+              containerID: 'containerd://synthetic-api-a-old-02',
+              restartCount: 1,
+              ready: true,
+              started: true,
+              state: { kind: 'running', startedAt: '2026-08-08T00:00:12Z' },
+              lastState: {
+                kind: 'terminated',
+                reason: 'Error',
+                exitCode: 1,
+                finishedAt: '2026-08-08T00:00:10Z',
+                containerID: 'containerd://synthetic-api-a-old-01',
+              },
+            },
           },
         },
       ],
@@ -124,7 +167,20 @@ describe('computeWorldDiff (directive 12.3)', () => {
     expect(diff.updatedEntities[0]).toMatchObject({
       id: IDS.oldContainer,
       changedFields: ['status', 'data'],
-      changedPaths: ['/data/instanceGeneration', '/data/restartCount', '/status'],
+      changedPaths: [
+        '/data/containerID',
+        '/data/lastState',
+        '/data/ready',
+        '/data/restartCount',
+        '/data/started',
+        '/data/state/containerID',
+        '/data/state/exitCode',
+        '/data/state/finishedAt',
+        '/data/state/kind',
+        '/data/state/reason',
+        '/data/state/startedAt',
+        '/status',
+      ],
     });
   });
 
@@ -141,8 +197,8 @@ describe('computeWorldDiff (directive 12.3)', () => {
     );
     expect(diff.updatedEntities.map((item) => item.id)).toEqual([IDS.replicaSet]);
     expect(diff.updatedEntities[0]?.changedPaths).toEqual([
-      '/data/currentReplicas',
       '/data/readyReplicas',
+      '/data/statusReplicas',
     ]);
   });
 
@@ -171,7 +227,14 @@ describe('computeWorldDiff (directive 12.3)', () => {
       [IDS.newPod, IDS.newContainer, IDS.replicaSet].sort(),
     );
     const podUpdate = diff.updatedEntities.find((item) => item.id === IDS.newPod);
-    expect(podUpdate?.changedPaths).toEqual(['/data/nodeName', '/data/phase', '/status']);
+    expect(podUpdate?.changedPaths).toEqual([
+      '/data/conditions/containersReady',
+      '/data/conditions/podScheduled',
+      '/data/conditions/ready',
+      '/data/nodeName',
+      '/data/phase',
+      '/status',
+    ]);
     expect(diff.addedEntities).toHaveLength(0);
     expect(diff.removedEntities).toHaveLength(0);
   });
@@ -233,7 +296,7 @@ describe('computeWorldDiff (directive 12.3)', () => {
         ...before.entities,
         [IDS.replicaSet]: {
           ...replicaSet,
-          data: { readyReplicas: 3, currentReplicas: 3, desiredReplicas: 3 },
+          data: { readyReplicas: 3, statusReplicas: 3, specReplicas: 3 },
         },
       },
     });

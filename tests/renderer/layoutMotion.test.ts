@@ -38,7 +38,17 @@ const podHandle = (): EntityVisualHandle => {
     name: 'api-d-new',
     namespace: 'shop',
     status: 'pending',
-    data: { uid: 'new', phase: 'Pending', restartPolicy: 'Always' },
+    data: {
+      uid: 'new',
+      phase: 'Pending',
+      restartPolicy: 'Always',
+      conditions: {
+        podScheduled: false,
+        initialized: true,
+        containersReady: false,
+        ready: false,
+      },
+    },
     title: localized,
     summary: localized,
     sourceIds: [],

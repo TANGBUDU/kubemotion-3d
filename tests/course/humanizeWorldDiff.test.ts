@@ -8,7 +8,7 @@ if (!lesson) throw new Error('Golden lesson is missing');
 const compiled = courseEngine.compileLesson(lesson, scenario);
 
 const OLD_POD = 'api-object:namespaced:shop:Pod:api-a-old';
-const OLD_CONTAINER = 'runtime-instance:shop:Pod:api-a-old:Container:api';
+const OLD_CONTAINER = 'container-status:shop:Pod:api-a-old:Container:api';
 const NEW_POD = 'api-object:namespaced:shop:Pod:api-d-new';
 const REPLICA_SET = 'api-object:namespaced:shop:ReplicaSet:api-rs';
 
@@ -30,9 +30,11 @@ describe('humanizeWorldDiff', () => {
       [OLD_POD, '/data/uid', 'synthetic-uid-old-a1'],
       [OLD_POD, '/data/nodeName', 'worker-a'],
       [OLD_POD, '/data/phase', 'Running'],
+      [OLD_POD, '/data/conditions/containersReady', 'true'],
+      [OLD_POD, '/data/conditions/ready', 'true'],
+      [OLD_CONTAINER, '/data/containerID', 'containerd://synthetic-api-a-old-01'],
       [OLD_CONTAINER, '/data/restartCount', '0'],
-      [OLD_CONTAINER, '/data/instanceGeneration', '1'],
-      [OLD_CONTAINER, '/status', 'running'],
+      [OLD_CONTAINER, '/data/state/kind', 'running'],
     ]);
     expect(rows.every((row) => row.before === undefined && row.change === 'unchanged')).toBe(true);
   });
@@ -55,10 +57,20 @@ describe('humanizeWorldDiff', () => {
         }),
         expect.objectContaining({
           entityId: OLD_CONTAINER,
-          path: '/data/instanceGeneration',
+          path: '/data/containerID',
           change: 'changed',
-          before: expect.objectContaining({ en: '1' }),
-          after: expect.objectContaining({ en: '2' }),
+          before: expect.objectContaining({ en: 'containerd://synthetic-api-a-old-01' }),
+          after: expect.objectContaining({ en: 'containerd://synthetic-api-a-old-02' }),
+        }),
+        expect.objectContaining({
+          entityId: OLD_CONTAINER,
+          path: '/data/lastState/reason',
+          after: expect.objectContaining({ en: 'Error' }),
+        }),
+        expect.objectContaining({
+          entityId: OLD_CONTAINER,
+          path: '/data/lastState/exitCode',
+          after: expect.objectContaining({ en: '1' }),
         }),
       ]),
     );
@@ -84,8 +96,8 @@ describe('humanizeWorldDiff', () => {
           entityId: REPLICA_SET,
           path: '/data/replicas',
           change: 'changed',
-          before: expect.objectContaining({ en: 'D3 · C3 · R3' }),
-          after: expect.objectContaining({ en: 'D3 · C2 · R2' }),
+          before: expect.objectContaining({ en: 'SPEC 3 · OBSERVED 3 · READY 3' }),
+          after: expect.objectContaining({ en: 'SPEC 3 · OBSERVED 2 · READY 2' }),
         }),
       ]),
     );
@@ -117,11 +129,15 @@ describe('humanizeWorldDiff', () => {
     expect(rows.length).toBeLessThanOrEqual(8);
   });
 
-  it('keeps the restart comparison quartet above lower-priority status context', () => {
+  it('prioritizes runtime replacement, termination history, readiness, and Pod identity', () => {
     const restarted = step('container-restarted');
-    expect(restarted.evidence.slice(0, 4).map((row) => row.path)).toEqual([
+    expect(restarted.evidence.map((row) => row.path)).toEqual([
+      '/data/containerID',
       '/data/restartCount',
-      '/data/instanceGeneration',
+      '/data/lastState/reason',
+      '/data/lastState/exitCode',
+      '/data/conditions/ready',
+      '/data/replicas',
       '/data/uid',
       '/data/nodeName',
     ]);
@@ -129,10 +145,12 @@ describe('humanizeWorldDiff', () => {
 
   it('puts readiness and runtime-state changes ahead of unchanged identity context', () => {
     const ready = step('kubelet-starts-container');
-    const leading = ready.evidence.slice(0, 4);
-    expect(leading.every((row) => row.change !== 'unchanged')).toBe(true);
-    expect(leading.map((row) => row.path)).toEqual(
-      expect.arrayContaining(['/data/replicas', '/data/phase', '/status']),
+    expect(ready.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: '/data/containerID', change: 'changed' }),
+        expect.objectContaining({ path: '/data/conditions/ready', change: 'changed' }),
+        expect.objectContaining({ path: '/data/replicas', change: 'changed' }),
+      ]),
     );
   });
 

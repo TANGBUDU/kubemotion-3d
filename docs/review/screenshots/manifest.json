@@ -1,8 +1,9 @@
 {
-  "generatedAt": "2026-08-07T18:35:52.938Z",
+  "generatedAt": "2026-08-07T20:08:10.728Z",
   "baseUrl": "http://127.0.0.1:4173",
   "captures": [
     {
+      "kind": "full-page",
       "file": "golden-step-00-1440x900.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 0,
@@ -43,6 +44,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-01-1440x900.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 1,
@@ -58,7 +60,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nContainer status\nrunning\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R3",
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning\n=\nunchanged:\nContainer Ready\ntrue\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 6,
@@ -83,6 +85,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-02-1440x900.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 2,
@@ -98,17 +101,17 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer status\nrunning\n→\nterminated\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R3\n=\nunchanged:\nPod phase\nRunning",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/3/2\nΔ\nchanged:\nContainer state\nrunning\n→\nterminated\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 6,
           "labels": 15,
           "callouts": 0,
           "activeAnimations": 0,
-          "geometries": 144,
+          "geometries": 145,
           "textures": 10,
           "programs": 15,
-          "drawCalls": 325,
+          "drawCalls": 327,
           "pooledTokens": 0,
           "retainedExitHandles": 0,
           "routeHandles": 0,
@@ -123,6 +126,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-03-1440x900.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 3,
@@ -135,26 +139,26 @@
         "labelCount": 7,
         "maximumLabelOverlap": 0,
         "labelsOutsideStage": 0,
-        "routeLabels": ["observe assignment", "restart locally"],
+        "routeLabels": ["restart locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nGeneration\n1\n→\n2\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\nΔ\nchanged:\nContainer status\nterminated\n→\nrunning\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R3\n=\nunchanged:\nPod phase\nRunning",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\n…-01\n→\n…-02\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nLast termination reason\nAbsent\n→\nError\nΔ\nchanged:\nLast termination exit code\nAbsent\n→\n1\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 9,
-          "labels": 18,
+          "labels": 17,
           "callouts": 0,
           "activeAnimations": 0,
           "geometries": 156,
           "textures": 10,
           "programs": 17,
-          "drawCalls": 347,
+          "drawCalls": 340,
           "pooledTokens": 1,
           "retainedExitHandles": 0,
           "routeHandles": 1,
-          "arrowheads": 2,
+          "arrowheads": 1,
           "flowTokens": 1,
-          "routeMarkers": 2,
+          "routeMarkers": 1,
           "wideLineGeometries": 1,
           "wideLineMaterials": 1,
           "renderTargets": 4,
@@ -163,6 +167,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-04-1440x900.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 4,
@@ -178,7 +183,7 @@
         "routeLabels": ["request delete", "delete Pod object"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n−\nremoved:\nPod identity\nsynthetic-uid-old-a1\n→\nAbsent\n−\nremoved:\nContainer identity\napi\n→\nAbsent\nΔ\nchanged:\nReplicaSet D/C/R\nD3 · C3 · R3\n→\nD3 · C2 · R2\n=\nunchanged:\nRestart count\n1\n=\nunchanged:\nGeneration\n2\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\n=\nunchanged:\nPod phase\nRunning",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/2/2\n−\nremoved:\nPod identity\nsynthetic-uid-old-a1\n→\nAbsent\n−\nremoved:\nContainer status slot\ncontainerd://synthetic-api-a-old-02\n→\nAbsent\n=\nunchanged:\nContainer ID\n…-02\n=\nunchanged:\nRestart count\n1\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nContainer state\nrunning",
         "diagnostics": {
           "entityHandles": 15,
           "relationHandles": 6,
@@ -203,6 +208,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-05-1440x900.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 5,
@@ -218,7 +224,7 @@
         "routeLabels": ["watch", "observe deficit and create"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n+\nadded:\nPod identity\nAbsent\n→\nsynthetic-uid-new-d1\n+\nadded:\nContainer identity\nAbsent\n→\napi\nΔ\nchanged:\nReplicaSet D/C/R\nD3 · C2 · R2\n→\nD3 · C3 · R2\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nUnscheduled\n=\nunchanged:\nPod phase\nPending",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/2/2\n→\n3/3/2\n+\nadded:\nPod identity\nAbsent\n→\nsynthetic-uid-new-d1\n+\nadded:\nContainer status slot\nAbsent\n→\napi status slot\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 9,
@@ -243,6 +249,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-06-1440x900.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 6,
@@ -258,7 +265,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nUnscheduled\n=\nunchanged:\nPod phase\nPending\n=\nunchanged:\nContainer status\nwaiting\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R2",
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nUnscheduled\n=\nunchanged:\nPod phase\nPending\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 6,
@@ -283,6 +290,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-07-1440x900.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 7,
@@ -298,7 +306,7 @@
         "routeLabels": ["choose Node", "record binding", "place"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nNode\nUnscheduled\n→\nworker-c\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R2\n=\nunchanged:\nPod phase\nPending\n=\nunchanged:\nContainer status\nwaiting",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nNode\nUnscheduled\n→\nworker-c\nΔ\nchanged:\nPodScheduled\nfalse\n→\ntrue\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 9,
@@ -323,6 +331,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-08-1440x900.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 8,
@@ -338,7 +347,7 @@
         "routeLabels": ["observe assignment", "start locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nReplicaSet D/C/R\nD3 · C3 · R2\n→\nD3 · C3 · R3\nΔ\nchanged:\nPod phase\nPending\n→\nRunning\nΔ\nchanged:\nPod status\npending\n→\nready\nΔ\nchanged:\nContainer status\nwaiting\n→\nrunning\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\nAbsent\n→\n…-01\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\nΔ\nchanged:\nContainersReady\nfalse\n→\ntrue\nΔ\nchanged:\nContainer state\nwaiting\n→\nrunning",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 9,
@@ -363,6 +372,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-09-1440x900.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 9,
@@ -378,7 +388,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nContainer status\nrunning\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R3",
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 6,
@@ -403,6 +413,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-00-1280x720.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 0,
@@ -443,6 +454,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-01-1280x720.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 1,
@@ -458,7 +470,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nContainer status\nrunning\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R3",
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning\n=\nunchanged:\nContainer Ready\ntrue\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 6,
@@ -483,6 +495,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-02-1280x720.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 2,
@@ -498,17 +511,17 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer status\nrunning\n→\nterminated\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R3\n=\nunchanged:\nPod phase\nRunning",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/3/2\nΔ\nchanged:\nContainer state\nrunning\n→\nterminated\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 6,
           "labels": 15,
           "callouts": 0,
           "activeAnimations": 0,
-          "geometries": 144,
+          "geometries": 145,
           "textures": 10,
           "programs": 15,
-          "drawCalls": 325,
+          "drawCalls": 327,
           "pooledTokens": 0,
           "retainedExitHandles": 0,
           "routeHandles": 0,
@@ -523,6 +536,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-03-1280x720.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 3,
@@ -535,26 +549,26 @@
         "labelCount": 7,
         "maximumLabelOverlap": 0,
         "labelsOutsideStage": 0,
-        "routeLabels": ["observe assignment", "restart locally"],
+        "routeLabels": ["restart locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nGeneration\n1\n→\n2\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\nΔ\nchanged:\nContainer status\nterminated\n→\nrunning\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R3\n=\nunchanged:\nPod phase\nRunning",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\n…-01\n→\n…-02\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nLast termination reason\nAbsent\n→\nError\nΔ\nchanged:\nLast termination exit code\nAbsent\n→\n1\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 9,
-          "labels": 18,
+          "labels": 17,
           "callouts": 0,
           "activeAnimations": 0,
           "geometries": 156,
           "textures": 10,
           "programs": 17,
-          "drawCalls": 347,
+          "drawCalls": 340,
           "pooledTokens": 1,
           "retainedExitHandles": 0,
           "routeHandles": 1,
-          "arrowheads": 2,
+          "arrowheads": 1,
           "flowTokens": 1,
-          "routeMarkers": 2,
+          "routeMarkers": 1,
           "wideLineGeometries": 1,
           "wideLineMaterials": 1,
           "renderTargets": 4,
@@ -563,6 +577,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-04-1280x720.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 4,
@@ -578,7 +593,7 @@
         "routeLabels": ["request delete", "delete Pod object"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n−\nremoved:\nPod identity\nsynthetic-uid-old-a1\n→\nAbsent\n−\nremoved:\nContainer identity\napi\n→\nAbsent\nΔ\nchanged:\nReplicaSet D/C/R\nD3 · C3 · R3\n→\nD3 · C2 · R2\n=\nunchanged:\nRestart count\n1\n=\nunchanged:\nGeneration\n2\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\n=\nunchanged:\nPod phase\nRunning",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/2/2\n−\nremoved:\nPod identity\nsynthetic-uid-old-a1\n→\nAbsent\n−\nremoved:\nContainer status slot\ncontainerd://synthetic-api-a-old-02\n→\nAbsent\n=\nunchanged:\nContainer ID\n…-02\n=\nunchanged:\nRestart count\n1\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nContainer state\nrunning",
         "diagnostics": {
           "entityHandles": 15,
           "relationHandles": 6,
@@ -603,6 +618,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-05-1280x720.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 5,
@@ -618,7 +634,7 @@
         "routeLabels": ["watch", "observe deficit and create"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n+\nadded:\nPod identity\nAbsent\n→\nsynthetic-uid-new-d1\n+\nadded:\nContainer identity\nAbsent\n→\napi\nΔ\nchanged:\nReplicaSet D/C/R\nD3 · C2 · R2\n→\nD3 · C3 · R2\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nUnscheduled\n=\nunchanged:\nPod phase\nPending",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/2/2\n→\n3/3/2\n+\nadded:\nPod identity\nAbsent\n→\nsynthetic-uid-new-d1\n+\nadded:\nContainer status slot\nAbsent\n→\napi status slot\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 9,
@@ -643,6 +659,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-06-1280x720.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 6,
@@ -658,7 +675,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nUnscheduled\n=\nunchanged:\nPod phase\nPending\n=\nunchanged:\nContainer status\nwaiting\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R2",
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nUnscheduled\n=\nunchanged:\nPod phase\nPending\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 6,
@@ -683,6 +700,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-07-1280x720.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 7,
@@ -698,7 +716,7 @@
         "routeLabels": ["choose Node", "record binding", "place"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nNode\nUnscheduled\n→\nworker-c\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R2\n=\nunchanged:\nPod phase\nPending\n=\nunchanged:\nContainer status\nwaiting",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nNode\nUnscheduled\n→\nworker-c\nΔ\nchanged:\nPodScheduled\nfalse\n→\ntrue\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 9,
@@ -723,6 +741,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-08-1280x720.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 8,
@@ -738,7 +757,7 @@
         "routeLabels": ["observe assignment", "start locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nReplicaSet D/C/R\nD3 · C3 · R2\n→\nD3 · C3 · R3\nΔ\nchanged:\nPod phase\nPending\n→\nRunning\nΔ\nchanged:\nPod status\npending\n→\nready\nΔ\nchanged:\nContainer status\nwaiting\n→\nrunning\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\nAbsent\n→\n…-01\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\nΔ\nchanged:\nContainersReady\nfalse\n→\ntrue\nΔ\nchanged:\nContainer state\nwaiting\n→\nrunning",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 9,
@@ -763,6 +782,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-09-1280x720.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 9,
@@ -778,7 +798,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nContainer status\nrunning\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R3",
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 6,
@@ -803,6 +823,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-00-390x844.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 0,
@@ -843,6 +864,48 @@
       }
     },
     {
+      "kind": "full-page",
+      "file": "golden-step-02-390x844.png",
+      "lessonId": "container-restart-vs-pod-replacement",
+      "step": 2,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "inspection": {
+        "labelCount": 3,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": [],
+        "calloutCount": 0,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/3/2\nΔ\nchanged:\nContainer state\nrunning\n→\nterminated\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
+        "diagnostics": {
+          "entityHandles": 16,
+          "relationHandles": 6,
+          "labels": 15,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 145,
+          "textures": 10,
+          "programs": 15,
+          "drawCalls": 327,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "full-page",
       "file": "golden-step-03-390x844.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 3,
@@ -855,26 +918,26 @@
         "labelCount": 3,
         "maximumLabelOverlap": 0,
         "labelsOutsideStage": 0,
-        "routeLabels": ["observe assignment"],
+        "routeLabels": ["restart locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nGeneration\n1\n→\n2\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\nΔ\nchanged:\nContainer status\nterminated\n→\nrunning\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R3\n=\nunchanged:\nPod phase\nRunning",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\n…-01\n→\n…-02\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nLast termination reason\nAbsent\n→\nError\nΔ\nchanged:\nLast termination exit code\nAbsent\n→\n1\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 9,
-          "labels": 18,
+          "labels": 17,
           "callouts": 0,
           "activeAnimations": 0,
           "geometries": 156,
           "textures": 10,
           "programs": 17,
-          "drawCalls": 347,
+          "drawCalls": 340,
           "pooledTokens": 1,
           "retainedExitHandles": 0,
           "routeHandles": 1,
-          "arrowheads": 2,
+          "arrowheads": 1,
           "flowTokens": 1,
-          "routeMarkers": 2,
+          "routeMarkers": 1,
           "wideLineGeometries": 1,
           "wideLineMaterials": 1,
           "renderTargets": 4,
@@ -883,6 +946,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-06-390x844.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 6,
@@ -898,7 +962,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nUnscheduled\n=\nunchanged:\nPod phase\nPending\n=\nunchanged:\nContainer status\nwaiting\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R2",
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nUnscheduled\n=\nunchanged:\nPod phase\nPending\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 6,
@@ -923,6 +987,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-08-390x844.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 8,
@@ -938,7 +1003,7 @@
         "routeLabels": ["observe assignment"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nReplicaSet D/C/R\nD3 · C3 · R2\n→\nD3 · C3 · R3\nΔ\nchanged:\nPod phase\nPending\n→\nRunning\nΔ\nchanged:\nPod status\npending\n→\nready\nΔ\nchanged:\nContainer status\nwaiting\n→\nrunning\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\nAbsent\n→\n…-01\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\nΔ\nchanged:\nContainersReady\nfalse\n→\ntrue\nΔ\nchanged:\nContainer state\nwaiting\n→\nrunning",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 9,
@@ -963,6 +1028,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "golden-step-09-390x844.png",
       "lessonId": "container-restart-vs-pod-replacement",
       "step": 9,
@@ -978,7 +1044,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nContainer status\nrunning\n=\nunchanged:\nReplicaSet D/C/R\nD3 · C3 · R3",
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 6,
@@ -1003,6 +1069,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "service-step-00-1440x900.png",
       "lessonId": "service-routes-to-pods",
       "step": 0,
@@ -1018,7 +1085,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-client-01\n=\nunchanged:\nNode\nworker-client\n=\nunchanged:\nPod phase\nRunning",
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-client-01\n=\nunchanged:\nNode\nworker-client\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
           "relationHandles": 7,
@@ -1043,6 +1110,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "service-step-03-1440x900.png",
       "lessonId": "service-routes-to-pods",
       "step": 3,
@@ -1055,10 +1123,10 @@
         "labelCount": 6,
         "maximumLabelOverlap": 0,
         "labelsOutsideStage": 0,
-        "routeLabels": ["enter Service", "route to Ready api-a"],
+        "routeLabels": ["Request A enters Service", "select Ready api-a"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-a-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning",
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-a-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
           "relationHandles": 8,
@@ -1083,6 +1151,7 @@
       }
     },
     {
+      "kind": "full-page",
       "file": "service-step-04-1440x900.png",
       "lessonId": "service-routes-to-pods",
       "step": 4,
@@ -1095,15 +1164,56 @@
         "labelCount": 6,
         "maximumLabelOverlap": 0,
         "labelsOutsideStage": 0,
-        "routeLabels": ["enter same Service", "reroute to Ready api-c"],
+        "routeLabels": [],
         "calloutCount": 1,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nEndpoint readiness\n3/3 Ready\n→\n2/3 Ready\nΔ\nchanged:\nPod status\nready\n→\nnot-ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-a-01\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nEndpoint readiness\n3/3 Ready\n→\n2/3 Ready\nΔ\nchanged:\napi-a conditions\napi-a Endpoint conditions\nT/T/F\n→\nready=false · serving=false · terminating=false\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nPod status\nready\n→\nnot-ready",
+        "diagnostics": {
+          "entityHandles": 6,
+          "relationHandles": 7,
+          "labels": 9,
+          "callouts": 1,
+          "activeAnimations": 0,
+          "geometries": 69,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 135,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "full-page",
+      "file": "service-step-05-1440x900.png",
+      "lessonId": "service-routes-to-pods",
+      "step": 5,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "reducedMotion": false,
+      "inspection": {
+        "labelCount": 6,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": ["New request enters same Service", "select Ready api-c"],
+        "calloutCount": 0,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n2/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
           "relationHandles": 8,
           "labels": 11,
-          "callouts": 1,
+          "callouts": 0,
           "activeAnimations": 0,
           "geometries": 76,
           "textures": 10,
@@ -1123,22 +1233,310 @@
       }
     },
     {
-      "file": "service-step-05-1440x900.png",
+      "kind": "full-page",
+      "file": "service-step-03-1280x720.png",
       "lessonId": "service-routes-to-pods",
-      "step": 5,
+      "step": 3,
       "viewport": {
-        "width": 1440,
-        "height": 900
+        "width": 1280,
+        "height": 720
       },
       "reducedMotion": false,
       "inspection": {
         "labelCount": 6,
         "maximumLabelOverlap": 0,
         "labelsOutsideStage": 0,
-        "routeLabels": ["enter Service", "route to Ready api-c"],
+        "routeLabels": ["Request A enters Service", "select Ready api-a"],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n2/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-a-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends",
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-a-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
+        "diagnostics": {
+          "entityHandles": 6,
+          "relationHandles": 8,
+          "labels": 11,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 74,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 151,
+          "pooledTokens": 2,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 4,
+          "flowTokens": 2,
+          "routeMarkers": 2,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "full-page",
+      "file": "service-step-04-1280x720.png",
+      "lessonId": "service-routes-to-pods",
+      "step": 4,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "reducedMotion": false,
+      "inspection": {
+        "labelCount": 6,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": [],
+        "calloutCount": 1,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nEndpoint readiness\n3/3 Ready\n→\n2/3 Ready\nΔ\nchanged:\napi-a conditions\napi-a Endpoint conditions\nT/T/F\n→\nready=false · serving=false · terminating=false\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nPod status\nready\n→\nnot-ready",
+        "diagnostics": {
+          "entityHandles": 6,
+          "relationHandles": 7,
+          "labels": 9,
+          "callouts": 1,
+          "activeAnimations": 0,
+          "geometries": 69,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 135,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "full-page",
+      "file": "service-step-05-1280x720.png",
+      "lessonId": "service-routes-to-pods",
+      "step": 5,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "reducedMotion": false,
+      "inspection": {
+        "labelCount": 6,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": ["New request enters same Service", "select Ready api-c"],
+        "calloutCount": 0,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n2/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
+        "diagnostics": {
+          "entityHandles": 6,
+          "relationHandles": 8,
+          "labels": 11,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 76,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 152,
+          "pooledTokens": 2,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 4,
+          "flowTokens": 2,
+          "routeMarkers": 2,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "full-page",
+      "file": "service-step-03-390x844.png",
+      "lessonId": "service-routes-to-pods",
+      "step": 3,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "inspection": {
+        "labelCount": 3,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": ["Request A enters Service"],
+        "calloutCount": 0,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-a-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
+        "diagnostics": {
+          "entityHandles": 6,
+          "relationHandles": 8,
+          "labels": 11,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 74,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 151,
+          "pooledTokens": 2,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 4,
+          "flowTokens": 2,
+          "routeMarkers": 2,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "full-page",
+      "file": "service-step-05-390x844.png",
+      "lessonId": "service-routes-to-pods",
+      "step": 5,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "reducedMotion": false,
+      "inspection": {
+        "labelCount": 3,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": ["New request enters same Service"],
+        "calloutCount": 0,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n2/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
+        "diagnostics": {
+          "entityHandles": 6,
+          "relationHandles": 8,
+          "labels": 11,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 76,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 152,
+          "pooledTokens": 2,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 4,
+          "flowTokens": 2,
+          "routeMarkers": 2,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "full-page",
+      "file": "golden-step-03-local-restart-reduced-motion-1280x720.png",
+      "lessonId": "container-restart-vs-pod-replacement",
+      "step": 3,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "reducedMotion": true,
+      "inspection": {
+        "labelCount": 7,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": ["restart locally"],
+        "calloutCount": 0,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\n…-01\n→\n…-02\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nLast termination reason\nAbsent\n→\nError\nΔ\nchanged:\nLast termination exit code\nAbsent\n→\n1\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
+        "diagnostics": {
+          "entityHandles": 16,
+          "relationHandles": 9,
+          "labels": 17,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 155,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 340,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 1,
+          "flowTokens": 0,
+          "routeMarkers": 1,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "full-page",
+      "file": "golden-step-08-reduced-motion-1280x720.png",
+      "lessonId": "container-restart-vs-pod-replacement",
+      "step": 8,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "reducedMotion": true,
+      "inspection": {
+        "labelCount": 7,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": ["observe assignment", "start locally"],
+        "calloutCount": 0,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\nAbsent\n→\n…-01\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\nΔ\nchanged:\nContainersReady\nfalse\n→\ntrue\nΔ\nchanged:\nContainer state\nwaiting\n→\nrunning",
+        "diagnostics": {
+          "entityHandles": 16,
+          "relationHandles": 9,
+          "labels": 18,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 156,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 347,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 2,
+          "flowTokens": 0,
+          "routeMarkers": 2,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "full-page",
+      "file": "service-step-05-request-b-reduced-motion-1280x720.png",
+      "lessonId": "service-routes-to-pods",
+      "step": 5,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "reducedMotion": true,
+      "inspection": {
+        "labelCount": 6,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": ["New request enters same Service", "select Ready api-c"],
+        "calloutCount": 0,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n2/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
           "relationHandles": 8,
@@ -1163,120 +1561,205 @@
       }
     },
     {
-      "file": "service-step-03-1280x720.png",
-      "lessonId": "service-routes-to-pods",
-      "step": 3,
-      "viewport": {
-        "width": 1280,
-        "height": 720
-      },
-      "reducedMotion": false,
-      "inspection": {
-        "labelCount": 6,
-        "maximumLabelOverlap": 0,
-        "labelsOutsideStage": 0,
-        "routeLabels": ["enter Service", "route to Ready api-a"],
-        "calloutCount": 0,
-        "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-a-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning",
-        "diagnostics": {
-          "entityHandles": 6,
-          "relationHandles": 8,
-          "labels": 11,
-          "callouts": 0,
-          "activeAnimations": 0,
-          "geometries": 74,
-          "textures": 10,
-          "programs": 17,
-          "drawCalls": 151,
-          "pooledTokens": 2,
-          "retainedExitHandles": 0,
-          "routeHandles": 1,
-          "arrowheads": 4,
-          "flowTokens": 2,
-          "routeMarkers": 2,
-          "wideLineGeometries": 1,
-          "wideLineMaterials": 1,
-          "renderTargets": 4,
-          "eventListeners": 7
-        }
-      }
-    },
-    {
-      "file": "service-step-03-390x844.png",
-      "lessonId": "service-routes-to-pods",
-      "step": 3,
-      "viewport": {
-        "width": 390,
-        "height": 844
-      },
-      "reducedMotion": false,
-      "inspection": {
-        "labelCount": 3,
-        "maximumLabelOverlap": 0,
-        "labelsOutsideStage": 0,
-        "routeLabels": ["enter Service"],
-        "calloutCount": 0,
-        "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-a-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning",
-        "diagnostics": {
-          "entityHandles": 6,
-          "relationHandles": 8,
-          "labels": 11,
-          "callouts": 0,
-          "activeAnimations": 0,
-          "geometries": 74,
-          "textures": 10,
-          "programs": 17,
-          "drawCalls": 151,
-          "pooledTokens": 2,
-          "retainedExitHandles": 0,
-          "routeHandles": 1,
-          "arrowheads": 4,
-          "flowTokens": 2,
-          "routeMarkers": 2,
-          "wideLineGeometries": 1,
-          "wideLineMaterials": 1,
-          "renderTargets": 4,
-          "eventListeners": 7
-        }
-      }
-    },
-    {
-      "file": "golden-step-08-reduced-motion-1280x720.png",
+      "kind": "focused-element",
+      "file": "evidence-golden-step-02-1280x720.png",
       "lessonId": "container-restart-vs-pod-replacement",
-      "step": 8,
+      "step": 2,
       "viewport": {
         "width": 1280,
         "height": 720
       },
-      "reducedMotion": true,
+      "selector": "[data-testid=\"evidence-panel\"]",
       "inspection": {
         "labelCount": 7,
         "maximumLabelOverlap": 0,
         "labelsOutsideStage": 0,
-        "routeLabels": ["observe assignment", "start locally"],
+        "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nReplicaSet D/C/R\nD3 · C3 · R2\n→\nD3 · C3 · R3\nΔ\nchanged:\nPod phase\nPending\n→\nRunning\nΔ\nchanged:\nPod status\npending\n→\nready\nΔ\nchanged:\nContainer status\nwaiting\n→\nrunning\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nGeneration\n1\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c",
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/3/2\nΔ\nchanged:\nContainer state\nrunning\n→\nterminated\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
+        "diagnostics": {
+          "entityHandles": 16,
+          "relationHandles": 6,
+          "labels": 15,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 145,
+          "textures": 10,
+          "programs": 15,
+          "drawCalls": 327,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "focused-element",
+      "file": "evidence-golden-step-03-1280x720.png",
+      "lessonId": "container-restart-vs-pod-replacement",
+      "step": 3,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "selector": "[data-testid=\"evidence-panel\"]",
+      "inspection": {
+        "labelCount": 7,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": ["restart locally"],
+        "calloutCount": 0,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\n…-01\n→\n…-02\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nLast termination reason\nAbsent\n→\nError\nΔ\nchanged:\nLast termination exit code\nAbsent\n→\n1\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
           "relationHandles": 9,
-          "labels": 18,
+          "labels": 17,
           "callouts": 0,
           "activeAnimations": 0,
           "geometries": 156,
           "textures": 10,
           "programs": 17,
-          "drawCalls": 347,
-          "pooledTokens": 0,
+          "drawCalls": 340,
+          "pooledTokens": 1,
           "retainedExitHandles": 0,
           "routeHandles": 1,
-          "arrowheads": 2,
+          "arrowheads": 1,
+          "flowTokens": 1,
+          "routeMarkers": 1,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "focused-element",
+      "file": "evidence-service-step-04-1280x720.png",
+      "lessonId": "service-routes-to-pods",
+      "step": 4,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "selector": "[data-testid=\"evidence-panel\"]",
+      "inspection": {
+        "labelCount": 6,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": [],
+        "calloutCount": 1,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nEndpoint readiness\n3/3 Ready\n→\n2/3 Ready\nΔ\nchanged:\napi-a conditions\napi-a Endpoint conditions\nT/T/F\n→\nready=false · serving=false · terminating=false\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nPod status\nready\n→\nnot-ready",
+        "diagnostics": {
+          "entityHandles": 6,
+          "relationHandles": 7,
+          "labels": 9,
+          "callouts": 1,
+          "activeAnimations": 0,
+          "geometries": 69,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 135,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
           "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "focused-element",
+      "file": "evidence-service-step-05-1280x720.png",
+      "lessonId": "service-routes-to-pods",
+      "step": 5,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "selector": "[data-testid=\"evidence-panel\"]",
+      "inspection": {
+        "labelCount": 6,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": ["New request enters same Service", "select Ready api-c"],
+        "calloutCount": 0,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n2/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
+        "diagnostics": {
+          "entityHandles": 6,
+          "relationHandles": 8,
+          "labels": 11,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 76,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 152,
+          "pooledTokens": 2,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 4,
+          "flowTokens": 2,
           "routeMarkers": 2,
           "wideLineGeometries": 1,
           "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "kind": "focused-element",
+      "file": "comparison-golden-step-09-1280x720.png",
+      "lessonId": "container-restart-vs-pod-replacement",
+      "step": 9,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "selector": "[data-testid=\"comparison-panel\"]",
+      "inspection": {
+        "labelCount": 0,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "routeLabels": [],
+        "calloutCount": 0,
+        "teachingTextVisible": true,
+        "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning",
+        "diagnostics": {
+          "entityHandles": 16,
+          "relationHandles": 6,
+          "labels": 14,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 145,
+          "textures": 10,
+          "programs": 15,
+          "drawCalls": 328,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
           "renderTargets": 4,
           "eventListeners": 7
         }

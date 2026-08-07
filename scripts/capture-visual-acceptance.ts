@@ -13,6 +13,14 @@ interface Capture {
   readonly reducedMotion?: boolean;
 }
 
+interface FocusedCapture {
+  readonly name: string;
+  readonly lessonId: string;
+  readonly step: number;
+  readonly viewport: ViewportSize;
+  readonly selector: string;
+}
+
 interface Rectangle {
   readonly x: number;
   readonly y: number;
@@ -100,7 +108,7 @@ const captures: readonly Capture[] = [
     step,
     viewport: desktop1280,
   })),
-  ...[0, 3, 6, 8, 9].map((step) => ({
+  ...[0, 2, 3, 6, 8, 9].map((step) => ({
     name: `golden-step-${String(step).padStart(2, '0')}-390x844`,
     lessonId: golden,
     step,
@@ -112,17 +120,24 @@ const captures: readonly Capture[] = [
     step,
     viewport: desktop1440,
   })),
-  {
-    name: 'service-step-03-1280x720',
+  ...[3, 4, 5].map((step) => ({
+    name: `service-step-${String(step).padStart(2, '0')}-1280x720`,
     lessonId: service,
+    step,
+    viewport: desktop1280,
+  })),
+  ...[3, 5].map((step) => ({
+    name: `service-step-${String(step).padStart(2, '0')}-390x844`,
+    lessonId: service,
+    step,
+    viewport: mobile390,
+  })),
+  {
+    name: 'golden-step-03-local-restart-reduced-motion-1280x720',
+    lessonId: golden,
     step: 3,
     viewport: desktop1280,
-  },
-  {
-    name: 'service-step-03-390x844',
-    lessonId: service,
-    step: 3,
-    viewport: mobile390,
+    reducedMotion: true,
   },
   {
     name: 'golden-step-08-reduced-motion-1280x720',
@@ -130,6 +145,37 @@ const captures: readonly Capture[] = [
     step: 8,
     viewport: desktop1280,
     reducedMotion: true,
+  },
+  {
+    name: 'service-step-05-request-b-reduced-motion-1280x720',
+    lessonId: service,
+    step: 5,
+    viewport: desktop1280,
+    reducedMotion: true,
+  },
+];
+
+const focusedCaptures: readonly FocusedCapture[] = [
+  ...[2, 3].map((step) => ({
+    name: `evidence-golden-step-${String(step).padStart(2, '0')}-1280x720`,
+    lessonId: golden,
+    step,
+    viewport: desktop1280,
+    selector: '[data-testid="evidence-panel"]',
+  })),
+  ...[4, 5].map((step) => ({
+    name: `evidence-service-step-${String(step).padStart(2, '0')}-1280x720`,
+    lessonId: service,
+    step,
+    viewport: desktop1280,
+    selector: '[data-testid="evidence-panel"]',
+  })),
+  {
+    name: 'comparison-golden-step-09-1280x720',
+    lessonId: golden,
+    step: 9,
+    viewport: desktop1280,
+    selector: '[data-testid="comparison-panel"]',
   },
 ];
 
@@ -162,6 +208,15 @@ async function waitForScene(page: Page): Promise<void> {
   await page.waitForTimeout(180);
 }
 
+async function revealMobileEvidence(page: Page, capture: Capture): Promise<void> {
+  if (capture.viewport.width > 720) return;
+  const goldenEvidenceStep = capture.lessonId === golden && [2, 3, 6, 8, 9].includes(capture.step);
+  const serviceEvidenceStep = capture.lessonId === service && [3, 5].includes(capture.step);
+  if (!goldenEvidenceStep && !serviceEvidenceStep) return;
+  await page.getByTestId('evidence-panel').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(80);
+}
+
 await mkdir(outputDirectory, { recursive: true });
 const browser = await chromium.launch({
   args: ['--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'],
@@ -180,6 +235,7 @@ try {
     const page = await context.newPage();
     await page.goto(`${baseUrl}/#/learn/${capture.lessonId}/${capture.step}`);
     await waitForScene(page);
+    await revealMobileEvidence(page, capture);
     const inspection = await inspectPage(page);
     await page.screenshot({
       path: path.join(outputDirectory, `${capture.name}.png`),
@@ -189,12 +245,44 @@ try {
       scale: 'css',
     });
     results.push({
+      kind: 'full-page',
       file: `${capture.name}.png`,
       lessonId: capture.lessonId,
       step: capture.step,
       viewport: capture.viewport,
       reducedMotion: capture.reducedMotion ?? false,
       inspection,
+    });
+    await context.close();
+  }
+
+  for (const capture of focusedCaptures) {
+    const context = await browser.newContext({
+      viewport: capture.viewport,
+      colorScheme: 'dark',
+      locale: 'en-US',
+      reducedMotion: 'no-preference',
+      deviceScaleFactor: 1,
+    });
+    const page = await context.newPage();
+    await page.goto(`${baseUrl}/#/learn/${capture.lessonId}/${capture.step}`);
+    await waitForScene(page);
+    const element = page.locator(capture.selector);
+    await element.waitFor({ state: 'visible' });
+    await element.screenshot({
+      path: path.join(outputDirectory, `${capture.name}.png`),
+      animations: 'disabled',
+      caret: 'hide',
+      scale: 'css',
+    });
+    results.push({
+      kind: 'focused-element',
+      file: `${capture.name}.png`,
+      lessonId: capture.lessonId,
+      step: capture.step,
+      viewport: capture.viewport,
+      selector: capture.selector,
+      inspection: await inspectPage(page),
     });
     await context.close();
   }
@@ -216,4 +304,6 @@ await writeFile(
   'utf8',
 );
 
-console.log(`Captured ${captures.length} visual-acceptance screenshots in ${outputDirectory}`);
+console.log(
+  `Captured ${captures.length} full-page and ${focusedCaptures.length} focused visual-acceptance screenshots in ${outputDirectory}`,
+);

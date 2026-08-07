@@ -52,5 +52,5 @@ test('mobile teaching sheet, timeline, drawers, and controls do not cover one an
   await page.getByRole('button', { name: /^Next$/i }).click();
   await expect(page).toHaveURL(/container-restart-vs-pod-replacement\/7$/);
   await waitForSceneIdle(page);
-  await expect(page.getByTestId('replica-counts')).toHaveText(/Desired 3 Current 3 Ready 2/);
+  await expect(page.getByTestId('replica-counts')).toHaveText(/SPEC 3 OBSERVED 3 READY 2/);
 });

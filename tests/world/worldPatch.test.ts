@@ -48,21 +48,33 @@ describe('world data guards and snapshot validation', () => {
       phase: 'Running',
     });
     expect(isContainerData(container.data)).toBe(true);
-    expect(getContainerData(container)).toMatchObject({ restartCount: 0, instanceGeneration: 1 });
+    expect(getContainerData(container)).toMatchObject({
+      containerID: 'containerd://synthetic-api-a-old-01',
+      restartCount: 0,
+      ready: true,
+      state: { kind: 'running' },
+    });
     expect(isReplicaSetData(replicaSet.data)).toBe(true);
     expect(getReplicaSetData(replicaSet)).toEqual({
-      desiredReplicas: 3,
-      currentReplicas: 3,
+      specReplicas: 3,
+      statusReplicas: 3,
       readyReplicas: 3,
     });
 
     expect(isPodData({ uid: 'x', phase: 'running', restartPolicy: 'Always' })).toBe(false);
     expect(
-      isContainerData({ podId: 'p', restartCount: -1, instanceGeneration: 0, image: 'x' }),
+      isContainerData({
+        podId: 'p',
+        name: 'api',
+        image: 'x',
+        containerID: 'containerd://x',
+        restartCount: -1,
+        ready: true,
+        started: true,
+        state: { kind: 'running', startedAt: '2026-08-08T00:00:00Z' },
+      }),
     ).toBe(false);
-    expect(isReplicaSetData({ desiredReplicas: 3, currentReplicas: 2, readyReplicas: 3 })).toBe(
-      false,
-    );
+    expect(isReplicaSetData({ specReplicas: 3, statusReplicas: 2, readyReplicas: 3 })).toBe(false);
   });
 
   it('rejects non-serializable data, record-key mismatches, and dangling endpoints', () => {
@@ -292,7 +304,20 @@ describe('applyWorldPatch transaction validation (directive 12.2)', () => {
         {
           op: 'patch-entity',
           entityId: IDS.oldContainer,
-          patch: { status: 'terminated' },
+          patch: {
+            status: 'terminated',
+            data: {
+              ready: false,
+              started: false,
+              state: {
+                kind: 'terminated',
+                reason: 'Error',
+                exitCode: 1,
+                finishedAt: '2026-08-08T00:00:10Z',
+                containerID: 'containerd://synthetic-api-a-old-01',
+              },
+            },
+          },
         },
       ],
     };
@@ -303,7 +328,20 @@ describe('applyWorldPatch transaction validation (directive 12.2)', () => {
           entityId: IDS.oldContainer,
           patch: {
             status: 'running',
-            data: { restartCount: 1, instanceGeneration: 2 },
+            data: {
+              containerID: 'containerd://synthetic-api-a-old-02',
+              restartCount: 1,
+              ready: true,
+              started: true,
+              state: { kind: 'running', startedAt: '2026-08-08T00:00:12Z' },
+              lastState: {
+                kind: 'terminated',
+                reason: 'Error',
+                exitCode: 1,
+                finishedAt: '2026-08-08T00:00:10Z',
+                containerID: 'containerd://synthetic-api-a-old-01',
+              },
+            },
           },
         },
       ],

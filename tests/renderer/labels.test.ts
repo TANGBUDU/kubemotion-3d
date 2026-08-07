@@ -407,6 +407,29 @@ describe('LabelManager deterministic screen-space layout', () => {
     expect(layoutFor(handles)).toEqual(layoutFor([...handles].reverse()));
   });
 
+  it('refreshes ReplicaSet label counters after a counter cue settles', () => {
+    const container = document.createElement('div');
+    const handle = makeHandle('api-rs', 'ReplicaSet', new THREE.Vector3());
+    handle.root.userData.domLabel = { text: 'ReplicaSet · api-rs' };
+    handle.root.userData.counters = { spec: 3, observed: 3, ready: 3 };
+    const registry = makeRegistry([handle]);
+    const view = makeView([handle], () => ({
+      visible: true,
+      emphasis: 'focused',
+      labelMode: 'full',
+    }));
+    const manager = new LabelManager(container);
+    manager.sync(registry, view, 'en');
+    const label = labelFor(container, handle.entityId);
+    expect(label).toHaveTextContent('SPEC 3 OBSERVED 3 READY 3');
+
+    handle.root.userData.counters = { spec: 3, observed: 3, ready: 2 };
+    setLabelSize(label, 190, 24);
+    manager.update(registry, camera(), 400, 300);
+    expect(label).toHaveTextContent('SPEC 3 OBSERVED 3 READY 2');
+    manager.clear();
+  });
+
   it('hides all labels for an invalid viewport and removes owned DOM on clear', () => {
     const container = document.createElement('div');
     const handle = makeHandle('pod', 'Pod', new THREE.Vector3());

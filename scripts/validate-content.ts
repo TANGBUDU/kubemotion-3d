@@ -228,8 +228,8 @@ const apiServerId = 'runtime-component:cluster:global:KubeAPIServer:kube-apiserv
 const kubectlId = 'external:external:global:Kubectl:kubectl';
 const newPodId = 'api-object:namespaced:shop:Pod:api-d-new';
 const oldPodId = 'api-object:namespaced:shop:Pod:api-a-old';
-const oldContainerId = 'runtime-instance:shop:Pod:api-a-old:Container:api';
-const newContainerId = 'runtime-instance:shop:Pod:api-d-new:Container:api';
+const oldContainerId = 'container-status:shop:Pod:api-a-old:Container:api';
+const newContainerId = 'container-status:shop:Pod:api-d-new:Container:api';
 const replicaSetId = 'api-object:namespaced:shop:ReplicaSet:api-rs';
 
 check(
@@ -265,7 +265,7 @@ check(
   'explicit deletion must remove the old Pod before replacement exists',
 );
 check(
-  getReplicaSetData(deleted.world.entities[replicaSetId]!).currentReplicas === 2 &&
+  getReplicaSetData(deleted.world.entities[replicaSetId]!).statusReplicas === 2 &&
     getReplicaSetData(deleted.world.entities[replicaSetId]!).readyReplicas === 2,
   'deletion must expose the ReplicaSet deficit',
 );

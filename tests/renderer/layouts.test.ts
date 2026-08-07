@@ -26,7 +26,7 @@ const entity = (
   id,
   category:
     kind === 'Container'
-      ? 'runtime-instance'
+      ? 'runtime-status'
       : kind === 'Node'
         ? 'infrastructure'
         : kind === 'Kubectl'
@@ -86,30 +86,37 @@ const podMoon = entity('pod:moon-api', 'Pod', 'api-moon', {
   nodeName: 'moon-node',
   phase: 'Running',
   restartPolicy: 'Always',
+  conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true },
 });
 const podSun = entity('pod:sun-api', 'Pod', 'api-sun', {
   uid: 'uid-sun',
   nodeName: 'sun-node',
   phase: 'Running',
   restartPolicy: 'Always',
+  conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true },
 });
 const podPending = {
   ...entity('pod:pending', 'Pod', 'api-pending', {
     uid: 'uid-pending',
     phase: 'Pending',
     restartPolicy: 'Always',
+    conditions: { podScheduled: false, initialized: true, containersReady: false, ready: false },
   }),
   status: 'pending' as const,
 };
 const containerMoon = entity('container:moon', 'Container', 'api', {
   podId: podMoon.id,
+  name: 'api',
   image: 'example/api:v1',
+  containerID: 'containerd://moon-api-01',
   restartCount: 0,
-  instanceGeneration: 1,
+  ready: true,
+  started: true,
+  state: { kind: 'running', startedAt: '2026-08-08T00:00:00Z' },
 });
 const replicaSet = entity('rs:api', 'ReplicaSet', 'api-rs', {
-  desiredReplicas: 3,
-  currentReplicas: 3,
+  specReplicas: 3,
+  statusReplicas: 3,
   readyReplicas: 2,
 });
 const controller = entity('component:controller', 'ControllerManager', 'controller-manager', {});

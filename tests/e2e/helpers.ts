@@ -20,9 +20,9 @@ export const SERVICE_STEP_TITLES = [
   'Identify the traffic objects',
   'The Service stays stable',
   'EndpointSlice lists eligible backends',
-  'A request reaches one ready backend',
-  'Traffic reroutes around a NotReady endpoint',
-  'Trace the complete Service path',
+  'Request A reaches Ready endpoint api-a',
+  'api-a remains listed but becomes NotReady',
+  'A later request selects another Ready endpoint',
 ] as const;
 
 export async function waitForSceneIdle(page: Page): Promise<void> {
@@ -58,4 +58,9 @@ export async function gotoServiceStep(page: Page, stepIndex: number): Promise<vo
   await page.goto(`/#/learn/${SERVICE_LESSON}/${stepIndex}`);
   await expect(page.getByTestId('teaching-step-heading')).toContainText(title);
   await waitForSceneIdle(page);
+}
+
+export async function revealEvidence(page: Page): Promise<void> {
+  await page.getByTestId('evidence-panel').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(80);
 }
