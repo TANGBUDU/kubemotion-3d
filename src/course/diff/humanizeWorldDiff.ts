@@ -28,35 +28,74 @@ function deduplicate(rows: readonly EvidenceRow[]): readonly EvidenceRow[] {
 }
 
 const evidencePathPriority: Readonly<Record<string, number>> = {
-  '/data/restartCount': 110,
-  '/data/instanceGeneration': 108,
-  '/identity': 106,
-  '/data/uid': 104,
-  '/data/nodeName': 102,
+  '/data/containerID': 140,
+  '/data/restartCount': 138,
+  '/data/lastState/reason': 136,
+  '/data/lastState/exitCode': 134,
+  '/data/conditions/ready': 132,
+  '/data/conditions/containersReady': 130,
+  '/data/replicas': 128,
+  '/data/state/kind': 126,
+  '/data/phase': 124,
+  '/data/uid': 122,
+  '/data/nodeName': 120,
+  '/data/ready': 108,
+  '/data/started': 106,
+  '/identity': 104,
   '/data/endpoints': 100,
   '/data/clusterIP': 98,
   '/data/ports/0': 96,
-  '/data/replicas': 94,
-  '/data/phase': 78,
   '/status': 76,
 };
 
 function prioritizeContextEvidence(rows: readonly EvidenceRow[]): readonly EvidenceRow[] {
-  const hasRuntimeCounterChange = rows.some(
+  const hasContainerIdChange = rows.some(
+    (row) => row.change !== 'unchanged' && row.path === '/data/containerID',
+  );
+  const hasContainerLifecycleChange = rows.some(
     (row) =>
       row.change !== 'unchanged' &&
-      (row.path === '/data/restartCount' || row.path === '/data/instanceGeneration'),
+      ['/data/containerID', '/data/restartCount', '/data/state/kind'].includes(row.path ?? ''),
   );
-  const changedRowBonus = hasRuntimeCounterChange ? 20 : 200;
-  return rows
+  const restartPriority: Readonly<Record<string, number>> = {
+    '/data/containerID': 220,
+    '/data/restartCount': 218,
+    '/data/lastState/reason': 216,
+    '/data/lastState/exitCode': 214,
+    '/data/conditions/ready': 212,
+    '/data/replicas': 210,
+    '/data/uid': 208,
+    '/data/nodeName': 206,
+  };
+  const changedRowBonus = hasContainerIdChange ? 10 : hasContainerLifecycleChange ? 20 : 200;
+  const relevantRows =
+    hasContainerLifecycleChange && !hasContainerIdChange
+      ? rows.filter(
+          (row) =>
+            ![
+              '/data/containerID',
+              '/data/restartCount',
+              '/data/ready',
+              '/data/started',
+              '/status',
+            ].includes(row.path ?? ''),
+        )
+      : rows;
+  return relevantRows
     .map((row, index) => ({ row, index }))
     .sort((left, right) => {
       const leftPriority =
         (left.row.change === 'unchanged' ? 0 : changedRowBonus) +
-        (evidencePathPriority[left.row.path ?? ''] ?? 0);
+        (hasContainerIdChange
+          ? (restartPriority[left.row.path ?? ''] ?? evidencePathPriority[left.row.path ?? ''] ?? 0)
+          : (evidencePathPriority[left.row.path ?? ''] ?? 0));
       const rightPriority =
         (right.row.change === 'unchanged' ? 0 : changedRowBonus) +
-        (evidencePathPriority[right.row.path ?? ''] ?? 0);
+        (hasContainerIdChange
+          ? (restartPriority[right.row.path ?? ''] ??
+            evidencePathPriority[right.row.path ?? ''] ??
+            0)
+          : (evidencePathPriority[right.row.path ?? ''] ?? 0));
       return rightPriority - leftPriority || left.index - right.index;
     })
     .map(({ row }) => row);

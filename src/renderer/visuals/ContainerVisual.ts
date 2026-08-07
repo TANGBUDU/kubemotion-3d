@@ -13,12 +13,6 @@ import { palette } from '../design/palette';
 import { shortResourceName, statusLabel } from '../design/typography';
 import { BaseVisualHandle, type AnchorKind } from './BaseVisualHandle';
 
-const isFailedState = (status: WorldEntity['status']): boolean =>
-  status === 'failed' || status === 'terminated' || status === 'terminating';
-
-const isWaitingState = (status: WorldEntity['status']): boolean =>
-  status === 'waiting' || status === 'pending' || status === 'starting';
-
 export class ContainerVisualHandle extends BaseVisualHandle {
   public readonly block: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   private readonly topCap: THREE.Mesh;
@@ -104,9 +98,9 @@ export class ContainerVisualHandle extends BaseVisualHandle {
 
   protected override updateVisual(entity: WorldEntity): void {
     const data = getContainerData(entity);
-    const failed = isFailedState(entity.status);
-    const waiting = isWaitingState(entity.status);
-    applyMaterialStatus(this.stateMaterial, entity.status);
+    const failed = data.state.kind === 'terminated';
+    const waiting = data.state.kind === 'waiting';
+    applyMaterialStatus(this.stateMaterial, data.state.kind);
 
     this.block.scale.set(1, failed ? 0.3 : waiting ? 0.62 : 1, 1);
     this.block.position.y = failed ? 0.12 : waiting ? 0.2 : dimensions.container.height / 2;
@@ -124,13 +118,18 @@ export class ContainerVisualHandle extends BaseVisualHandle {
         : 'solid-dot';
 
     this.root.userData.podId = data.podId;
+    this.root.userData.containerName = data.name;
+    this.root.userData.containerID = data.containerID ?? null;
     this.root.userData.restartCount = data.restartCount;
-    this.root.userData.instanceGeneration = data.instanceGeneration;
+    this.root.userData.ready = data.ready;
+    this.root.userData.started = data.started;
+    this.root.userData.containerState = data.state.kind;
+    this.root.userData.lastState = data.lastState ?? null;
     this.root.userData.image = data.image;
     this.root.userData.shortLabel = shortResourceName(entity.name, 14);
-    this.root.userData.statusText = statusLabel(entity.status);
+    this.root.userData.statusText = statusLabel(data.state.kind);
     this.root.userData.stateForm = failed ? 'collapsed' : waiting ? 'waiting' : 'upright';
-    this.block.userData.instanceGeneration = data.instanceGeneration;
+    this.block.userData.containerID = data.containerID ?? null;
   }
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {

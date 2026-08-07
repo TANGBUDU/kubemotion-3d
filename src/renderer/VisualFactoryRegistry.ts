@@ -81,7 +81,7 @@ const builtInFactories = (): readonly EntityVisualFactory[] => [
   factory('pod-shell', (entity) => entity.kind === 'Pod', PodVisualHandle),
   factory(
     'container-instance',
-    (entity) => entity.kind === 'Container' && entity.category === 'runtime-instance',
+    (entity) => entity.kind === 'Container' && entity.category === 'runtime-status',
     ContainerVisualHandle,
   ),
   factory('replicaset-counter', (entity) => entity.kind === 'ReplicaSet', ReplicaSetVisualHandle),
