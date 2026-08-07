@@ -84,6 +84,9 @@ async function inspectPage(page: Page) {
     routeLabels: await page.locator('.scene-route-label:visible').allTextContents(),
     calloutCount: await page.locator('.scene-callout:visible').count(),
     teachingTextVisible: await page.getByTestId('teaching-what-changed').isVisible(),
+    visibleComparisonRows: await page
+      .locator('[data-testid="comparison-panel"] dt:visible')
+      .count(),
     evidenceText: await page.getByTestId('evidence-panel').innerText(),
     diagnostics,
   };
@@ -210,7 +213,7 @@ async function waitForScene(page: Page): Promise<void> {
 
 async function revealMobileEvidence(page: Page, capture: Capture): Promise<void> {
   if (capture.viewport.width > 720) return;
-  const goldenEvidenceStep = capture.lessonId === golden && [2, 3, 6, 8, 9].includes(capture.step);
+  const goldenEvidenceStep = capture.lessonId === golden && [2, 3, 6, 8].includes(capture.step);
   const serviceEvidenceStep = capture.lessonId === service && [3, 5].includes(capture.step);
   if (!goldenEvidenceStep && !serviceEvidenceStep) return;
   await page.getByTestId('evidence-panel').scrollIntoViewIfNeeded();

@@ -50,11 +50,18 @@ test.describe('focused factual evidence', () => {
     await expect(evidence).toContainText('ready=false');
     await expect(evidence).toContainText('serving=false');
     await expect(evidence).toContainText('terminating=false');
+    await expect(evidence).toContainText('ContainersReady');
+    await expect(evidence).toContainText('Pod Ready');
+    await expect(evidence).not.toContainText('Pod status');
     await expect(page.locator('.scene-callout:not([hidden])')).toContainText('ready=false');
     await expect(page.locator('.scene-callout:not([hidden])')).toContainText('serving=false');
     await expect(page.locator('#scene-accessible-summary')).toContainText(
       'api-a endpoint ready=false, serving=false, terminating=false',
     );
+    await expect(page.locator('#scene-accessible-summary')).toContainText(
+      'Pod api-a: phase Running; ContainersReady false; Ready false.',
+    );
+    await expect(page.locator('#scene-accessible-summary')).not.toContainText('Pod status');
     await expect(evidence).toHaveScreenshot(
       'evidence-service-step-04-1280x720.png',
       tightScreenshot,
@@ -79,6 +86,23 @@ test.describe('focused factual evidence', () => {
     const comparison = page.getByTestId('comparison-panel');
     await expect(comparison).toContainText('Container ID');
     await expect(comparison).toContainText('Container restart count');
+    await expect(comparison.locator('.restart-card dt')).toHaveText([
+      'Pod name',
+      'Pod UID',
+      'Node',
+      'Container ID',
+      'Container restart count',
+      'Pod object',
+    ]);
+    await expect(comparison.locator('.replacement-card dt')).toHaveText([
+      'Pod name',
+      'Pod UID',
+      'Node',
+      'Container ID',
+      'Container restart count',
+      'Pod object',
+    ]);
+    await expect(comparison.locator('.replacement-runtime')).toHaveCount(1);
     await expect(comparison).toHaveScreenshot(
       'comparison-golden-step-09-1280x720.png',
       tightScreenshot,

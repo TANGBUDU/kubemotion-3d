@@ -59,7 +59,14 @@ describe('LearnPage Service lesson routing summary', () => {
     const evidence = screen.getByTestId('evidence-panel');
     expect(evidence).toHaveTextContent('api-a Endpoint conditions');
     expect(evidence).toHaveTextContent('ready=false · serving=false · terminating=false');
+    expect(evidence).toHaveTextContent('ContainersReady');
+    expect(evidence).toHaveTextContent('Pod Ready');
+    expect(evidence).not.toHaveTextContent('Pod status');
     const summary = document.querySelector('#scene-accessible-summary');
+    expect(summary).toHaveTextContent(
+      'Pod api-a: phase Running; ContainersReady false; Ready false.',
+    );
+    expect(summary).not.toHaveTextContent('Pod status');
     expect(summary).toHaveTextContent(
       'api-a endpoint ready=false, serving=false, terminating=false',
     );

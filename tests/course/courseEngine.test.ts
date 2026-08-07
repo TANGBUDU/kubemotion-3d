@@ -128,6 +128,40 @@ describe('CourseEngine v2 factual timeline', () => {
     );
   });
 
+  it('uses exact multilingual copy for the local restart and Container status slot', () => {
+    expect(lesson.summary).toEqual({
+      en: 'Watch kubelet restart a runtime Container locally inside one Pod, then follow an intentional Pod deletion and API-mediated replacement.',
+      ja: 'kubelet が同じ Pod 内でランタイム Container をローカル再起動する流れと、その後に意図的な Pod 削除から API を介して置換される流れを追います。',
+      'zh-CN':
+        '先观察 kubelet 在同一 Pod 内本地重启运行时容器，再跟随一次主动 Pod 删除及其经由 API 完成的替换流程。',
+    });
+
+    const created = step('controller-creates-replacement').world;
+    expect(created.entities[NEW_CONTAINER]?.summary).toEqual({
+      en: 'Container status slot waiting for kubelet to create a runtime Container.',
+      ja: 'kubelet がランタイム Container を作成するのを待っている Container 状態スロットです。',
+      'zh-CN': '等待 kubelet 创建运行时容器的容器状态槽。',
+    });
+
+    const expectedContainmentTitle = {
+      en: 'contains Container status',
+      ja: 'Container 状態を含む',
+      'zh-CN': '包含容器状态',
+    };
+    const replacementContainment = created.relations['contains-api-d-new-container-api']!;
+    expect(replacementContainment).toBeDefined();
+    const containmentRelations = [
+      ...Object.values(scenario.relations).filter(
+        (relation) => relation.type === 'contains-runtime',
+      ),
+      replacementContainment,
+    ];
+    expect(containmentRelations).toHaveLength(4);
+    for (const relation of containmentRelations) {
+      expect(relation.title).toEqual(expectedContainmentTitle);
+    }
+  });
+
   it('models API Server mediation and the kubectl actor in the scenario', () => {
     expect(scenario.entities[API_SERVER]?.kind).toBe('KubeAPIServer');
     expect(scenario.entities[KUBECTL]?.kind).toBe('Kubectl');
@@ -699,6 +733,14 @@ describe('CourseEngine v2 factual timeline', () => {
 
   it('builds the comparison from compiled snapshots', () => {
     const comparison = step('compare-identities').view.comparison;
+    expect(comparison?.rows.map((row) => row.property.en)).toEqual([
+      'Pod name',
+      'Pod UID',
+      'Node',
+      'Container ID',
+      'Container restart count',
+      'Pod object',
+    ]);
     const restartCount = comparison?.rows.find(
       (row) => row.property.en === 'Container restart count',
     );

@@ -71,8 +71,11 @@ test('all ten steps expose the correct causal and factual timeline', async ({ pa
   await expect(page.getByTestId('replica-counts')).toHaveText(/SPEC 3.*OBSERVED 3.*READY 3/);
 
   await gotoGoldenStep(page, 9);
-  await expect(page.getByTestId('comparison-panel')).toContainText('Container restart');
-  await expect(page.getByTestId('comparison-panel')).toContainText('Pod replacement');
-  await expect(page.getByTestId('comparison-panel')).toContainText('synthetic-uid-old-a1');
-  await expect(page.getByTestId('comparison-panel')).toContainText('synthetic-uid-new-d1');
+  const comparison = page.getByTestId('comparison-panel');
+  await expect(comparison).toContainText('Container restart');
+  await expect(comparison).toContainText('Pod replacement');
+  await expect(comparison).toContainText('synthetic-uid-old-a1');
+  await expect(comparison).toContainText('synthetic-uid-new-d1');
+  await expect(comparison.locator('dt')).toHaveCount(12);
+  await expect(comparison.locator('.replacement-runtime')).toHaveCount(1);
 });

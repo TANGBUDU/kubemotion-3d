@@ -47,7 +47,7 @@ otherwise.
 |    6 | The replacement Pod remains Pending, unscheduled, and NotReady.                                                                                                                                                                     | The Pod is visibly outside every Node; no startup route is claimed.                                                                      | PASS   |
 |    7 | Scheduler assigns `worker-c`; phase remains `Pending`, `PodScheduled=true`, Pod Ready remains false, and ReplicaSet remains `3 / 3 / 2`.                                                                                            | Scheduling is shown separately from kubelet startup.                                                                                     | PASS   |
 |    8 | Kubelet starts the first runtime Container for the replacement Pod; phase becomes `Running`, readiness becomes true, and ReplicaSet becomes `3 / 3 / 3`.                                                                            | The startup route and final plaque agree with Evidence.                                                                                  | PASS   |
-|    9 | Snapshot-derived comparison distinguishes stable Pod UID/Node plus changed Container ID from removed/new Pod UIDs and placement.                                                                                                    | Dedicated comparison replaces the 3D scene and remains readable at desktop and mobile widths.                                            | PASS   |
+|    9 | Snapshot-derived comparison contains exactly six properties: Pod name, Pod UID, Node, Container ID, Container restart count, and Pod object. It makes no local-storage persistence claim.                                           | Dedicated comparison replaces the 3D scene and remains readable at desktop and mobile widths.                                            | PASS   |
 
 ### Golden mobile and reduced-motion checks
 
@@ -84,7 +84,7 @@ The four EvidencePanel crops and the comparison crop use the tighter visual-regr
 | `evidence-golden-step-03-1280x720.png`   | Container ID `-01 → -02`, restart 1, last termination, readiness restored, ReplicaSet `3/3/3`, stable UID/Node. | PASS   |
 | `evidence-service-step-04-1280x720.png`  | Full `ready=false · serving=false · terminating=false` tuple with the endpoint still present.                   | PASS   |
 | `evidence-service-step-05-1280x720.png`  | Unchanged Service, 2/3 Ready, and selected api-c identity.                                                      | PASS   |
-| `comparison-golden-step-09-1280x720.png` | Same-Pod restart and Pod replacement identity histories are distinct.                                           | PASS   |
+| `comparison-golden-step-09-1280x720.png` | Both identity histories use the same six API-derived properties and make no local-storage persistence claim.    | PASS   |
 
 ## Mandatory directive checklist
 

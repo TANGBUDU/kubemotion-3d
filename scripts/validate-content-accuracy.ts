@@ -42,6 +42,29 @@ const forbiddenPatterns: readonly { readonly pattern: RegExp; readonly label: st
   { pattern: /reroute to Ready/i, label: 'in-flight request reroute hop' },
   { pattern: /再ルーティングされたリクエスト/, label: 'Japanese rerouted-request label' },
   { pattern: /改道后的请求/, label: 'Chinese rerouted-request label' },
+  {
+    pattern: /Pod status\s+(?:ready|not-ready)/i,
+    label: 'renderer-only Pod status exposed as a learner fact',
+  },
+  { pattern: /Local ephemeral data/i, label: 'unmodeled storage comparison property' },
+  { pattern: /same Pod lifecycle only/i, label: 'ambiguous storage lifetime claim' },
+  { pattern: /not automatically preserved/i, label: 'unmodeled storage preservation claim' },
+  { pattern: /new-generation/, label: 'obsolete runtime-generation CSS class' },
+  {
+    pattern: /API-mediated story from one in-place Container restart/i,
+    label: 'local restart described as API-mediated',
+  },
+  {
+    pattern: /Pending の置換 Pod 内で待機する Container インスタンス/,
+    label: 'Japanese waiting runtime instance before containerID',
+  },
+  {
+    pattern: /Pending 替换 Pod 内等待中的容器实例/,
+    label: 'Chinese waiting runtime instance before containerID',
+  },
+  { pattern: /contains runtime/i, label: 'runtime containment instead of status-slot relation' },
+  { pattern: /ランタイムを内包/, label: 'Japanese runtime containment relation' },
+  { pattern: /包含运行实例/, label: 'Chinese runtime containment relation' },
 ];
 
 const scannedFiles = scanRoots.flatMap(collectTextFiles);
@@ -51,6 +74,72 @@ for (const path of scannedFiles) {
     check(!pattern.test(source), `${path}: forbidden ${label}`);
   }
 }
+
+const finalPrDescription = read('docs/review/PR_FINAL_DESCRIPTION.md');
+check(!/PENDING_/.test(finalPrDescription), 'final PR description: validation placeholders remain');
+for (const requiredClaim of [
+  'two verified lessons',
+  'SPEC / OBSERVED / READY',
+  '`containerID`',
+  '`restartCount`',
+  '`lastState`',
+  '66 passed, 39 skipped, 0 failed',
+  '38 full-page + 5 focused = 43 screenshots',
+]) {
+  check(
+    finalPrDescription.includes(requiredClaim),
+    `final PR description: missing required claim ${requiredClaim}`,
+  );
+}
+
+interface VisualManifestCapture {
+  readonly kind: string;
+  readonly file: string;
+  readonly inspection: {
+    readonly labelsOutsideStage: number;
+    readonly maximumLabelOverlap: number;
+    readonly visibleComparisonRows: number;
+    readonly evidenceText: string;
+  };
+}
+
+const visualManifest = JSON.parse(read('docs/review/screenshots/manifest.json')) as {
+  readonly captures: readonly VisualManifestCapture[];
+};
+check(visualManifest.captures.length === 43, 'visual manifest: expected 43 captures');
+check(
+  visualManifest.captures.filter((capture) => capture.kind === 'full-page').length === 38 &&
+    visualManifest.captures.filter((capture) => capture.kind === 'focused-element').length === 5,
+  'visual manifest: expected 38 full-page and 5 focused captures',
+);
+check(
+  visualManifest.captures.every(
+    (capture) =>
+      capture.inspection.labelsOutsideStage === 0 && capture.inspection.maximumLabelOverlap <= 0.12,
+  ),
+  'visual manifest: label overlap or stage-boundary gate failed',
+);
+const mobileComparisonCapture = visualManifest.captures.find(
+  (capture) => capture.file === 'golden-step-09-390x844.png',
+);
+check(mobileComparisonCapture !== undefined, 'visual manifest: mobile comparison capture missing');
+check(
+  mobileComparisonCapture.inspection.visibleComparisonRows === 12,
+  'visual manifest: mobile comparison must expose all six properties in both cards',
+);
+const focusedServiceEvidence = visualManifest.captures.find(
+  (capture) => capture.file === 'evidence-service-step-04-1280x720.png',
+);
+check(
+  focusedServiceEvidence !== undefined,
+  'visual manifest: focused Service Step 4 Evidence capture missing',
+);
+check(
+  !/Pod status/i.test(focusedServiceEvidence.inspection.evidenceText) &&
+    focusedServiceEvidence.inspection.evidenceText.includes('ContainersReady') &&
+    focusedServiceEvidence.inspection.evidenceText.includes('Pod Ready'),
+  'visual manifest: focused Service Evidence must contain real Pod conditions only',
+);
 
 function uniqueRecord<T extends { readonly id: string }>(values: readonly T[], label: string) {
   const record: Record<string, T> = {};
@@ -363,6 +452,53 @@ check(
     goldenCompared.worldDiff.updatedEntities.length === 0,
   'Step 9: comparison must not mutate facts',
 );
+const comparisonProperties = goldenCompared.view.comparison?.rows.map((row) => row.property.en);
+check(
+  JSON.stringify(comparisonProperties) ===
+    JSON.stringify([
+      'Pod name',
+      'Pod UID',
+      'Node',
+      'Container ID',
+      'Container restart count',
+      'Pod object',
+    ]),
+  'Step 9: comparison must contain exactly six snapshot-derived identity properties',
+);
+
+check(
+  golden.lesson.summary.en ===
+    'Watch kubelet restart a runtime Container locally inside one Pod, then follow an intentional Pod deletion and API-mediated replacement.',
+  'golden lesson: English summary must separate local restart from API-mediated replacement',
+);
+check(
+  golden.lesson.summary.ja ===
+    'kubelet が同じ Pod 内でランタイム Container をローカル再起動する流れと、その後に意図的な Pod 削除から API を介して置換される流れを追います。',
+  'golden lesson: Japanese summary must separate local restart from API-mediated replacement',
+);
+check(
+  golden.lesson.summary['zh-CN'] ===
+    '先观察 kubelet 在同一 Pod 内本地重启运行时容器，再跟随一次主动 Pod 删除及其经由 API 完成的替换流程。',
+  'golden lesson: Chinese summary must separate local restart from API-mediated replacement',
+);
+check(
+  replacementContainer.summary.en ===
+    'Container status slot waiting for kubelet to create a runtime Container.' &&
+    replacementContainer.summary.ja ===
+      'kubelet がランタイム Container を作成するのを待っている Container 状態スロットです。' &&
+    replacementContainer.summary['zh-CN'] === '等待 kubelet 创建运行时容器的容器状态槽。',
+  'Step 5: Pending child must be described as a Container status slot in all languages',
+);
+const replacementContainment = Object.values(goldenCreated.world.relations).find(
+  (relation) => relation.from === replacementPod.id && relation.to === replacementContainer.id,
+);
+check(replacementContainment !== undefined, 'Step 5: replacement containment relation is required');
+check(
+  replacementContainment.title.en === 'contains Container status' &&
+    replacementContainment.title.ja === 'Container 状態を含む' &&
+    replacementContainment.title['zh-CN'] === '包含容器状态',
+  'Step 5: containment relation must identify the Container status slot in all languages',
+);
 
 const restartRoute = goldenRestarted.view.activeRoutes[0];
 check(restartRoute !== undefined, 'Step 3: local restart route is required');
@@ -400,6 +536,21 @@ const service = compileLesson('service-routes-to-pods');
 const requestAStep = step(service, 'request-ready-backend');
 const endpointChangeStep = step(service, 'endpoint-becomes-not-ready');
 const requestBStep = step(service, 'later-request-ready-backend');
+check(
+  endpointChangeStep.worldDiff.updatedEntities.some((update) =>
+    update.changedPaths.includes('/status'),
+  ),
+  'Service Step 4: renderer status change must remain available in WorldDiff',
+);
+check(
+  endpointChangeStep.evidence.every((row) => row.path !== '/status'),
+  'Service Step 4: renderer-only /status must be excluded from factual Evidence',
+);
+check(
+  endpointChangeStep.evidence.some((row) => row.path === '/data/conditions/containersReady') &&
+    endpointChangeStep.evidence.some((row) => row.path === '/data/conditions/ready'),
+  'Service Step 4: real ContainersReady and Pod Ready conditions must remain in Evidence',
+);
 const serviceEntity = entity(
   endpointChangeStep.world,
   (candidate) => candidate.kind === 'Service',
@@ -464,5 +615,5 @@ check(
 );
 
 console.log(
-  `Content accuracy passed: ${scannedFiles.length} text files scanned, 6 blockers guarded, Pod lifecycle and Service request invariants verified.`,
+  `Content accuracy passed: ${scannedFiles.length} text files scanned, ${forbiddenPatterns.length} forbidden patterns guarded, Pod lifecycle and Service request invariants verified.`,
 );

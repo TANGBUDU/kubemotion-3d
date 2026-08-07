@@ -11,7 +11,10 @@ for (let stepIndex = 0; stepIndex < STEP_TITLES.length; stepIndex += 1) {
     test.skip(!desktop && !mobile, 'Not a required visual-acceptance capture');
 
     await gotoGoldenStep(page, stepIndex);
-    if (mobile && [2, 3, 6, 8, 9].includes(stepIndex)) await revealEvidence(page);
+    if (mobile && [2, 3, 6, 8].includes(stepIndex)) await revealEvidence(page);
+    if (stepIndex === 9) {
+      await expect(page.locator('[data-testid="comparison-panel"] dt:visible')).toHaveCount(12);
+    }
     const viewport = page.viewportSize();
     if (!viewport) throw new Error('Visual acceptance requires an explicit viewport');
     await expect(page).toHaveScreenshot(

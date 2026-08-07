@@ -77,6 +77,39 @@ describe('humanizeWorldDiff', () => {
     expect(rows.every((row) => row.entityId === OLD_CONTAINER)).toBe(true);
   });
 
+  it('keeps renderer status changes out of learner evidence while preserving Pod facts', () => {
+    const exited = step('container-exits');
+    const podUpdate = exited.worldDiff.updatedEntities.find((update) => update.id === OLD_POD);
+    expect(podUpdate?.changedPaths).toContain('/status');
+
+    const rows = humanizeWorldDiff(exited.beforeWorld, exited.world, exited.worldDiff, {
+      mode: 'diff-with-context',
+      entityIds: [OLD_POD],
+    });
+
+    expect(rows.some((row) => row.path === '/status')).toBe(false);
+    expect(rows.some((row) => row.label.en === 'Pod status')).toBe(false);
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '/data/conditions/containersReady',
+          before: expect.objectContaining({ en: 'true' }),
+          after: expect.objectContaining({ en: 'false' }),
+        }),
+        expect.objectContaining({
+          path: '/data/conditions/ready',
+          before: expect.objectContaining({ en: 'true' }),
+          after: expect.objectContaining({ en: 'false' }),
+        }),
+        expect.objectContaining({
+          path: '/data/phase',
+          change: 'unchanged',
+          after: expect.objectContaining({ en: 'Running' }),
+        }),
+      ]),
+    );
+  });
+
   it('uses identity rows for removals and a single combined ReplicaSet row', () => {
     const deleted = step('kubectl-delete-pod');
     const rows = humanizeWorldDiff(deleted.beforeWorld, deleted.world, deleted.worldDiff, {

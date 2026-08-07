@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-07T20:08:10.728Z",
+  "generatedAt": "2026-08-07T20:57:44.603Z",
   "baseUrl": "http://127.0.0.1:4173",
   "captures": [
     {
@@ -19,6 +19,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n\nNo factual state changed.",
         "diagnostics": {
           "entityHandles": 16,
@@ -60,6 +61,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning\n=\nunchanged:\nContainer Ready\ntrue\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue",
         "diagnostics": {
           "entityHandles": 16,
@@ -101,6 +103,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/3/2\nΔ\nchanged:\nContainer state\nrunning\n→\nterminated\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
@@ -142,6 +145,7 @@
         "routeLabels": ["restart locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\n…-01\n→\n…-02\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nLast termination reason\nAbsent\n→\nError\nΔ\nchanged:\nLast termination exit code\nAbsent\n→\n1\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
@@ -183,6 +187,7 @@
         "routeLabels": ["request delete", "delete Pod object"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/2/2\n−\nremoved:\nPod identity\nsynthetic-uid-old-a1\n→\nAbsent\n−\nremoved:\nContainer status slot\ncontainerd://synthetic-api-a-old-02\n→\nAbsent\n=\nunchanged:\nContainer ID\n…-02\n=\nunchanged:\nRestart count\n1\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nContainer state\nrunning",
         "diagnostics": {
           "entityHandles": 15,
@@ -224,6 +229,7 @@
         "routeLabels": ["watch", "observe deficit and create"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/2/2\n→\n3/3/2\n+\nadded:\nPod identity\nAbsent\n→\nsynthetic-uid-new-d1\n+\nadded:\nContainer status slot\nAbsent\n→\napi status slot\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
@@ -265,6 +271,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nUnscheduled\n=\nunchanged:\nPod phase\nPending\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
@@ -306,6 +313,7 @@
         "routeLabels": ["choose Node", "record binding", "place"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nNode\nUnscheduled\n→\nworker-c\nΔ\nchanged:\nPodScheduled\nfalse\n→\ntrue\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
@@ -347,6 +355,7 @@
         "routeLabels": ["observe assignment", "start locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\nAbsent\n→\n…-01\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\nΔ\nchanged:\nContainersReady\nfalse\n→\ntrue\nΔ\nchanged:\nContainer state\nwaiting\n→\nrunning",
         "diagnostics": {
           "entityHandles": 16,
@@ -388,6 +397,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 12,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning",
         "diagnostics": {
           "entityHandles": 16,
@@ -429,6 +439,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n\nNo factual state changed.",
         "diagnostics": {
           "entityHandles": 16,
@@ -470,6 +481,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning\n=\nunchanged:\nContainer Ready\ntrue\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue",
         "diagnostics": {
           "entityHandles": 16,
@@ -511,6 +523,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/3/2\nΔ\nchanged:\nContainer state\nrunning\n→\nterminated\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
@@ -552,6 +565,7 @@
         "routeLabels": ["restart locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\n…-01\n→\n…-02\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nLast termination reason\nAbsent\n→\nError\nΔ\nchanged:\nLast termination exit code\nAbsent\n→\n1\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
@@ -593,6 +607,7 @@
         "routeLabels": ["request delete", "delete Pod object"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/2/2\n−\nremoved:\nPod identity\nsynthetic-uid-old-a1\n→\nAbsent\n−\nremoved:\nContainer status slot\ncontainerd://synthetic-api-a-old-02\n→\nAbsent\n=\nunchanged:\nContainer ID\n…-02\n=\nunchanged:\nRestart count\n1\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nContainer state\nrunning",
         "diagnostics": {
           "entityHandles": 15,
@@ -634,6 +649,7 @@
         "routeLabels": ["watch", "observe deficit and create"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/2/2\n→\n3/3/2\n+\nadded:\nPod identity\nAbsent\n→\nsynthetic-uid-new-d1\n+\nadded:\nContainer status slot\nAbsent\n→\napi status slot\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
@@ -675,6 +691,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nUnscheduled\n=\nunchanged:\nPod phase\nPending\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
@@ -716,6 +733,7 @@
         "routeLabels": ["choose Node", "record binding", "place"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nNode\nUnscheduled\n→\nworker-c\nΔ\nchanged:\nPodScheduled\nfalse\n→\ntrue\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
@@ -757,6 +775,7 @@
         "routeLabels": ["observe assignment", "start locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\nAbsent\n→\n…-01\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\nΔ\nchanged:\nContainersReady\nfalse\n→\ntrue\nΔ\nchanged:\nContainer state\nwaiting\n→\nrunning",
         "diagnostics": {
           "entityHandles": 16,
@@ -798,6 +817,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 12,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning",
         "diagnostics": {
           "entityHandles": 16,
@@ -839,6 +859,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n\nNo factual state changed.",
         "diagnostics": {
           "entityHandles": 16,
@@ -880,6 +901,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/3/2\nΔ\nchanged:\nContainer state\nrunning\n→\nterminated\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
@@ -921,6 +943,7 @@
         "routeLabels": ["restart locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\n…-01\n→\n…-02\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nLast termination reason\nAbsent\n→\nError\nΔ\nchanged:\nLast termination exit code\nAbsent\n→\n1\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
@@ -962,6 +985,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nUnscheduled\n=\nunchanged:\nPod phase\nPending\n=\nunchanged:\nContainersReady\nfalse\n=\nunchanged:\nPod Ready\nfalse\n=\nunchanged:\nContainer ID\nAbsent\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nwaiting",
         "diagnostics": {
           "entityHandles": 16,
@@ -1003,6 +1027,7 @@
         "routeLabels": ["observe assignment"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\nAbsent\n→\n…-01\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\nΔ\nchanged:\nContainersReady\nfalse\n→\ntrue\nΔ\nchanged:\nContainer state\nwaiting\n→\nrunning",
         "diagnostics": {
           "entityHandles": 16,
@@ -1044,6 +1069,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 12,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning",
         "diagnostics": {
           "entityHandles": 16,
@@ -1085,6 +1111,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-client-01\n=\nunchanged:\nNode\nworker-client\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
@@ -1126,6 +1153,7 @@
         "routeLabels": ["Request A enters Service", "select Ready api-a"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-a-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
@@ -1167,7 +1195,8 @@
         "routeLabels": [],
         "calloutCount": 1,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nEndpoint readiness\n3/3 Ready\n→\n2/3 Ready\nΔ\nchanged:\napi-a conditions\napi-a Endpoint conditions\nT/T/F\n→\nready=false · serving=false · terminating=false\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nPod status\nready\n→\nnot-ready",
+        "visibleComparisonRows": 0,
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nEndpoint readiness\n3/3 Ready\n→\n2/3 Ready\nΔ\nchanged:\napi-a conditions\napi-a Endpoint conditions\nT/T/F\n→\nready=false · serving=false · terminating=false\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse",
         "diagnostics": {
           "entityHandles": 6,
           "relationHandles": 7,
@@ -1208,6 +1237,7 @@
         "routeLabels": ["New request enters same Service", "select Ready api-c"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n2/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
@@ -1249,6 +1279,7 @@
         "routeLabels": ["Request A enters Service", "select Ready api-a"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-a-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
@@ -1290,7 +1321,8 @@
         "routeLabels": [],
         "calloutCount": 1,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nEndpoint readiness\n3/3 Ready\n→\n2/3 Ready\nΔ\nchanged:\napi-a conditions\napi-a Endpoint conditions\nT/T/F\n→\nready=false · serving=false · terminating=false\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nPod status\nready\n→\nnot-ready",
+        "visibleComparisonRows": 0,
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nEndpoint readiness\n3/3 Ready\n→\n2/3 Ready\nΔ\nchanged:\napi-a conditions\napi-a Endpoint conditions\nT/T/F\n→\nready=false · serving=false · terminating=false\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse",
         "diagnostics": {
           "entityHandles": 6,
           "relationHandles": 7,
@@ -1331,6 +1363,7 @@
         "routeLabels": ["New request enters same Service", "select Ready api-c"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n2/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
@@ -1372,6 +1405,7 @@
         "routeLabels": ["Request A enters Service"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n3/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-a-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
@@ -1413,6 +1447,7 @@
         "routeLabels": ["New request enters same Service"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n2/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
@@ -1454,6 +1489,7 @@
         "routeLabels": ["restart locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\n…-01\n→\n…-02\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nLast termination reason\nAbsent\n→\nError\nΔ\nchanged:\nLast termination exit code\nAbsent\n→\n1\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
@@ -1495,6 +1531,7 @@
         "routeLabels": ["observe assignment", "start locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\nAbsent\n→\n…-01\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\nΔ\nchanged:\nContainersReady\nfalse\n→\ntrue\nΔ\nchanged:\nContainer state\nwaiting\n→\nrunning",
         "diagnostics": {
           "entityHandles": 16,
@@ -1536,6 +1573,7 @@
         "routeLabels": ["New request enters same Service", "select Ready api-c"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n2/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
@@ -1577,6 +1615,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/3\n→\n3/3/2\nΔ\nchanged:\nContainer state\nrunning\n→\nterminated\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
@@ -1618,6 +1657,7 @@
         "routeLabels": ["restart locally"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\nΔ\nchanged:\nContainer ID\n…-01\n→\n…-02\nΔ\nchanged:\nRestart count\n0\n→\n1\nΔ\nchanged:\nLast termination reason\nAbsent\n→\nError\nΔ\nchanged:\nLast termination exit code\nAbsent\n→\n1\nΔ\nchanged:\nPod Ready\nfalse\n→\ntrue\nΔ\nchanged:\nRS · SPEC / OBSERVED / READY\nReplicaSet SPEC / OBSERVED / READY\n3/3/2\n→\n3/3/3\n=\nunchanged:\nPod UID\nsynthetic-uid-old-a1\n=\nunchanged:\nNode\nworker-a",
         "diagnostics": {
           "entityHandles": 16,
@@ -1659,7 +1699,8 @@
         "routeLabels": [],
         "calloutCount": 1,
         "teachingTextVisible": true,
-        "evidenceText": "EVIDENCE\nΔ\nchanged:\nEndpoint readiness\n3/3 Ready\n→\n2/3 Ready\nΔ\nchanged:\napi-a conditions\napi-a Endpoint conditions\nT/T/F\n→\nready=false · serving=false · terminating=false\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse\nΔ\nchanged:\nPod status\nready\n→\nnot-ready",
+        "visibleComparisonRows": 0,
+        "evidenceText": "EVIDENCE\nΔ\nchanged:\nEndpoint readiness\n3/3 Ready\n→\n2/3 Ready\nΔ\nchanged:\napi-a conditions\napi-a Endpoint conditions\nT/T/F\n→\nready=false · serving=false · terminating=false\nΔ\nchanged:\nContainersReady\ntrue\n→\nfalse\nΔ\nchanged:\nPod Ready\ntrue\n→\nfalse",
         "diagnostics": {
           "entityHandles": 6,
           "relationHandles": 7,
@@ -1700,6 +1741,7 @@
         "routeLabels": ["New request enters same Service", "select Ready api-c"],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 0,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nService ClusterIP\n198.51.100.42\n=\nunchanged:\nService port\nTCP 8080 → target 8080\n=\nunchanged:\nEndpoint readiness\n2/3 Ready\n=\nunchanged:\nPod UID\nsynthetic-uid-api-c-01\n=\nunchanged:\nNode\nworker-backends\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue",
         "diagnostics": {
           "entityHandles": 6,
@@ -1741,6 +1783,7 @@
         "routeLabels": [],
         "calloutCount": 0,
         "teachingTextVisible": true,
+        "visibleComparisonRows": 12,
         "evidenceText": "EVIDENCE\n=\nunchanged:\nPod UID\nsynthetic-uid-new-d1\n=\nunchanged:\nNode\nworker-c\n=\nunchanged:\nPod phase\nRunning\n=\nunchanged:\nContainersReady\ntrue\n=\nunchanged:\nPod Ready\ntrue\n=\nunchanged:\nContainer ID\n…-01\n=\nunchanged:\nRestart count\n0\n=\nunchanged:\nContainer state\nrunning",
         "diagnostics": {
           "entityHandles": 16,
