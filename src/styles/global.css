@@ -301,6 +301,34 @@ button.secondary {
 .scene-label[data-emphasis='dimmed'] {
   opacity: 0.5;
 }
+.scene-layout-label {
+  z-index: 2;
+  padding: 3px 7px;
+  border-color: rgb(139 211 255 / 28%);
+  background: rgb(6 15 28 / 72%);
+  color: #a9dfff;
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+.scene-layout-label.scene-zone-title {
+  border-left: 2px solid rgb(139 211 255 / 72%);
+}
+.scene-layout-label.scene-tray-title {
+  border-color: rgb(240 180 77 / 44%);
+  color: #ffd990;
+}
+.scene-route-label {
+  z-index: 5;
+  border-color: rgb(200 188 255 / 66%);
+  background: rgb(18 14 43 / 88%);
+  color: #e3dcff;
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+}
 .scene-callout {
   position: absolute;
   z-index: 8;

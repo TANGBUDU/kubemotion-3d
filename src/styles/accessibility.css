@@ -15,6 +15,27 @@
   outline-offset: 3px;
 }
 
+@supports selector(:focus-visible) {
+  button:focus:not(:focus-visible),
+  a:focus:not(:focus-visible),
+  select:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+@media (pointer: coarse) {
+  button,
+  select,
+  a {
+    touch-action: manipulation;
+  }
+
+  .lesson-shell button,
+  .lesson-shell select {
+    min-height: var(--touch-target);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

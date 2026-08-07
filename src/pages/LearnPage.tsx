@@ -1,35 +1,57 @@
-import {
-  BookOpen,
-  Camera,
-  ChevronLeft,
-  ChevronRight,
-  Info,
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelRightClose,
-  PanelRightOpen,
-  Play,
-  Target,
-} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ui } from '../app/i18n';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import type { Locale } from '../app/types';
 import { SceneViewport } from '../components/SceneViewport';
-import { course, glossaryById, lessonById, scenario, sources } from '../content/loader';
+import { course, glossaryById, lessonById, scenarioById, sources } from '../content/loader';
 import { courseEngine } from '../course/CourseEngine';
 import type { PlaybackRequest } from '../course/types';
 import { useAppStore } from '../state/appStore';
+import { CompareView } from '../ui/lesson/CompareView';
+import { CourseDrawer } from '../ui/lesson/CourseDrawer';
+import { InspectorDrawer, type DetailSection } from '../ui/lesson/InspectorDrawer';
+import { LessonHeader } from '../ui/lesson/LessonHeader';
+import { LessonShell } from '../ui/lesson/LessonShell';
+import { MobileTeachingSheet } from '../ui/lesson/MobileTeachingSheet';
+import { SceneLegend } from '../ui/lesson/SceneLegend';
+import { StepTimeline } from '../ui/lesson/StepTimeline';
+import { TeachingPanel } from '../ui/lesson/TeachingPanel';
+import { lessonUi } from '../ui/lesson/copy';
+import { useMediaQuery } from '../ui/lesson/useMediaQuery';
 import { getContainerData, getPodData, getReplicaSetData } from '../world';
 import type { EntityId, WorldEntity } from '../world/types';
 
 const GOLDEN_LESSON = 'container-restart-vs-pod-replacement';
 
-function podForInspector(
+const chapterTitles: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
+  en: {
+    'workloads-self-healing': 'Workloads & Self-Healing',
+    'networking-resilience': 'Networking & Resilience',
+  },
+  ja: {
+    'workloads-self-healing': 'ワークロードと自己修復',
+    'networking-resilience': 'ネットワークと耐障害性',
+  },
+  'zh-CN': {
+    'workloads-self-healing': '工作负载与自愈',
+    'networking-resilience': '网络与韧性',
+  },
+};
+
+function chapterTitle(id: string, locale: Locale): string {
+  return (
+    chapterTitles[locale][id] ??
+    id
+      .split('-')
+      .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+      .join(' ')
+  );
+}
+
+function podForEntity(
   world: Readonly<Record<EntityId, WorldEntity>>,
   selected: EntityId | undefined,
-  focused: EntityId | undefined,
 ): WorldEntity | undefined {
-  const candidate = selected ? world[selected] : focused ? world[focused] : undefined;
+  const candidate = selected ? world[selected] : undefined;
   if (!candidate) return undefined;
   if (candidate.kind === 'Pod') return candidate;
   if (candidate.kind === 'Container' && typeof candidate.data.podId === 'string') {
@@ -38,28 +60,41 @@ function podForInspector(
   return undefined;
 }
 
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.isContentEditable ||
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.tagName === 'SELECT'
+  );
+}
+
 export function LearnPage() {
   const params = useParams();
   const navigate = useNavigate();
   const locale = useAppStore((state) => state.locale);
+  const setLocale = useAppStore((state) => state.setLocale);
   const reducedMotion = useAppStore((state) => state.reducedMotion);
   const selected = useAppStore((state) => state.selectedEntityId);
   const selectEntity = useAppStore((state) => state.selectEntity);
   const enterLesson = useAppStore((state) => state.enterLesson);
   const setLessonStep = useAppStore((state) => state.setLessonStep);
-  const navCollapsed = useAppStore((state) => state.courseNavCollapsed);
-  const explanationCollapsed = useAppStore((state) => state.inspectorCollapsed);
-  const setNavCollapsed = useAppStore((state) => state.setCourseNavCollapsed);
-  const setExplanationCollapsed = useAppStore((state) => state.setInspectorCollapsed);
   const lesson = params.lessonId ? lessonById.get(params.lessonId) : undefined;
-  const compiled = useMemo(
-    () => (lesson ? courseEngine.compileLesson(lesson, scenario) : undefined),
-    [lesson],
-  );
+  const compiled = useMemo(() => {
+    if (!lesson) return undefined;
+    const lessonScenario = scenarioById.get(lesson.scenarioId);
+    return lessonScenario ? courseEngine.compileLesson(lesson, lessonScenario) : undefined;
+  }, [lesson]);
   const stepIndex = Number(params.stepIndex ?? 0);
   const [playbackId, setPlaybackId] = useState(0);
   const [cameraResetId, setCameraResetId] = useState(0);
-  const t = ui(locale);
+  const [courseOpen, setCourseOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailSection, setDetailSection] = useState<DetailSection>('inspector');
+  const [sheetExpanded, setSheetExpanded] = useState(true);
+  const isMobile = useMediaQuery('(max-width: 720px)');
+  const t = lessonUi(locale);
   const valid = Boolean(
     lesson &&
     compiled &&
@@ -72,6 +107,8 @@ export function LearnPage() {
     (index: number) => {
       if (!lesson || index < 0 || index >= lesson.steps.length) return;
       selectEntity(undefined);
+      setDetailsOpen(false);
+      setCourseOpen(false);
       setLessonStep(index);
       setPlaybackId((value) => value + 1);
       navigate(`/learn/${lesson.id}/${index}`);
@@ -79,15 +116,49 @@ export function LearnPage() {
     [lesson, navigate, selectEntity, setLessonStep],
   );
 
+  const handleSelectEntity = useCallback(
+    (id?: EntityId) => {
+      selectEntity(id);
+      if (id) {
+        setDetailSection('inspector');
+        setDetailsOpen(true);
+      } else if (detailSection === 'inspector') {
+        setDetailsOpen(false);
+      }
+    },
+    [detailSection, selectEntity],
+  );
+
+  const openDetails = useCallback((section: DetailSection) => {
+    setDetailSection(section);
+    setDetailsOpen(true);
+  }, []);
+
   useEffect(() => {
     if (valid && lesson) enterLesson(lesson.id, stepIndex);
   }, [enterLesson, lesson, stepIndex, valid]);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowLeft') go(stepIndex - 1);
-      if (event.key === 'ArrowRight') go(stepIndex + 1);
-      if (event.key.toLowerCase() === 'r') setPlaybackId((value) => value + 1);
-      if (event.key === 'Escape') selectEntity(undefined);
+      if (event.key === 'Escape') {
+        setCourseOpen(false);
+        setDetailsOpen(false);
+        selectEntity(undefined);
+        return;
+      }
+      if (isTypingTarget(event.target)) return;
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        go(stepIndex - 1);
+      }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        go(stepIndex + 1);
+      }
+      if (event.key.toLowerCase() === 'r' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        setPlaybackId((value) => value + 1);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -107,13 +178,17 @@ export function LearnPage() {
   const focusedId = Object.entries(step.view.entityStates).find(
     ([, state]) => state.inspectorMode === 'expanded',
   )?.[0];
-  const pod = podForInspector(step.world.entities, selected, focusedId);
+  const selectedEntity = selected ? step.world.entities[selected] : undefined;
+  const pod = podForEntity(step.world.entities, selected);
   const podData = pod ? getPodData(pod) : undefined;
-  const container = pod
-    ? Object.values(step.world.entities).find(
-        (entity) => entity.kind === 'Container' && entity.data.podId === pod.id,
-      )
-    : undefined;
+  const container =
+    selectedEntity?.kind === 'Container'
+      ? selectedEntity
+      : pod
+        ? Object.values(step.world.entities).find(
+            (entity) => entity.kind === 'Container' && entity.data.podId === pod.id,
+          )
+        : undefined;
   const containerData = container ? getContainerData(container) : undefined;
   const owner = pod
     ? Object.values(step.world.relations).find(
@@ -121,66 +196,112 @@ export function LearnPage() {
       )
     : undefined;
   const ownerEntity = owner ? step.world.entities[owner.from] : undefined;
+  const selectedReplicaSetData =
+    selectedEntity?.kind === 'ReplicaSet' ? getReplicaSetData(selectedEntity) : undefined;
   const replicaSet = Object.values(step.world.entities).find(
     (entity) => entity.kind === 'ReplicaSet',
   );
   const replicaCounts = replicaSet ? getReplicaSetData(replicaSet) : undefined;
+  const inspectorFacts = selectedEntity
+    ? [
+        { label: 'Name', value: selectedEntity.name },
+        { label: 'Kind', value: selectedEntity.kind },
+        { label: 'Status', value: selectedEntity.status },
+        ...(selectedEntity.namespace
+          ? [{ label: 'Namespace', value: selectedEntity.namespace }]
+          : []),
+        ...(podData
+          ? [
+              { label: 'Pod UID', value: podData.uid },
+              { label: 'Node', value: podData.nodeName ?? 'Unscheduled' },
+              { label: 'Pod phase', value: podData.phase },
+            ]
+          : []),
+        ...(containerData
+          ? [
+              { label: 'Container state', value: container?.status ?? 'unknown' },
+              { label: 'Restart count', value: String(containerData.restartCount) },
+              { label: 'Generation', value: String(containerData.instanceGeneration) },
+              { label: 'Image', value: containerData.image },
+            ]
+          : []),
+        ...(selectedReplicaSetData
+          ? [
+              { label: 'Desired', value: String(selectedReplicaSetData.desiredReplicas) },
+              { label: 'Current', value: String(selectedReplicaSetData.currentReplicas) },
+              { label: 'Ready', value: String(selectedReplicaSetData.readyReplicas) },
+            ]
+          : []),
+        ...(ownerEntity ? [{ label: 'Owner', value: ownerEntity.name }] : []),
+      ]
+    : [];
+  const introducedTerms = authoredStep.introducesTerms.flatMap((id) => {
+    const term = glossaryById.get(id);
+    return term ? [term] : [];
+  });
+  const stepSources = authoredStep.sourceIds.flatMap((id) => {
+    const source = sources.get(id);
+    return source ? [source] : [];
+  });
+  const titles = lesson.steps.map((lessonStep) => lessonStep.title[locale]);
+  const safeInsets = isMobile
+    ? { top: 38, right: 16, bottom: sheetExpanded ? 28 : 16, left: 16 }
+    : {
+        top: 50,
+        right: detailsOpen ? 48 : 20,
+        bottom: 20,
+        left: courseOpen ? 304 : 20,
+      };
+  const routeSummary = step.view.activeRoutes
+    .map((route) => {
+      const hops = route.hops
+        .map((hop, index) => {
+          const source = step.world.entities[hop.fromEntityId]?.name ?? hop.fromEntityId;
+          const target = step.world.entities[hop.toEntityId]?.name ?? hop.toEntityId;
+          const hopLabel = hop.label?.[locale];
+          return `hop ${index + 1}${hopLabel ? ` (${hopLabel})` : ''}: source ${source} at ${hop.fromAnchor}, target ${target} at ${hop.toAnchor}`;
+        })
+        .join('; ');
+      return `${route.label?.[locale] ?? route.semantic} route: ${hops}`;
+    })
+    .join('. ');
+  const sceneSummary = [
+    authoredStep.title[locale],
+    authoredStep.teaching.whatChanged[locale],
+    focusedId ? `Focused entity: ${step.world.entities[focusedId]?.name ?? focusedId}.` : '',
+    replicaCounts
+      ? `ReplicaSet desired ${replicaCounts.desiredReplicas}, current ${replicaCounts.currentReplicas}, ready ${replicaCounts.readyReplicas}.`
+      : '',
+    routeSummary ? `Visible ${routeSummary}.` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
-  return (
-    <main
-      className={`learn-page ${navCollapsed ? 'nav-collapsed' : ''} ${explanationCollapsed ? 'explanation-collapsed' : ''}`}
-    >
-      <aside className="course-nav" aria-label="Verified lessons">
-        <div className="panel-title">
-          <BookOpen size={17} />
-          <span>{course.title[locale]}</span>
-        </div>
-        <ol>
-          {course.lessons
-            .filter((entry) => entry.status === 'available')
-            .map((entry, index) => (
-              <li key={entry.id} className={entry.id === lesson.id ? 'current' : ''}>
-                <Link to={`/learn/${entry.id}/0`}>
-                  <span>{index + 1}</span>
-                  <span>
-                    {entry.title[locale]}
-                    <small>{entry.estimatedMinutes} min · verified</small>
-                  </span>
-                </Link>
-              </li>
-            ))}
-        </ol>
-        <div className="planned-note">1 verified lesson · {course.lessons.length - 1} planned</div>
-      </aside>
-
-      <section className="learn-stage">
-        <div className="view-badge">{step.view.view.replace('-', ' ').toUpperCase()}</div>
-        {replicaCounts && (
-          <div
-            className="world-fact-strip"
-            data-testid="replica-counts"
-            data-world-revision={step.world.revision}
-          >
-            <strong>ReplicaSet</strong>
-            <span>Desired {replicaCounts.desiredReplicas}</span>
-            <span>Current {replicaCounts.currentReplicas}</span>
-            <span>Ready {replicaCounts.readyReplicas}</span>
-          </div>
-        )}
-        <button
-          className="panel-toggle left"
-          onClick={() => setNavCollapsed(!navCollapsed)}
-          aria-label={navCollapsed ? t.expandLessons : t.collapseLessons}
+  const stage = (
+    <>
+      <div className="view-badge" aria-hidden="true">
+        {step.view.view.replace('-', ' ').toUpperCase()}
+      </div>
+      {replicaCounts && (
+        <p
+          className="scene-fact-status sr-only"
+          role="status"
+          data-testid="replica-counts"
+          data-world-revision={step.world.revision}
         >
-          {navCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-        </button>
-        <button
-          className="panel-toggle right"
-          onClick={() => setExplanationCollapsed(!explanationCollapsed)}
-          aria-label={explanationCollapsed ? t.expandExplanation : t.collapseExplanation}
-        >
-          {explanationCollapsed ? <PanelRightOpen size={18} /> : <PanelRightClose size={18} />}
-        </button>
+          ReplicaSet Desired {replicaCounts.desiredReplicas} Current {replicaCounts.currentReplicas}{' '}
+          Ready {replicaCounts.readyReplicas}
+        </p>
+      )}
+      <p id="scene-accessible-summary" className="sr-only">
+        {sceneSummary}
+      </p>
+      <div
+        className={`scene-canvas ${step.view.comparison ? 'is-visually-suspended' : ''}`}
+        role="img"
+        aria-label={t.scene}
+        aria-describedby="scene-accessible-summary"
+      >
         <SceneViewport
           key={`lesson-${lesson.id}`}
           step={step}
@@ -189,169 +310,86 @@ export function LearnPage() {
           locale={locale}
           reducedMotion={reducedMotion}
           cameraResetId={cameraResetId}
-          onSelectEntity={selectEntity}
+          safeInsets={safeInsets}
+          onSelectEntity={handleSelectEntity}
         />
+      </div>
+      {!step.view.comparison && <SceneLegend locale={locale} />}
+      {step.view.comparison && <CompareView model={step.view.comparison} locale={locale} />}
+    </>
+  );
 
-        {step.view.comparison && (
-          <section className="comparison-panel" data-testid="comparison-panel">
-            <h2>{step.view.comparison.title[locale]}</h2>
-            <div className="comparison-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Property</th>
-                    <th>Container restart</th>
-                    <th>Pod replacement</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {step.view.comparison.rows.map((row) => (
-                    <tr key={row.property.en}>
-                      <th>{row.property[locale]}</th>
-                      <td>{row.containerRestart}</td>
-                      <td>{row.podReplacement}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
+  const teaching = (
+    <MobileTeachingSheet
+      locale={locale}
+      stepLabel={t.stepOf(stepIndex + 1, lesson.steps.length)}
+      title={authoredStep.title[locale]}
+      expanded={sheetExpanded}
+      onExpandedChange={setSheetExpanded}
+    >
+      <TeachingPanel
+        locale={locale}
+        stepIndex={stepIndex}
+        stepCount={lesson.steps.length}
+        title={authoredStep.title[locale]}
+        whatChanged={authoredStep.teaching.whatChanged[locale]}
+        whyItHappened={authoredStep.teaching.whyItHappened[locale]}
+        takeaway={authoredStep.teaching.takeaway[locale]}
+        evidence={step.evidence}
+        termCount={introducedTerms.length}
+        sourceCount={stepSources.length}
+        onOpenTerms={() => openDetails('terms')}
+        onOpenSources={() => openDetails('sources')}
+      />
+    </MobileTeachingSheet>
+  );
 
-        <label className="mobile-step-select">
-          <span>{t.step}</span>
-          <select value={stepIndex} onChange={(event) => go(Number(event.target.value))}>
-            {lesson.steps.map((item, index) => (
-              <option value={index} key={item.id}>
-                {index + 1}. {item.title[locale]}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="lesson-controls" aria-label="Lesson playback controls">
-          <button
-            aria-label={t.previous}
-            onClick={() => go(stepIndex - 1)}
-            disabled={stepIndex === 0}
-          >
-            <ChevronLeft size={18} /> <span>{t.previous}</span>
-          </button>
-          <div className="step-progress">
-            <span>
-              {stepIndex + 1} / {lesson.steps.length}
-            </span>
-            <div>
-              {lesson.steps.map((item, index) => (
-                <i key={item.id} className={index <= stepIndex ? 'done' : ''} />
-              ))}
-            </div>
-          </div>
-          <button aria-label={t.replay} onClick={() => setPlaybackId((value) => value + 1)}>
-            <Play size={16} /> <span>{t.replay}</span>
-          </button>
-          <button aria-label={t.resetCamera} onClick={() => setCameraResetId((value) => value + 1)}>
-            <Camera size={16} /> <span>{t.resetCamera}</span>
-          </button>
-          <button
-            className="primary"
-            aria-label={t.next}
-            onClick={() => go(stepIndex + 1)}
-            disabled={stepIndex === lesson.steps.length - 1}
-          >
-            <span>{t.next}</span> <ChevronRight size={18} />
-          </button>
-        </div>
-      </section>
-
-      <aside className="narration-panel">
-        <div className="step-kicker">VERIFIED LESSON · STEP {stepIndex + 1}</div>
-        <h1>{authoredStep.title[locale]}</h1>
-        <div className="objective">
-          <Target size={17} />
-          <div>
-            <strong>{t.objective}</strong>
-            <p>{authoredStep.learningOutcome[locale]}</p>
-          </div>
-        </div>
-        <p className="narration">{authoredStep.narration[locale]}</p>
-
-        {pod && podData && (
-          <section className="world-inspector" data-testid="world-inspector">
-            <h2>
-              <Info size={14} /> {t.inspector}
-            </h2>
-            <dl>
-              <div>
-                <dt>Pod</dt>
-                <dd>{pod.name}</dd>
-              </div>
-              <div>
-                <dt>UID</dt>
-                <dd>{podData.uid}</dd>
-              </div>
-              <div>
-                <dt>Node</dt>
-                <dd>{podData.nodeName ?? t.unscheduled}</dd>
-              </div>
-              <div>
-                <dt>Phase</dt>
-                <dd>{podData.phase}</dd>
-              </div>
-              {container && containerData && (
-                <>
-                  <div>
-                    <dt>Container</dt>
-                    <dd>{container.status}</dd>
-                  </div>
-                  <div>
-                    <dt>Restarts</dt>
-                    <dd>{containerData.restartCount}</dd>
-                  </div>
-                  <div>
-                    <dt>Generation</dt>
-                    <dd>{containerData.instanceGeneration}</dd>
-                  </div>
-                </>
-              )}
-              {ownerEntity && (
-                <div>
-                  <dt>Owner</dt>
-                  <dd>{ownerEntity.name}</dd>
-                </div>
-              )}
-            </dl>
-          </section>
-        )}
-
-        {authoredStep.introducesTerms.length > 0 && (
-          <section>
-            <h2>{t.terms}</h2>
-            {authoredStep.introducesTerms.map((id) => {
-              const term = glossaryById.get(id);
-              return term ? (
-                <div className="term" key={id}>
-                  <strong>{term.term[locale]}</strong>
-                  <p>{term.definition[locale]}</p>
-                </div>
-              ) : null;
-            })}
-          </section>
-        )}
-        <section className="sources">
-          <h2>{t.officialSources}</h2>
-          {authoredStep.sourceIds.map((id) => {
-            const source = sources.get(id);
-            return source ? (
-              <a key={id} href={source.url} target="_blank" rel="noreferrer noopener">
-                {source.title}
-                <span>{source.authority}</span>
-              </a>
-            ) : null;
-          })}
-          <small>Verified {lesson.verifiedAt} · conceptual, synthetic—not live telemetry</small>
-        </section>
-      </aside>
-    </main>
+  return (
+    <LessonShell
+      comparisonActive={Boolean(step.view.comparison)}
+      announcement={`${t.stepOf(stepIndex + 1, lesson.steps.length)}. ${authoredStep.title[locale]}. ${authoredStep.teaching.whatChanged[locale]}`}
+      header={
+        <LessonHeader
+          chapter={chapterTitle(lesson.chapterId, locale)}
+          lessonTitle={lesson.title[locale]}
+          stepIndex={stepIndex}
+          stepCount={lesson.steps.length}
+          locale={locale}
+          courseOpen={courseOpen}
+          onOpenCourse={() => setCourseOpen(true)}
+          onReplay={() => setPlaybackId((value) => value + 1)}
+          onResetCamera={() => setCameraResetId((value) => value + 1)}
+          onLocaleChange={setLocale}
+        />
+      }
+      stage={stage}
+      teaching={teaching}
+      timeline={
+        <StepTimeline locale={locale} titles={titles} currentStep={stepIndex} onStepChange={go} />
+      }
+      drawers={
+        <>
+          <CourseDrawer
+            open={courseOpen}
+            locale={locale}
+            courseTitle={course.title[locale]}
+            currentLessonId={lesson.id}
+            lessons={course.lessons}
+            onClose={() => setCourseOpen(false)}
+          />
+          <InspectorDrawer
+            open={detailsOpen}
+            locale={locale}
+            activeSection={detailSection}
+            facts={inspectorFacts}
+            terms={introducedTerms}
+            sources={stepSources}
+            verifiedAt={lesson.verifiedAt}
+            onSectionChange={setDetailSection}
+            onClose={() => setDetailsOpen(false)}
+          />
+        </>
+      }
+    />
   );
 }

@@ -3,13 +3,14 @@ import type { EntityViewState, ViewProjection } from '../course/types';
 import type { EntityId, WorldEntity, WorldSnapshot } from '../world/types';
 import type { LayoutContainer, LayoutResult } from './LayoutEngine';
 import { VisualFactoryRegistry, type EntityVisualFactoryResolver } from './VisualFactoryRegistry';
-import {
-  ContainerVisualHandle,
-  PodVisualHandle,
-  TextBadge,
-  type EntityVisualHandle,
-  type VisualContext,
-} from './VisualHandles';
+import { createRoundedBoxGeometry } from './design/geometry';
+import { createFlatAccentMaterial, createSurfaceMaterial } from './design/materials';
+import { palette } from './design/palette';
+import type { EntityVisualHandle, VisualContext } from './visuals/BaseVisualHandle';
+import { ContainerVisualHandle } from './visuals/ContainerVisual';
+import { KubeletVisualHandle } from './visuals/KubeletVisual';
+import { NodeVisualHandle } from './visuals/NodeVisual';
+import { PodVisualHandle } from './visuals/PodVisual';
 
 export interface SceneSyncResult {
   readonly added: readonly EntityId[];
@@ -17,14 +18,18 @@ export interface SceneSyncResult {
   readonly removed: readonly EntityId[];
 }
 
+export interface LayoutLabelAnchor {
+  readonly id: string;
+  readonly text: string;
+  readonly worldPosition: readonly [number, number, number];
+  readonly zoneId?: 'control-plane' | 'workload-state' | 'worker-nodes';
+  readonly kind: 'zone-title' | 'tray-title';
+}
+
 interface LayoutGuideHandle {
   readonly root: THREE.Group;
   readonly shapeKey: string;
-  readonly geometry: THREE.BufferGeometry;
-  readonly edgeGeometry: THREE.BufferGeometry;
-  readonly material: THREE.Material;
-  readonly edgeMaterial: THREE.Material;
-  readonly label: TextBadge;
+  readonly labelAnchor?: THREE.Object3D;
   dispose(): void;
 }
 
@@ -40,17 +45,162 @@ const isRendered = (state: EntityViewState | undefined): state is EntityViewStat
 const guideColor = (container: LayoutContainer): number => {
   if (container.kind === 'pending-lane') return 0xf0b44d;
   if (container.kind === 'control-lane') return 0xb792ff;
+  if (container.kind === 'workload-lane') return palette.scheduling;
+  if (container.kind === 'worker-lane') return palette.dataFlow;
   return 0x5eb6ff;
 };
 
-const createLayoutGuide = (container: LayoutContainer): LayoutGuideHandle => {
-  const root = new THREE.Group();
+const layoutGuideShapeKey = (container: LayoutContainer): string =>
+  [
+    container.kind,
+    container.bounds.size.join(','),
+    String(container.slots.length),
+    container.slots.map((slot) => slot.occupiedBy ?? '-').join(','),
+    container.label,
+    container.labelAnchor?.join(',') ?? '',
+  ].join(':');
+
+const configureGuideRoot = (root: THREE.Group, container: LayoutContainer): void => {
   root.name = `layout-guide:${container.id}`;
-  root.userData.role = 'layout-guide';
+  root.userData.role = container.kind === 'pending-lane' ? 'unscheduled-pods-tray' : 'layout-guide';
   root.userData.containerId = container.id;
   root.userData.containerKind = container.kind;
   root.userData.label = container.label;
+  root.userData.zoneId = container.zoneId;
+  root.userData.labelAnchor = container.labelAnchor;
   root.userData.selectable = false;
+};
+
+const addDomLabelAnchor = (
+  root: THREE.Group,
+  container: LayoutContainer,
+): THREE.Object3D | undefined => {
+  if (!container.labelAnchor) return undefined;
+  const anchor = new THREE.Object3D();
+  anchor.name = `layout-label-anchor:${container.id}`;
+  anchor.position.set(
+    container.labelAnchor[0] - container.bounds.center[0],
+    container.labelAnchor[1] - container.bounds.center[1],
+    container.labelAnchor[2] - container.bounds.center[2],
+  );
+  anchor.userData.role = 'dom-label-anchor';
+  anchor.userData.domLabel = Object.freeze({
+    id: `layout:${container.id}`,
+    labelClass: container.kind === 'pending-lane' ? 'entity-short-name' : 'zone-title',
+    text: container.label,
+    ...(container.zoneId ? { zoneId: container.zoneId } : {}),
+  });
+  root.add(anchor);
+  return anchor;
+};
+
+const createPendingTray = (container: LayoutContainer): LayoutGuideHandle => {
+  const root = new THREE.Group();
+  configureGuideRoot(root, container);
+  root.userData.empty = container.slots.every((slot) => !slot.occupiedBy);
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  const ownGeometry = <TGeometry extends THREE.BufferGeometry>(geometry: TGeometry): TGeometry => {
+    geometries.add(geometry);
+    return geometry;
+  };
+  const ownMaterial = <TMaterial extends THREE.Material>(material: TMaterial): TMaterial => {
+    materials.add(material);
+    return material;
+  };
+
+  const baseGeometry = ownGeometry(
+    createRoundedBoxGeometry(
+      container.bounds.size[0],
+      Math.max(0.14, container.bounds.size[1]),
+      container.bounds.size[2],
+      0.2,
+      4,
+    ),
+  );
+  const baseMaterial = ownMaterial(
+    createSurfaceMaterial({
+      color: palette.surfaceRecessed,
+      roughness: 0.72,
+      metalness: 0.03,
+      transparent: true,
+      opacity: 0.88,
+    }),
+  );
+  const base = new THREE.Mesh(baseGeometry, baseMaterial);
+  base.receiveShadow = true;
+  base.userData.role = 'unscheduled-tray-base';
+  base.userData.selectable = false;
+  root.add(base);
+
+  const railMaterial = ownMaterial(createFlatAccentMaterial(palette.scheduling, 0.88));
+  const longRailGeometry = ownGeometry(
+    createRoundedBoxGeometry(container.bounds.size[0], 0.2, 0.09, 0.035),
+  );
+  const shortRailGeometry = ownGeometry(
+    createRoundedBoxGeometry(0.09, 0.2, container.bounds.size[2] - 0.14, 0.035),
+  );
+  for (const z of [-1, 1]) {
+    const rail = new THREE.Mesh(longRailGeometry, railMaterial);
+    rail.position.set(0, 0.13, (z * (container.bounds.size[2] - 0.09)) / 2);
+    rail.userData.role = 'unscheduled-tray-rail';
+    root.add(rail);
+  }
+  for (const x of [-1, 1]) {
+    const rail = new THREE.Mesh(shortRailGeometry, railMaterial);
+    rail.position.set((x * (container.bounds.size[0] - 0.09)) / 2, 0.13, 0);
+    rail.userData.role = 'unscheduled-tray-rail';
+    root.add(rail);
+  }
+
+  const slotGeometry = ownGeometry(createRoundedBoxGeometry(1.58, 0.035, 1.22, 0.12));
+  for (const slot of container.slots) {
+    const slotMaterial = ownMaterial(
+      createFlatAccentMaterial(slot.occupiedBy ? palette.pending : palette.borderSubtle, 0.32),
+    );
+    const well = new THREE.Mesh(slotGeometry, slotMaterial);
+    well.position.set(
+      slot.position[0] - container.bounds.center[0],
+      0.13,
+      slot.position[2] - container.bounds.center[2],
+    );
+    well.userData.role = 'unscheduled-pod-slot';
+    well.userData.slotIndex = slot.index;
+    well.userData.occupiedBy = slot.occupiedBy;
+    root.add(well);
+  }
+
+  const warningGeometry = ownGeometry(new THREE.BoxGeometry(0.32, 0.035, 0.075));
+  for (let index = 0; index < 5; index += 1) {
+    const warning = new THREE.Mesh(warningGeometry, railMaterial);
+    warning.position.set(
+      -container.bounds.size[0] / 2 + 0.36 + index * 0.45,
+      0.25,
+      -container.bounds.size[2] / 2,
+    );
+    warning.rotation.y = -0.58;
+    warning.userData.role = 'unscheduled-warning-mark';
+    root.add(warning);
+  }
+  const labelAnchor = addDomLabelAnchor(root, container);
+  root.position.set(...container.bounds.center);
+  return {
+    root,
+    shapeKey: layoutGuideShapeKey(container),
+    ...(labelAnchor ? { labelAnchor } : {}),
+    dispose: () => {
+      root.removeFromParent();
+      root.clear();
+      for (const geometry of geometries) geometry.dispose();
+      for (const material of materials) material.dispose();
+    },
+  };
+};
+
+const createLayoutGuide = (container: LayoutContainer): LayoutGuideHandle => {
+  if (container.kind === 'pending-lane') return createPendingTray(container);
+  const root = new THREE.Group();
+  configureGuideRoot(root, container);
   const geometry = new THREE.BoxGeometry(
     container.bounds.size[0],
     Math.max(0.05, container.bounds.size[1]),
@@ -59,7 +209,7 @@ const createLayoutGuide = (container: LayoutContainer): LayoutGuideHandle => {
   const material = new THREE.MeshBasicMaterial({
     color: guideColor(container),
     transparent: true,
-    opacity: container.kind === 'pending-lane' ? 0.11 : 0.08,
+    opacity: 0.045,
     depthWrite: false,
   });
   const surface = new THREE.Mesh(geometry, material);
@@ -71,36 +221,20 @@ const createLayoutGuide = (container: LayoutContainer): LayoutGuideHandle => {
     color: guideColor(container),
     transparent: true,
     opacity: 0.72,
-    dashSize: container.kind === 'pending-lane' ? 0.28 : 0.5,
-    gapSize: container.kind === 'pending-lane' ? 0.16 : 0.22,
+    dashSize: 0.5,
+    gapSize: 0.22,
   });
   const border = new THREE.LineSegments(edgeGeometry, edgeMaterial);
   border.computeLineDistances();
   border.userData.role = `${container.kind}-boundary`;
   border.userData.selectable = false;
   root.add(border);
-  const label = new TextBadge(
-    container.kind === 'control-lane' ? 4.1 : 3.5,
-    0.4,
-    container.kind === 'pending-lane' ? '#ffd891' : '#e8dfff',
-  );
-  label.setText(container.label.toUpperCase());
-  label.sprite.position.set(
-    0,
-    Math.max(0.42, container.bounds.size[1] / 2 + 0.34),
-    -container.bounds.size[2] / 2,
-  );
-  label.sprite.userData.role = `${container.kind}-label`;
-  root.add(label.sprite);
+  const labelAnchor = addDomLabelAnchor(root, container);
   root.position.set(...container.bounds.center);
   return {
     root,
-    shapeKey: `${container.kind}:${container.bounds.size.join(',')}`,
-    geometry,
-    edgeGeometry,
-    material,
-    edgeMaterial,
-    label,
+    shapeKey: layoutGuideShapeKey(container),
+    ...(labelAnchor ? { labelAnchor } : {}),
     dispose: () => {
       root.removeFromParent();
       root.clear();
@@ -108,7 +242,6 @@ const createLayoutGuide = (container: LayoutContainer): LayoutGuideHandle => {
       edgeGeometry.dispose();
       material.dispose();
       edgeMaterial.dispose();
-      label.dispose();
     },
   };
 };
@@ -123,13 +256,28 @@ const visibleInHierarchy = (object: THREE.Object3D, root: THREE.Object3D): boole
   return false;
 };
 
+const disposalRank = (handle: EntityVisualHandle): number => {
+  if (handle instanceof ContainerVisualHandle) return 0;
+  if (handle instanceof PodVisualHandle) return 1;
+  if (handle instanceof KubeletVisualHandle) return 2;
+  if (handle instanceof NodeVisualHandle) return 3;
+  return 4;
+};
+
+const LAYOUT_LABEL_ORDER: Readonly<Record<string, number>> = Object.freeze({
+  'control-plane-zone': 0,
+  'workload-state-zone': 1,
+  'pending-lane': 2,
+  'worker-nodes-zone': 3,
+});
+
 /** Owns entity handles and non-entity layout guides attached to one THREE.Scene. */
 export class SceneRegistry {
   private readonly handles = new Map<EntityId, EntityVisualHandle>();
   private readonly guides = new Map<string, LayoutGuideHandle>();
 
   public constructor(
-    private readonly scene: THREE.Scene,
+    private readonly scene: THREE.Object3D,
     private readonly factory: EntityVisualFactoryResolver = new VisualFactoryRegistry(),
     private readonly context: VisualContext = {},
   ) {}
@@ -172,11 +320,9 @@ export class SceneRegistry {
         (handle) => !desiredIds.has(handle.entityId) && !retainedEntityIds.has(handle.entityId),
       )
       .sort((left, right) => {
-        const leftOrder =
-          left instanceof ContainerVisualHandle ? 0 : left instanceof PodVisualHandle ? 1 : 2;
-        const rightOrder =
-          right instanceof ContainerVisualHandle ? 0 : right instanceof PodVisualHandle ? 1 : 2;
-        return leftOrder - rightOrder || left.entityId.localeCompare(right.entityId);
+        return (
+          disposalRank(left) - disposalRank(right) || left.entityId.localeCompare(right.entityId)
+        );
       });
     for (const handle of stale) {
       removed.push(handle.entityId);
@@ -233,12 +379,44 @@ export class SceneRegistry {
 
   public applyLayout(layout: LayoutResult): void {
     this.syncLayoutGuides(layout.containers);
+    this.syncNodeComposition(layout);
     for (const [entityId, entityLayout] of layout.entities) {
       const handle = this.handles.get(entityId);
       if (!handle) continue;
       if (entityLayout.lane === 'composition' && handle instanceof ContainerVisualHandle) continue;
+      if (
+        entityLayout.lane === 'node-agent' &&
+        handle instanceof KubeletVisualHandle &&
+        handle.root.userData.composedInNode === entityLayout.parentId
+      ) {
+        continue;
+      }
       handle.root.position.set(...entityLayout.position);
       handle.root.updateWorldMatrix(true, false);
+    }
+  }
+
+  private syncNodeComposition(layout: LayoutResult): void {
+    for (const handle of this.handles.values()) {
+      if (!(handle instanceof KubeletVisualHandle)) continue;
+      const entityLayout = layout.entities.get(handle.entityId);
+      const desiredNodeId = entityLayout?.lane === 'node-agent' ? entityLayout.parentId : undefined;
+      const currentNodeId =
+        typeof handle.root.userData.composedInNode === 'string'
+          ? handle.root.userData.composedInNode
+          : undefined;
+      if (currentNodeId && currentNodeId !== desiredNodeId) {
+        const currentNode = this.handles.get(currentNodeId);
+        if (currentNode instanceof NodeVisualHandle) currentNode.detachKubelet(handle.entityId);
+      }
+      const desiredNode = desiredNodeId ? this.handles.get(desiredNodeId) : undefined;
+      if (desiredNode instanceof NodeVisualHandle) {
+        desiredNode.attachKubelet(handle);
+      } else if (handle.root.parent !== this.scene) {
+        handle.root.removeFromParent();
+        delete handle.root.userData.composedInNode;
+        this.scene.add(handle.root);
+      }
     }
   }
 
@@ -252,12 +430,10 @@ export class SceneRegistry {
     }
     for (const container of desired) {
       const current = this.guides.get(container.id);
-      const sameShape =
-        current?.shapeKey === `${container.kind}:${container.bounds.size.join(',')}`;
+      const sameShape = current?.shapeKey === layoutGuideShapeKey(container);
       if (current && sameShape) {
         current.root.position.set(...container.bounds.center);
         current.root.userData.label = container.label;
-        current.label.setText(container.label.toUpperCase());
         continue;
       }
       if (current) current.dispose();
@@ -278,6 +454,25 @@ export class SceneRegistry {
       const pod = podId ? this.handles.get(podId) : undefined;
       if (pod instanceof PodVisualHandle) pod.detachContainer(entityId);
     }
+    if (handle instanceof KubeletVisualHandle) {
+      const nodeId =
+        typeof handle.root.userData.composedInNode === 'string'
+          ? handle.root.userData.composedInNode
+          : undefined;
+      const node = nodeId ? this.handles.get(nodeId) : undefined;
+      if (node instanceof NodeVisualHandle) node.detachKubelet(entityId);
+    }
+    if (handle instanceof NodeVisualHandle) {
+      for (const candidate of this.handles.values()) {
+        if (
+          candidate instanceof KubeletVisualHandle &&
+          candidate.root.userData.composedInNode === handle.entityId
+        ) {
+          handle.detachKubelet(candidate.entityId);
+          this.scene.add(candidate.root);
+        }
+      }
+    }
     handle.root.removeFromParent();
     handle.dispose();
     this.handles.delete(entityId);
@@ -286,11 +481,9 @@ export class SceneRegistry {
   public clear(): void {
     const ids = [...this.handles.values()]
       .sort((left, right) => {
-        const leftOrder =
-          left instanceof ContainerVisualHandle ? 0 : left instanceof PodVisualHandle ? 1 : 2;
-        const rightOrder =
-          right instanceof ContainerVisualHandle ? 0 : right instanceof PodVisualHandle ? 1 : 2;
-        return leftOrder - rightOrder || left.entityId.localeCompare(right.entityId);
+        return (
+          disposalRank(left) - disposalRank(right) || left.entityId.localeCompare(right.entityId)
+        );
       })
       .map((handle) => handle.entityId);
     for (const id of ids) this.remove(id);
@@ -341,6 +534,32 @@ export class SceneRegistry {
       current = current.parent;
     }
     return undefined;
+  }
+
+  /** Stable world-space anchors consumed by the DOM label layer after each layout pass. */
+  public layoutLabels(): readonly LayoutLabelAnchor[] {
+    return [...this.guides.entries()]
+      .filter(([, guide]) => guide.labelAnchor !== undefined)
+      .sort(
+        ([leftId], [rightId]) =>
+          (LAYOUT_LABEL_ORDER[leftId] ?? 100) - (LAYOUT_LABEL_ORDER[rightId] ?? 100) ||
+          leftId.localeCompare(rightId),
+      )
+      .map(([id, guide]) => {
+        const position =
+          guide.labelAnchor?.getWorldPosition(new THREE.Vector3()) ?? new THREE.Vector3();
+        const zoneId = guide.root.userData.zoneId;
+        const text = guide.root.userData.label;
+        return {
+          id: `layout:${id}`,
+          text: typeof text === 'string' ? text : id,
+          worldPosition: [position.x, position.y, position.z] as const,
+          ...(zoneId === 'control-plane' || zoneId === 'workload-state' || zoneId === 'worker-nodes'
+            ? { zoneId }
+            : {}),
+          kind: guide.root.userData.containerKind === 'pending-lane' ? 'tray-title' : 'zone-title',
+        } satisfies LayoutLabelAnchor;
+      });
   }
 
   public values(): Iterable<EntityVisualHandle> {

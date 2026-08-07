@@ -4,6 +4,7 @@ import type { Locale } from '../app/types';
 import { SceneController } from '../renderer/SceneController';
 import { setDiagnosticsProvider } from '../test-support/debugBridge';
 import type { EntityId } from '../world/types';
+import type { ViewportInsets } from '../renderer/camera/SafeViewport';
 
 export interface SceneViewportProps {
   step: CompiledStep;
@@ -12,12 +13,17 @@ export interface SceneViewportProps {
   locale: Locale;
   reducedMotion: boolean;
   cameraResetId?: number | undefined;
+  safeInsets?: Partial<ViewportInsets> | undefined;
   onSelectEntity: (id?: EntityId | undefined) => void;
 }
 
 export function SceneViewport(props: SceneViewportProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<SceneController>(null);
+  const safeTop = props.safeInsets?.top ?? 0;
+  const safeRight = props.safeInsets?.right ?? 0;
+  const safeBottom = props.safeInsets?.bottom ?? 0;
+  const safeLeft = props.safeInsets?.left ?? 0;
 
   useEffect(() => {
     const host = hostRef.current;
@@ -35,6 +41,14 @@ export function SceneViewport(props: SceneViewportProps) {
   useEffect(() => {
     controllerRef.current?.setLocale(props.locale);
   }, [props.locale]);
+  useEffect(() => {
+    controllerRef.current?.setSafeInsets({
+      top: safeTop,
+      right: safeRight,
+      bottom: safeBottom,
+      left: safeLeft,
+    });
+  }, [safeBottom, safeLeft, safeRight, safeTop]);
   useEffect(() => {
     controllerRef.current?.setOnSelect(props.onSelectEntity);
   }, [props.onSelectEntity]);

@@ -21,6 +21,7 @@ export interface AppState {
   hoveredEntityId?: EntityId | undefined;
   courseNavCollapsed: boolean;
   inspectorCollapsed: boolean;
+  orientationSeen: boolean;
   reducedMotion: boolean;
   filters: ExploreFilters;
   transitionGeneration: number;
@@ -37,6 +38,7 @@ export interface AppState {
   setReducedMotion: (value: boolean) => void;
   setCourseNavCollapsed: (value: boolean) => void;
   setInspectorCollapsed: (value: boolean) => void;
+  setOrientationSeen: (value: boolean) => void;
 }
 
 const preferences = loadPreferences();
@@ -52,6 +54,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   view: 'overview',
   courseNavCollapsed: preferences.courseNavCollapsed,
   inspectorCollapsed: preferences.inspectorCollapsed,
+  orientationSeen: preferences.orientationSeen,
   reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   filters: emptyFilters,
   transitionGeneration: 0,
@@ -61,6 +64,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       locale,
       courseNavCollapsed: get().courseNavCollapsed,
       inspectorCollapsed: get().inspectorCollapsed,
+      orientationSeen: get().orientationSeen,
     });
   },
   enterLesson: (lessonId, stepIndex = 0) => {
@@ -114,6 +118,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       locale: get().locale,
       courseNavCollapsed,
       inspectorCollapsed: get().inspectorCollapsed,
+      orientationSeen: get().orientationSeen,
     });
   },
   setInspectorCollapsed: (inspectorCollapsed) => {
@@ -122,6 +127,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       locale: get().locale,
       courseNavCollapsed: get().courseNavCollapsed,
       inspectorCollapsed,
+      orientationSeen: get().orientationSeen,
+    });
+  },
+  setOrientationSeen: (orientationSeen) => {
+    set({ orientationSeen });
+    savePreferences({
+      locale: get().locale,
+      courseNavCollapsed: get().courseNavCollapsed,
+      inspectorCollapsed: get().inspectorCollapsed,
+      orientationSeen,
     });
   },
 }));

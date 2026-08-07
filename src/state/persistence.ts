@@ -4,6 +4,7 @@ export interface Preferences {
   locale: Locale;
   courseNavCollapsed: boolean;
   inspectorCollapsed: boolean;
+  orientationSeen: boolean;
 }
 export interface Progress {
   completedLessonIds: string[];
@@ -25,6 +26,7 @@ export function loadPreferences(storage: Pick<Storage, 'getItem'> = localStorage
     locale: localeFromNavigator(navigator.language),
     courseNavCollapsed: false,
     inspectorCollapsed: false,
+    orientationSeen: false,
   };
   try {
     const raw = storage.getItem(preferencesKey);
@@ -38,6 +40,7 @@ export function loadPreferences(storage: Pick<Storage, 'getItem'> = localStorage
       locale,
       courseNavCollapsed: record.courseNavCollapsed === true,
       inspectorCollapsed: record.inspectorCollapsed === true,
+      orientationSeen: record.orientationSeen === true,
     };
   } catch {
     return fallback;
