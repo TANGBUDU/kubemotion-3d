@@ -70,6 +70,37 @@ function isTypingTarget(target: EventTarget | null): boolean {
   );
 }
 
+interface EndpointConditionView {
+  readonly ready: boolean;
+  readonly serving: boolean | 'unknown';
+  readonly terminating: boolean | 'unknown';
+}
+
+function readEndpointConditions(
+  endpoint: Readonly<Record<string, unknown>>,
+): EndpointConditionView {
+  const conditions =
+    endpoint.conditions &&
+    typeof endpoint.conditions === 'object' &&
+    !Array.isArray(endpoint.conditions)
+      ? (endpoint.conditions as Readonly<Record<string, unknown>>)
+      : {};
+  return {
+    // EndpointConditions.ready defaults to true when the field is omitted.
+    ready: conditions.ready !== false,
+    serving: typeof conditions.serving === 'boolean' ? conditions.serving : 'unknown',
+    terminating: typeof conditions.terminating === 'boolean' ? conditions.terminating : 'unknown',
+  };
+}
+
+function endpointConditionText(conditions: EndpointConditionView, separator: string): string {
+  return [
+    `ready=${conditions.ready}`,
+    `serving=${conditions.serving}`,
+    `terminating=${conditions.terminating}`,
+  ].join(separator);
+}
+
 export function LearnPage() {
   const params = useParams();
   const navigate = useNavigate();
@@ -202,6 +233,26 @@ export function LearnPage() {
     (entity) => entity.kind === 'ReplicaSet',
   );
   const replicaCounts = replicaSet ? getReplicaSetData(replicaSet) : undefined;
+  const endpointSlice = Object.values(step.world.entities).find(
+    (entity) => entity.kind === 'EndpointSlice',
+  );
+  const endpointConditionFacts =
+    selectedEntity?.kind === 'EndpointSlice' && Array.isArray(selectedEntity.data.endpoints)
+      ? selectedEntity.data.endpoints.flatMap((candidate) => {
+          if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return [];
+          const endpoint = candidate as Readonly<Record<string, unknown>>;
+          const conditions = readEndpointConditions(endpoint);
+          const targetRef = String(endpoint.targetRef ?? endpoint.address ?? 'endpoint');
+          const target =
+            step.world.entities[targetRef]?.name ?? targetRef.split(':').at(-1) ?? targetRef;
+          return [
+            {
+              label: `${target} Endpoint conditions`,
+              value: endpointConditionText(conditions, ' · '),
+            },
+          ];
+        })
+      : [];
   const inspectorFacts = selectedEntity
     ? [
         { label: 'Name', value: selectedEntity.name },
@@ -215,23 +266,45 @@ export function LearnPage() {
               { label: 'Pod UID', value: podData.uid },
               { label: 'Node', value: podData.nodeName ?? 'Unscheduled' },
               { label: 'Pod phase', value: podData.phase },
+              { label: 'PodScheduled', value: String(podData.conditions.podScheduled) },
+              { label: 'Initialized', value: String(podData.conditions.initialized) },
+              { label: 'ContainersReady', value: String(podData.conditions.containersReady) },
+              { label: 'Pod Ready', value: String(podData.conditions.ready) },
             ]
           : []),
         ...(containerData
           ? [
-              { label: 'Container state', value: container?.status ?? 'unknown' },
+              { label: 'Container state', value: containerData.state.kind },
+              { label: 'Container ID', value: containerData.containerID || 'Not created' },
+              { label: 'Container Ready', value: String(containerData.ready) },
+              { label: 'Started', value: String(containerData.started) },
               { label: 'Restart count', value: String(containerData.restartCount) },
-              { label: 'Generation', value: String(containerData.instanceGeneration) },
+              ...(containerData.lastState
+                ? [
+                    { label: 'Last termination', value: containerData.lastState.reason },
+                    { label: 'Last exit code', value: String(containerData.lastState.exitCode) },
+                  ]
+                : []),
               { label: 'Image', value: containerData.image },
             ]
           : []),
         ...(selectedReplicaSetData
           ? [
-              { label: 'Desired', value: String(selectedReplicaSetData.desiredReplicas) },
-              { label: 'Current', value: String(selectedReplicaSetData.currentReplicas) },
-              { label: 'Ready', value: String(selectedReplicaSetData.readyReplicas) },
+              {
+                label: '.spec.replicas (SPEC)',
+                value: String(selectedReplicaSetData.specReplicas),
+              },
+              {
+                label: '.status.replicas (OBSERVED)',
+                value: String(selectedReplicaSetData.statusReplicas),
+              },
+              {
+                label: '.status.readyReplicas (READY)',
+                value: String(selectedReplicaSetData.readyReplicas),
+              },
             ]
           : []),
+        ...endpointConditionFacts,
         ...(ownerEntity ? [{ label: 'Owner', value: ownerEntity.name }] : []),
       ]
     : [];
@@ -265,13 +338,28 @@ export function LearnPage() {
       return `${route.label?.[locale] ?? route.semantic} route: ${hops}`;
     })
     .join('. ');
+  const endpointSummary =
+    endpointSlice && Array.isArray(endpointSlice.data.endpoints)
+      ? endpointSlice.data.endpoints
+          .flatMap((candidate) => {
+            if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return [];
+            const endpoint = candidate as Readonly<Record<string, unknown>>;
+            const conditions = readEndpointConditions(endpoint);
+            const targetRef = String(endpoint.targetRef ?? endpoint.address ?? 'endpoint');
+            const target =
+              step.world.entities[targetRef]?.name ?? targetRef.split(':').at(-1) ?? targetRef;
+            return [`${target} endpoint ${endpointConditionText(conditions, ', ')}`];
+          })
+          .join('; ')
+      : '';
   const sceneSummary = [
     authoredStep.title[locale],
     authoredStep.teaching.whatChanged[locale],
     focusedId ? `Focused entity: ${step.world.entities[focusedId]?.name ?? focusedId}.` : '',
     replicaCounts
-      ? `ReplicaSet desired ${replicaCounts.desiredReplicas}, current ${replicaCounts.currentReplicas}, ready ${replicaCounts.readyReplicas}.`
+      ? `ReplicaSet SPEC ${replicaCounts.specReplicas}, OBSERVED ${replicaCounts.statusReplicas}, READY ${replicaCounts.readyReplicas}.`
       : '',
+    endpointSummary ? `EndpointSlice conditions: ${endpointSummary}.` : '',
     routeSummary ? `Visible ${routeSummary}.` : '',
   ]
     .filter(Boolean)
@@ -289,8 +377,8 @@ export function LearnPage() {
           data-testid="replica-counts"
           data-world-revision={step.world.revision}
         >
-          ReplicaSet Desired {replicaCounts.desiredReplicas} Current {replicaCounts.currentReplicas}{' '}
-          Ready {replicaCounts.readyReplicas}
+          ReplicaSet SPEC {replicaCounts.specReplicas} OBSERVED {replicaCounts.statusReplicas} READY{' '}
+          {replicaCounts.readyReplicas}
         </p>
       )}
       <p id="scene-accessible-summary" className="sr-only">

@@ -31,7 +31,8 @@ function endpointStates(entity: WorldEntity): readonly EndpointState[] {
       {
         address: typeof record.address === 'string' ? record.address : 'unknown',
         targetRef: typeof record.targetRef === 'string' ? record.targetRef : 'unknown',
-        ready: conditions.ready === true,
+        // EndpointConditions.ready defaults to true when omitted by the API.
+        ready: conditions.ready !== false,
         serving: conditions.serving !== false,
         terminating: conditions.terminating === true,
       },

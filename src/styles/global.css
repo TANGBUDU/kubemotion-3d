@@ -334,7 +334,7 @@ button.secondary {
   z-index: 8;
   top: 0;
   left: 0;
-  max-width: 250px;
+  max-width: 300px;
   padding: 8px 11px;
   border: 1px solid #8bd3ff;
   border-radius: 8px;
@@ -347,7 +347,7 @@ button.secondary {
     Consolas,
     monospace;
   pointer-events: none;
-  white-space: nowrap;
+  white-space: normal;
 }
 .scene-callout::before {
   content: '';

@@ -42,6 +42,7 @@ entities:
       nodeName: worker-client
       phase: Running
       restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
       trafficRole: client
       podIP: 192.0.2.50
     title: { en: Client Pod, ja: クライアント Pod, zh-CN: 客户端 Pod }
@@ -61,6 +62,7 @@ entities:
     status: ready
     data:
       serviceType: ClusterIP
+      publishNotReadyAddresses: false
       clusterIP: 198.51.100.42
       syntheticAddress: true
       selector: { app.kubernetes.io/name: api }
@@ -116,6 +118,7 @@ entities:
       nodeName: worker-backends
       phase: Running
       restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
       trafficRole: backend
       podIP: 192.0.2.11
       containerPort: 8080
@@ -139,6 +142,7 @@ entities:
       nodeName: worker-backends
       phase: Running
       restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
       trafficRole: backend
       podIP: 192.0.2.12
       containerPort: 8080
@@ -162,14 +166,15 @@ entities:
       nodeName: worker-backends
       phase: Running
       restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
       trafficRole: backend
       podIP: 192.0.2.13
       containerPort: 8080
     title: { en: api-c Pod, ja: api-c Pod, zh-CN: api-c Pod }
     summary:
-      en: A ready backend that receives traffic after api-a becomes NotReady.
-      ja: api-a が NotReady になった後にトラフィックを受ける ready なバックエンドです。
-      zh-CN: api-a 变为 NotReady 后接收流量的 Ready 后端。
+      en: A Ready backend shown receiving the illustrative later request after api-a becomes NotReady.
+      ja: api-a が NotReady になった後、例示する後続のリクエストを受ける Ready なバックエンドです。
+      zh-CN: api-a 变为 NotReady 后，图中用于接收示例性后续请求的 Ready 后端。
     sourceIds: [k8s-pods, k8s-services]
     visual: { archetype: pod, size: md, group: api-backends }
 
