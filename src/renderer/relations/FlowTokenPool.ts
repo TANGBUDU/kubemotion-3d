@@ -96,6 +96,7 @@ export class FlowTokenPool {
     mesh.quaternion.identity();
     mesh.scale.set(1, 1, 1);
     delete mesh.userData.routeId;
+    delete mesh.userData.requestId;
     this.available.push(mesh);
   }
 

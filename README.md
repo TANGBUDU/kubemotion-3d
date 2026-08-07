@@ -17,7 +17,7 @@ a Pod.
 
 - **2 fully verified lessons:** `container-restart-vs-pod-replacement` and `service-routes-to-pods`
 - **10-step Pod lifecycle:** orientation → healthy baseline → Container exit → in-place restart → intentional Pod deletion → controller replacement → unscheduled Pending → scheduler binding → kubelet start/readiness → snapshot-derived comparison
-- **6-step Service traffic path:** identify objects → stable Service entry → EndpointSlice readiness → request to a Ready backend → NotReady reroute → summary
+- **6-step Service traffic path:** identify objects → stable Service entry → EndpointSlice readiness → Request A to a Ready backend → readiness change → later Request B to another Ready backend
 - **20 planned lessons:** visible as roadmap entries, not represented as complete
 - **Explore (Beta):** filters a compiled snapshot while keeping one-hop ownership and placement context
 - **Synthetic only:** no cluster credentials, telemetry, backend, or resource mutation
@@ -76,6 +76,7 @@ pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm content:validate
+pnpm content:accuracy
 pnpm test:unit -- --run
 pnpm build
 pnpm test:e2e
@@ -99,7 +100,9 @@ Kubernetes RBAC.
 ## Accuracy and safety
 
 Lesson claims cite official Kubernetes documentation and carry a verification date. Animations
-explain responsibility and causality; they are not packet captures or literal timing traces. See
+explain responsibility and causality; they are not packet captures or literal timing traces.
+Synthetic IDs and timestamps are clearly teaching data, while field meanings follow Kubernetes API
+concepts. Service data-plane behavior remains implementation-dependent. See
 [the accuracy policy](docs/accuracy-policy.md) and
 [visual semantics](docs/visualization-semantics.md).
 
