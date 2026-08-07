@@ -1,96 +1,556 @@
-import type { SceneProjection, ViewMode } from '../course/types';
-import type { ClusterEntity, ClusterGraph, EntityId } from '../domain/types';
+import type { ViewMode, ViewProjection } from '../course/types';
+import { getPodData, isPlainRecord } from '../world/dataGuards';
+import type {
+  EntityId,
+  RelationId,
+  RelationSemantic,
+  WorldEntity,
+  WorldRelation,
+  WorldSnapshot,
+} from '../world/types';
+import { NodeVisualHandle } from './VisualHandles';
 
 export type Position = readonly [number, number, number];
-export interface LayoutResult {
-  positions: ReadonlyMap<EntityId, Position>;
+
+export type LayoutLane =
+  'node' | 'pod-slot' | 'node-agent' | 'pending' | 'control' | 'composition' | 'semantic';
+
+export interface EntityLayout {
+  readonly entityId: EntityId;
+  readonly position: Position;
+  readonly lane: LayoutLane;
+  readonly parentId?: EntityId;
+  readonly containerId?: string;
+  readonly slotIndex?: number;
 }
 
-const kindOrder = [
-  'Cluster',
-  'KubeAPIServer',
-  'Etcd',
-  'Scheduler',
-  'ControllerManager',
-  'Namespace',
-  'Deployment',
-  'ReplicaSet',
-  'Service',
-  'EndpointSlice',
-  'Pod',
-  'Node',
-  'Kubelet',
-  'ContainerRuntime',
+export interface LayoutBounds {
+  readonly center: Position;
+  readonly size: Position;
+}
+
+export interface LayoutSlot {
+  readonly id: string;
+  readonly index: number;
+  readonly position: Position;
+  readonly occupiedBy?: EntityId;
+}
+
+export interface LayoutContainer {
+  readonly id: string;
+  readonly kind: 'node-rack' | 'pending-lane' | 'control-lane' | 'semantic-lane';
+  readonly label: string;
+  readonly bounds: LayoutBounds;
+  readonly entityId?: EntityId;
+  readonly slots: readonly LayoutSlot[];
+}
+
+export interface RelationRoute {
+  readonly relationId: RelationId;
+  readonly points: readonly Position[];
+  readonly curve: 'straight' | 'arc' | 'orthogonal';
+}
+
+export interface LayoutInput {
+  readonly world: WorldSnapshot;
+  readonly view: ViewProjection;
+  readonly previous?: LayoutResult;
+}
+
+export interface LayoutResult {
+  readonly entities: ReadonlyMap<EntityId, EntityLayout>;
+  readonly containers: readonly LayoutContainer[];
+  readonly routes: ReadonlyMap<RelationId, RelationRoute>;
+  /** Convenience view retained for camera/animation consumers; entity layouts remain authoritative. */
+  readonly positions: ReadonlyMap<EntityId, Position>;
+}
+
+export interface LayoutModule {
+  readonly view: ViewMode;
+  calculate(input: LayoutInput): LayoutResult;
+}
+
+const SLOT_OFFSETS: readonly Position[] = [
+  [-1.22, 0.38, -0.82],
+  [1.22, 0.38, -0.82],
+  [-1.22, 0.38, 0.82],
+  [1.22, 0.38, 0.82],
 ];
 
-function rank(entity: ClusterEntity): number {
-  const value = kindOrder.indexOf(entity.kind);
-  return value < 0 ? kindOrder.length : value;
-}
+const byId = (left: WorldEntity, right: WorldEntity): number => left.id.localeCompare(right.id);
 
-function overview(entity: ClusterEntity, index: number): Position {
-  if (entity.kind === 'Cluster') return [0, -0.8, 0];
-  if (entity.visual.group === 'control-plane') return [-5 + index * 1.7, 2.6, -2.7];
-  if (entity.kind === 'Node') return [-5 + index * 5, 0, 2.5];
-  if (entity.kind === 'Pod') return [-4 + (index % 5) * 2, 1.2, 0.6 + Math.floor(index / 5) * 1.5];
-  return [-4 + (index % 6) * 1.6, 1, -0.8 + Math.floor(index / 6) * 1.4];
-}
+const configuredRackOrder = (entity: WorldEntity): number => {
+  const value = entity.data.rackOrder;
+  return typeof value === 'number' && Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+};
 
-function logical(entity: ClusterEntity, index: number): Position {
-  if (entity.kind === 'Namespace') return [entity.name === 'shop' ? 0 : 7, -0.6, 0];
-  const namespaceX = entity.namespace === 'shop' ? 0 : entity.namespace ? 7 : -7;
-  const column = rank(entity) % 4;
-  return [namespaceX - 3 + column * 2, 0.6 + Math.floor(index / 4) * 1.2, -1.5 + (index % 3) * 1.5];
-}
+const byRackOrder = (left: WorldEntity, right: WorldEntity): number =>
+  configuredRackOrder(left) - configuredRackOrder(right) || byId(left, right);
 
-function placement(entity: ClusterEntity, index: number): Position {
-  const nodeIndex =
-    entity.kind === 'Node' ? ['worker-a', 'worker-b', 'worker-c'].indexOf(entity.name) : -1;
-  if (nodeIndex >= 0) return [-6 + nodeIndex * 6, -0.5, 0];
-  if (entity.nodeName) {
-    const slot = ['worker-a', 'worker-b', 'worker-c'].indexOf(entity.nodeName);
-    return [-6 + slot * 6 + ((index % 3) - 1) * 1.45, 0.8 + (index % 3) * 0.65, 0];
+const isVisible = (entity: WorldEntity, view: ViewProjection): boolean => {
+  const state = view.entityStates[entity.id];
+  return state?.visible === true && state.emphasis !== 'hidden';
+};
+
+const toPositions = (
+  entities: ReadonlyMap<EntityId, EntityLayout>,
+): ReadonlyMap<EntityId, Position> =>
+  new Map([...entities].map(([entityId, layout]) => [entityId, layout.position] as const));
+
+const routeCurve = (semantic: RelationSemantic): RelationRoute['curve'] => {
+  switch (semantic) {
+    case 'ownership':
+    case 'control-observation':
+    case 'selection':
+    case 'endpoint-membership':
+      return 'arc';
+    case 'placement':
+    case 'storage':
+    case 'configuration':
+      return 'orthogonal';
+    case 'composition':
+    case 'scope':
+    case 'data-flow':
+    case 'DNS-flow':
+      return 'straight';
   }
-  return [-5 + (index % 6) * 2, 3.4, -3.2];
+};
+
+const anchorPosition = (
+  layout: EntityLayout,
+  relation: WorldRelation,
+  endpoint: 'from' | 'to',
+): Position => {
+  const [x, y, z] = layout.position;
+  if (relation.semantic === 'composition') {
+    return endpoint === 'from' ? [x, y + 0.75, z] : [x, y + 0.88, z];
+  }
+  if (relation.semantic === 'placement') {
+    return endpoint === 'from' ? [x, y + 0.45, z] : [x, y + 0.42, z];
+  }
+  if (relation.semantic === 'ownership') {
+    return endpoint === 'from' ? [x + 0.9, y + 0.72, z] : [x - 0.72, y + 0.78, z];
+  }
+  if (relation.semantic === 'control-observation') {
+    return [x, y + 0.72, z];
+  }
+  return [x, y + 0.5, z];
+};
+
+const buildRoutes = (
+  world: WorldSnapshot,
+  view: ViewProjection,
+  entities: ReadonlyMap<EntityId, EntityLayout>,
+): ReadonlyMap<RelationId, RelationRoute> => {
+  const routes = new Map<RelationId, RelationRoute>();
+  const relations = Object.values(world.relations).sort((left, right) =>
+    left.id.localeCompare(right.id),
+  );
+  for (const relation of relations) {
+    const state = view.relationStates[relation.id];
+    if (!state?.visible) continue;
+    const from = entities.get(relation.from);
+    const to = entities.get(relation.to);
+    if (!from || !to) continue;
+    routes.set(relation.id, {
+      relationId: relation.id,
+      points: [anchorPosition(from, relation, 'from'), anchorPosition(to, relation, 'to')],
+      curve: routeCurve(relation.semantic),
+    });
+  }
+  return routes;
+};
+
+const completeResult = (
+  world: WorldSnapshot,
+  view: ViewProjection,
+  entities: ReadonlyMap<EntityId, EntityLayout>,
+  containers: readonly LayoutContainer[],
+): LayoutResult => ({
+  entities,
+  containers,
+  routes: buildRoutes(world, view, entities),
+  positions: toPositions(entities),
+});
+
+const stableHash = (value: string): number => {
+  let hash = 2_166_136_261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16_777_619);
+  }
+  return hash >>> 0;
+};
+
+const dataNodeName = (entity: WorldEntity): string | undefined => {
+  if (!isPlainRecord(entity.data)) return undefined;
+  const value = entity.data.nodeName;
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+};
+
+const relatedNodeName = (
+  entity: WorldEntity,
+  relations: readonly WorldRelation[],
+  nodesById: ReadonlyMap<EntityId, WorldEntity>,
+): string | undefined => {
+  for (const relation of relations) {
+    if (relation.from === entity.id) {
+      const node = nodesById.get(relation.to);
+      if (node && (relation.semantic === 'placement' || relation.semantic === 'composition')) {
+        return node.name;
+      }
+    }
+    if (relation.to === entity.id) {
+      const node = nodesById.get(relation.from);
+      if (node && relation.semantic === 'composition') return node.name;
+    }
+  }
+  return undefined;
+};
+
+const previousSlot = (
+  previous: LayoutResult | undefined,
+  entityId: EntityId,
+  containerId: string,
+): number | undefined => {
+  const layout = previous?.entities.get(entityId);
+  return layout?.containerId === containerId ? layout.slotIndex : undefined;
+};
+
+const allocateSlot = (
+  entityId: EntityId,
+  used: ReadonlySet<number>,
+  preferred: number | undefined,
+): number => {
+  if (
+    preferred !== undefined &&
+    preferred >= 0 &&
+    preferred < SLOT_OFFSETS.length &&
+    !used.has(preferred)
+  ) {
+    return preferred;
+  }
+  const initial = stableHash(entityId) % SLOT_OFFSETS.length;
+  for (let offset = 0; offset < SLOT_OFFSETS.length; offset += 1) {
+    const candidate = (initial + offset) % SLOT_OFFSETS.length;
+    if (!used.has(candidate)) return candidate;
+  }
+  return SLOT_OFFSETS.length + used.size - SLOT_OFFSETS.length;
+};
+
+const overflowSlotOffset = (slotIndex: number): Position => {
+  if (slotIndex < SLOT_OFFSETS.length) return SLOT_OFFSETS[slotIndex] ?? [0, 0.38, 0];
+  const overflowIndex = slotIndex - SLOT_OFFSETS.length;
+  const column = overflowIndex % 3;
+  const row = Math.floor(overflowIndex / 3);
+  return [-1.45 + column * 1.45, 1.82 + row * 1.45, 0];
+};
+
+export class PlacementLayout implements LayoutModule {
+  public readonly view = 'placement' as const;
+
+  public calculate(input: LayoutInput): LayoutResult {
+    const { world, view, previous } = input;
+    const visibleEntities = Object.values(world.entities).filter((entity) =>
+      isVisible(entity, view),
+    );
+    const visibleNodes = visibleEntities
+      .filter((entity) => entity.kind === 'Node')
+      .sort(byRackOrder);
+    const allRelations = Object.values(world.relations);
+    const nodesById = new Map(visibleNodes.map((entity) => [entity.id, entity] as const));
+    const nodesByName = new Map(visibleNodes.map((entity) => [entity.name, entity] as const));
+    const layouts = new Map<EntityId, EntityLayout>();
+    const containers: LayoutContainer[] = [];
+    const nodeXById = new Map<EntityId, number>();
+
+    visibleNodes.forEach((node, nodeIndex) => {
+      const x = (nodeIndex - (visibleNodes.length - 1) / 2) * 6.4;
+      nodeXById.set(node.id, x);
+      layouts.set(node.id, {
+        entityId: node.id,
+        position: [x, 0, 0],
+        lane: 'node',
+        containerId: `node:${node.id}`,
+      });
+    });
+
+    const scheduledPods = new Map<EntityId, WorldEntity[]>();
+    const pendingPods: WorldEntity[] = [];
+    for (const entity of visibleEntities
+      .filter((candidate) => candidate.kind === 'Pod')
+      .sort(byId)) {
+      const nodeName = getPodData(entity).nodeName;
+      const node = nodeName ? nodesByName.get(nodeName) : undefined;
+      if (!nodeName) {
+        pendingPods.push(entity);
+        continue;
+      }
+      if (!node) continue;
+      const pods = scheduledPods.get(node.id) ?? [];
+      pods.push(entity);
+      scheduledPods.set(node.id, pods);
+    }
+
+    for (const node of visibleNodes) {
+      const x = nodeXById.get(node.id) ?? 0;
+      const containerId = `node:${node.id}`;
+      const used = new Set<number>();
+      const occupied = new Map<number, EntityId>();
+      for (const pod of scheduledPods.get(node.id) ?? []) {
+        const preferred = previousSlot(previous, pod.id, containerId);
+        const slotIndex = allocateSlot(pod.id, used, preferred);
+        used.add(slotIndex);
+        occupied.set(slotIndex, pod.id);
+        const [offsetX, offsetY, offsetZ] = overflowSlotOffset(slotIndex);
+        layouts.set(pod.id, {
+          entityId: pod.id,
+          position: [x + offsetX, offsetY, offsetZ],
+          lane: 'pod-slot',
+          parentId: node.id,
+          containerId,
+          slotIndex,
+        });
+      }
+      const slotCount = Math.max(SLOT_OFFSETS.length, ...[...used].map((index) => index + 1), 4);
+      const slots: LayoutSlot[] = [];
+      for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
+        const [offsetX, offsetY, offsetZ] = overflowSlotOffset(slotIndex);
+        const occupiedBy = occupied.get(slotIndex);
+        slots.push({
+          id: `${containerId}:slot:${slotIndex}`,
+          index: slotIndex,
+          position: [x + offsetX, offsetY, offsetZ],
+          ...(occupiedBy ? { occupiedBy } : {}),
+        });
+      }
+      containers.push({
+        id: containerId,
+        kind: 'node-rack',
+        label: node.name,
+        entityId: node.id,
+        bounds: {
+          center: [x, 0.2, 0],
+          size: [NodeVisualHandle.footprint.width, 0.5, NodeVisualHandle.footprint.depth],
+        },
+        slots,
+      });
+    }
+
+    const nodeAgents = visibleEntities.filter((entity) => entity.kind === 'Kubelet').sort(byId);
+    for (const agent of nodeAgents) {
+      const nodeName = dataNodeName(agent) ?? relatedNodeName(agent, allRelations, nodesById);
+      const node = nodeName ? nodesByName.get(nodeName) : undefined;
+      if (!node) continue;
+      const x = nodeXById.get(node.id) ?? 0;
+      layouts.set(agent.id, {
+        entityId: agent.id,
+        position: [x, 0.22, -2.42],
+        lane: 'node-agent',
+        parentId: node.id,
+        containerId: `node:${node.id}`,
+      });
+    }
+
+    if (pendingPods.length > 0) {
+      const spacing = 2.3;
+      const width = Math.max(6, pendingPods.length * spacing + 1.8);
+      pendingPods.forEach((pod, index) => {
+        const x = (index - (pendingPods.length - 1) / 2) * spacing;
+        layouts.set(pod.id, {
+          entityId: pod.id,
+          position: [x, 0.18, 4.65],
+          lane: 'pending',
+          containerId: 'pending-lane',
+          slotIndex: index,
+        });
+      });
+      containers.push({
+        id: 'pending-lane',
+        kind: 'pending-lane',
+        label: 'Pending / Unscheduled',
+        bounds: { center: [0, 0.08, 4.65], size: [width, 0.16, 2.5] },
+        slots: pendingPods.map((pod, index) => ({
+          id: `pending-lane:slot:${index}`,
+          index,
+          position: [(index - (pendingPods.length - 1) / 2) * spacing, 0.18, 4.65],
+          occupiedBy: pod.id,
+        })),
+      });
+    }
+
+    const controlKinds = new Set([
+      'ReplicaSet',
+      'ControllerManager',
+      'KubeControllerManager',
+      'Scheduler',
+    ]);
+    const controlEntities = visibleEntities
+      .filter((entity) => controlKinds.has(entity.kind))
+      .sort((left, right) => {
+        const order = (entity: WorldEntity): number => {
+          if (entity.kind === 'ControllerManager' || entity.kind === 'KubeControllerManager')
+            return 0;
+          if (entity.kind === 'ReplicaSet') return 1;
+          return 2;
+        };
+        return order(left) - order(right) || left.id.localeCompare(right.id);
+      });
+    if (controlEntities.length > 0) {
+      const spacing = 3.25;
+      controlEntities.forEach((entity, index) => {
+        layouts.set(entity.id, {
+          entityId: entity.id,
+          position: [(index - (controlEntities.length - 1) / 2) * spacing, 0.08, -5.25],
+          lane: 'control',
+          containerId: 'control-lane',
+          slotIndex: index,
+        });
+      });
+      containers.push({
+        id: 'control-lane',
+        kind: 'control-lane',
+        label: 'Control plane / reconciliation',
+        bounds: {
+          center: [0, 0.04, -5.25],
+          size: [Math.max(10, controlEntities.length * spacing + 1.5), 0.12, 2.8],
+        },
+        slots: controlEntities.map((entity, index) => ({
+          id: `control-lane:slot:${index}`,
+          index,
+          position: [(index - (controlEntities.length - 1) / 2) * spacing, 0.08, -5.25],
+          occupiedBy: entity.id,
+        })),
+      });
+    }
+
+    const containsRelations = allRelations
+      .filter((relation) => relation.semantic === 'composition')
+      .sort((left, right) => left.id.localeCompare(right.id));
+    for (const entity of visibleEntities
+      .filter((candidate) => candidate.kind === 'Container')
+      .sort(byId)) {
+      const relation = containsRelations.find(
+        (candidate) => candidate.to === entity.id && layouts.has(candidate.from),
+      );
+      if (!relation) continue;
+      layouts.set(entity.id, {
+        entityId: entity.id,
+        position: [0, 0, 0],
+        lane: 'composition',
+        parentId: relation.from,
+        containerId: `pod:${relation.from}`,
+      });
+    }
+
+    const reserved = new Set(layouts.keys());
+    const semanticRemainder = visibleEntities
+      .filter((entity) => !reserved.has(entity.id))
+      .sort(byId);
+    semanticRemainder.forEach((entity, index) => {
+      layouts.set(entity.id, {
+        entityId: entity.id,
+        position: [-5.4 + (index % 6) * 2.15, 0.18, 7.4 + Math.floor(index / 6) * 1.8],
+        lane: 'semantic',
+        containerId: 'placement-context',
+        slotIndex: index,
+      });
+    });
+
+    return completeResult(world, view, layouts, containers);
+  }
 }
 
-function flow(entity: ClusterEntity, index: number, view: ViewMode): Position {
-  const order =
-    view === 'traffic'
-      ? ['Browser', 'Pod', 'Service', 'EndpointSlice']
-      : [
-          'Developer',
-          'KubeAPIServer',
-          'Etcd',
-          'ControllerManager',
-          'Scheduler',
-          'Kubelet',
-          'ContainerRuntime',
-          'Pod',
-        ];
-  const lane = order.indexOf(entity.kind);
-  return [
-    lane < 0 ? -5 + (index % 6) * 2 : -8 + lane * 2.3,
-    lane < 0 ? -1.2 : 1.1,
-    lane < 0 ? 2.8 : (index % 3) * 1.2 - 1.2,
-  ];
+abstract class SemanticLaneLayout implements LayoutModule {
+  public abstract readonly view: ViewMode;
+  protected abstract laneKey(entity: WorldEntity): string;
+
+  public calculate(input: LayoutInput): LayoutResult {
+    const visible = Object.values(input.world.entities).filter((entity) =>
+      isVisible(entity, input.view),
+    );
+    const byLane = new Map<string, WorldEntity[]>();
+    for (const entity of visible.sort(byId)) {
+      const key = this.laneKey(entity);
+      const lane = byLane.get(key) ?? [];
+      lane.push(entity);
+      byLane.set(key, lane);
+    }
+    const layouts = new Map<EntityId, EntityLayout>();
+    const containers: LayoutContainer[] = [];
+    [...byLane]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .forEach(([key, lane], laneIndex) => {
+        const x = (laneIndex - (byLane.size - 1) / 2) * 5.2;
+        lane.forEach((entity, index) => {
+          layouts.set(entity.id, {
+            entityId: entity.id,
+            position: [x, 0.2 + index * 1.6, 0],
+            lane: 'semantic',
+            containerId: `${this.view}:${key}`,
+            slotIndex: index,
+          });
+        });
+        containers.push({
+          id: `${this.view}:${key}`,
+          kind: 'semantic-lane',
+          label: key,
+          bounds: { center: [x, 0, 0], size: [4.4, 0.1, 3.4] },
+          slots: lane.map((entity, index) => ({
+            id: `${this.view}:${key}:slot:${index}`,
+            index,
+            position: [x, 0.2 + index * 1.6, 0],
+            occupiedBy: entity.id,
+          })),
+        });
+      });
+    return completeResult(input.world, input.view, layouts, containers);
+  }
 }
 
-export function calculateLayout(graph: ClusterGraph, projection: SceneProjection): LayoutResult {
-  const visible = graph.snapshot.entities
-    .filter((entity) => projection.entityStates[entity.id]?.visible)
-    .sort((a, b) => rank(a) - rank(b) || a.id.localeCompare(b.id));
-  const positions = new Map<EntityId, Position>();
-  visible.forEach((entity, index) => {
-    const position =
-      projection.view === 'overview'
-        ? overview(entity, index)
-        : projection.view === 'logical'
-          ? logical(entity, index)
-          : projection.view === 'placement'
-            ? placement(entity, index)
-            : flow(entity, index, projection.view);
-    positions.set(entity.id, position);
-  });
-  return { positions };
+export class OverviewLayout extends SemanticLaneLayout {
+  public readonly view = 'overview' as const;
+  protected laneKey(entity: WorldEntity): string {
+    return entity.category;
+  }
 }
+
+export class LogicalLayout extends SemanticLaneLayout {
+  public readonly view = 'logical' as const;
+  protected laneKey(entity: WorldEntity): string {
+    return entity.namespace ?? 'cluster-scoped';
+  }
+}
+
+export class ControlFlowLayout extends SemanticLaneLayout {
+  public readonly view = 'control-flow' as const;
+  protected laneKey(entity: WorldEntity): string {
+    return entity.category === 'runtime-component' ? 'runtime-components' : entity.category;
+  }
+}
+
+export class TrafficLayout extends SemanticLaneLayout {
+  public readonly view = 'traffic' as const;
+  protected laneKey(entity: WorldEntity): string {
+    return entity.visual.group ?? entity.kind;
+  }
+}
+
+export class StorageLayout extends SemanticLaneLayout {
+  public readonly view = 'storage' as const;
+  protected laneKey(entity: WorldEntity): string {
+    return entity.visual.archetype === 'storage' ? 'storage' : entity.category;
+  }
+}
+
+const modules: Readonly<Record<ViewMode, LayoutModule>> = {
+  overview: new OverviewLayout(),
+  logical: new LogicalLayout(),
+  placement: new PlacementLayout(),
+  'control-flow': new ControlFlowLayout(),
+  traffic: new TrafficLayout(),
+  storage: new StorageLayout(),
+};
+
+export const calculateLayout = (input: LayoutInput): LayoutResult =>
+  modules[input.view.view].calculate(input);

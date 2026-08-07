@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import type { EntityStatus, VisualArchetype } from '../domain/types';
+import type { EntityStatus, VisualArchetype } from '../world/types';
 
+/** Shared immutable geometry owner. Handles borrowing these geometries must not dispose them. */
 export class GeometryCatalog {
   private readonly geometries = new Map<VisualArchetype, THREE.BufferGeometry>();
 
@@ -55,17 +56,22 @@ export class GeometryCatalog {
   }
 }
 
-const statusColors: Record<EntityStatus, number> = {
+export const STATUS_COLORS: Readonly<Record<EntityStatus, number>> = Object.freeze({
   healthy: 0x45c486,
   ready: 0x45c486,
   'not-ready': 0xf0b44d,
   pending: 0xf0b44d,
   starting: 0x5eb6ff,
+  running: 0x45c486,
+  waiting: 0xf0b44d,
   terminating: 0xef6a78,
+  terminated: 0xef6a78,
+  succeeded: 0x45c486,
   failed: 0xef6a78,
   unknown: 0x9fb3c8,
-};
+});
 
+/** Shared immutable material owner. Consumers must change emphasis on their root, not these materials. */
 export class MaterialCatalog {
   private readonly materials = new Map<string, THREE.MeshStandardMaterial>();
 
@@ -74,7 +80,7 @@ export class MaterialCatalog {
     const existing = this.materials.get(key);
     if (existing) return existing;
     const base =
-      archetype === 'namespace' || archetype === 'cluster' ? 0x29415e : statusColors[status];
+      archetype === 'namespace' || archetype === 'cluster' ? 0x29415e : STATUS_COLORS[status];
     const material = new THREE.MeshStandardMaterial({
       color: base,
       roughness: 0.56,
