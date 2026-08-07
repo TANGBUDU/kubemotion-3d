@@ -8,7 +8,7 @@ vi.mock('../../src/components/SceneViewport', () => ({
   SceneViewport: () => <div data-testid="mock-scene" />,
 }));
 
-function renderLesson(path = '/learn/cluster-overview/0') {
+function renderLesson(path = '/learn/container-restart-vs-pod-replacement/0') {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
@@ -37,7 +37,7 @@ describe('LearnPage', () => {
 
   it('adds safe attributes to official source links', () => {
     renderLesson();
-    const link = screen.getByRole('link', { name: /Kubernetes Cluster Architecture/i });
+    const link = screen.getByRole('link', { name: /Pods/i });
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noreferrer noopener');
   });

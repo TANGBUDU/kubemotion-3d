@@ -5,9 +5,9 @@ test('explore selection opens inspector', async ({ page }) => {
   await page.getByRole('tab', { name: 'placement' }).click();
   await page.waitForFunction(() => Boolean(window.__KUBEMOTION_TEST__));
   await page.evaluate(() =>
-    window.__KUBEMOTION_TEST__?.selectEntity('api-object:namespaced:shop:Pod:api-a'),
+    window.__KUBEMOTION_TEST__?.selectEntity('api-object:namespaced:shop:Pod:api-a-old'),
   );
-  await expect(page.locator('.inspector')).toContainText('shop');
+  await expect(page.locator('.inspector')).toContainText('api-7f8d9-a');
   await expect(page.locator('.inspector')).toContainText('worker-a');
   await page.keyboard.press('Escape');
   await expect(page.locator('.inspector')).toHaveCount(0);
