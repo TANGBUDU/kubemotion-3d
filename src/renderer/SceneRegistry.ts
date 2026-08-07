@@ -157,14 +157,20 @@ export class SceneRegistry {
    * Diffs handles by EntityId. Hidden entities are removed rather than kept as invisible raycast
    * targets; callers that need an exit animation must retain its handle until that cue finishes.
    */
-  public sync(world: WorldSnapshot, view: ViewProjection): SceneSyncResult {
+  public sync(
+    world: WorldSnapshot,
+    view: ViewProjection,
+    retainedEntityIds: ReadonlySet<EntityId> = new Set(),
+  ): SceneSyncResult {
     const desired = Object.values(world.entities)
       .filter((entity) => isRendered(view.entityStates[entity.id]))
       .sort((left, right) => left.id.localeCompare(right.id));
     const desiredIds = new Set(desired.map((entity) => entity.id));
     const removed: EntityId[] = [];
     const stale = [...this.handles.values()]
-      .filter((handle) => !desiredIds.has(handle.entityId))
+      .filter(
+        (handle) => !desiredIds.has(handle.entityId) && !retainedEntityIds.has(handle.entityId),
+      )
       .sort((left, right) => {
         const leftOrder =
           left instanceof ContainerVisualHandle ? 0 : left instanceof PodVisualHandle ? 1 : 2;
@@ -175,6 +181,12 @@ export class SceneRegistry {
     for (const handle of stale) {
       removed.push(handle.entityId);
       this.remove(handle.entityId);
+    }
+
+    for (const handle of this.handles.values()) {
+      if (!desiredIds.has(handle.entityId) && retainedEntityIds.has(handle.entityId)) {
+        handle.root.userData.activeWorld = false;
+      }
     }
 
     const added: EntityId[] = [];
@@ -199,6 +211,7 @@ export class SceneRegistry {
     }
     for (const handle of this.handles.values()) {
       if (!(handle instanceof ContainerVisualHandle)) continue;
+      if (handle.root.userData.activeWorld !== true) continue;
       const desiredPodId = podByContainer.get(handle.entityId);
       const currentPodId =
         typeof handle.root.userData.composedInPod === 'string'

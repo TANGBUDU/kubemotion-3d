@@ -159,7 +159,8 @@ for (const entry of available) {
 }
 
 for (const entity of Object.values(scenario.entities)) checkSources(entity.sourceIds, entity.id);
-for (const relation of Object.values(scenario.relations)) checkSources(relation.sourceIds, relation.id);
+for (const relation of Object.values(scenario.relations))
+  checkSources(relation.sourceIds, relation.id);
 
 const golden = compiledLessons.find(
   (compiled) => compiled.lesson.id === 'container-restart-vs-pod-replacement',
@@ -174,11 +175,13 @@ check(restarted !== undefined, 'golden lesson restart step is missing');
 const newPodId = 'api-object:namespaced:shop:Pod:api-d-new';
 const oldContainerId = 'runtime-instance:shop:Pod:api-a-old:Container:api';
 check(!healthy.world.entities[newPodId], 'replacement Pod must not exist before creation');
-check(Boolean(pending.worldDiff.addedEntities.find((item) => item.id === newPodId)), 'identity replacement must add a new entity ID');
+check(
+  Boolean(pending.worldDiff.addedEntities.find((item) => item.id === newPodId)),
+  'identity replacement must add a new entity ID',
+);
 check(
   restarted.worldDiff.updatedEntities.some(
-    (update) =>
-      update.id === oldContainerId && update.changedPaths.includes('/data/restartCount'),
+    (update) => update.id === oldContainerId && update.changedPaths.includes('/data/restartCount'),
   ),
   'restart claim must patch Container restartCount',
 );

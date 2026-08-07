@@ -139,6 +139,11 @@ export class TextBadge {
     this.texture.needsUpdate = true;
   }
 
+  public setOpacity(opacity: number): void {
+    this.material.opacity = Math.min(1, Math.max(0, opacity));
+    this.material.needsUpdate = true;
+  }
+
   public dispose(): void {
     this.sprite.removeFromParent();
     this.material.dispose();
@@ -243,6 +248,7 @@ abstract class BaseEntityVisualHandle implements EntityVisualHandle {
       material.transparent = material.transparent || opacity < 1;
       material.needsUpdate = true;
     }
+    for (const badge of this.badges) badge.setOpacity(opacityFactor);
     for (const object of this.selectableObjects) object.userData.selectable = visible;
     this.selectionRing.visible = this.selected && visible;
     this.updateVisual(entity, view);
@@ -375,7 +381,11 @@ export class NodeVisualHandle extends BaseEntityVisualHandle {
 
   protected override updateVisual(entity: WorldEntity): void {
     this.nameBadge.setText(`NODE  ${entity.name}`);
-    this.applyStatus(this.platformMaterial, entity.status);
+    if (entity.status === 'ready' || entity.status === 'healthy') {
+      this.platformMaterial.color.setHex(0x183f53);
+    } else {
+      this.applyStatus(this.platformMaterial, entity.status);
+    }
     this.root.userData.nodeName = entity.name;
   }
 
@@ -651,7 +661,7 @@ export class ReplicaSetVisualHandle extends BaseEntityVisualHandle {
       current: data.currentReplicas,
       ready: data.readyReplicas,
     });
-    this.applyStatus(this.plateMaterial, entity.status);
+    this.plateMaterial.color.setHex(0x563f82);
   }
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
@@ -691,7 +701,7 @@ abstract class ComponentVisualHandle extends BaseEntityVisualHandle {
 
   protected override updateVisual(entity: WorldEntity): void {
     this.labelBadge.setText(entity.name.toUpperCase());
-    this.applyStatus(this.bodyMaterial, entity.status);
+    this.root.userData.status = entity.status;
   }
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {

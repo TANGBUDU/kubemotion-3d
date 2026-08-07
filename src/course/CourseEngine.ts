@@ -1,10 +1,11 @@
-import { applyWorldPatch, computeWorldDiff, deepFreeze, getContainerData, getPodData } from '../world';
-import type {
-  EntityId,
-  RelationId,
-  WorldEntity,
-  WorldSnapshot,
-} from '../world/types';
+import {
+  applyWorldPatch,
+  computeWorldDiff,
+  deepFreeze,
+  getContainerData,
+  getPodData,
+} from '../world';
+import type { EntityId, RelationId, WorldEntity, WorldSnapshot } from '../world/types';
 import type {
   ComparisonPanelModel,
   ComparisonRequest,
@@ -165,23 +166,29 @@ function buildComparison(
 ): ComparisonPanelModel {
   const restart = compiledSteps.find((step) => step.stepId === request.restartStepId);
   const replacement = compiledSteps.find((step) => step.stepId === request.replacementStepId);
-  if (!restart || !replacement) throw new Error('Comparison references an unavailable earlier step');
+  if (!restart || !replacement)
+    throw new Error('Comparison references an unavailable earlier step');
 
-  const oldPodId = Object.values(initialWorld.entities).find(
-    (candidate) => candidate.kind === 'Pod' && candidate.data.uid === 'synthetic-uid-old-a1',
-  )?.id;
-  const newPodId = Object.values(replacement.world.entities).find(
-    (candidate) => candidate.kind === 'Pod' && candidate.data.uid === 'synthetic-uid-new-d1',
-  )?.id;
-  if (!oldPodId || !newPodId) throw new Error('Comparison Pod identities are missing');
+  const restartedContainerUpdate = restart.worldDiff.updatedEntities.find(
+    (update) =>
+      update.after.kind === 'Container' &&
+      update.changedPaths.some(
+        (path) => path === '/data/restartCount' || path === '/data/instanceGeneration',
+      ),
+  );
+  const oldPodId = restartedContainerUpdate?.after.data.podId;
+  const replacementPod = Object.values(replacement.world.entities).find(
+    (candidate) => candidate.kind === 'Pod' && initialWorld.entities[candidate.id] === undefined,
+  );
+  if (typeof oldPodId !== 'string' || !replacementPod) {
+    throw new Error('Comparison Pod identities cannot be derived from the compiled snapshots');
+  }
 
   const originalPod = entity(initialWorld, oldPodId);
   const restartedPod = entity(restart.world, oldPodId);
-  const replacementPod = entity(replacement.world, newPodId);
   const originalContainer = containerForPod(initialWorld, oldPodId);
   const restartedContainer = containerForPod(restart.world, oldPodId);
-  const replacementContainer = containerForPod(replacement.world, newPodId);
-  const originalPodData = getPodData(originalPod);
+  const replacementContainer = containerForPod(replacement.world, replacementPod.id);
   const restartedPodData = getPodData(restartedPod);
   const replacementPodData = getPodData(replacementPod);
   const originalContainerData = getContainerData(originalContainer);
@@ -324,11 +331,7 @@ export const courseEngine = {
       world = authoredStep.worldPatch
         ? applyWorldPatch(beforeWorld, authoredStep.worldPatch)
         : beforeWorld;
-      const baseView = applyViewProjectionPatch(
-        initialProjection(world),
-        lesson.baseView,
-        world,
-      );
+      const baseView = applyViewProjectionPatch(initialProjection(world), lesson.baseView, world);
       let view = applyViewProjectionPatch(baseView, authoredStep.viewPatch, world);
       if (authoredStep.viewPatch.comparison) {
         view = freezeValue({

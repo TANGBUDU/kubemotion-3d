@@ -13,8 +13,9 @@ export function AboutPage() {
         <div className="eyebrow">ABOUT KUBEMOTION</div>
         <h1>An accurate visual language for Kubernetes.</h1>
         <p>
-          KubeMotion is an open-source, static-first teaching system. It makes relationships and
-          motion observable without asking for access to a real cluster.
+          KubeMotion is an open-source, static-first teaching system built on deterministic world
+          snapshots. It makes state changes and relationships observable without asking for access
+          to a real cluster.
         </p>
       </div>
       <section className="about-grid">
@@ -22,9 +23,9 @@ export function AboutPage() {
           <Layers3 />
           <h2>Visual semantics</h2>
           <p>
-            Solid blue packets represent application data. Purple document tokens represent
-            Kubernetes API requests. Orange pulses represent reconciliation. Green links represent
-            storage.
+            Nodes are racks, Pods are shells with child Containers, and relation shapes distinguish
+            scheduling, ownership, runtime hosting, and control observation. Every lesson step is
+            rendered from factual state rather than presentation overrides.
           </p>
         </article>
         <article>
@@ -55,8 +56,9 @@ export function AboutPage() {
       <section className="roadmap">
         <h2>{t.roadmap}</h2>
         <p>
-          Release 0.1 includes five complete lessons. The remaining curriculum is visible here only
-          as a non-interactive roadmap.
+          The world-state rebuild includes one fully verified lesson. The remaining curriculum is
+          visible here only as a non-interactive roadmap until each lesson passes the same factual,
+          accessibility, and visual validation gates.
         </p>
         <div className="roadmap-list">
           {course.lessons.map((lesson, index) => (
@@ -71,19 +73,17 @@ export function AboutPage() {
       <section className="license-note">
         <h2>Open source</h2>
         <p>
-          Released under the MIT License. Repository URL is supplied through a single deploy-time
-          configuration value when publishing.
+          Released under the MIT License. The public repository contains the lesson source,
+          deterministic engine, visual baselines, and validation suite.
         </p>
-        {appConfig.repositoryUrl && (
-          <a
-            className="button secondary"
-            href={appConfig.repositoryUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            View repository
-          </a>
-        )}
+        <a
+          className="button secondary"
+          href={appConfig.repositoryUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          View repository
+        </a>
       </section>
     </main>
   );

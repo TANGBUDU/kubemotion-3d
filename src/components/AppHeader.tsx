@@ -1,12 +1,14 @@
 import { RotateCcw } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import type { Locale } from '../domain/types';
+import type { Locale } from '../app/types';
 import { ui } from '../app/i18n';
 import { useAppStore } from '../state/appStore';
 
 export function AppHeader() {
   const locale = useAppStore((state) => state.locale);
   const setLocale = useAppStore((state) => state.setLocale);
+  const reducedMotion = useAppStore((state) => state.reducedMotion);
+  const setReducedMotion = useAppStore((state) => state.setReducedMotion);
   const reset = useAppStore((state) => state.resetExperience);
   const t = ui(locale);
   return (
@@ -17,10 +19,21 @@ export function AppHeader() {
       </NavLink>
       <nav aria-label="Primary navigation">
         <NavLink to="/learn">{t.learn}</NavLink>
-        <NavLink to="/explore">{t.explore}</NavLink>
+        <NavLink to="/explore">
+          {t.explore}
+          <small className="nav-beta">{t.beta}</small>
+        </NavLink>
         <NavLink to="/about">{t.about}</NavLink>
       </nav>
       <div className="header-actions">
+        <label className="motion-toggle">
+          <input
+            type="checkbox"
+            checked={reducedMotion}
+            onChange={(event) => setReducedMotion(event.target.checked)}
+          />
+          <span>Reduced motion</span>
+        </label>
         <label className="sr-only" htmlFor="locale">
           Language
         </label>

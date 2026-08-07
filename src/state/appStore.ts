@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import type { EntityId, EntityStatus, Locale } from '../domain/types';
+import type { Locale } from '../app/types';
 import type { ViewMode } from '../course/types';
+import type { EntityId, EntityStatus } from '../world/types';
 import { loadPreferences, loadProgress, savePreferences, saveProgress } from './persistence';
 
 export interface ExploreFilters {
@@ -34,6 +35,8 @@ export interface AppState {
   clearTransientState: () => void;
   resetExperience: () => void;
   setReducedMotion: (value: boolean) => void;
+  setCourseNavCollapsed: (value: boolean) => void;
+  setInspectorCollapsed: (value: boolean) => void;
 }
 
 const preferences = loadPreferences();
@@ -43,7 +46,7 @@ const emptyFilters: ExploreFilters = { query: '', kind: '', namespace: '', statu
 export const useAppStore = create<AppState>((set, get) => ({
   locale: preferences.locale,
   mode: 'home',
-  scenarioId: 'demo-shop',
+  scenarioId: 'container-restart-golden',
   lessonId: progress.lessonId,
   stepIndex: progress.stepIndex,
   view: 'overview',
@@ -105,4 +108,20 @@ export const useAppStore = create<AppState>((set, get) => ({
       transitionGeneration: state.transitionGeneration + 1,
     })),
   setReducedMotion: (reducedMotion) => set({ reducedMotion }),
+  setCourseNavCollapsed: (courseNavCollapsed) => {
+    set({ courseNavCollapsed });
+    savePreferences({
+      locale: get().locale,
+      courseNavCollapsed,
+      inspectorCollapsed: get().inspectorCollapsed,
+    });
+  },
+  setInspectorCollapsed: (inspectorCollapsed) => {
+    set({ inspectorCollapsed });
+    savePreferences({
+      locale: get().locale,
+      courseNavCollapsed: get().courseNavCollapsed,
+      inspectorCollapsed,
+    });
+  },
 }));

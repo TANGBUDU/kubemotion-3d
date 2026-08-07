@@ -1,17 +1,18 @@
 import { useEffect, useRef } from 'react';
-import type { ClusterGraph, EntityId, Locale } from '../domain/types';
-import type { SceneProjection, TransitionCue } from '../course/types';
+import type { CompiledStep, PlaybackRequest } from '../course/types';
+import type { Locale } from '../app/types';
 import { SceneController } from '../renderer/SceneController';
 import { setDiagnosticsProvider } from '../test-support/debugBridge';
+import type { EntityId } from '../world/types';
 
 export interface SceneViewportProps {
-  graph: ClusterGraph;
-  projection: SceneProjection;
-  transition: readonly TransitionCue[];
+  step: CompiledStep;
+  playback: PlaybackRequest;
   selectedEntityId?: EntityId | undefined;
   locale: Locale;
   reducedMotion: boolean;
-  onSelectEntity: (id?: EntityId) => void;
+  cameraResetId?: number | undefined;
+  onSelectEntity: (id?: EntityId | undefined) => void;
 }
 
 export function SceneViewport(props: SceneViewportProps) {
@@ -32,23 +33,24 @@ export function SceneViewport(props: SceneViewportProps) {
   }, []);
 
   useEffect(() => {
-    controllerRef.current?.setGraph(props.graph);
-  }, [props.graph]);
-  useEffect(() => {
     controllerRef.current?.setLocale(props.locale);
   }, [props.locale]);
   useEffect(() => {
     controllerRef.current?.setOnSelect(props.onSelectEntity);
   }, [props.onSelectEntity]);
   useEffect(() => {
-    controllerRef.current?.applyProjection(props.projection);
-  }, [props.projection]);
+    controllerRef.current?.applyStep(props.step);
+  }, [props.step]);
   useEffect(() => {
-    controllerRef.current?.playTransition(props.transition, props.reducedMotion);
-  }, [props.transition, props.reducedMotion]);
+    controllerRef.current?.playTransition(props.playback, props.reducedMotion);
+  }, [props.playback, props.reducedMotion]);
   useEffect(() => {
     controllerRef.current?.setSelection(props.selectedEntityId);
   }, [props.selectedEntityId]);
+  useEffect(() => {
+    if (props.cameraResetId === undefined || props.cameraResetId === 0) return;
+    controllerRef.current?.resetCamera();
+  }, [props.cameraResetId]);
 
   return <div className="scene-viewport" ref={hostRef} data-testid="scene-viewport" />;
 }

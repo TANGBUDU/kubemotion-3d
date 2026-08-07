@@ -1,6 +1,5 @@
 import type {
   EntityId,
-  EntityStatus,
   LocalizedText,
   RelationId,
   SourceId,
@@ -10,12 +9,7 @@ import type {
 } from '../world/types';
 
 export type ViewMode =
-  | 'overview'
-  | 'logical'
-  | 'placement'
-  | 'control-flow'
-  | 'traffic'
-  | 'storage';
+  'overview' | 'logical' | 'placement' | 'control-flow' | 'traffic' | 'storage';
 export type Emphasis = 'normal' | 'focused' | 'dimmed' | 'hidden';
 export type LabelMode = 'none' | 'short' | 'full';
 
@@ -66,11 +60,7 @@ export type EntitySelector =
     }
   | {
       readonly byCategory:
-        | 'api-object'
-        | 'runtime-instance'
-        | 'runtime-component'
-        | 'infrastructure'
-        | 'external';
+        'api-object' | 'runtime-instance' | 'runtime-component' | 'infrastructure' | 'external';
     }
   | { readonly byNode: string };
 
@@ -236,8 +226,4 @@ export interface GlossaryTerm {
   readonly term: LocalizedText;
   readonly definition: LocalizedText;
   readonly sourceIds: readonly SourceId[];
-}
-
-export function isStatus(value: unknown): value is EntityStatus {
-  return typeof value === 'string';
 }

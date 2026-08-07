@@ -75,6 +75,7 @@ button:disabled {
   height: 100%;
 }
 .app-header nav a {
+  position: relative;
   display: grid;
   place-items: center;
   min-width: 76px;
@@ -86,11 +87,31 @@ button:disabled {
   color: var(--text-primary);
   border-color: var(--accent);
 }
+.nav-beta {
+  margin-left: 5px;
+  padding: 2px 4px;
+  border: 1px solid #8d6fc4;
+  border-radius: 4px;
+  color: #c9afff;
+  font-size: 7px;
+  line-height: 1;
+  text-transform: uppercase;
+}
 .header-actions {
   display: flex;
   gap: 8px;
   align-items: center;
   margin-left: auto;
+}
+.motion-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+.motion-toggle input {
+  accent-color: var(--accent);
 }
 select,
 input {
@@ -271,6 +292,43 @@ button.secondary {
   pointer-events: none;
   will-change: transform;
 }
+.scene-label[data-mode='full'] {
+  border-color: rgb(139 211 255 / 62%);
+  background: rgb(7 20 34 / 94%);
+  color: #f0f8ff;
+  font-weight: 650;
+}
+.scene-label[data-emphasis='dimmed'] {
+  opacity: 0.5;
+}
+.scene-callout {
+  position: absolute;
+  z-index: 8;
+  top: 0;
+  left: 0;
+  max-width: 250px;
+  padding: 8px 11px;
+  border: 1px solid #8bd3ff;
+  border-radius: 8px;
+  background: rgb(7 22 38 / 96%);
+  color: #eef8ff;
+  box-shadow: 0 10px 34px rgb(0 0 0 / 36%);
+  font:
+    700 11px/1.35 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.scene-callout::before {
+  content: '';
+  position: absolute;
+  left: -7px;
+  top: 50%;
+  width: 12px;
+  border-top: 1px solid #8bd3ff;
+}
 .view-badge {
   position: absolute;
   z-index: 5;
@@ -287,9 +345,8 @@ button.secondary {
 
 /* Learn */
 .learn-page {
+  position: relative;
   height: calc(100vh - var(--header-height));
-  display: grid;
-  grid-template-columns: 270px minmax(400px, 1fr) 350px;
   overflow: hidden;
 }
 .course-nav,
@@ -301,8 +358,24 @@ button.secondary {
   overflow-y: auto;
 }
 .course-nav {
+  position: absolute;
+  z-index: 12;
+  inset: 14px auto 104px 14px;
+  width: 232px;
   border-right: 1px solid var(--border);
   padding: 18px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgb(10 22 37 / 94%);
+  box-shadow: 0 18px 55px rgb(0 0 0 / 30%);
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+.nav-collapsed .course-nav {
+  transform: translateX(calc(-100% - 18px));
+  opacity: 0;
+  pointer-events: none;
 }
 .panel-title {
   display: flex;
@@ -351,17 +424,76 @@ button.secondary {
   color: #6f88a0;
   font-size: 10px;
 }
+.planned-note {
+  margin: 20px 8px 0;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+  color: #7890a7;
+  font-size: 10px;
+  line-height: 1.5;
+}
 .learn-stage {
   position: relative;
+  width: 100%;
+  height: 100%;
   min-width: 0;
   background: var(--bg-0);
+}
+.panel-toggle {
+  position: absolute;
+  z-index: 14;
+  top: 14px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgb(9 21 36 / 90%);
+}
+.panel-toggle.left {
+  left: 116px;
+}
+.panel-toggle.right {
+  right: 116px;
+}
+.view-badge + .panel-toggle.left {
+  left: 122px;
+}
+.world-fact-strip {
+  position: absolute;
+  z-index: 6;
+  top: 14px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateX(-50%);
+  padding: 7px 11px;
+  border: 1px solid rgb(94 182 255 / 32%);
+  border-radius: 8px;
+  background: rgb(8 17 31 / 86%);
+  color: #b8cce0;
+  font:
+    600 10px/1 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  white-space: nowrap;
+}
+.world-fact-strip strong {
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 .lesson-controls {
   position: absolute;
   z-index: 6;
-  left: 16px;
-  right: 16px;
+  left: 50%;
+  right: auto;
   bottom: 15px;
+  width: min(720px, calc(100% - 32px));
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -379,6 +511,9 @@ button.secondary {
   border-radius: 6px;
   background: transparent;
   padding: 9px 11px;
+}
+.lesson-controls button:hover:not(:disabled) {
+  background: rgb(94 182 255 / 10%);
 }
 .step-progress {
   flex: 1;
@@ -403,8 +538,23 @@ button.secondary {
   background: var(--accent);
 }
 .narration-panel {
-  border-left: 1px solid var(--border);
+  position: absolute;
+  z-index: 12;
+  inset: 14px 14px 104px auto;
+  width: min(330px, 30vw);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgb(10 22 37 / 95%);
   padding: 30px 28px 60px;
+  box-shadow: 0 18px 55px rgb(0 0 0 / 30%);
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+.explanation-collapsed .narration-panel {
+  transform: translateX(calc(100% + 18px));
+  opacity: 0;
+  pointer-events: none;
 }
 .step-kicker {
   color: var(--accent);
@@ -452,6 +602,90 @@ button.secondary {
 .narration-panel section {
   margin-top: 25px;
 }
+.world-inspector {
+  padding: 14px;
+  border: 1px solid #315479;
+  border-radius: 9px;
+  background: rgb(13 31 51 / 86%);
+}
+.world-inspector h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px;
+  color: var(--accent);
+}
+.world-inspector dl {
+  margin: 0;
+}
+.world-inspector dl div {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid rgb(87 121 153 / 22%);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10px;
+}
+.world-inspector dt {
+  color: #7f98b0;
+}
+.world-inspector dd {
+  overflow: hidden;
+  margin: 0;
+  color: #dceeff;
+  text-overflow: ellipsis;
+}
+.comparison-panel {
+  position: absolute;
+  z-index: 9;
+  left: 50%;
+  bottom: 104px;
+  width: min(920px, calc(100% - 88px));
+  transform: translateX(-50%);
+  border: 1px solid #3a6287;
+  border-radius: 12px;
+  padding: 15px 18px 18px;
+  background: rgb(7 18 31 / 94%);
+  box-shadow: 0 22px 70px rgb(0 0 0 / 44%);
+}
+.comparison-panel h2 {
+  margin: 0 0 10px;
+  color: #dceeff;
+  font-size: 15px;
+}
+.comparison-scroll {
+  overflow-x: auto;
+}
+.comparison-panel table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.comparison-panel th,
+.comparison-panel td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.comparison-panel thead th {
+  color: var(--accent);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.comparison-panel tbody th {
+  width: 22%;
+  color: #a9bed2;
+}
+.comparison-panel td {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: #e3eef8;
+}
+.mobile-step-select {
+  display: none;
+}
 .term {
   border-left: 2px solid var(--accent);
   padding: 4px 0 4px 12px;
@@ -492,6 +726,20 @@ button.secondary {
 .explore-tools {
   border-right: 1px solid var(--border);
   padding: 18px 15px;
+}
+.beta-chip {
+  margin-left: auto;
+  padding: 3px 6px;
+  border: 1px solid #8d6fc4;
+  border-radius: 5px;
+  color: #c9afff;
+  font-size: 8px;
+}
+.beta-note {
+  margin: 20px 4px 0;
+  color: #7890a7;
+  font-size: 11px;
+  line-height: 1.55;
 }
 .explore-tools label {
   display: grid;
@@ -743,17 +991,8 @@ button.secondary {
   .hero-scene {
     min-height: 420px;
   }
-  .learn-page {
-    grid-template-columns: 220px 1fr;
-  }
   .narration-panel {
-    position: absolute;
-    z-index: 10;
-    right: 0;
-    top: var(--header-height);
-    bottom: 0;
-    width: 340px;
-    box-shadow: -20px 0 50px rgb(0 0 0 / 32%);
+    width: min(320px, 38vw);
   }
   .explore-page {
     grid-template-columns: 220px 1fr;
@@ -777,6 +1016,9 @@ button.secondary {
   .app-header nav a {
     min-width: 56px;
   }
+  .motion-toggle span {
+    display: none;
+  }
   .home-page {
     padding: 48px 20px;
   }
@@ -796,24 +1038,67 @@ button.secondary {
   .about-grid {
     grid-template-columns: 1fr;
   }
-  .learn-page,
   .explore-page {
     display: block;
     height: auto;
     min-height: calc(100vh - var(--header-height));
   }
-  .course-nav,
-  .explore-tools {
-    display: none;
+  .learn-page {
+    height: calc(100svh - var(--header-height));
+    min-height: 570px;
   }
-  .learn-stage,
+  .course-nav {
+    inset: 56px 8px 108px 8px;
+    width: auto;
+  }
+  .explore-tools {
+    max-height: 320px;
+    border-bottom: 1px solid var(--border);
+  }
   .explore-stage {
-    height: 64vh;
+    height: 70vh;
   }
   .narration-panel {
-    position: static;
+    inset: auto 8px 104px 8px;
     width: auto;
-    box-shadow: none;
+    max-height: 48vh;
+    padding: 22px 20px 34px;
+    border-radius: 14px;
+    box-shadow: 0 -18px 55px rgb(0 0 0 / 38%);
+  }
+  .explanation-collapsed .narration-panel {
+    transform: translateY(calc(100% + 112px));
+  }
+  .panel-toggle.left,
+  .view-badge + .panel-toggle.left {
+    left: 104px;
+  }
+  .panel-toggle.right {
+    right: 12px;
+  }
+  .mobile-step-select {
+    position: absolute;
+    z-index: 10;
+    top: 14px;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transform: translateX(-50%);
+    color: var(--text-secondary);
+    font-size: 9px;
+  }
+  .world-fact-strip {
+    top: 56px;
+    gap: 7px;
+    max-width: calc(100% - 16px);
+    padding: 6px 8px;
+    font-size: 8px;
+  }
+  .mobile-step-select select {
+    width: min(48vw, 230px);
+    padding: 7px 8px;
+    font-size: 10px;
   }
   .inspector {
     position: fixed;
@@ -825,14 +1110,25 @@ button.secondary {
     overflow-x: auto;
   }
   .lesson-controls {
-    left: 8px;
-    right: 8px;
+    width: calc(100% - 16px);
+    bottom: 8px;
   }
-  .lesson-controls button {
-    font-size: 0;
+  .lesson-controls button span {
+    display: none;
   }
   .lesson-controls button svg {
     width: 18px;
+  }
+  .comparison-panel {
+    top: 64px;
+    bottom: 90px;
+    width: calc(100% - 16px);
+    max-height: calc(100% - 160px);
+    overflow: auto;
+  }
+  .scene-callout {
+    max-width: 180px;
+    white-space: normal;
   }
   .about-page {
     padding: 50px 20px;

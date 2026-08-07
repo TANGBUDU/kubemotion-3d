@@ -135,9 +135,7 @@ const worldOperationSchema = z.discriminatedUnion('op', [
     .strict(),
 ]);
 
-export const worldPatchSchema = z
-  .object({ operations: z.array(worldOperationSchema) })
-  .strict();
+export const worldPatchSchema = z.object({ operations: z.array(worldOperationSchema) }).strict();
 
 const selectorSchema = z.union([
   z.object({ byIds: z.array(entityIdSchema) }).strict(),
@@ -272,9 +270,7 @@ const transitionCueSchema = z.discriminatedUnion('type', [
     .strict(),
 ]);
 
-export const transitionPlanSchema = z
-  .object({ cues: z.array(transitionCueSchema) })
-  .strict();
+export const transitionPlanSchema = z.object({ cues: z.array(transitionCueSchema) }).strict();
 
 export const lessonV2Schema = z
   .object({

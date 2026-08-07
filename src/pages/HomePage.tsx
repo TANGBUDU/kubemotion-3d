@@ -3,42 +3,37 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ui } from '../app/i18n';
 import { SceneViewport } from '../components/SceneViewport';
-import { createExploreProjection } from '../course/exploreProjection';
-import { createClusterGraph } from '../domain/clusterGraph';
-import { scenario } from '../content/loader';
+import { lessonById, scenario } from '../content/loader';
+import { courseEngine } from '../course/CourseEngine';
 import { useAppStore } from '../state/appStore';
 
 export function HomePage() {
   const locale = useAppStore((state) => state.locale);
   const reducedMotion = useAppStore((state) => state.reducedMotion);
   const t = ui(locale);
-  const graph = useMemo(() => createClusterGraph(scenario), []);
-  const projection = useMemo(
-    () =>
-      createExploreProjection(graph, 'overview', {
-        query: '',
-        kind: '',
-        namespace: '',
-        status: '',
-      }),
-    [graph],
+  const lesson = lessonById.get('container-restart-vs-pod-replacement');
+  const step = useMemo(
+    () => (lesson ? courseEngine.compileLesson(lesson, scenario).steps[0] : undefined),
+    [lesson],
   );
+  if (!lesson) throw new Error('Verified lesson is missing');
+  if (!step) return null;
   return (
     <main className="home-page">
       <section className="hero">
         <div className="hero-copy">
-          <div className="eyebrow">STATIC-FIRST · INTERACTIVE · SOURCE-BACKED</div>
+          <div className="eyebrow">WORLD STATE · VERIFIED TIMELINE · INTERACTIVE 3D</div>
           <h1>
             Learn Kubernetes
             <br />
-            <span>by watching it move.</span>
+            <span>by watching facts change.</span>
           </h1>
           <p>
-            KubeMotion turns object relationships, placement decisions, control loops, and
-            application traffic into an explorable 3D system.
+            KubeMotion separates what is factually true in the teaching world from how that world is
+            presented—so a Container restart cannot masquerade as a Pod replacement.
           </p>
           <div className="hero-actions">
-            <Link className="button primary" to="/learn/cluster-overview/0">
+            <Link className="button primary" to="/learn/container-restart-vs-pod-replacement/0">
               {t.start}
               <ArrowRight size={18} />
             </Link>
@@ -53,18 +48,17 @@ export function HomePage() {
             {t.private}
           </div>
         </div>
-        <div className="hero-scene" aria-label="Demo cluster preview">
+        <div className="hero-scene" aria-label="Verified Kubernetes lifecycle preview">
           <SceneViewport
-            graph={graph}
-            projection={projection}
-            transition={[]}
+            step={step}
+            playback={{ stepKey: 'home-preview', playbackId: 0, transition: { cues: [] } }}
             locale={locale}
             reducedMotion={reducedMotion}
             onSelectEntity={() => undefined}
           />
           <div className="scene-caption">
             <span className="live-dot" />
-            SYNTHETIC DEMO · OVERVIEW
+            SYNTHETIC WORLD · VERIFIED GOLDEN LESSON
           </div>
         </div>
       </section>
@@ -72,18 +66,18 @@ export function HomePage() {
         <article>
           <Boxes />
           <h2>{t.relationships}</h2>
-          <p>Keep API objects, runtime components, infrastructure, and logical scope distinct.</p>
+          <p>Every step has an immutable WorldSnapshot plus a separate ViewProjection.</p>
         </article>
         <article>
           <GitBranch />
           <h2>{t.flows}</h2>
-          <p>See API control requests and application data take semantically different paths.</p>
+          <p>See Pod identity, Node placement, Container generation, and replica counts change.</p>
         </article>
         <article>
           <ShieldCheck />
           <h2>{t.sources}</h2>
           <p>
-            Every lesson links back to official Kubernetes documentation and a verification date.
+            Conceptual animations cite official Kubernetes documentation and use synthetic data.
           </p>
         </article>
       </section>

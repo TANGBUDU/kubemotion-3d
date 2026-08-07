@@ -2,12 +2,12 @@ import { Box, Filter, Search, X } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { ui } from '../app/i18n';
 import { SceneViewport } from '../components/SceneViewport';
-import { scenario, sources } from '../content/loader';
+import { lessonById, scenario, sources } from '../content/loader';
+import { courseEngine } from '../course/CourseEngine';
 import { createExploreProjection } from '../course/exploreProjection';
-import type { ViewMode } from '../course/types';
-import { createClusterGraph } from '../domain/clusterGraph';
-import type { EntityStatus } from '../domain/types';
+import type { CompiledStep, ViewMode } from '../course/types';
 import { useAppStore } from '../state/appStore';
+import type { EntityStatus } from '../world/types';
 
 const views: ViewMode[] = ['overview', 'logical', 'placement', 'control-flow', 'traffic'];
 
@@ -21,15 +21,28 @@ export function ExplorePage() {
   const selectEntity = useAppStore((state) => state.selectEntity);
   const reducedMotion = useAppStore((state) => state.reducedMotion);
   const enterExplore = useAppStore((state) => state.enterExplore);
-  const graph = useMemo(() => createClusterGraph(scenario), []);
-  const projection = useMemo(
-    () => createExploreProjection(graph, view, filters),
-    [filters, graph, view],
+  const lesson = lessonById.get('container-restart-vs-pod-replacement');
+  const compiled = useMemo(
+    () => (lesson ? courseEngine.compileLesson(lesson, scenario) : undefined),
+    [lesson],
   );
-  const entity = selected ? graph.entityById.get(selected) : undefined;
+  const world = compiled?.steps[0]?.world ?? scenario;
+  const projection = useMemo(
+    () => createExploreProjection(world, view, filters),
+    [filters, view, world],
+  );
+  const sceneStep = useMemo<CompiledStep | undefined>(() => {
+    const base = compiled?.steps[0];
+    return base ? { ...base, view: projection, transition: { cues: [] } } : undefined;
+  }, [compiled, projection]);
+  const entity = selected ? world.entities[selected] : undefined;
   const t = ui(locale);
-  const kinds = [...new Set(graph.snapshot.entities.map((item) => item.kind))].sort();
-  const namespaces = [...graph.entitiesByNamespace.keys()].sort();
+  const kinds = [...new Set(Object.values(world.entities).map((item) => item.kind))].sort();
+  const namespaces = [
+    ...new Set(
+      Object.values(world.entities).flatMap((item) => (item.namespace ? [item.namespace] : [])),
+    ),
+  ].sort();
   useEffect(() => enterExplore(), [enterExplore]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -38,12 +51,14 @@ export function ExplorePage() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [selectEntity]);
+  if (!lesson) throw new Error('Verified lesson is missing');
+  if (!sceneStep) return null;
   return (
     <main className="explore-page">
       <aside className="explore-tools">
         <div className="panel-title">
           <Box size={17} />
-          DEMO-SHOP
+          GOLDEN WORLD <span className="beta-chip">{t.beta}</span>
         </div>
         <label>
           <span>
@@ -53,12 +68,11 @@ export function ExplorePage() {
           <input
             value={filters.query}
             onChange={(event) => setFilters({ query: event.target.value })}
-            placeholder="Pod, Service, worker-a…"
+            placeholder="Pod, ReplicaSet, worker-a…"
           />
         </label>
         <div className="filter-title">
-          <Filter size={15} />
-          FILTERS
+          <Filter size={15} /> FILTERS
         </div>
         <label>
           <span>Kind</span>
@@ -91,7 +105,7 @@ export function ExplorePage() {
             onChange={(event) => setFilters({ status: event.target.value as EntityStatus | '' })}
           >
             <option value="">{t.allStatuses}</option>
-            {['healthy', 'ready', 'pending', 'starting', 'failed'].map((status) => (
+            {['healthy', 'ready', 'pending', 'running', 'waiting', 'terminated'].map((status) => (
               <option key={status}>{status}</option>
             ))}
           </select>
@@ -102,21 +116,9 @@ export function ExplorePage() {
         >
           {t.reset}
         </button>
-        <div className="legend">
-          <h2>Relation legend</h2>
-          <p>
-            <i className="line ownership" />
-            Ownership / selection
-          </p>
-          <p>
-            <i className="line control" />
-            Control observation
-          </p>
-          <p>
-            <i className="line placement" />
-            Pod placement
-          </p>
-        </div>
+        <p className="beta-note">
+          Matches stay focused while one-hop owners and Nodes remain dimmed.
+        </p>
       </aside>
       <section className="explore-stage">
         <div className="view-tabs" role="tablist" aria-label={t.view}>
@@ -133,17 +135,15 @@ export function ExplorePage() {
           ))}
         </div>
         <SceneViewport
-          graph={graph}
-          projection={projection}
-          transition={[]}
+          step={sceneStep}
+          playback={{ stepKey: `explore-${view}`, playbackId: 0, transition: { cues: [] } }}
           selectedEntityId={selected}
           locale={locale}
           reducedMotion={reducedMotion}
           onSelectEntity={selectEntity}
         />
         <div className="scene-caption">
-          <span className="live-dot" />
-          SYNTHETIC SNAPSHOT · {projection.view.toUpperCase()}
+          <span className="live-dot" /> SYNTHETIC SNAPSHOT · {projection.view.toUpperCase()} · BETA
         </div>
       </section>
       {entity && (
@@ -164,10 +164,6 @@ export function ExplorePage() {
               <dd>{entity.kind}</dd>
             </div>
             <div>
-              <dt>Scope</dt>
-              <dd>{entity.scope}</dd>
-            </div>
-            <div>
               <dt>Status</dt>
               <dd>
                 <span className={`status ${entity.status}`} />
@@ -180,10 +176,10 @@ export function ExplorePage() {
                 <dd>{entity.namespace}</dd>
               </div>
             )}
-            {entity.nodeName && (
+            {typeof entity.data.nodeName === 'string' && (
               <div>
                 <dt>Node</dt>
-                <dd>{entity.nodeName}</dd>
+                <dd>{entity.data.nodeName}</dd>
               </div>
             )}
           </dl>
@@ -197,18 +193,6 @@ export function ExplorePage() {
               ))}
             </section>
           )}
-          <section>
-            <h2>Relations</h2>
-            {[
-              ...(graph.incomingByEntity.get(entity.id) ?? []),
-              ...(graph.outgoingByEntity.get(entity.id) ?? []),
-            ].map((relation) => (
-              <p className="relation-item" key={relation.id}>
-                <span>{relation.type}</span>
-                {relation.title[locale]}
-              </p>
-            ))}
-          </section>
           <section className="sources">
             <h2>{t.officialSources}</h2>
             {entity.sourceIds.map((id) => {

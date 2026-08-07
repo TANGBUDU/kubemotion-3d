@@ -1,4 +1,4 @@
-import type { Locale } from '../domain/types';
+import type { Locale } from '../app/types';
 
 export interface Preferences {
   locale: Locale;

@@ -1,6 +1,6 @@
 import type { SceneDiagnostics } from '../renderer/SceneController';
-import type { EntityId } from '../domain/types';
 import { useAppStore } from '../state/appStore';
+import type { EntityId } from '../world/types';
 
 let diagnosticsProvider: (() => SceneDiagnostics) | undefined;
 
