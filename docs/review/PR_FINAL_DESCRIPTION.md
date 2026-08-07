@@ -8,6 +8,8 @@
   collision handling, and desktop/mobile teaching shells;
 - deterministic direct navigation and replay, meaningful reduced motion, and bounded renderer
   resources.
+- English, Japanese, and Simplified Chinese release documentation plus current visualization
+  semantics guarded by the public-document accuracy scan.
 
 ## Factual acceptance gates
 
@@ -39,8 +41,8 @@
 - `pnpm typecheck` — PASS;
 - `pnpm content:validate` — PASS (2 v2 scenarios, 25 entities, 28 relations, 2 verified v2
   lessons, 20 planned lessons, 26 terms, 29 official sources);
-- `pnpm content:accuracy` — PASS (164 text files, 24 forbidden patterns, all lifecycle and
-  Service invariants);
+- `pnpm content:accuracy` — PASS (174 current-public text files, 30 forbidden patterns, 22 local
+  links, and all README, visualization, lifecycle, and Service invariants);
 - `pnpm test:unit -- --run` — PASS (23 files, 176 tests);
 - `pnpm build` — PASS;
 - `pnpm test:e2e` — PASS (66 passed, 39 skipped, 0 failed); skips are deliberate
