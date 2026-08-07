@@ -1,7 +1,32 @@
 # Content authoring
 
-Add sources to `content/sources.yaml`, glossary terms under `content/glossary/`, and lessons under the course directory. All localized fields require English, Japanese, and Simplified Chinese. First use of a term must introduce it in that step or rely on an earlier prerequisite lesson.
+The verified lesson format is schema version 2. Add official sources to `content/sources.yaml`, terms under `content/glossary/`, a validated scenario under `content/scenarios/`, and a lesson under its course directory.
 
-Each step must have one main learning point and a complete projection patch. Selectors must match at least one entity unless an explicitly justified empty match is allowed. Use flow cues only for entities whose domain semantics permit that path. Never place Deployment, ReplicaSet, or HTTPRoute in an application packet path.
+## Step contract
 
-Run `pnpm content:validate` before committing. Do not add real company names, internal addresses, cluster names, credentials, or Secret values.
+Every available lesson step must define one learning outcome, narration in English/Japanese/Simplified Chinese, source IDs, glossary introduction/use order, a `viewPatch`, and—when facts change—a typed `worldPatch`. Transitions may only reference entities and relations that exist in the correct before/after world.
+
+World operations are explicit:
+
+- `add-entity`, `remove-entity`, `patch-entity`
+- `add-relation`, `remove-relation`, `patch-relation`
+
+IDs cannot be patched. Removing an entity requires its relations to be removed in the same transaction. Do not use presentation fields to simulate status, identity, placement, or replica-count changes.
+
+Selectors must match unless `allowEmpty` is explicitly justified. A `comparison` request names compiled steps and must derive its cells from their snapshots.
+
+## Validation
+
+Run:
+
+```sh
+pnpm content:validate
+pnpm test:unit -- --run
+pnpm test:e2e
+```
+
+Validation checks schemas, stable IDs, relations, patch transactions, cue references, counter values, source hosts, prerequisite cycles, glossary order, localized fields, and a sensitive/misleading-expression denylist.
+
+The four older schema-v1 lesson files remain reference material for planned curriculum. They are not loaded as verified lessons until migrated through the world-state and visual gates.
+
+Never add real company names, internal addresses, cluster names, credentials, Secret values, or real telemetry.

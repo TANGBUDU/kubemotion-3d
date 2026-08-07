@@ -1,27 +1,44 @@
 # Visualization semantics
 
-## Object shapes
+## Golden-lesson objects
 
-- Cluster: low boundary platform, not a nesting hierarchy.
-- Control-plane runtime: raised octagonal components.
-- Node: server-rack platform with Pod placement slots.
-- Namespace: translucent logical plane; it never contains Nodes.
-- Pod: capsule; containers are conceptually inside its shared boundary.
-- Deployment and ReplicaSet: control cards, never traffic processes.
-- Service: stable virtual portal; EndpointSlice: backend list card.
-- kubelet and container runtime: separate runtime cylinders.
+- **Node:** a dark rack/platform with a visible name and four Pod slots.
+- **Pod:** a translucent shell. Its child Container is attached inside the shell; focused Pods expose UID, Node, phase, and aggregate restart metadata.
+- **Container:** a separately addressable runtime block. Failure collapses and marks the child without replacing the Pod shell; restart changes its instance generation and restart count.
+- **ReplicaSet:** a purple counter card with desired/current/ready values.
+- **kubelet:** a blue Node-local agent with heartbeat bars.
+- **Controller manager:** a purple reconciliation knot.
+- **Scheduler:** a cyan assignment marker.
+- **Pending lane:** a dashed amber area outside Node racks. An unscheduled Pod appears there before a scheduling relation exists.
+
+Generic fallback is disabled for these entities.
 
 ## Relations
 
-Ownership, logical scope, placement, selection, configuration, storage, and control observation use distinct semantic colors and dashed relation lines. Relations are structural; the graph contains no static `data-flow` relation.
+Relation semantics differ by line shape, routing, width, dashes, arrowheads, and color—not color alone.
 
-## Flow tokens
+- ownership: purple curved arrow;
+- composition: short pale dashed link;
+- placement: blue orthogonal dashed arrow;
+- control observation: purple dashed curve;
+- selection and endpoint membership: cyan/green routed arrows;
+- data and DNS flow: distinct solid/dashed directed paths;
+- storage: green orthogonal link;
+- configuration and scope: lower-emphasis routed links.
 
-- Blue sphere on a solid path: application data.
-- Cyan diamond-style cue: DNS query.
-- Purple document-style cue: Kubernetes API request.
-- Orange pulse: reconciliation, not a network packet.
-- Shape/status change: lifecycle.
-- Green thick link: storage binding or mount.
+Relations are structural facts in the snapshot. Transition tokens are temporary explanations and do not create new factual edges.
 
-Configuration objects such as Deployment, ReplicaSet, Gateway, and HTTPRoute are never inserted into a business packet path. Simplified motion shows responsibility and causality; it is not a packet capture or vendor-specific implementation trace.
+## Labels and callouts
+
+Authored `labelMode` is respected. DOM labels are prioritized by selection, focus, entity kind, and camera distance, then collision-filtered every render. Selected and focused entities win over ordinary or dimmed labels. Step callouts are anchored to entity handles and removed when the step changes.
+
+## Transition tokens
+
+- blue: application data;
+- cyan: DNS query;
+- purple: Kubernetes API request;
+- purple reconciliation pulse: controller activity, not a network packet;
+- cyan scheduler token: assignment;
+- lifecycle scale/fade: Container failure, restart, or entity entry/exit.
+
+Animations explain responsibility and causality. They are not packet captures, literal timing traces, or a claim that every implementation uses the same data plane.

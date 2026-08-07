@@ -1,48 +1,49 @@
 # KubeMotion
 
-**Learn Kubernetes by watching it move.**
+**Learn Kubernetes by watching factual state change.**
 
-KubeMotion is an open-source, static-first, interactive 3D teaching system. It explains what Kubernetes objects are, which components manage them, where Pods run, how control loops converge, and how application traffic reaches changing backends.
+KubeMotion is an open-source, static-first 3D teaching system. Its rebuild separates the Kubernetes facts in a lesson from the camera, emphasis, labels, and animation used to explain them. That boundary makes a Container restart visibly and testably different from replacing a Pod.
 
-<!-- Add a real release screenshot or GIF here after capturing the verified build. -->
+![KubeMotion world-state lesson showing a Pending replacement Pod](docs/assets/kubemotion-world-state.png)
 
 ## Live demo
 
-[Open the deployed KubeMotion site](http://kubemotion.109-123-230-235.sslip.io/)
+[Open the canonical GitHub Pages deployment](https://tangbudu.github.io/kubemotion-3d/)
 
-## What it teaches
+## Verified release scope
 
-Release 0.1 contains five complete lessons covering cluster architecture, the difference between Namespace and Node, the path from a Deployment manifest to a running Pod, Service and EndpointSlice behavior, and container restart versus Pod replacement. Learn and Explore modes share one synthetic `demo-shop` graph and five deterministic views: Overview, Logical, Placement, Control Flow, and Traffic.
+- **1 fully verified lesson:** `container-restart-vs-pod-replacement`
+- **7 deterministic factual steps:** healthy Pod → Container exit → in-place Container restart → old Pod deletion → new Pending Pod → scheduling to `worker-c` → snapshot-derived comparison
+- **21 planned lessons:** visible as roadmap entries, not represented as complete
+- **Explore (Beta):** filters a compiled snapshot while keeping one-hop ownership and placement context
+- **Synthetic only:** no cluster credentials, telemetry, backend, or resource mutation
 
-## What it deliberately does not do
-
-KubeMotion does not connect to a real cluster, accept cluster credentials, read telemetry, show logs, offer a terminal, or write Kubernetes resources. The animations are sourced conceptual explanations—not packet captures or literal timing traces.
+The golden lesson shows Node racks with Pod slots, Pods as shells containing child Containers, Pod UID and Node placement, Container restart count and generation, ReplicaSet desired/current/ready counters, typed relations, anchored callouts, and explicit replay.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  YAML["YAML content"] --> Zod["Zod validation"]
-  Zod --> Domain["ClusterGraph / CompiledLesson"]
-  Domain --> Projection["Deterministic SceneProjection"]
-  Projection --> Diff["SceneController diff"]
-  Diff --> Three["Shared Three.js objects"]
+  YAML["YAML lesson + scenario"] --> Validate["Zod + semantic validation"]
+  Validate --> Snapshot["WorldSnapshot"]
+  Snapshot --> Patch["typed atomic WorldPatch"]
+  Patch --> Diff["WorldDiff"]
+  Diff --> Projection["ViewProjection"]
+  Projection --> Renderer["Three.js renderer registries"]
 ```
 
-React owns routes and serializable UI state. `SceneController` owns Three.js resources. Course steps compile to complete projections, so direct links, Back, language changes, and replay never depend on hidden scene history.
+`WorldSnapshot` is the factual source of truth. `ViewProjection` can hide, dim, label, or frame facts, but it cannot override them. Every `CompiledStep` includes `beforeWorld`, `world`, `worldDiff`, `view`, and `transition`. Animations are cancellable explanations between settled states and never become factual state.
+
+React owns routes and serializable UI state. `SceneController` owns Three.js handles, relation resources, DOM labels/callouts, pooled animation tokens, rendering, and disposal. See [the architecture notes](docs/architecture.md).
 
 ## Quick start
 
-Requirements: Node.js 24 and pnpm.
+Requirements: Node.js 24 and pnpm 11.16.
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm dev
 ```
-
-## Content validation
-
-`pnpm content:validate` parses YAML, validates Zod schemas, builds the graph, compiles all available lessons, checks references and selectors, verifies source hosts and prerequisite cycles, enforces glossary order, and scans for sensitive or known misleading expressions.
 
 ## Validation
 
@@ -51,22 +52,20 @@ pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm content:validate
-pnpm test:unit --run
+pnpm test:unit -- --run
 pnpm build
 pnpm test:e2e
 ```
 
+The suite covers typed patch transactions, deterministic diffs, snapshot immutability, all 14 cue handlers, specialized visuals, stable layout, the seven-step factual timeline, seven desktop visual baselines, a mobile visual baseline, desktop/mobile navigation and language persistence, and 20-cycle renderer memory stress.
+
 ## Deployment
 
-The Vite output works on GitHub Pages through HashRouter. A digest-pinned, non-root nginx image and a hardened Helm chart are also included. The chart deploys only the static site and creates no ServiceAccount or RBAC.
+Hash routing and a relative Vite base make GitHub Pages the canonical static host. The repository also includes a digest-pinned, non-root nginx image and hardened Helm chart; neither requires Kubernetes RBAC.
 
-## Accuracy policy
+## Accuracy and safety
 
-Core teaching facts cite Kubernetes or Gateway API official documentation and carry a verification date. Automated rules catch references, invalid flow paths, translation omissions, and a limited denylist; human review is still required for semantic accuracy. See `docs/accuracy-policy.md`.
-
-## Roadmap
-
-Seventeen later lessons are listed as non-interactive roadmap entries. Live monitoring, authentication, team features, a backend, and cluster mutation are intentionally outside Release 0.1.
+Lesson claims cite official Kubernetes documentation and carry a verification date. Animations explain responsibility and causality; they are not packet captures or literal timing traces. See [the accuracy policy](docs/accuracy-policy.md) and [visual semantics](docs/visualization-semantics.md).
 
 ## License
 

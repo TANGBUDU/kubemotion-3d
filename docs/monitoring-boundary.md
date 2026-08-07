@@ -1,7 +1,7 @@
 # Monitoring boundary
 
-Release 0.1 implements only `StaticScenarioProvider`, which returns the synthetic `demo-shop` snapshot. It does not monitor a cluster.
+The verified release loads one synthetic `container-restart-golden` scenario at build time. It does not include a cluster provider, Kubernetes client, ServiceAccount, credential form, metrics/logs/traces reader, terminal, backend API, or mutation path.
 
-A future topology snapshot and telemetry streams would need separate layers. Any real-cluster design must independently address read-only RBAC, data minimization, redaction, sampling frequency, caching, staleness, and failure policy. Kubernetes API topology, metrics, logs, and traces must not be collapsed into one provider.
+Explore (Beta) operates only on the compiled in-browser `WorldSnapshot`. Search, filters, selection, locale changes, and camera controls do not send data to a server.
 
-The UI and renderer must never consume a cluster credential directly. This document defines boundaries only; it does not promise a technology choice or implementation date.
+The debug bridge is enabled only for development or localhost test runs. It exposes UI state and aggregate renderer diagnostics; it does not expose credentials or connect to a cluster.
