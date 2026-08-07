@@ -1,0 +1,413 @@
+import * as THREE from 'three';
+import { describe, expect, it, vi } from 'vitest';
+import type { PlaybackRequest, TransitionCue } from '../../src/course/types';
+import {
+  AnimationCoordinator,
+  type AnimationContext,
+} from '../../src/renderer/AnimationCoordinator';
+import type { AnchorKind, EntityVisualHandle } from '../../src/renderer/VisualHandles';
+import type { WorldEntity } from '../../src/world/types';
+
+const localized = { en: 'label', ja: 'label', 'zh-CN': 'label' } as const;
+
+interface TestHandle extends EntityVisualHandle {
+  readonly mesh: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>;
+}
+
+const createEntity = (id: string): WorldEntity => ({
+  id,
+  category: 'runtime-instance',
+  kind: 'Container',
+  name: id,
+  status: 'running',
+  data: {},
+  title: localized,
+  summary: localized,
+  sourceIds: [],
+  visual: { archetype: 'container' },
+});
+
+const createHandle = (id: string, x: number): TestHandle => {
+  const root = new THREE.Group();
+  root.position.set(x, 1, 0);
+  root.scale.set(1.2, 0.9, 1.1);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x45c486,
+    opacity: 0.82,
+    transparent: true,
+  });
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material);
+  root.add(mesh);
+  const entity = createEntity(id);
+  return {
+    entityId: id,
+    entity,
+    root,
+    mesh,
+    selectableObjects: [mesh],
+    isDisposed: false,
+    update: () => undefined,
+    setSelected: () => undefined,
+    getAnchor: (anchor: AnchorKind) => {
+      root.updateWorldMatrix(true, false);
+      const offset = anchor === 'data-path' ? new THREE.Vector3(0, 0.7, 0) : new THREE.Vector3();
+      return root.localToWorld(offset);
+    },
+    dispose: () => undefined,
+  };
+};
+
+interface VisualSnapshot {
+  readonly position: readonly number[];
+  readonly scale: readonly number[];
+  readonly visible: boolean;
+  readonly opacity: number;
+  readonly transparent: boolean;
+  readonly depthWrite: boolean;
+}
+
+const snapshot = (handle: TestHandle): VisualSnapshot => ({
+  position: handle.root.position.toArray(),
+  scale: handle.root.scale.toArray(),
+  visible: handle.root.visible,
+  opacity: handle.mesh.material.opacity,
+  transparent: handle.mesh.material.transparent,
+  depthWrite: handle.mesh.material.depthWrite,
+});
+
+const request = (cue: TransitionCue, playbackId = 1, stepKey = 'lesson:step'): PlaybackRequest => ({
+  stepKey,
+  playbackId,
+  transition: { cues: [cue] },
+});
+
+interface Harness {
+  readonly scene: THREE.Scene;
+  readonly handles: Readonly<Record<'a' | 'b' | 'c', TestHandle>>;
+  readonly relationRoot: THREE.Group;
+  readonly relationMaterial: THREE.LineBasicMaterial;
+  readonly phases: string[];
+  readonly counterValues: number[];
+  readonly coordinator: AnimationCoordinator;
+  dispose(): void;
+}
+
+const createHarness = (reducedMotion = false): Harness => {
+  const scene = new THREE.Scene();
+  const handles = {
+    a: createHandle('a', 0),
+    b: createHandle('b', 5),
+    c: createHandle('c', 10),
+  } as const;
+  for (const handle of Object.values(handles)) scene.add(handle.root);
+
+  const relationRoot = new THREE.Group();
+  const relationMaterial = new THREE.LineBasicMaterial({
+    opacity: 0.73,
+    transparent: true,
+  });
+  relationRoot.add(
+    new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(1, 0, 0),
+      ]),
+      relationMaterial,
+    ),
+  );
+  scene.add(relationRoot);
+
+  const phases: string[] = [];
+  const counterValues: number[] = [];
+  const context: AnimationContext = {
+    scene,
+    reducedMotion,
+    now: () => 0,
+    getEntity: (entityId) => Object.values(handles).find((handle) => handle.entityId === entityId),
+    getRelation: (relationId) => (relationId === 'r1' ? { root: relationRoot } : undefined),
+    focusCamera: ({ phase }) => phases.push(`focus:${phase}`),
+    transitionLayout: ({ phase }) => phases.push(`layout:${phase}`),
+    reconcilePulse: ({ phase }) => phases.push(`reconcile:${phase}`),
+    schedulerAssignment: ({ phase }) => phases.push(`scheduler:${phase}`),
+    counterChange: ({ phase, value }) => {
+      phases.push(`counter:${phase}`);
+      counterValues.push(value);
+    },
+    relationReveal: ({ phase }) => phases.push(`relation:${phase}`),
+    callout: ({ phase }) => phases.push(`callout:${phase}`),
+    entityExitComplete: (entityId) => phases.push(`exit:${entityId}`),
+  };
+  const coordinator = new AnimationCoordinator(context);
+
+  return {
+    scene,
+    handles,
+    relationRoot,
+    relationMaterial,
+    phases,
+    counterValues,
+    coordinator,
+    dispose: () => {
+      coordinator.dispose();
+      for (const handle of Object.values(handles)) {
+        handle.mesh.geometry.dispose();
+        handle.mesh.material.dispose();
+      }
+      const line = relationRoot.children[0];
+      if (line instanceof THREE.Line) line.geometry.dispose();
+      relationMaterial.dispose();
+    },
+  };
+};
+
+const cueCases: readonly [string, TransitionCue][] = [
+  ['data packet', { type: 'data-packet', path: ['a', 'b'], label: localized, durationMs: 1_000 }],
+  ['DNS query', { type: 'dns-query', path: ['a', 'b'], label: localized, durationMs: 1_000 }],
+  ['API request', { type: 'api-request', path: ['a', 'b'], label: localized, durationMs: 1_000 }],
+  ['camera focus', { type: 'focus-camera', entityId: 'a', durationMs: 1_000 }],
+  ['layout', { type: 'layout-transition', durationMs: 1_000 }],
+  ['container failure', { type: 'container-failure', entityId: 'a', durationMs: 1_000 }],
+  ['container restart', { type: 'container-restart', entityId: 'a', durationMs: 1_000 }],
+  ['entity exit', { type: 'entity-exit', entityId: 'a', durationMs: 1_000 }],
+  ['entity enter', { type: 'entity-enter', entityId: 'a', durationMs: 1_000 }],
+  [
+    'reconcile pulse',
+    { type: 'reconcile-pulse', fromEntityId: 'a', toEntityId: 'b', durationMs: 1_000 },
+  ],
+  [
+    'scheduler assignment',
+    {
+      type: 'scheduler-assignment',
+      schedulerId: 'a',
+      podId: 'b',
+      nodeId: 'c',
+      durationMs: 1_000,
+    },
+  ],
+  [
+    'counter change',
+    {
+      type: 'counter-change',
+      entityId: 'a',
+      field: 'readyReplicas',
+      from: 2,
+      to: 3,
+      durationMs: 1_000,
+    },
+  ],
+  ['relation reveal', { type: 'relation-reveal', relationId: 'r1', durationMs: 1_000 }],
+  ['callout', { type: 'callout', entityId: 'a', label: localized, durationMs: 1_000 }],
+];
+
+describe('AnimationCoordinator cue lifecycle', () => {
+  it.each(cueCases)('runs and disposes the dedicated %s handler', (_name, cue) => {
+    const harness = createHarness();
+    expect(harness.coordinator.play(request(cue))).toBe(true);
+    expect(harness.coordinator.activeCount).toBe(1);
+    expect(harness.coordinator.update(500)).toBe(true);
+    expect(harness.coordinator.update(1_000)).toBe(false);
+    expect(harness.coordinator.activeCount).toBe(0);
+    expect(harness.coordinator.leasedTokenCount).toBe(0);
+    harness.dispose();
+  });
+
+  it('reports start, update, finish and committed numeric values through host callbacks', () => {
+    const harness = createHarness();
+    const cue: TransitionCue = {
+      type: 'counter-change',
+      entityId: 'a',
+      field: 'readyReplicas',
+      from: 2,
+      to: 3,
+      durationMs: 1_000,
+    };
+    harness.coordinator.play(request(cue));
+    harness.coordinator.update(500);
+    harness.coordinator.finish();
+    expect(harness.phases).toEqual([
+      'counter:start',
+      'counter:update',
+      'counter:update',
+      'counter:finish',
+    ]);
+    expect(harness.counterValues[0]).toBe(2);
+    expect(harness.counterValues[1]).toBeCloseTo(2.5);
+    expect(harness.counterValues.at(-1)).toBe(3);
+    harness.dispose();
+  });
+
+  it('cancels to exact transform, visibility, and material baselines', () => {
+    const mutatingCues: readonly TransitionCue[] = [
+      { type: 'container-failure', entityId: 'a', durationMs: 1_000 },
+      { type: 'container-restart', entityId: 'a', durationMs: 1_000 },
+      { type: 'entity-enter', entityId: 'a', durationMs: 1_000 },
+      { type: 'entity-exit', entityId: 'a', durationMs: 1_000 },
+      { type: 'reconcile-pulse', fromEntityId: 'a', toEntityId: 'b', durationMs: 1_000 },
+      {
+        type: 'scheduler-assignment',
+        schedulerId: 'a',
+        podId: 'b',
+        nodeId: 'c',
+        durationMs: 1_000,
+      },
+      { type: 'relation-reveal', relationId: 'r1', durationMs: 1_000 },
+    ];
+
+    for (const [index, cue] of mutatingCues.entries()) {
+      const harness = createHarness();
+      const entityBefore = Object.fromEntries(
+        Object.entries(harness.handles).map(([id, handle]) => [id, snapshot(handle)]),
+      );
+      const relationBefore = {
+        visible: harness.relationRoot.visible,
+        opacity: harness.relationMaterial.opacity,
+        transparent: harness.relationMaterial.transparent,
+        depthWrite: harness.relationMaterial.depthWrite,
+      };
+      harness.coordinator.play(request(cue, index + 1));
+      harness.coordinator.update(500);
+      harness.coordinator.cancel();
+      expect(snapshot(harness.handles.a)).toEqual(entityBefore.a);
+      expect(snapshot(harness.handles.b)).toEqual(entityBefore.b);
+      expect(snapshot(harness.handles.c)).toEqual(entityBefore.c);
+      expect({
+        visible: harness.relationRoot.visible,
+        opacity: harness.relationMaterial.opacity,
+        transparent: harness.relationMaterial.transparent,
+        depthWrite: harness.relationMaterial.depthWrite,
+      }).toEqual(relationBefore);
+      expect(harness.coordinator.leasedTokenCount).toBe(0);
+      harness.dispose();
+    }
+  });
+
+  it('commits exit on finish but restores it when cancelled', () => {
+    const harness = createHarness();
+    const cue: TransitionCue = { type: 'entity-exit', entityId: 'a', durationMs: 1_000 };
+    harness.coordinator.play(request(cue, 1));
+    harness.coordinator.update(400);
+    harness.coordinator.cancel();
+    expect(harness.handles.a.root.visible).toBe(true);
+    expect(harness.phases).not.toContain('exit:a');
+
+    harness.coordinator.play(request(cue, 2));
+    harness.coordinator.finish();
+    expect(harness.handles.a.root.visible).toBe(false);
+    expect(harness.phases).toContain('exit:a');
+    harness.dispose();
+  });
+});
+
+describe('AnimationCoordinator playback identity and replay safety', () => {
+  it('ignores duplicate and stale playback IDs without interrupting active playback', () => {
+    const harness = createHarness();
+    const cue: TransitionCue = { type: 'container-restart', entityId: 'a', durationMs: 1_000 };
+    expect(harness.coordinator.play(request(cue, 7))).toBe(true);
+    harness.coordinator.update(300);
+    const inFlight = snapshot(harness.handles.a);
+    expect(harness.coordinator.play(request(cue, 7))).toBe(false);
+    expect(harness.coordinator.play(request(cue, 6))).toBe(false);
+    expect(snapshot(harness.handles.a)).toEqual(inFlight);
+    expect(harness.coordinator.activeCount).toBe(1);
+    expect(harness.coordinator.lastPlaybackId('lesson:step')).toBe(7);
+    harness.dispose();
+  });
+
+  it('never accumulates scale, opacity, position, or material flags across replay', () => {
+    const harness = createHarness();
+    const baseline = snapshot(harness.handles.a);
+    const materialIdentity = harness.handles.a.mesh.material;
+    const cue: TransitionCue = { type: 'container-restart', entityId: 'a', durationMs: 1_000 };
+
+    for (let playbackId = 1; playbackId <= 20; playbackId += 1) {
+      expect(harness.coordinator.play(request(cue, playbackId))).toBe(true);
+      harness.coordinator.update(450);
+      if (playbackId % 2 === 0) harness.coordinator.cancel();
+      else harness.coordinator.finish();
+      expect(snapshot(harness.handles.a)).toEqual(baseline);
+      expect(harness.handles.a.mesh.material).toBe(materialIdentity);
+    }
+    harness.dispose();
+  });
+
+  it('reuses and explicitly releases transient path tokens', () => {
+    const harness = createHarness();
+    const cue: TransitionCue = {
+      type: 'data-packet',
+      path: ['a', 'b', 'c'],
+      label: localized,
+      durationMs: 1_000,
+    };
+    harness.coordinator.play(request(cue, 1));
+    expect(harness.coordinator.leasedTokenCount).toBe(1);
+    expect(harness.coordinator.pooledCount).toBe(0);
+    harness.coordinator.finish();
+    expect(harness.coordinator.leasedTokenCount).toBe(0);
+    expect(harness.coordinator.pooledCount).toBe(1);
+
+    harness.coordinator.play(request(cue, 2));
+    expect(harness.coordinator.leasedTokenCount).toBe(1);
+    expect(harness.coordinator.pooledCount).toBe(0);
+    harness.coordinator.cancel();
+    expect(harness.coordinator.leasedTokenCount).toBe(0);
+    expect(harness.coordinator.pooledCount).toBe(1);
+    harness.dispose();
+  });
+});
+
+describe('AnimationCoordinator reduced motion', () => {
+  it('uses a short fade without scale movement for lifecycle cues', () => {
+    const harness = createHarness(true);
+    const baseline = snapshot(harness.handles.a);
+    const cue: TransitionCue = { type: 'container-restart', entityId: 'a', durationMs: 2_000 };
+    harness.coordinator.play(request(cue));
+    expect(harness.handles.a.root.scale.toArray()).toEqual(baseline.scale);
+    expect(harness.handles.a.mesh.material.opacity).toBeLessThan(baseline.opacity);
+    expect(harness.coordinator.update(70)).toBe(true);
+    expect(harness.handles.a.root.scale.toArray()).toEqual(baseline.scale);
+    expect(harness.coordinator.update(140)).toBe(false);
+    expect(snapshot(harness.handles.a)).toEqual(baseline);
+    harness.dispose();
+  });
+
+  it('snaps camera intent and fades a stationary endpoint token in at most 140ms', () => {
+    const harness = createHarness(true);
+    const focus: TransitionCue = { type: 'focus-camera', entityId: 'a', durationMs: 5_000 };
+    harness.coordinator.play(request(focus, 1));
+    expect(harness.phases[0]).toBe('focus:start');
+    expect(harness.coordinator.update(140)).toBe(false);
+
+    const packet: TransitionCue = {
+      type: 'data-packet',
+      path: ['a', 'c'],
+      label: localized,
+      durationMs: 5_000,
+    };
+    harness.coordinator.play(request(packet, 2));
+    const token = harness.scene.getObjectByName('animation-token');
+    expect(token).toBeInstanceOf(THREE.Mesh);
+    expect(token?.position.toArray()).toEqual(harness.handles.c.getAnchor('data-path').toArray());
+    harness.coordinator.update(70);
+    expect(token?.position.toArray()).toEqual(harness.handles.c.getAnchor('data-path').toArray());
+    expect(harness.coordinator.update(140)).toBe(false);
+    expect(harness.coordinator.leasedTokenCount).toBe(0);
+    harness.dispose();
+  });
+
+  it('notifies the render host whenever playback changes', () => {
+    const scene = new THREE.Scene();
+    const markDirty = vi.fn();
+    const coordinator = new AnimationCoordinator({
+      scene,
+      reducedMotion: true,
+      now: () => 0,
+      getEntity: () => undefined,
+      markDirty,
+    });
+    coordinator.play(request({ type: 'layout-transition', durationMs: 1_000 }));
+    coordinator.update(70);
+    coordinator.cancel();
+    expect(markDirty).toHaveBeenCalled();
+    coordinator.dispose();
+  });
+});
