@@ -199,7 +199,8 @@ const routeHopSchema = z
 const activeTeachingRouteSchema = z
   .object({
     id: z.string().min(1),
-    semantic: z.enum(['control', 'scheduling', 'data-flow', 'dns']),
+    semantic: z.enum(['control', 'scheduling', 'data-flow', 'dns', 'node-runtime']),
+    requestId: z.string().min(1).optional(),
     hops: z.array(routeHopSchema).min(1),
     label: localizedTextSchema.optional(),
     persistAfterAnimation: z.boolean(),
@@ -273,6 +274,15 @@ const transitionCueSchema = z.discriminatedUnion('type', [
     .strict(),
   z
     .object({ type: z.literal('container-failure'), entityId: entityIdSchema, durationMs, delayMs })
+    .strict(),
+  z
+    .object({
+      type: z.literal('node-runtime-restart'),
+      routeId: z.string().min(1),
+      entityId: entityIdSchema,
+      durationMs,
+      delayMs,
+    })
     .strict(),
   z
     .object({ type: z.literal('container-restart'), entityId: entityIdSchema, durationMs, delayMs })

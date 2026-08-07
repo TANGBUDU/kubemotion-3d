@@ -4,6 +4,7 @@ import type {
   RelationId,
   SourceId,
   WorldDiff,
+  WorldEntityCategory,
   WorldPatch,
   WorldSnapshot,
 } from '../world/types';
@@ -34,7 +35,7 @@ export interface SceneCallout {
 export type RouteAnchorKind =
   'center' | 'label' | 'ownership' | 'placement' | 'control' | 'data-path' | 'composition';
 
-export type RouteSemantic = 'control' | 'scheduling' | 'data-flow' | 'dns';
+export type RouteSemantic = 'control' | 'scheduling' | 'data-flow' | 'dns' | 'node-runtime';
 
 export interface RouteHop {
   readonly fromEntityId: EntityId;
@@ -47,6 +48,7 @@ export interface RouteHop {
 export interface ActiveTeachingRoute {
   readonly id: string;
   readonly semantic: RouteSemantic;
+  readonly requestId?: string;
   readonly hops: readonly RouteHop[];
   readonly label?: LocalizedText;
   readonly persistAfterAnimation: boolean;
@@ -81,10 +83,7 @@ export type EntitySelector =
       readonly byLabel: { readonly key: string; readonly value: string };
       readonly namespace?: string;
     }
-  | {
-      readonly byCategory:
-        'api-object' | 'runtime-instance' | 'runtime-component' | 'infrastructure' | 'external';
-    }
+  | { readonly byCategory: WorldEntityCategory }
   | { readonly byNode: string };
 
 export interface EntityViewRule {
@@ -140,6 +139,11 @@ export type TransitionCue =
   | ({ readonly type: 'focus-camera'; readonly entityId: EntityId } & TimedCue)
   | ({ readonly type: 'layout-transition'; readonly entityIds?: readonly EntityId[] } & TimedCue)
   | ({ readonly type: 'container-failure'; readonly entityId: EntityId } & TimedCue)
+  | ({
+      readonly type: 'node-runtime-restart';
+      readonly routeId: string;
+      readonly entityId: EntityId;
+    } & TimedCue)
   | ({ readonly type: 'container-restart'; readonly entityId: EntityId } & TimedCue)
   | ({ readonly type: 'container-start'; readonly entityId: EntityId } & TimedCue)
   | ({ readonly type: 'entity-exit'; readonly entityId: EntityId } & TimedCue)

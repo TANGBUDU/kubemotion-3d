@@ -177,7 +177,10 @@ function buildComparison(
     (update) =>
       update.after.kind === 'Container' &&
       update.changedPaths.some(
-        (path) => path === '/data/restartCount' || path === '/data/instanceGeneration',
+        (path) =>
+          path === '/data/restartCount' ||
+          path === '/data/containerID' ||
+          path.startsWith('/data/lastState'),
       ),
   );
   const oldPodId = restartedContainerUpdate?.after.data.podId;
@@ -207,16 +210,16 @@ function buildComparison(
     },
     rows: [
       {
-        property: { en: 'Pod ID', ja: 'Pod ID', 'zh-CN': 'Pod ID' },
+        property: { en: 'Pod name', ja: 'Pod 名', 'zh-CN': 'Pod 名称' },
         containerRestart: {
-          en: `same ${restartedPod.id}`,
-          ja: `同一 ${restartedPod.id}`,
-          'zh-CN': `同一 ${restartedPod.id}`,
+          en: `same ${restartedPod.name}`,
+          ja: `同一 ${restartedPod.name}`,
+          'zh-CN': `同一 ${restartedPod.name}`,
         },
         podReplacement: {
-          en: `${oldPodId} removed; new ${replacementPod.id}`,
-          ja: `${oldPodId} を削除、新規 ${replacementPod.id}`,
-          'zh-CN': `删除 ${oldPodId}；新建 ${replacementPod.id}`,
+          en: `${originalPod.name} removed; new ${replacementPod.name}`,
+          ja: `${originalPod.name} を削除、新規 ${replacementPod.name}`,
+          'zh-CN': `删除 ${originalPod.name}；新建 ${replacementPod.name}`,
         },
       },
       {
@@ -243,6 +246,19 @@ function buildComparison(
           en: `may change; here ${replacementPodData.nodeName ?? 'Unscheduled'}`,
           ja: `変わり得る；ここでは ${replacementPodData.nodeName ?? '未スケジュール'}`,
           'zh-CN': `可能改变；此处为 ${replacementPodData.nodeName ?? '未调度'}`,
+        },
+      },
+      {
+        property: { en: 'Container ID', ja: 'Container ID', 'zh-CN': 'Container ID' },
+        containerRestart: {
+          en: `${originalContainerData.containerID ?? 'none'} → ${restartedContainerData.containerID ?? 'none'}`,
+          ja: `${originalContainerData.containerID ?? 'なし'} → ${restartedContainerData.containerID ?? 'なし'}`,
+          'zh-CN': `${originalContainerData.containerID ?? '无'} → ${restartedContainerData.containerID ?? '无'}`,
+        },
+        podReplacement: {
+          en: `new ${replacementContainerData.containerID ?? 'not created'}`,
+          ja: `新規 ${replacementContainerData.containerID ?? '未作成'}`,
+          'zh-CN': `新建 ${replacementContainerData.containerID ?? '尚未创建'}`,
         },
       },
       {
@@ -315,6 +331,7 @@ const routedCueSemantics = {
   'api-request': 'control',
   'reconcile-pulse': 'control',
   'scheduler-assignment': 'scheduling',
+  'node-runtime-restart': 'node-runtime',
 } as const;
 
 type RoutedCue = Extract<TransitionCue, { readonly routeId: string }>;
@@ -336,6 +353,94 @@ function routeForCue(
 
 function routeContainsEntity(route: ActiveTeachingRoute, entityId: EntityId): boolean {
   return route.hops.some((hop) => hop.fromEntityId === entityId || hop.toEntityId === entityId);
+}
+
+function localNodeName(entityId: EntityId, world: WorldSnapshot): string | undefined {
+  const entity = world.entities[entityId];
+  if (!entity) return undefined;
+  if (entity.kind === 'Node') return entity.name;
+  if (entity.kind === 'Kubelet') {
+    return typeof entity.data.nodeName === 'string' ? entity.data.nodeName : undefined;
+  }
+  if (entity.kind === 'Pod') return getPodData(entity).nodeName;
+  if (entity.kind === 'Container') {
+    const pod = world.entities[getContainerData(entity).podId];
+    return pod?.kind === 'Pod' ? getPodData(pod).nodeName : undefined;
+  }
+  return undefined;
+}
+
+function validateNodeRuntimeRestart(
+  cue: Extract<TransitionCue, { readonly type: 'node-runtime-restart' }>,
+  beforeWorld: WorldSnapshot,
+  world: WorldSnapshot,
+  routes: ReadonlyMap<string, ActiveTeachingRoute>,
+): void {
+  const before = beforeWorld.entities[cue.entityId];
+  const after = world.entities[cue.entityId];
+  if (!before || !after || before.kind !== 'Container' || after.kind !== 'Container') {
+    throw new Error(`node-runtime-restart target must be one Container present in both worlds`);
+  }
+  if (before.status !== 'terminated' || after.status !== 'running') {
+    throw new Error(`node-runtime-restart must transition a terminated Container to running`);
+  }
+
+  const beforeData = getContainerData(before);
+  const afterData = getContainerData(after);
+  if (beforeData.podId !== afterData.podId) {
+    throw new Error(`node-runtime-restart cannot move the Container to a different Pod`);
+  }
+  const beforePod = beforeWorld.entities[beforeData.podId];
+  const afterPod = world.entities[afterData.podId];
+  if (!beforePod || !afterPod || beforePod.kind !== 'Pod' || afterPod.kind !== 'Pod') {
+    throw new Error(`node-runtime-restart requires its parent Pod in both worlds`);
+  }
+  const beforePodData = getPodData(beforePod);
+  const afterPodData = getPodData(afterPod);
+  if (
+    beforePodData.uid !== afterPodData.uid ||
+    !afterPodData.nodeName ||
+    beforePodData.nodeName !== afterPodData.nodeName
+  ) {
+    throw new Error(`node-runtime-restart must preserve Pod UID and Node assignment`);
+  }
+  const lastState = afterData.lastState;
+  if (
+    beforeData.state.kind !== 'terminated' ||
+    afterData.state.kind !== 'running' ||
+    !beforeData.containerID ||
+    !afterData.containerID ||
+    beforeData.containerID === afterData.containerID ||
+    afterData.restartCount !== beforeData.restartCount + 1 ||
+    !lastState ||
+    lastState.containerID !== beforeData.containerID ||
+    lastState.reason !== beforeData.state.reason ||
+    lastState.exitCode !== beforeData.state.exitCode
+  ) {
+    throw new Error(
+      `node-runtime-restart must replace containerID, increment restartCount, and preserve the termination in lastState`,
+    );
+  }
+
+  const route = routeForCue(cue, routes);
+  const firstHop = route.hops[0];
+  const lastHop = route.hops.at(-1);
+  const firstEntity = firstHop ? world.entities[firstHop.fromEntityId] : undefined;
+  if (!firstHop || firstEntity?.kind !== 'Kubelet') {
+    throw new Error(`${route.id} must start at the kubelet on ${afterPodData.nodeName}`);
+  }
+  if (lastHop?.toEntityId !== cue.entityId) {
+    throw new Error(`${route.id} must end at restarted Container ${cue.entityId}`);
+  }
+
+  const routeEntityIds = new Set(route.hops.flatMap((hop) => [hop.fromEntityId, hop.toEntityId]));
+  for (const entityId of routeEntityIds) {
+    if (localNodeName(entityId, world) !== afterPodData.nodeName) {
+      throw new Error(
+        `${route.id} must stay on ${afterPodData.nodeName} before reaching the Container`,
+      );
+    }
+  }
 }
 
 function validateActiveRoutes(
@@ -434,6 +539,9 @@ function validateTransitionCue(
       }
       return;
     }
+    case 'node-runtime-restart':
+      validateNodeRuntimeRestart(cue, beforeWorld, world, routes);
+      return;
     case 'container-start': {
       const before = beforeWorld.entities[cue.entityId];
       const after = world.entities[cue.entityId];
@@ -449,10 +557,16 @@ function validateTransitionCue(
       const beforeData = getContainerData(before);
       const afterData = getContainerData(after);
       if (
+        beforeData.state.kind !== 'waiting' ||
+        afterData.state.kind !== 'running' ||
+        beforeData.containerID ||
+        !afterData.containerID ||
         beforeData.restartCount !== afterData.restartCount ||
-        beforeData.instanceGeneration !== afterData.instanceGeneration
+        beforeData.podId !== afterData.podId
       ) {
-        throw new Error(`container-start cannot increment restartCount or instanceGeneration`);
+        throw new Error(
+          `container-start must create the first containerID without changing restartCount or Pod`,
+        );
       }
       return;
     }
@@ -497,7 +611,7 @@ function validateReplicaSetCounterCoverage(
   beforeWorld: WorldSnapshot,
   world: WorldSnapshot,
 ): void {
-  const fields = ['desiredReplicas', 'currentReplicas', 'readyReplicas'] as const;
+  const fields = ['specReplicas', 'statusReplicas', 'readyReplicas'] as const;
   for (const before of Object.values(beforeWorld.entities)) {
     if (before.kind !== 'ReplicaSet') continue;
     const after = world.entities[before.id];

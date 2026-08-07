@@ -241,6 +241,70 @@ export class ContainerRestartCueHandler implements CueHandler<CueOfType<'contain
   }
 }
 
+class NodeRuntimeRestartActiveCue extends EntityVisualActiveCue<CueOfType<'node-runtime-restart'>> {
+  private readonly motion: RouteFlowMotion;
+
+  public constructor(
+    cue: CueOfType<'node-runtime-restart'>,
+    handle: EntityVisualHandle,
+    context: ResolvedAnimationContext,
+  ) {
+    super(cue, handle, context);
+    this.motion = new RouteFlowMotion(cue.routeId, context);
+  }
+
+  protected override onStart(): void {
+    this.motion.start();
+    this.baseline.setVisible(true);
+    if (!this.context.reducedMotion) this.baseline.setScaleFactor(1, 0.55, 1);
+    this.baseline.setOpacityFactor(0.35);
+  }
+
+  protected override onUpdate(progress: number): void {
+    this.motion.update(progress);
+    if (!this.context.reducedMotion) {
+      const overshoot = Math.sin(Math.PI * progress) * 0.08;
+      this.baseline.setScaleFactor(
+        1 + overshoot,
+        0.55 + progress * 0.45 + overshoot,
+        1 + overshoot,
+      );
+    }
+    this.baseline.setOpacityFactor(0.35 + progress * 0.65);
+  }
+
+  private releaseAndRestore(): void {
+    this.motion.release();
+    this.restore();
+  }
+
+  protected override onFinish(): void {
+    this.releaseAndRestore();
+  }
+
+  protected override onCancel(): void {
+    this.releaseAndRestore();
+  }
+
+  protected override onDispose(): void {
+    this.motion.release();
+  }
+}
+
+/** Drives the local kubelet route and replacement runtime Container as one causal cue. */
+export class NodeRuntimeRestartCueHandler implements CueHandler<CueOfType<'node-runtime-restart'>> {
+  public readonly type = 'node-runtime-restart' as const;
+  public start(
+    cue: CueOfType<'node-runtime-restart'>,
+    context: ResolvedAnimationContext,
+  ): ActiveCue {
+    const handle = getLiveEntity(context, cue.entityId);
+    return handle
+      ? new NodeRuntimeRestartActiveCue(cue, handle, context).begin()
+      : new NoopActiveCue();
+  }
+}
+
 class ContainerStartActiveCue extends EntityVisualActiveCue<CueOfType<'container-start'>> {
   protected override onStart(): void {
     this.baseline.setVisible(true);
@@ -580,6 +644,7 @@ export class CueHandlerRegistry {
   private readonly focusCamera = new FocusCameraCueHandler();
   private readonly layoutTransition = new LayoutTransitionCueHandler();
   private readonly containerFailure = new ContainerFailureCueHandler();
+  private readonly nodeRuntimeRestart = new NodeRuntimeRestartCueHandler();
   private readonly containerRestart = new ContainerRestartCueHandler();
   private readonly containerStart = new ContainerStartCueHandler();
   private readonly entityExit = new EntityExitCueHandler();
@@ -612,6 +677,8 @@ export class CueHandlerRegistry {
         return this.layoutTransition.start(cue, context);
       case 'container-failure':
         return this.containerFailure.start(cue, context);
+      case 'node-runtime-restart':
+        return this.nodeRuntimeRestart.start(cue, context);
       case 'container-restart':
         return this.containerRestart.start(cue, context);
       case 'container-start':

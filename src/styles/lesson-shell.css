@@ -223,7 +223,8 @@
 }
 
 .legend-line.data::after,
-.legend-line.scheduling::after {
+.legend-line.scheduling::after,
+.legend-line.node-runtime::after {
   position: absolute;
   top: -5px;
   right: -1px;

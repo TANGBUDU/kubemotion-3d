@@ -26,6 +26,13 @@ flowchart TD
 
 `WorldSnapshot` is the only factual source of truth. Entities and relations use stable explicit IDs. A step changes the world through ordered, typed operations: add, remove, or patch an entity or relation. `applyWorldPatch` clones input, rejects missing/duplicate targets and identity changes, applies the transaction atomically, validates the resulting graph, deep-freezes it, and increments its revision.
 
+Synthetic IDs and timestamps are teaching data, but their field meanings follow Kubernetes API
+concepts. ReplicaSet counters map to `.spec.replicas`, `.status.replicas`, and
+`.status.readyReplicas`. Pod phase is stored separately from `PodScheduled`, `Initialized`,
+`ContainersReady`, and `Ready` conditions. A stable Container-status slot exposes `containerID`,
+`state`, `lastState`, `ready`, `started`, and `restartCount`; it does not claim that one immutable
+runtime process survives a restart.
+
 `computeWorldDiff` compares two snapshots without mutation. Its added, removed, and updated records are deterministically sorted and include changed JSON-pointer-style paths.
 
 The content loader parses both verified lessons and both v2 scenarios, rejects duplicate IDs, and
@@ -57,8 +64,13 @@ Settled semantic relations and active teaching routes are separate layers. An ac
 explicit semantic, ordered hops, source/target entity IDs, semantic anchors, optional short hop
 labels, and persistence/numbering policy. Control and scheduling lessons can expose API-mediated
 causality, while the Service lesson uses a logical client → Service → selected Ready Pod data path;
-EndpointSlice remains adjacent API state rather than a packet hop. Routed animation cues drive the
-already-owned route instead of creating a second transient line.
+EndpointSlice remains adjacent API state rather than a packet hop. A separate `node-runtime`
+semantic shows same-Node kubelet work without making the API Server the per-crash initiator. Routed
+animation cues drive the already-owned route instead of creating a second transient line.
+
+Control routes simplify watch/update interactions and are not packet captures. Service data-plane
+behavior is implementation-dependent; distinct request IDs prevent a later request from looking
+like migration of an in-flight request.
 
 Explore builds a context-preserving projection over a compiled snapshot: matches are focused; directly related ownership, composition, and placement context remains visible and dimmed.
 

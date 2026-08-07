@@ -10,6 +10,7 @@ export function SceneLegend({ locale }: { readonly locale: Locale }) {
     ['data', t.applicationTraffic, relationLegendStyles.application],
     ['control', t.apiControl, relationLegendStyles.control],
     ['scheduling', t.scheduling, relationLegendStyles.scheduling],
+    ['node-runtime', t.localNodeRuntime, relationLegendStyles.nodeRuntime],
     ['ownership', t.ownership, relationLegendStyles.ownership],
   ] as const;
 

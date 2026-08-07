@@ -17,6 +17,11 @@ const wrappedProgress = (value: number): number => {
   return ((value % 1) + 1) % 1;
 };
 
+type RequestAwareTeachingRoute = ActiveTeachingRoute & { readonly requestId?: string };
+
+const requestIdFor = (route: ActiveTeachingRoute): string | undefined =>
+  (route as RequestAwareTeachingRoute).requestId;
+
 /** Owns one persistent active route; pooled arrows/tokens/markers return on update or dispose. */
 export class RouteHandle {
   public readonly root = new THREE.Group();
@@ -49,6 +54,7 @@ export class RouteHandle {
     this.root.userData.semantic = route.semantic;
     this.root.userData.persistent = route.persistAfterAnimation;
     this.root.userData.selectable = false;
+    this.syncRequestIdentity();
     this.line = new WideLineHandle(route.id, plan.points, this.currentStyle, resolution);
     this.root.add(this.line.root);
     this.syncArrows();
@@ -131,6 +137,16 @@ export class RouteHandle {
     });
   }
 
+  private syncRequestIdentity(): void {
+    const requestId = requestIdFor(this.currentRoute);
+    if (requestId) this.root.userData.requestId = requestId;
+    else delete this.root.userData.requestId;
+    for (const token of this.tokens) {
+      if (requestId) token.object.userData.requestId = requestId;
+      else delete token.object.userData.requestId;
+    }
+  }
+
   public update(route: ActiveTeachingRoute, plan: PlannedTeachingRoute): void {
     this.assertUsable();
     if (route.id !== this.id || plan.route.id !== this.id) {
@@ -141,6 +157,7 @@ export class RouteHandle {
     this.currentStyle = getTeachingRouteStyle(route.semantic);
     this.root.userData.semantic = route.semantic;
     this.root.userData.persistent = route.persistAfterAnimation;
+    this.syncRequestIdentity();
     this.line.updatePoints(plan.points);
     this.line.applyStyle(this.currentStyle);
     this.syncArrows();
@@ -186,6 +203,8 @@ export class RouteHandle {
         this.root,
       );
       token.object.userData.routeId = this.id;
+      const requestId = requestIdFor(this.currentRoute);
+      if (requestId) token.object.userData.requestId = requestId;
       this.tokens.push(token);
     }
     while (this.tokens.length > this.currentStyle.tokenCount) this.tokens.pop()?.release();
