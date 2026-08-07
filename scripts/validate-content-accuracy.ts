@@ -1,5 +1,5 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { extname, resolve } from 'node:path';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { dirname, extname, resolve } from 'node:path';
 import { parse } from 'yaml';
 import { lessonV2Schema, scenarioV2AuthorSchema } from '../src/content/schemas';
 import { courseEngine } from '../src/course/CourseEngine';
@@ -17,7 +17,26 @@ const read = (path: string): string => readFileSync(resolve(root, path), 'utf8')
 const yaml = (path: string): unknown => parse(read(path), { merge: true });
 
 const textExtensions = new Set(['.css', '.html', '.json', '.md', '.ts', '.tsx', '.yaml', '.yml']);
-const scanRoots = ['content', 'src', 'tests', 'docs/review'] as const;
+const currentPublicTextTargets = [
+  'README.md',
+  'README.ja.md',
+  'README.zh-CN.md',
+  'CONTRIBUTING.md',
+  'content',
+  'src',
+  'tests',
+  'docs/review',
+  'docs/accuracy-policy.md',
+  'docs/architecture.md',
+  'docs/content-authoring.md',
+  'docs/deployment.md',
+  'docs/monitoring-boundary.md',
+  'docs/visualization-semantics.md',
+] as const;
+const intentionallyExcludedHistoricalPaths = [
+  'docs/current-prototype-audit.md',
+  'docs/audit/prototype-baseline',
+] as const;
 
 function collectTextFiles(relativePath: string): string[] {
   const absolutePath = resolve(root, relativePath);
@@ -34,6 +53,9 @@ const forbiddenPatterns: readonly { readonly pattern: RegExp; readonly label: st
   { pattern: /data\.currentReplicas/, label: 'ReplicaSet current counter path' },
   { pattern: /counters\.current/, label: 'ReplicaSet current counter key' },
   { pattern: /instanceGeneration/, label: 'synthetic Container generation field' },
+  { pattern: /instance generation/i, label: 'obsolete Container generation wording' },
+  { pattern: /インスタンス世代/, label: 'obsolete Japanese Container generation wording' },
+  { pattern: /实例代次/, label: 'obsolete Chinese Container generation wording' },
   { pattern: /Container generation/i, label: 'synthetic Container generation copy' },
   { pattern: /Generation [12]/, label: 'synthetic Container generation value' },
   { pattern: /same Container entity returned/i, label: 'same runtime Container identity claim' },
@@ -65,15 +87,170 @@ const forbiddenPatterns: readonly { readonly pattern: RegExp; readonly label: st
   { pattern: /contains runtime/i, label: 'runtime containment instead of status-slot relation' },
   { pattern: /ランタイムを内包/, label: 'Japanese runtime containment relation' },
   { pattern: /包含运行实例/, label: 'Chinese runtime containment relation' },
+  { pattern: /desired\/current\/ready/i, label: 'obsolete ReplicaSet counter wording' },
+  { pattern: /reconciliation knot/i, label: 'rejected Controller Manager visual' },
+  { pattern: /cyan assignment marker/i, label: 'rejected Scheduler visual' },
 ];
 
-const scannedFiles = scanRoots.flatMap(collectTextFiles);
+check(
+  currentPublicTextTargets.every((path) => existsSync(resolve(root, path))),
+  'current-public scan target is missing',
+);
+check(
+  intentionallyExcludedHistoricalPaths.every(
+    (path) => !currentPublicTextTargets.includes(path as (typeof currentPublicTextTargets)[number]),
+  ),
+  'historical audit path must not be part of the current-public scan',
+);
+
+const scannedFiles = [...new Set(currentPublicTextTargets.flatMap(collectTextFiles))].sort();
 for (const path of scannedFiles) {
   const source = read(path);
   for (const { pattern, label } of forbiddenPatterns) {
     check(!pattern.test(source), `${path}: forbidden ${label}`);
   }
 }
+
+const publicReadmes = {
+  en: read('README.md'),
+  ja: read('README.ja.md'),
+  zh: read('README.zh-CN.md'),
+} as const;
+const requiredReadmeFacts = [
+  'container-restart-vs-pod-replacement',
+  'service-routes-to-pods',
+  'containerID',
+  'restartCount',
+  'lastState',
+  'SPEC',
+  'OBSERVED',
+  'READY',
+  'content:accuracy',
+  'visual:capture',
+  'golden-step-00-1440x900.png',
+] as const;
+const requiredValidationCommands = [
+  'pnpm format:check',
+  'pnpm lint',
+  'pnpm typecheck',
+  'pnpm content:validate',
+  'pnpm content:accuracy',
+  'pnpm test:unit -- --run',
+  'pnpm build',
+  'pnpm test:e2e',
+  'pnpm visual:capture',
+] as const;
+for (const [locale, source] of Object.entries(publicReadmes)) {
+  for (const fact of requiredReadmeFacts) {
+    check(source.includes(fact), `README ${locale}: missing current release fact ${fact}`);
+  }
+  for (const command of requiredValidationCommands) {
+    check(source.includes(command), `README ${locale}: missing validation command ${command}`);
+  }
+}
+check(
+  publicReadmes.en.includes('2 fully verified lessons') &&
+    publicReadmes.en.includes('10-step Pod lifecycle') &&
+    publicReadmes.en.includes('6-step Service traffic path') &&
+    publicReadmes.en.includes('20 planned lessons'),
+  'English README: release scope must state 2 verified, 10 Pod, 6 Service, and 20 planned',
+);
+check(
+  publicReadmes.ja.includes('完全に検証済みのレッスンは2本') &&
+    publicReadmes.ja.includes('Pod ライフサイクルは10ステップ') &&
+    publicReadmes.ja.includes('Service トラフィックは6ステップ') &&
+    /計画中(?:のレッスン)?は20本/.test(publicReadmes.ja),
+  'Japanese README: release scope must state 2 verified, 10 Pod, 6 Service, and 20 planned',
+);
+check(
+  publicReadmes.zh.includes('2 节完整验证课程') &&
+    publicReadmes.zh.includes('10 步 Pod 生命周期') &&
+    publicReadmes.zh.includes('6 步 Service 流量路径') &&
+    publicReadmes.zh.includes('20 节规划中课程'),
+  'Chinese README: release scope must state 2 verified, 10 Pod, 6 Service, and 20 planned',
+);
+check(
+  !/(?:one verified lesson|1 fully verified lesson)/i.test(publicReadmes.en),
+  'English README: obsolete one-lesson release claim',
+);
+check(
+  !/(?:完全に検証(?:された|済み)のレッスン[^\n]*1\s*本|7\s*ステップ|21\s*本は計画中)/.test(
+    publicReadmes.ja,
+  ),
+  'Japanese README: obsolete release count',
+);
+check(
+  !/(?:1\s*节完整验证课程|7\s*个确定性的事实步骤|21\s*节规划中课程)/.test(publicReadmes.zh),
+  'Chinese README: obsolete release count',
+);
+
+const visualizationSemantics = read('docs/visualization-semantics.md');
+for (const currentConcept of [
+  'Container status slot',
+  'containerID',
+  'restartCount',
+  'lastState',
+  'SPEC',
+  'OBSERVED',
+  'READY',
+  'node-runtime',
+  'EndpointSlice',
+  'Request A',
+  'Request B',
+  'WorldEntity.status',
+]) {
+  check(
+    visualizationSemantics.includes(currentConcept),
+    `visualization semantics: missing current concept ${currentConcept}`,
+  );
+}
+
+const historicalAudit = read('docs/current-prototype-audit.md');
+check(
+  historicalAudit.startsWith(
+    '# Current prototype audit\n\n> Historical audit of prototype commit `c515f8a`. This file describes rejected behavior and is not current product documentation.',
+  ),
+  'prototype audit: explicit historical banner missing',
+);
+
+const linkDocuments = [
+  'README.md',
+  'README.ja.md',
+  'README.zh-CN.md',
+  'docs/visualization-semantics.md',
+] as const;
+const markdownLinkPattern = /!?\[[^\]]*\]\(([^)]+)\)/g;
+let checkedLocalLinks = 0;
+for (const documentPath of linkDocuments) {
+  const source = read(documentPath);
+  for (const match of source.matchAll(markdownLinkPattern)) {
+    const rawTarget = match[1]?.trim().replace(/^<|>$/g, '');
+    if (!rawTarget || rawTarget.startsWith('#') || /^(?:https?:|mailto:|data:)/i.test(rawTarget)) {
+      continue;
+    }
+    const localTarget = decodeURIComponent(rawTarget.split(/[?#]/, 1)[0] ?? '');
+    check(localTarget.length > 0, `${documentPath}: empty local link target`);
+    check(
+      existsSync(resolve(root, dirname(documentPath), localTarget)),
+      `${documentPath}: missing local link ${rawTarget}`,
+    );
+    checkedLocalLinks += 1;
+  }
+}
+for (const requiredLink of [
+  'docs/review/screenshots/golden-step-00-1440x900.png',
+  'docs/architecture.md',
+  'docs/accuracy-policy.md',
+  'docs/visualization-semantics.md',
+  'docs/review/VISUAL_ACCEPTANCE_CHECKLIST.md',
+  'docs/review/BEFORE_AFTER.md',
+]) {
+  check(
+    Object.values(publicReadmes).every((source) => source.includes(requiredLink)),
+    `public READMEs: missing required local link ${requiredLink}`,
+  );
+}
+check(checkedLocalLinks >= 18, 'public documentation: expected at least 18 local links');
 
 const finalPrDescription = read('docs/review/PR_FINAL_DESCRIPTION.md');
 check(!/PENDING_/.test(finalPrDescription), 'final PR description: validation placeholders remain');
@@ -615,5 +792,5 @@ check(
 );
 
 console.log(
-  `Content accuracy passed: ${scannedFiles.length} text files scanned, ${forbiddenPatterns.length} forbidden patterns guarded, Pod lifecycle and Service request invariants verified.`,
+  `Content accuracy passed: ${scannedFiles.length} current-public text files scanned, ${forbiddenPatterns.length} forbidden patterns guarded, ${checkedLocalLinks} local links verified; README, visualization, Pod lifecycle, and Service request invariants passed.`,
 );

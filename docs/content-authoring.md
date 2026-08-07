@@ -21,11 +21,17 @@ Run:
 
 ```sh
 pnpm content:validate
+pnpm content:accuracy
 pnpm test:unit -- --run
+pnpm build
 pnpm test:e2e
+pnpm visual:capture
 ```
 
 Validation checks schemas, stable IDs, relations, patch transactions, cue references, counter values, source hosts, prerequisite cycles, glossary order, localized fields, and a sensitive/misleading-expression denylist.
+
+`pnpm visual:capture` regenerates the review evidence; it does not approve that evidence.
+Human screenshot review against the acceptance checklist remains mandatory.
 
 The four older schema-v1 lesson files remain reference material for planned curriculum. They are not loaded as verified lessons until migrated through the world-state and visual gates.
 

@@ -1,5 +1,7 @@
 # Current prototype audit
 
+> Historical audit of prototype commit `c515f8a`. This file describes rejected behavior and is not current product documentation.
+
 ## Baseline identity and scope
 
 - Audit date: 2026-08-07 (Asia/Shanghai).
