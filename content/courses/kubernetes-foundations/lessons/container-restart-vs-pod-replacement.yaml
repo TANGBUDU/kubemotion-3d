@@ -7,9 +7,9 @@ title:
   ja: コンテナ再起動と Pod 置換の違い
   zh-CN: 容器重启不等于 Pod 替换
 summary:
-  en: Follow an API-mediated story from one in-place Container restart to an intentional Pod replacement.
-  ja: API を介した流れの中で、同一 Pod 内の Container 再起動から意図的な Pod 置換までを追います。
-  zh-CN: 沿着 API 中介的因果路径，观察同一 Pod 内的容器重启与主动触发的 Pod 替换。
+  en: Watch kubelet restart a runtime Container locally inside one Pod, then follow an intentional Pod deletion and API-mediated replacement.
+  ja: kubelet が同じ Pod 内でランタイム Container をローカル再起動する流れと、その後に意図的な Pod 削除から API を介して置換される流れを追います。
+  zh-CN: 先观察 kubelet 在同一 Pod 内本地重启运行时容器，再跟随一次主动 Pod 删除及其经由 API 完成的替换流程。
 learningOutcome:
   en: Explain Container restart, Pod deletion, replacement creation, scheduling, and startup as separate factual events.
   ja: Container 再起動、Pod 削除、置換作成、スケジューリング、起動を別々の事実イベントとして説明する。
@@ -603,8 +603,8 @@ steps:
               zh-CN: api 容器 · api-7f8d9-d
             summary:
               en: Container status slot waiting for kubelet to create a runtime Container.
-              ja: Pending の置換 Pod 内で待機する Container インスタンスです。
-              zh-CN: Pending 替换 Pod 内等待中的容器实例。
+              ja: kubelet がランタイム Container を作成するのを待っている Container 状態スロットです。
+              zh-CN: 等待 kubelet 创建运行时容器的容器状态槽。
             sourceIds: [k8s-pods, k8s-pod-lifecycle]
             visual: { archetype: container, size: sm, group: api-d-new }
         - op: add-relation
@@ -625,7 +625,7 @@ steps:
             to: container-status:shop:Pod:api-d-new:Container:api
             directed: true
             semantic: composition
-            title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }
+            title: { en: contains Container status, ja: Container 状態を含む, zh-CN: 包含容器状态 }
             sourceIds: [k8s-pods]
         - op: add-relation
           relation:

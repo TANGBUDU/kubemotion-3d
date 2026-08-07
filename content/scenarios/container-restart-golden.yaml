@@ -406,7 +406,7 @@ relations:
     to: container-status:shop:Pod:api-a-old:Container:api
     directed: true
     semantic: composition
-    title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }
+    title: { en: contains Container status, ja: Container 状態を含む, zh-CN: 包含容器状态 }
     sourceIds: [k8s-pods]
   - id: contains-api-b-container-api
     type: contains-runtime
@@ -414,7 +414,7 @@ relations:
     to: container-status:shop:Pod:api-b:Container:api
     directed: true
     semantic: composition
-    title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }
+    title: { en: contains Container status, ja: Container 状態を含む, zh-CN: 包含容器状态 }
     sourceIds: [k8s-pods]
   - id: contains-api-c-container-api
     type: contains-runtime
@@ -422,7 +422,7 @@ relations:
     to: container-status:shop:Pod:api-c:Container:api
     directed: true
     semantic: composition
-    title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }
+    title: { en: contains Container status, ja: Container 状態を含む, zh-CN: 包含容器状态 }
     sourceIds: [k8s-pods]
   - id: controller-watches-api-server
     type: watches
