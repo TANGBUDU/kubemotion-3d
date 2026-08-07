@@ -11,15 +11,9 @@ import {
   createSurfaceMaterial,
 } from '../design/materials';
 import { palette } from '../design/palette';
-import { shortResourceName, statusLabel } from '../design/typography';
+import { shortResourceName } from '../design/typography';
 import { BaseVisualHandle, type AnchorKind } from './BaseVisualHandle';
 import type { ContainerVisualHandle } from './ContainerVisual';
-
-const isFailure = (status: WorldEntity['status']): boolean =>
-  status === 'failed' || status === 'terminated';
-
-const isPending = (status: WorldEntity['status']): boolean =>
-  status === 'pending' || status === 'waiting' || status === 'starting' || status === 'not-ready';
 
 export class PodVisualHandle extends BaseVisualHandle {
   public readonly shell: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
@@ -212,20 +206,30 @@ export class PodVisualHandle extends BaseVisualHandle {
 
   protected override updateVisual(entity: WorldEntity): void {
     const data = getPodData(entity);
-    const failed = isFailure(entity.status);
-    const pending = isPending(entity.status) || data.phase === 'Pending';
-    applyMaterialStatus(this.statusRailMaterial, entity.status);
-    this.header.material.color.setHex(pending ? 0x3a3540 : palette.surfaceElevated);
-    this.runningMarker.visible = !failed && !pending;
-    this.pendingMarker.visible = !failed && pending;
+    const failed = data.phase === 'Failed';
+    const pending = data.phase === 'Pending';
+    const ready = data.conditions.ready;
+    const derivedStatus: WorldEntity['status'] = failed
+      ? 'failed'
+      : pending
+        ? 'pending'
+        : ready
+          ? 'ready'
+          : 'not-ready';
+    applyMaterialStatus(this.statusRailMaterial, derivedStatus);
+    this.header.material.color.setHex(pending || !ready ? 0x3a3540 : palette.surfaceElevated);
+    this.runningMarker.visible = !failed && !pending && ready;
+    this.pendingMarker.visible = !failed && (pending || !ready);
     this.failureMarker.visible = failed;
 
     this.root.userData.uid = data.uid;
     this.root.userData.nodeName = data.nodeName ?? null;
     this.root.userData.phase = data.phase;
+    this.root.userData.conditions = Object.freeze({ ...data.conditions });
+    this.root.userData.ready = ready;
     this.root.userData.shortLabel = shortResourceName(entity.name, 18);
-    this.root.userData.statusText = statusLabel(entity.status);
-    this.root.userData.visibleText = `${shortResourceName(entity.name, 18)} · ${data.phase.toUpperCase()}`;
+    this.root.userData.statusText = ready ? 'READY' : 'NOT READY';
+    this.root.userData.visibleText = `${shortResourceName(entity.name, 18)} · ${data.phase.toUpperCase()} · ${ready ? 'READY' : 'NOT READY'}`;
     this.refreshContainerEvidence();
   }
 

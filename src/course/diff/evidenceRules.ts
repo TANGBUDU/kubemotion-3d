@@ -31,6 +31,9 @@ const endpointReadinessLabel: LocalizedText = {
   'zh-CN': 'Endpoint 就绪',
 };
 
+const endpointConditionsLabel = (target: string): LocalizedText =>
+  sameText(`${target} Endpoint conditions`);
+
 function localized(en: string, ja: string, zhCN: string): LocalizedText {
   return { en, ja, 'zh-CN': zhCN };
 }
@@ -84,12 +87,18 @@ function identityValue(entity: WorldEntity): LocalizedText {
     const data = getPodData(entity);
     return sameText(data.uid);
   }
+  if (entity.kind === 'Container') {
+    const data = getContainerData(entity);
+    return sameText(data.containerID || `${data.name} status slot`);
+  }
   return sameText(entity.name);
 }
 
 function replicaValue(entity: WorldEntity): LocalizedText {
   const data = getReplicaSetData(entity);
-  return sameText(`D${data.desiredReplicas} · C${data.currentReplicas} · R${data.readyReplicas}`);
+  return sameText(
+    `SPEC ${data.specReplicas} · OBSERVED ${data.statusReplicas} · READY ${data.readyReplicas}`,
+  );
 }
 
 function servicePortValue(entity: WorldEntity): LocalizedText {
@@ -111,18 +120,24 @@ function endpointReadinessValue(entity: WorldEntity): LocalizedText {
   const readyCount = endpoints.filter((candidate) => {
     if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return false;
     const conditions = (candidate as Readonly<Record<string, unknown>>).conditions;
-    return (
-      conditions !== null &&
-      typeof conditions === 'object' &&
-      !Array.isArray(conditions) &&
-      (conditions as Readonly<Record<string, unknown>>).ready === true
-    );
+    if (conditions === null || typeof conditions !== 'object' || Array.isArray(conditions)) {
+      return true;
+    }
+    return (conditions as Readonly<Record<string, unknown>>).ready !== false;
   }).length;
   return localized(
     `${readyCount}/${endpoints.length} Ready`,
     `Ready ${readyCount}/${endpoints.length}`,
     `就绪 ${readyCount}/${endpoints.length}`,
   );
+}
+
+function endpointConditionsValue(conditions: Readonly<Record<string, unknown>>): LocalizedText {
+  const ready = conditions.ready !== false;
+  const serving = typeof conditions.serving === 'boolean' ? conditions.serving : 'unknown';
+  const terminating =
+    typeof conditions.terminating === 'boolean' ? conditions.terminating : 'unknown';
+  return sameText(`ready=${ready} · serving=${serving} · terminating=${terminating}`);
 }
 
 export function snapshotEvidence(entity: WorldEntity): readonly EvidenceRow[] {
@@ -138,11 +153,32 @@ export function snapshotEvidence(entity: WorldEntity): readonly EvidenceRow[] {
         valueText(data.nodeName, '/data/nodeName'),
       ),
       row(entity, '/data/phase', 'unchanged', undefined, valueText(data.phase, '/data/phase')),
+      row(
+        entity,
+        '/data/conditions/containersReady',
+        'unchanged',
+        undefined,
+        valueText(data.conditions.containersReady, '/data/conditions/containersReady'),
+      ),
+      row(
+        entity,
+        '/data/conditions/ready',
+        'unchanged',
+        undefined,
+        valueText(data.conditions.ready, '/data/conditions/ready'),
+      ),
     ];
   }
   if (entity.kind === 'Container') {
     const data = getContainerData(entity);
-    const counterRows = [
+    return [
+      row(
+        entity,
+        '/data/containerID',
+        'unchanged',
+        undefined,
+        valueText(data.containerID, '/data/containerID'),
+      ),
       row(
         entity,
         '/data/restartCount',
@@ -152,20 +188,13 @@ export function snapshotEvidence(entity: WorldEntity): readonly EvidenceRow[] {
       ),
       row(
         entity,
-        '/data/instanceGeneration',
+        '/data/state/kind',
         'unchanged',
         undefined,
-        valueText(data.instanceGeneration, '/data/instanceGeneration'),
+        valueText(data.state.kind, '/data/state/kind'),
       ),
+      row(entity, '/data/ready', 'unchanged', undefined, valueText(data.ready, '/data/ready')),
     ];
-    const statusRow = row(
-      entity,
-      '/status',
-      'unchanged',
-      undefined,
-      valueText(entity.status, '/status'),
-    );
-    return entity.status === 'running' ? [...counterRows, statusRow] : [statusRow, ...counterRows];
   }
   if (entity.kind === 'ReplicaSet') {
     return [row(entity, '/data/replicas', 'unchanged', undefined, replicaValue(entity))];
@@ -236,6 +265,56 @@ export function updatedEntityEvidence(
     after.kind === 'EndpointSlice' &&
     changedPaths.some((path) => path === '/data/endpoints' || path.startsWith('/data/endpoints/'))
   ) {
+    const beforeEndpoints = Array.isArray(before.data.endpoints) ? before.data.endpoints : [];
+    const afterEndpoints = Array.isArray(after.data.endpoints) ? after.data.endpoints : [];
+    const records = afterEndpoints.flatMap((candidate, index) => {
+      if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return [];
+      const afterEndpoint = candidate as Readonly<Record<string, unknown>>;
+      const targetRef = String(
+        afterEndpoint.targetRef ?? afterEndpoint.address ?? `endpoint-${index}`,
+      );
+      const beforeCandidate = beforeEndpoints.find(
+        (value) =>
+          value !== null &&
+          typeof value === 'object' &&
+          !Array.isArray(value) &&
+          (value as Readonly<Record<string, unknown>>).targetRef === afterEndpoint.targetRef,
+      );
+      const beforeEndpoint =
+        beforeCandidate && typeof beforeCandidate === 'object' && !Array.isArray(beforeCandidate)
+          ? (beforeCandidate as Readonly<Record<string, unknown>>)
+          : undefined;
+      const beforeConditions =
+        beforeEndpoint?.conditions &&
+        typeof beforeEndpoint.conditions === 'object' &&
+        !Array.isArray(beforeEndpoint.conditions)
+          ? (beforeEndpoint.conditions as Readonly<Record<string, unknown>>)
+          : {};
+      const afterConditions =
+        afterEndpoint.conditions &&
+        typeof afterEndpoint.conditions === 'object' &&
+        !Array.isArray(afterEndpoint.conditions)
+          ? (afterEndpoint.conditions as Readonly<Record<string, unknown>>)
+          : {};
+      const changed = ['ready', 'serving', 'terminating'].some(
+        (field) => beforeConditions[field] !== afterConditions[field],
+      );
+      return changed ? [{ index, targetRef, beforeConditions, afterConditions }] : [];
+    });
+    const changedEndpoint = records[0];
+    if (!changedEndpoint) {
+      return [
+        row(
+          after,
+          '/data/endpoints',
+          'changed',
+          endpointReadinessValue(before),
+          endpointReadinessValue(after),
+          endpointReadinessLabel,
+        ),
+      ];
+    }
+    const target = changedEndpoint.targetRef.split(':').at(-1) ?? changedEndpoint.targetRef;
     return [
       row(
         after,
@@ -245,18 +324,38 @@ export function updatedEntityEvidence(
         endpointReadinessValue(after),
         endpointReadinessLabel,
       ),
+      row(
+        after,
+        `/data/endpoints/${changedEndpoint.index}/conditions`,
+        'changed',
+        endpointConditionsValue(changedEndpoint.beforeConditions),
+        endpointConditionsValue(changedEndpoint.afterConditions),
+        endpointConditionsLabel(target),
+      ),
     ];
   }
   if (
     after.kind === 'ReplicaSet' &&
     changedPaths.some((path) =>
-      ['/data/desiredReplicas', '/data/currentReplicas', '/data/readyReplicas'].includes(path),
+      ['/data/specReplicas', '/data/statusReplicas', '/data/readyReplicas'].includes(path),
     )
   ) {
     return [row(after, '/data/replicas', 'changed', replicaValue(before), replicaValue(after))];
   }
 
   return changedPaths.flatMap((path) => {
+    if (after.kind === 'Container' && path === '/data/lastState') {
+      return ['/data/lastState/reason', '/data/lastState/exitCode'].map((nestedPath) =>
+        row(
+          after,
+          nestedPath,
+          'changed',
+          valueText(pointerValue(before, nestedPath), nestedPath),
+          valueText(pointerValue(after, nestedPath), nestedPath),
+          labelForPath(after, nestedPath) ?? diffLabels.containerStatus,
+        ),
+      );
+    }
     const label = labelForPath(after, path);
     if (!label) return [];
     return [

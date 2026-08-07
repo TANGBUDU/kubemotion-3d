@@ -40,6 +40,12 @@ const podEntity: WorldEntity = {
     nodeName: 'worker-a',
     phase: 'Running',
     restartPolicy: 'Always',
+    conditions: {
+      podScheduled: true,
+      initialized: true,
+      containersReady: true,
+      ready: true,
+    },
   },
   title: localized('api-7f8d9-a'),
   summary: localized('Focused Pod baseline'),
@@ -48,17 +54,21 @@ const podEntity: WorldEntity = {
 };
 
 const containerEntity: WorldEntity = {
-  id: 'baseline:Container:api',
-  category: 'runtime-instance',
+  id: 'baseline:ContainerStatus:api',
+  category: 'runtime-status',
   kind: 'Container',
   name: 'api',
   namespace: 'shop',
   status: 'running',
   data: {
     podId: podEntity.id,
-    restartCount: 0,
-    instanceGeneration: 1,
+    name: 'api',
     image: 'example.invalid/api:v1',
+    containerID: 'containerd://baseline-api-01',
+    restartCount: 0,
+    ready: true,
+    started: true,
+    state: { kind: 'running', startedAt: '2026-08-08T00:00:00Z' },
   },
   title: localized('api container'),
   summary: localized('Container inside the focused Pod'),

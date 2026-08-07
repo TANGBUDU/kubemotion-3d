@@ -15,7 +15,16 @@ learningOutcome:
   ja: Container 再起動、Pod 削除、置換作成、スケジューリング、起動を別々の事実イベントとして説明する。
   zh-CN: 将容器重启、Pod 删除、替换创建、调度和启动解释为彼此独立的事实事件。
 prerequisites: []
-sourceIds: [k8s-pods, k8s-pod-lifecycle, k8s-replicasets, k8s-components, k8s-nodes, k8s-api]
+sourceIds:
+  - k8s-pods
+  - k8s-pod-lifecycle
+  - k8s-pod-conditions
+  - k8s-container-status-api
+  - k8s-replicasets
+  - k8s-replicaset-api
+  - k8s-components
+  - k8s-nodes
+  - k8s-api
 verifiedAt: '2026-08-08'
 baseView:
   view: control-flow
@@ -99,7 +108,7 @@ steps:
           visible: true
           emphasis: focused
           labelMode: short
-        - selector: { byIds: [runtime-instance:shop:Pod:api-a-old:Container:api] }
+        - selector: { byIds: [container-status:shop:Pod:api-a-old:Container:api] }
           visible: true
           emphasis: normal
           labelMode: short
@@ -124,13 +133,13 @@ steps:
       ja: healthy な基準状態を確認する
       zh-CN: 建立健康基线
     learningOutcome:
-      en: Record the original Pod identity, placement, Container counters, and ReplicaSet counts.
-      ja: 元の Pod ID・配置・Container カウンター・ReplicaSet 数を確認する。
-      zh-CN: 记录原始 Pod 身份、放置位置、容器计数器和 ReplicaSet 计数。
+      en: Record the original Pod identity, placement, Container ID, restart count, and ReplicaSet counts.
+      ja: 元の Pod ID・配置・Container ID・再起動回数・ReplicaSet 数を確認する。
+      zh-CN: 记录原始 Pod 身份、放置位置、Container ID、重启次数和 ReplicaSet 计数。
     narration:
-      en: api-7f8d9-a is Running on worker-a with UID synthetic-uid-old-a1. Its api Container is running at restart count 0 and generation 1, while the ReplicaSet is desired 3, current 3, ready 3.
-      ja: api-7f8d9-a は UID synthetic-uid-old-a1 で worker-a 上に Running です。api Container は再起動回数 0・世代 1 で実行中、ReplicaSet は desired 3・current 3・ready 3 です。
-      zh-CN: api-7f8d9-a 以 UID synthetic-uid-old-a1 在 worker-a 上运行；api 容器的重启次数为 0、代次为 1，ReplicaSet 为期望 3、当前 3、就绪 3。
+      en: api-7f8d9-a is Running and Ready on worker-a with UID synthetic-uid-old-a1. Its api Container has ID containerd://synthetic-api-a-old-01 and restart count 0, while the ReplicaSet is SPEC 3, OBSERVED 3, READY 3.
+      ja: api-7f8d9-a は UID synthetic-uid-old-a1 で worker-a 上に Running・Ready です。api Container ID は containerd://synthetic-api-a-old-01、再起動回数は 0、ReplicaSet は SPEC 3・OBSERVED 3・READY 3 です。
+      zh-CN: api-7f8d9-a 以 UID synthetic-uid-old-a1 在 worker-a 上处于 Running 且 Ready；api Container ID 为 containerd://synthetic-api-a-old-01，重启次数为 0，ReplicaSet 为 SPEC 3、OBSERVED 3、READY 3。
     teaching:
       whatChanged:
         en: Nothing has changed; this step records the factual baseline used by every later comparison.
@@ -141,13 +150,13 @@ steps:
         ja: 再起動と置換を区別するには、その前の ID とカウンター値が必要です。
         zh-CN: 要区分重启与替换，必须先明确事件发生前的身份和计数值。
       takeaway:
-        en: The baseline is one Pod UID on worker-a with a generation-1 Container and zero restarts.
-        ja: 基準は worker-a 上の一つの Pod UID、世代 1 の Container、再起動回数 0 です。
-        zh-CN: 基线是 worker-a 上的一个 Pod UID、第一代容器以及零次重启。
+        en: The baseline is one Pod UID on worker-a with Container ID ...-01 and zero restarts.
+        ja: 基準は worker-a 上の一つの Pod UID、Container ID ...-01、再起動回数 0 です。
+        zh-CN: 基线是 worker-a 上的一个 Pod UID、Container ID ...-01，以及零次重启。
     evidence:
       mode: snapshot
       entityIds:
-        - runtime-instance:shop:Pod:api-a-old:Container:api
+        - container-status:shop:Pod:api-a-old:Container:api
         - api-object:namespaced:shop:Pod:api-a-old
         - api-object:namespaced:shop:ReplicaSet:api-rs
     introducesTerms: [pod-uid, restart-count]
@@ -164,7 +173,7 @@ steps:
           emphasis: focused
           labelMode: full
           inspectorMode: expanded
-        - selector: { byIds: [runtime-instance:shop:Pod:api-a-old:Container:api] }
+        - selector: { byIds: [container-status:shop:Pod:api-a-old:Container:api] }
           visible: true
           emphasis: normal
           labelMode: short
@@ -185,18 +194,18 @@ steps:
       ja: Container プロセスが終了する
       zh-CN: 容器进程退出
     learningOutcome:
-      en: Observe a terminated child Container without changing the Pod object or ReplicaSet counts.
-      ja: Pod オブジェクトや ReplicaSet 数を変えずに子 Container の終了を確認する。
-      zh-CN: 观察子容器终止，同时 Pod 对象和 ReplicaSet 计数保持不变。
+      en: Observe a terminated Container status while the Pod identity and phase stay unchanged but readiness drops.
+      ja: Pod ID と phase を保ったまま Container が終了し、readiness と ReplicaSet READY が低下することを確認する。
+      zh-CN: 观察容器终止，同时 Pod 身份和 phase 保持不变，而 readiness 与 ReplicaSet READY 下降。
     narration:
-      en: Only the api Container terminates. The outer Pod remains api-a-old with the same UID on worker-a, and the ReplicaSet remains 3/3/3.
-      ja: 終了するのは api Container だけです。外側の Pod は同じ UID の api-a-old として worker-a に残り、ReplicaSet も 3/3/3 のままです。
-      zh-CN: 只有 api 容器终止。外层 Pod 仍是 worker-a 上具有相同 UID 的 api-a-old，ReplicaSet 仍保持 3/3/3。
+      en: The api runtime Container exits with Error. The Pod object stays Running with the same UID on worker-a, but ContainersReady and Ready become false; ReplicaSet READY drops from 3 to 2 while SPEC and OBSERVED remain 3.
+      ja: api ランタイム Container は Error で終了します。Pod は同じ UID のまま worker-a 上で Running を保ちますが、ContainersReady と Ready は false になり、ReplicaSet は SPEC 3・OBSERVED 3 のまま READY が 3 から 2 に下がります。
+      zh-CN: api 运行时容器因 Error 退出。Pod 仍以相同 UID 在 worker-a 上保持 Running，但 ContainersReady 与 Ready 变为 false；ReplicaSet 的 SPEC 3、OBSERVED 3 保持不变，READY 从 3 降为 2。
     teaching:
       whatChanged:
-        en: The child Container changed from running to terminated inside the unchanged Pod shell.
-        ja: 変わったのは Pod シェル内の子 Container だけで、running から terminated になりました。
-        zh-CN: 只有 Pod 外壳内的子容器从 running 变为 terminated。
+        en: Container state changed from running to terminated, the Pod became NotReady without changing phase, and ReplicaSet READY fell to 2.
+        ja: Container state は running から terminated、Pod は phase を変えず NotReady、ReplicaSet READY は 2 になりました。
+        zh-CN: Container state 从 running 变为 terminated；Pod phase 不变但成为 NotReady，ReplicaSet READY 降为 2。
       whyItHappened:
         en: The Container process exited, but no action deleted or replaced the Pod API object.
         ja: Container プロセスは終了しましたが、Pod API オブジェクトを削除・置換する操作はありません。
@@ -209,7 +218,7 @@ steps:
       mode: diff-with-context
       entityIds:
         - api-object:namespaced:shop:Pod:api-a-old
-        - runtime-instance:shop:Pod:api-a-old:Container:api
+        - container-status:shop:Pod:api-a-old:Container:api
         - api-object:namespaced:shop:ReplicaSet:api-rs
     introducesTerms: []
     usesTerms: [pod, pod-uid, restart-count]
@@ -217,8 +226,34 @@ steps:
     worldPatch:
       operations:
         - op: patch-entity
-          entityId: runtime-instance:shop:Pod:api-a-old:Container:api
-          patch: { status: terminated }
+          entityId: container-status:shop:Pod:api-a-old:Container:api
+          patch:
+            status: terminated
+            data:
+              containerID: containerd://synthetic-api-a-old-01
+              restartCount: 0
+              ready: false
+              started: false
+              state:
+                kind: terminated
+                reason: Error
+                exitCode: 1
+                finishedAt: 2026-08-08T00:00:10Z
+                containerID: containerd://synthetic-api-a-old-01
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-a-old
+          patch:
+            status: not-ready
+            data:
+              conditions:
+                podScheduled: true
+                initialized: true
+                containersReady: false
+                ready: false
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          patch:
+            data: { specReplicas: 3, statusReplicas: 3, readyReplicas: 2 }
     viewPatch:
       view: control-flow
       cameraPresetId: control-flow
@@ -229,7 +264,7 @@ steps:
           emphasis: focused
           labelMode: full
           inspectorMode: expanded
-        - selector: { byIds: [runtime-instance:shop:Pod:api-a-old:Container:api] }
+        - selector: { byIds: [container-status:shop:Pod:api-a-old:Container:api] }
           visible: true
           emphasis: normal
           labelMode: short
@@ -237,8 +272,15 @@ steps:
     transition:
       cues:
         - type: container-failure
-          entityId: runtime-instance:shop:Pod:api-a-old:Container:api
+          entityId: container-status:shop:Pod:api-a-old:Container:api
           durationMs: 800
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          field: data.readyReplicas
+          from: 3
+          to: 2
+          delayMs: 520
+          durationMs: 480
 
   - id: container-restarted
     title:
@@ -246,31 +288,31 @@ steps:
       ja: kubelet が同じ Pod 内で Container を再起動する
       zh-CN: kubelet 在同一 Pod 内重启容器
     learningOutcome:
-      en: Verify a new Container generation while Pod UID and Node placement stay unchanged.
-      ja: Pod UID と Node 配置を保ったまま新しい Container 世代になることを確認する。
-      zh-CN: 验证容器代次更新，同时 Pod UID 和 Node 放置位置保持不变。
+      en: Verify a replacement runtime Container ID while Pod UID and Node placement stay unchanged.
+      ja: Pod UID と Node 配置を保ったままランタイム Container ID が置き換わることを確認する。
+      zh-CN: 验证运行时 Container ID 被替换，同时 Pod UID 和 Node 放置位置保持不变。
     narration:
-      en: kubelet maintains the Pods and Containers assigned to its Node. The api Container returns to running, restart count changes from 0 to 1, and generation becomes 2 while the Pod stays on worker-a with the same UID.
-      ja: kubelet はその Node に割り当てられた Pod と Container を維持します。api Container は running に戻り、再起動回数は 0 から 1、世代は 2 になりますが、Pod は同じ UID のまま worker-a に残ります。
-      zh-CN: kubelet 维护分配到本 Node 的 Pod 和容器。api 容器恢复为 running，重启次数从 0 变为 1，代次变为 2；Pod 仍以相同 UID 留在 worker-a。
+      en: kubelet starts a replacement runtime Container inside the same Pod. Container ID changes from ...-01 to ...-02 and restartCount becomes 1 while the Pod stays on worker-a with the same UID; Pod readiness and ReplicaSet READY return to 3.
+      ja: kubelet は同じ Pod 内で代替ランタイム Container を起動します。Container ID は ...-01 から ...-02、再起動回数は 0 から 1 に変わりますが、Pod は同じ UID のまま worker-a に残り、Ready に戻ります。
+      zh-CN: kubelet 在同一 Pod 内启动替代运行时容器。Container ID 从 ...-01 变为 ...-02，重启次数从 0 变为 1；Pod 仍以相同 UID 留在 worker-a，并恢复 Ready。
     teaching:
       whatChanged:
-        en: The same Container entity returned to running with restartCount 1 and generation 2.
-        ja: 同じ Container エンティティが restartCount 1・世代 2 で running に戻りました。
-        zh-CN: 同一个容器实体恢复为 running，restartCount 变为 1、代次变为 2。
+        en: The stable Container status slot now reports a new running runtime Container ID, restartCount 1, and the previous Error in lastState.
+        ja: 安定した Container 状態スロットは、新しい実行中 Container ID、restartCount 1、直前の Error を lastState に記録します。
+        zh-CN: 稳定的容器状态槽现在记录新的运行中 Container ID、restartCount 1，并在 lastState 中保留先前的 Error。
       whyItHappened:
         en: kubelet on worker-a maintains the assigned Pod and restarts its Container according to the Pod restart policy.
         ja: worker-a の kubelet が割り当て済み Pod を維持し、Pod の再起動ポリシーに従って Container を再起動したためです。
         zh-CN: worker-a 上的 kubelet 负责维护已分配的 Pod，并依据 Pod 重启策略重启其容器。
       takeaway:
-        en: A Container restart changes runtime counters, not the Pod UID or Node.
-        ja: Container 再起動で変わるのはランタイムカウンターであり、Pod UID や Node ではありません。
-        zh-CN: 容器重启改变的是运行时计数，而不是 Pod UID 或 Node。
+        en: A Container restart replaces the runtime Container ID inside the same Pod; it does not replace the Pod UID or Node assignment.
+        ja: Container 再起動では同じ Pod 内のランタイム Container ID が置き換わり、Pod UID と Node 配置は変わりません。
+        zh-CN: 容器重启会替换同一 Pod 内的运行时 Container ID，但不会替换 Pod UID 或 Node 分配。
     evidence:
       mode: diff-with-context
       entityIds:
         - api-object:namespaced:shop:Pod:api-a-old
-        - runtime-instance:shop:Pod:api-a-old:Container:api
+        - container-status:shop:Pod:api-a-old:Container:api
         - api-object:namespaced:shop:ReplicaSet:api-rs
     introducesTerms: [restart-policy]
     usesTerms: [pod, pod-uid, restart-count, node, kubernetes-api]
@@ -278,10 +320,37 @@ steps:
     worldPatch:
       operations:
         - op: patch-entity
-          entityId: runtime-instance:shop:Pod:api-a-old:Container:api
+          entityId: container-status:shop:Pod:api-a-old:Container:api
           patch:
             status: running
-            data: { restartCount: 1, instanceGeneration: 2 }
+            data:
+              containerID: containerd://synthetic-api-a-old-02
+              restartCount: 1
+              ready: true
+              started: true
+              state:
+                kind: running
+                startedAt: 2026-08-08T00:00:12Z
+              lastState:
+                kind: terminated
+                reason: Error
+                exitCode: 1
+                finishedAt: 2026-08-08T00:00:10Z
+                containerID: containerd://synthetic-api-a-old-01
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-a-old
+          patch:
+            status: ready
+            data:
+              conditions:
+                podScheduled: true
+                initialized: true
+                containersReady: true
+                ready: true
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          patch:
+            data: { specReplicas: 3, statusReplicas: 3, readyReplicas: 3 }
     viewPatch:
       view: control-flow
       cameraPresetId: control-flow
@@ -296,47 +365,44 @@ steps:
           visible: true
           emphasis: normal
           labelMode: full
-        - selector: { byIds: [runtime-instance:shop:Pod:api-a-old:Container:api] }
+        - selector: { byIds: [container-status:shop:Pod:api-a-old:Container:api] }
           visible: true
           emphasis: normal
           labelMode: short
       relationRules:
         - byIds: [kubelet-a-reports-api-server, api-exposes-api-a-old]
           visible: true
-          emphasis: focused
+          emphasis: dimmed
       activeRoutes:
         - id: route-kubelet-a-restart
-          semantic: control
-          label: { en: observe and restart, ja: 監視して再起動, zh-CN: 观察并重启 }
+          semantic: node-runtime
+          label: { en: Local kubelet restart, ja: ローカル kubelet 再起動, zh-CN: kubelet 本机重启 }
           persistAfterAnimation: true
           numbered: true
           hops:
-            - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-              fromAnchor: control
-              toEntityId: runtime-component:node:worker-a:Kubelet:kubelet
-              toAnchor: control
-              label: { en: observe assignment, ja: 割り当てを監視, zh-CN: 观察分配 }
             - fromEntityId: runtime-component:node:worker-a:Kubelet:kubelet
               fromAnchor: control
-              toEntityId: runtime-instance:shop:Pod:api-a-old:Container:api
+              toEntityId: container-status:shop:Pod:api-a-old:Container:api
               toAnchor: control
               label: { en: restart locally, ja: ローカルで再起動, zh-CN: 在本机重启 }
     transition:
       cues:
-        - type: reconcile-pulse
-          fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-          toEntityId: runtime-instance:shop:Pod:api-a-old:Container:api
+        - type: node-runtime-restart
           routeId: route-kubelet-a-restart
+          entityId: container-status:shop:Pod:api-a-old:Container:api
           durationMs: 700
-        - type: container-restart
-          entityId: runtime-instance:shop:Pod:api-a-old:Container:api
-          delayMs: 520
-          durationMs: 760
         - type: counter-change
-          entityId: runtime-instance:shop:Pod:api-a-old:Container:api
+          entityId: container-status:shop:Pod:api-a-old:Container:api
           field: data.restartCount
           from: 0
           to: 1
+          delayMs: 760
+          durationMs: 520
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          field: data.readyReplicas
+          from: 2
+          to: 3
           delayMs: 760
           durationMs: 520
 
@@ -350,14 +416,14 @@ steps:
       ja: 明示的な Pod 削除要求を、先ほどの Container プロセス終了と区別する。
       zh-CN: 区分明确的 Pod 删除请求与之前的容器进程退出。
     narration:
-      en: For comparison, a synthetic kubectl actor intentionally requests Pod deletion through the API Server. The old Pod, its Container, and their relations are removed, leaving desired 3, current 2, ready 2.
-      ja: 比較のため、合成 kubectl 操作者が API Server 経由で意図的に Pod 削除を要求します。古い Pod・Container・関係が削除され、ReplicaSet は desired 3・current 2・ready 2 になります。
-      zh-CN: 为了对比，虚构的 kubectl 操作者通过 API Server 主动请求删除 Pod。旧 Pod、其容器及相关关系被移除，ReplicaSet 变为期望 3、当前 2、就绪 2。
+      en: For comparison, a synthetic kubectl actor intentionally requests Pod deletion through the API Server. The old Pod, its Container status slot, and their relations are removed, leaving SPEC 3, OBSERVED 2, READY 2.
+      ja: 比較のため、合成 kubectl 操作者が API Server 経由で意図的に Pod 削除を要求します。古い Pod・Container 状態スロット・関係が削除され、ReplicaSet は SPEC 3・OBSERVED 2・READY 2 になります。
+      zh-CN: 为了对比，虚构的 kubectl 操作者通过 API Server 主动请求删除 Pod。旧 Pod、其容器状态槽及相关关系被移除，ReplicaSet 变为 SPEC 3、OBSERVED 2、READY 2。
     teaching:
       whatChanged:
-        en: The old Pod object and Container were removed, and ReplicaSet current and ready counts fell from 3 to 2.
-        ja: 古い Pod オブジェクトと Container が削除され、ReplicaSet の current と ready は 3 から 2 に下がりました。
-        zh-CN: 旧 Pod 对象和容器被移除，ReplicaSet 的当前与就绪计数从 3 降为 2。
+        en: The old Pod object and Container status slot were removed; ReplicaSet OBSERVED and READY counts fell from 3 to 2.
+        ja: 古い Pod オブジェクトと Container 状態スロットが削除され、ReplicaSet の OBSERVED と READY は 3 から 2 に下がりました。
+        zh-CN: 旧 Pod 对象和容器状态槽被移除，ReplicaSet 的 OBSERVED 与 READY 计数从 3 降为 2。
       whyItHappened:
         en: A deliberate kubectl request reached the API Server; this deletion was not caused by the earlier Container exit.
         ja: 意図的な kubectl 要求が API Server に届いたためで、先ほどの Container 終了が削除を起こしたわけではありません。
@@ -370,7 +436,7 @@ steps:
       mode: diff-with-context
       entityIds:
         - api-object:namespaced:shop:Pod:api-a-old
-        - runtime-instance:shop:Pod:api-a-old:Container:api
+        - container-status:shop:Pod:api-a-old:Container:api
         - api-object:namespaced:shop:ReplicaSet:api-rs
     introducesTerms: [desired-state]
     usesTerms: [pod, pod-uid, replicaset, kubernetes-api]
@@ -381,12 +447,12 @@ steps:
         - { op: remove-relation, relationId: scheduled-api-a-old }
         - { op: remove-relation, relationId: contains-api-a-old-container-api }
         - { op: remove-relation, relationId: api-exposes-api-a-old }
-        - { op: remove-entity, entityId: runtime-instance:shop:Pod:api-a-old:Container:api }
+        - { op: remove-entity, entityId: container-status:shop:Pod:api-a-old:Container:api }
         - { op: remove-entity, entityId: api-object:namespaced:shop:Pod:api-a-old }
         - op: patch-entity
           entityId: api-object:namespaced:shop:ReplicaSet:api-rs
           patch:
-            data: { desiredReplicas: 3, currentReplicas: 2, readyReplicas: 2 }
+            data: { specReplicas: 3, statusReplicas: 2, readyReplicas: 2 }
     viewPatch:
       view: control-flow
       cameraPresetId: control-flow
@@ -438,7 +504,7 @@ steps:
           durationMs: 720
         - type: counter-change
           entityId: api-object:namespaced:shop:ReplicaSet:api-rs
-          field: data.currentReplicas
+          field: data.statusReplicas
           from: 3
           to: 2
           delayMs: 760
@@ -461,14 +527,14 @@ steps:
       ja: controller が API を介して不足を観測し、新しい Pod ID を作る流れを追う。
       zh-CN: 沿着 API 中介路径，观察控制器发现缺口并创建新 Pod 身份。
     narration:
-      en: The ReplicaSet controller running in Controller Manager observes desired 3 versus current 2 through API state and creates api-d-new. The new Pod has UID synthetic-uid-new-d1, phase Pending, no nodeName, and a waiting Container; current returns to 3 while ready remains 2.
-      ja: Controller Manager 内の ReplicaSet controller は API 状態から desired 3 と current 2 の差を観測し、api-d-new を作成します。新しい Pod は UID synthetic-uid-new-d1、phase Pending、nodeName なし、Container waiting で、current は 3 に戻り ready は 2 のままです。
-      zh-CN: Controller Manager 中的 ReplicaSet 控制器通过 API 状态观察到期望 3 与当前 2 的缺口，并创建 api-d-new。新 Pod 的 UID 为 synthetic-uid-new-d1，阶段为 Pending，没有 nodeName，容器处于 waiting；当前副本恢复到 3，就绪仍为 2。
+      en: The ReplicaSet controller observes SPEC 3 versus OBSERVED 2 through API state and creates api-d-new. The new Pod has UID synthetic-uid-new-d1, phase Pending, no nodeName, and a waiting Container status; OBSERVED returns to 3 while READY remains 2.
+      ja: Controller Manager 内の ReplicaSet controller は API 状態から SPEC 3 と OBSERVED 2 の差を観測し、api-d-new を作成します。新しい Pod は UID synthetic-uid-new-d1、phase Pending、nodeName なし、Container 状態は waiting で、OBSERVED は 3 に戻り READY は 2 のままです。
+      zh-CN: Controller Manager 中的 ReplicaSet 控制器通过 API 状态观察到 SPEC 3 与 OBSERVED 2 的缺口，并创建 api-d-new。新 Pod 的 UID 为 synthetic-uid-new-d1，阶段为 Pending，没有 nodeName，容器状态为 waiting；OBSERVED 恢复到 3，READY 仍为 2。
     teaching:
       whatChanged:
-        en: A new Pending Pod and waiting Container were created, and ReplicaSet current returned from 2 to 3.
-        ja: 新しい Pending Pod と waiting Container が作られ、ReplicaSet current は 2 から 3 に戻りました。
-        zh-CN: 新的 Pending Pod 与 waiting 容器被创建，ReplicaSet 当前副本从 2 恢复到 3。
+        en: A new Pending, unscheduled, NotReady Pod and waiting Container status were created; ReplicaSet OBSERVED returned from 2 to 3.
+        ja: 新しい Pending・未スケジュール・NotReady Pod と waiting Container 状態が作られ、ReplicaSet OBSERVED は 2 から 3 に戻りました。
+        zh-CN: 新的 Pending、未调度、NotReady Pod 与 waiting 容器状态被创建，ReplicaSet OBSERVED 从 2 恢复到 3。
       whyItHappened:
         en: The ReplicaSet controller observed a replica deficit through the API Server and created a new Pod API object to restore desired count.
         ja: ReplicaSet controller が API Server 経由でレプリカ不足を観測し、desired 数を戻すため新しい Pod API オブジェクトを作成したためです。
@@ -482,7 +548,7 @@ steps:
       entityIds:
         - api-object:namespaced:shop:ReplicaSet:api-rs
         - api-object:namespaced:shop:Pod:api-d-new
-        - runtime-instance:shop:Pod:api-d-new:Container:api
+        - container-status:shop:Pod:api-d-new:Container:api
     introducesTerms: []
     usesTerms: [controller, replicaset, desired-state, pod, pod-uid, kubernetes-api]
     sourceIds: [k8s-components, k8s-api, k8s-replicasets, k8s-pods, k8s-pod-lifecycle]
@@ -497,7 +563,15 @@ steps:
             namespace: shop
             labels: { app.kubernetes.io/name: api }
             status: pending
-            data: { uid: synthetic-uid-new-d1, phase: Pending, restartPolicy: Always }
+            data:
+              uid: synthetic-uid-new-d1
+              phase: Pending
+              restartPolicy: Always
+              conditions:
+                podScheduled: false
+                initialized: true
+                containersReady: false
+                ready: false
             title: { en: api-7f8d9-d Pod, ja: api-7f8d9-d Pod, zh-CN: api-7f8d9-d Pod }
             summary:
               en: Newly created replacement Pod awaiting Node assignment.
@@ -507,23 +581,28 @@ steps:
             visual: { archetype: pod, size: md, group: api }
         - op: add-entity
           entity:
-            id: runtime-instance:shop:Pod:api-d-new:Container:api
-            category: runtime-instance
+            id: container-status:shop:Pod:api-d-new:Container:api
+            category: runtime-status
             kind: Container
             name: api
             namespace: shop
             status: waiting
             data:
               podId: api-object:namespaced:shop:Pod:api-d-new
+              name: api
               image: registry.example.invalid/shop/api:v1
               restartCount: 0
-              instanceGeneration: 1
+              ready: false
+              started: false
+              state:
+                kind: waiting
+                reason: Pending
             title:
               en: api Container · api-7f8d9-d
               ja: api Container · api-7f8d9-d
               zh-CN: api 容器 · api-7f8d9-d
             summary:
-              en: Waiting Container instance inside the Pending replacement Pod.
+              en: Container status slot waiting for kubelet to create a runtime Container.
               ja: Pending の置換 Pod 内で待機する Container インスタンスです。
               zh-CN: Pending 替换 Pod 内等待中的容器实例。
             sourceIds: [k8s-pods, k8s-pod-lifecycle]
@@ -543,7 +622,7 @@ steps:
             id: contains-api-d-new-container-api
             type: contains-runtime
             from: api-object:namespaced:shop:Pod:api-d-new
-            to: runtime-instance:shop:Pod:api-d-new:Container:api
+            to: container-status:shop:Pod:api-d-new:Container:api
             directed: true
             semantic: composition
             title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }
@@ -566,7 +645,7 @@ steps:
         - op: patch-entity
           entityId: api-object:namespaced:shop:ReplicaSet:api-rs
           patch:
-            data: { desiredReplicas: 3, currentReplicas: 3, readyReplicas: 2 }
+            data: { specReplicas: 3, statusReplicas: 3, readyReplicas: 2 }
     viewPatch:
       view: control-flow
       cameraPresetId: control-flow
@@ -585,7 +664,7 @@ steps:
           visible: true
           emphasis: normal
           labelMode: full
-        - selector: { byIds: [runtime-instance:shop:Pod:api-d-new:Container:api] }
+        - selector: { byIds: [container-status:shop:Pod:api-d-new:Container:api] }
           visible: true
           emphasis: normal
           labelMode: none
@@ -624,7 +703,7 @@ steps:
           durationMs: 700
         - type: counter-change
           entityId: api-object:namespaced:shop:ReplicaSet:api-rs
-          field: data.currentReplicas
+          field: data.statusReplicas
           from: 2
           to: 3
           delayMs: 760
@@ -664,7 +743,7 @@ steps:
       mode: snapshot
       entityIds:
         - api-object:namespaced:shop:Pod:api-d-new
-        - runtime-instance:shop:Pod:api-d-new:Container:api
+        - container-status:shop:Pod:api-d-new:Container:api
         - api-object:namespaced:shop:ReplicaSet:api-rs
     introducesTerms: []
     usesTerms: [pod, pod-uid, node, replicaset]
@@ -680,7 +759,7 @@ steps:
           emphasis: focused
           labelMode: full
           inspectorMode: expanded
-        - selector: { byIds: [runtime-instance:shop:Pod:api-d-new:Container:api] }
+        - selector: { byIds: [container-status:shop:Pod:api-d-new:Container:api] }
           visible: true
           emphasis: normal
           labelMode: short
@@ -729,7 +808,7 @@ steps:
       mode: diff-with-context
       entityIds:
         - api-object:namespaced:shop:Pod:api-d-new
-        - runtime-instance:shop:Pod:api-d-new:Container:api
+        - container-status:shop:Pod:api-d-new:Container:api
         - api-object:namespaced:shop:ReplicaSet:api-rs
     introducesTerms: [scheduling, binding]
     usesTerms: [scheduler, pod, node, kubernetes-api, replicaset]
@@ -739,7 +818,13 @@ steps:
         - op: patch-entity
           entityId: api-object:namespaced:shop:Pod:api-d-new
           patch:
-            data: { nodeName: worker-c }
+            data:
+              nodeName: worker-c
+              conditions:
+                podScheduled: true
+                initialized: true
+                containersReady: false
+                ready: false
         - op: add-relation
           relation:
             id: scheduled-api-d-new
@@ -767,7 +852,7 @@ steps:
           visible: true
           emphasis: normal
           labelMode: full
-        - selector: { byIds: [runtime-instance:shop:Pod:api-d-new:Container:api] }
+        - selector: { byIds: [container-status:shop:Pod:api-d-new:Container:api] }
           visible: true
           emphasis: normal
           labelMode: short
@@ -844,7 +929,7 @@ steps:
       mode: diff-with-context
       entityIds:
         - api-object:namespaced:shop:Pod:api-d-new
-        - runtime-instance:shop:Pod:api-d-new:Container:api
+        - container-status:shop:Pod:api-d-new:Container:api
         - api-object:namespaced:shop:ReplicaSet:api-rs
     introducesTerms: []
     usesTerms: [pod, node, scheduler, kubernetes-api, replicaset]
@@ -852,17 +937,32 @@ steps:
     worldPatch:
       operations:
         - op: patch-entity
-          entityId: runtime-instance:shop:Pod:api-d-new:Container:api
-          patch: { status: running }
+          entityId: container-status:shop:Pod:api-d-new:Container:api
+          patch:
+            status: running
+            data:
+              containerID: containerd://synthetic-api-d-new-01
+              restartCount: 0
+              ready: true
+              started: true
+              state:
+                kind: running
+                startedAt: 2026-08-08T00:00:30Z
         - op: patch-entity
           entityId: api-object:namespaced:shop:Pod:api-d-new
           patch:
             status: ready
-            data: { phase: Running }
+            data:
+              phase: Running
+              conditions:
+                podScheduled: true
+                initialized: true
+                containersReady: true
+                ready: true
         - op: patch-entity
           entityId: api-object:namespaced:shop:ReplicaSet:api-rs
           patch:
-            data: { desiredReplicas: 3, currentReplicas: 3, readyReplicas: 3 }
+            data: { specReplicas: 3, statusReplicas: 3, readyReplicas: 3 }
     viewPatch:
       view: control-flow
       cameraPresetId: control-flow
@@ -877,7 +977,7 @@ steps:
             byIds:
               - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
               - runtime-component:node:worker-c:Kubelet:kubelet
-              - runtime-instance:shop:Pod:api-d-new:Container:api
+              - container-status:shop:Pod:api-d-new:Container:api
           visible: true
           emphasis: normal
           labelMode: short
@@ -899,18 +999,18 @@ steps:
               label: { en: observe assignment, ja: 割り当てを監視, zh-CN: 观察分配 }
             - fromEntityId: runtime-component:node:worker-c:Kubelet:kubelet
               fromAnchor: control
-              toEntityId: runtime-instance:shop:Pod:api-d-new:Container:api
+              toEntityId: container-status:shop:Pod:api-d-new:Container:api
               toAnchor: control
               label: { en: start locally, ja: ローカルで起動, zh-CN: 在本机启动 }
     transition:
       cues:
         - type: reconcile-pulse
           fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-          toEntityId: runtime-instance:shop:Pod:api-d-new:Container:api
+          toEntityId: container-status:shop:Pod:api-d-new:Container:api
           routeId: route-kubelet-c-start
           durationMs: 720
         - type: container-start
-          entityId: runtime-instance:shop:Pod:api-d-new:Container:api
+          entityId: container-status:shop:Pod:api-d-new:Container:api
           delayMs: 540
           durationMs: 680
         - type: counter-change
@@ -931,9 +1031,9 @@ steps:
       ja: コンパイル済み snapshot と diff から再起動と置換を説明する。
       zh-CN: 根据编译后的快照与差异解释重启和替换。
     narration:
-      en: The Container restart kept api-a-old, synthetic-uid-old-a1, and worker-a while restart count became 1 and generation became 2. Pod replacement removed that identity, created api-d-new with synthetic-uid-new-d1, scheduled it to worker-c, and started a new Container at restart count 0.
-      ja: Container 再起動では api-a-old・synthetic-uid-old-a1・worker-a を保ち、再起動回数は 1、世代は 2 になりました。Pod 置換ではその ID を削除し synthetic-uid-new-d1 の api-d-new を作成、worker-c に配置し、再起動回数 0 の新しい Container を起動しました。
-      zh-CN: 容器重启保留了 api-a-old、synthetic-uid-old-a1 和 worker-a，同时重启次数变为 1、代次变为 2。Pod 替换移除了该身份，创建 UID 为 synthetic-uid-new-d1 的 api-d-new，将其调度到 worker-c，并以重启次数 0 启动新容器。
+      en: The Container restart kept api-a-old, synthetic-uid-old-a1, and worker-a while Container ID changed from ...-01 to ...-02 and restart count became 1. Pod replacement removed that Pod identity, created api-d-new with synthetic-uid-new-d1, scheduled it to worker-c, and started Container ID ...-d-new-01 at restart count 0.
+      ja: Container 再起動では api-a-old・synthetic-uid-old-a1・worker-a を保ち、Container ID は ...-01 から ...-02、再起動回数は 1 になりました。Pod 置換ではその Pod ID を削除し synthetic-uid-new-d1 の api-d-new を作成、worker-c に配置し、Container ID ...-d-new-01 を再起動回数 0 で起動しました。
+      zh-CN: 容器重启保留了 api-a-old、synthetic-uid-old-a1 和 worker-a，同时 Container ID 从 ...-01 变为 ...-02，重启次数变为 1。Pod 替换移除了原 Pod 身份，创建 UID 为 synthetic-uid-new-d1 的 api-d-new，将其调度到 worker-c，并以重启次数 0 启动 Container ID ...-d-new-01。
     teaching:
       whatChanged:
         en: No new fact changed; the comparison is derived from the restart and replacement snapshots.
@@ -951,7 +1051,7 @@ steps:
       mode: snapshot
       entityIds:
         - api-object:namespaced:shop:Pod:api-d-new
-        - runtime-instance:shop:Pod:api-d-new:Container:api
+        - container-status:shop:Pod:api-d-new:Container:api
         - api-object:namespaced:shop:ReplicaSet:api-rs
     introducesTerms: []
     usesTerms: [pod, pod-uid, restart-count, node, scheduling]
