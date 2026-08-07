@@ -290,23 +290,6 @@ function buildComparison(
           'zh-CN': '删除旧对象并创建新对象',
         },
       },
-      {
-        property: {
-          en: 'Local ephemeral data',
-          ja: 'ローカル一時データ',
-          'zh-CN': '本地临时数据',
-        },
-        containerRestart: {
-          en: 'same Pod lifecycle only',
-          ja: '同じ Pod ライフサイクル内のみ',
-          'zh-CN': '仅限同一 Pod 生命周期',
-        },
-        podReplacement: {
-          en: 'not automatically preserved',
-          ja: '自動では保持されない',
-          'zh-CN': '不会自动保留',
-        },
-      },
     ],
   });
 }

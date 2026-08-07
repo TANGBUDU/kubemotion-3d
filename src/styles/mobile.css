@@ -356,11 +356,6 @@
     font-size: 8.5px;
     line-height: 1.15;
   }
-
-  .compare-card dl > div:first-child,
-  .compare-card dl > div:last-child {
-    display: none;
-  }
 }
 
 @media (max-width: 380px) {

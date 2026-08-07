@@ -28,7 +28,7 @@ export function CompareView({ model, locale }: CompareViewProps) {
             </span>
             <b>→</b>
             <span className="mini-pod">
-              <i className="new-generation" />
+              <i className="replacement-runtime" />
               <i />
             </span>
           </div>
