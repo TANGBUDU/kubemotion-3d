@@ -1,0 +1,655 @@
+schemaVersion: 1
+id: demo-shop
+title: { en: Demo shop, ja: デモショップ, zh-CN: 演示商店 }
+description:
+  {
+    en: A fully synthetic cluster for learning.,
+    ja: 学習用の完全な合成クラスターです。,
+    zh-CN: 完全虚构的教学集群。,
+  }
+generatedAt: '2026-08-07T00:00:00Z'
+synthetic: true
+sourceIds: [k8s-cluster-architecture, k8s-components, k8s-pods, k8s-services]
+entities:
+  - id: infrastructure:cluster:global:Cluster:demo-shop
+    category: infrastructure
+    kind: Cluster
+    name: demo-shop
+    scope: cluster
+    status: healthy
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: false,
+        isConfiguration: false,
+        isRuntime: false,
+      }
+    title: { en: Demo cluster, ja: デモクラスター, zh-CN: 演示集群 }
+    summary: { en: Synthetic teaching boundary., ja: 合成の学習境界です。, zh-CN: 虚构的教学边界。 }
+    sourceIds: [k8s-cluster-architecture]
+    visual: { archetype: cluster, size: xl }
+  - id: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    category: runtime-component
+    kind: KubeAPIServer
+    name: kube-apiserver
+    scope: cluster
+    status: healthy
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: true,
+        isConfiguration: false,
+        isRuntime: true,
+      }
+    title: { en: API server, ja: API サーバー, zh-CN: API Server }
+    summary:
+      {
+        en: Exposes the Kubernetes API.,
+        ja: Kubernetes API を公開します。,
+        zh-CN: 对外提供 Kubernetes API。,
+      }
+    sourceIds: [k8s-components, k8s-api]
+    visual: { archetype: control-plane, size: lg, group: control-plane }
+  - id: runtime-component:cluster:global:Etcd:etcd
+    category: runtime-component
+    kind: Etcd
+    name: etcd
+    scope: cluster
+    status: healthy
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: true,
+        isConfiguration: false,
+        isRuntime: true,
+      }
+    title: { en: etcd, ja: etcd, zh-CN: etcd }
+    summary:
+      {
+        en: Stores Kubernetes API data.,
+        ja: Kubernetes API データを保存します。,
+        zh-CN: 保存 Kubernetes API 数据。,
+      }
+    sourceIds: [k8s-components]
+    visual: { archetype: control-plane, size: md, group: control-plane }
+  - id: runtime-component:cluster:global:Scheduler:kube-scheduler
+    category: runtime-component
+    kind: Scheduler
+    name: kube-scheduler
+    scope: cluster
+    status: healthy
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: true,
+        isConfiguration: false,
+        isRuntime: true,
+      }
+    title: { en: Scheduler, ja: スケジューラー, zh-CN: Scheduler }
+    summary:
+      {
+        en: Selects Nodes for unscheduled Pods.,
+        ja: 未配置 Pod の Node を選びます。,
+        zh-CN: 为未调度 Pod 选择 Node。,
+      }
+    sourceIds: [k8s-components]
+    visual: { archetype: control-plane, size: md, group: control-plane }
+  - id: runtime-component:cluster:global:ControllerManager:kube-controller-manager
+    category: runtime-component
+    kind: ControllerManager
+    name: kube-controller-manager
+    scope: cluster
+    status: healthy
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: true,
+        isConfiguration: false,
+        isRuntime: true,
+      }
+    title: { en: Controller manager, ja: コントローラーマネージャー, zh-CN: Controller Manager }
+    summary:
+      {
+        en: Runs core reconciliation loops.,
+        ja: コア制御ループを実行します。,
+        zh-CN: 运行核心协调循环。,
+      }
+    sourceIds: [k8s-components]
+    visual: { archetype: control-plane, size: md, group: control-plane }
+  - &node
+    id: infrastructure:cluster:global:Node:worker-a
+    category: infrastructure
+    kind: Node
+    name: worker-a
+    scope: cluster
+    status: ready
+    semantics:
+      {
+        participatesInDataPath: true,
+        participatesInControlPath: true,
+        isConfiguration: false,
+        isRuntime: false,
+      }
+    title: { en: worker-a, ja: worker-a, zh-CN: worker-a }
+    summary:
+      {
+        en: Worker machine for assigned Pods.,
+        ja: Pod が割り当てられる worker Node です。,
+        zh-CN: 承载已调度 Pod 的工作 Node。,
+      }
+    sourceIds: [k8s-nodes]
+    visual: { archetype: node, size: xl }
+  - <<: *node
+    id: infrastructure:cluster:global:Node:worker-b
+    name: worker-b
+    title: { en: worker-b, ja: worker-b, zh-CN: worker-b }
+  - <<: *node
+    id: infrastructure:cluster:global:Node:worker-c
+    name: worker-c
+    title: { en: worker-c, ja: worker-c, zh-CN: worker-c }
+  - &kubelet
+    id: runtime-component:node:worker-a:Kubelet:kubelet
+    category: runtime-component
+    kind: Kubelet
+    name: kubelet
+    scope: node
+    nodeName: worker-a
+    status: healthy
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: true,
+        isConfiguration: false,
+        isRuntime: true,
+      }
+    title: { en: kubelet · worker-a, ja: kubelet · worker-a, zh-CN: kubelet · worker-a }
+    summary:
+      {
+        en: Ensures assigned Pods run on this Node.,
+        ja: この Node の Pod を実行状態に保ちます。,
+        zh-CN: 确保分配到该 Node 的 Pod 运行。,
+      }
+    sourceIds: [k8s-components]
+    visual: { archetype: runtime, size: sm }
+  - <<: *kubelet
+    id: runtime-component:node:worker-b:Kubelet:kubelet
+    nodeName: worker-b
+    title: { en: kubelet · worker-b, ja: kubelet · worker-b, zh-CN: kubelet · worker-b }
+  - <<: *kubelet
+    id: runtime-component:node:worker-c:Kubelet:kubelet
+    nodeName: worker-c
+    title: { en: kubelet · worker-c, ja: kubelet · worker-c, zh-CN: kubelet · worker-c }
+  - &runtime
+    id: runtime-component:node:worker-a:ContainerRuntime:runtime
+    category: runtime-component
+    kind: ContainerRuntime
+    name: runtime
+    scope: node
+    nodeName: worker-a
+    status: healthy
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: true,
+        isConfiguration: false,
+        isRuntime: true,
+      }
+    title:
+      {
+        en: Container runtime · worker-a,
+        ja: コンテナランタイム · worker-a,
+        zh-CN: 容器运行时 · worker-a,
+      }
+    summary:
+      {
+        en: Starts and manages containers.,
+        ja: コンテナを起動し管理します。,
+        zh-CN: 启动并管理容器。,
+      }
+    sourceIds: [k8s-cri]
+    visual: { archetype: runtime, size: sm }
+  - <<: *runtime
+    id: runtime-component:node:worker-b:ContainerRuntime:runtime
+    nodeName: worker-b
+    title:
+      {
+        en: Container runtime · worker-b,
+        ja: コンテナランタイム · worker-b,
+        zh-CN: 容器运行时 · worker-b,
+      }
+  - <<: *runtime
+    id: runtime-component:node:worker-c:ContainerRuntime:runtime
+    nodeName: worker-c
+    title:
+      {
+        en: Container runtime · worker-c,
+        ja: コンテナランタイム · worker-c,
+        zh-CN: 容器运行时 · worker-c,
+      }
+  - &namespace
+    id: api-object:cluster:global:Namespace:shop
+    category: api-object
+    kind: Namespace
+    name: shop
+    scope: cluster
+    status: healthy
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: false,
+        isConfiguration: true,
+        isRuntime: false,
+      }
+    title: { en: shop Namespace, ja: shop Namespace, zh-CN: shop Namespace }
+    summary:
+      {
+        en: Logical scope for the demo workload.,
+        ja: デモワークロードの論理スコープです。,
+        zh-CN: 演示工作负载的逻辑作用域。,
+      }
+    sourceIds: [k8s-namespaces]
+    visual: { archetype: namespace, size: xl }
+  - <<: *namespace
+    id: api-object:cluster:global:Namespace:kube-system
+    name: kube-system
+    title: { en: kube-system Namespace, ja: kube-system Namespace, zh-CN: kube-system Namespace }
+    summary:
+      {
+        en: Logical scope for cluster support workloads.,
+        ja: クラスター補助ワークロードの論理スコープです。,
+        zh-CN: 集群支持工作负载的逻辑作用域。,
+      }
+  - &deployment
+    id: api-object:namespaced:shop:Deployment:web
+    category: api-object
+    kind: Deployment
+    name: web
+    scope: namespaced
+    namespace: shop
+    labels: { app.kubernetes.io/name: web }
+    status: ready
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: true,
+        isConfiguration: true,
+        isRuntime: false,
+      }
+    title: { en: web Deployment, ja: web Deployment, zh-CN: web Deployment }
+    summary:
+      {
+        en: Declares replaceable web replicas.,
+        ja: 交換可能な web レプリカを宣言します。,
+        zh-CN: 声明可替换的 web 副本。,
+      }
+    sourceIds: [k8s-deployments]
+    visual: { archetype: deployment, size: md }
+  - <<: *deployment
+    id: api-object:namespaced:shop:Deployment:api
+    name: api
+    labels: { app.kubernetes.io/name: api }
+    title: { en: api Deployment, ja: api Deployment, zh-CN: api Deployment }
+  - <<: *deployment
+    id: api-object:namespaced:shop:Deployment:postgres
+    name: postgres
+    labels: { app.kubernetes.io/name: postgres }
+    title: { en: postgres Deployment, ja: postgres Deployment, zh-CN: postgres Deployment }
+  - &replicaset
+    id: api-object:namespaced:shop:ReplicaSet:web-rs
+    category: api-object
+    kind: ReplicaSet
+    name: web-rs
+    scope: namespaced
+    namespace: shop
+    labels: { app.kubernetes.io/name: web }
+    status: ready
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: true,
+        isConfiguration: true,
+        isRuntime: false,
+      }
+    title: { en: web ReplicaSet, ja: web ReplicaSet, zh-CN: web ReplicaSet }
+    summary:
+      {
+        en: Maintains web Pod replicas.,
+        ja: web Pod レプリカを維持します。,
+        zh-CN: 维持 web Pod 副本。,
+      }
+    sourceIds: [k8s-replicasets]
+    visual: { archetype: replicaset, size: sm }
+  - <<: *replicaset
+    id: api-object:namespaced:shop:ReplicaSet:api-rs
+    name: api-rs
+    labels: { app.kubernetes.io/name: api }
+    title: { en: api ReplicaSet, ja: api ReplicaSet, zh-CN: api ReplicaSet }
+  - <<: *replicaset
+    id: api-object:namespaced:shop:ReplicaSet:postgres-rs
+    name: postgres-rs
+    labels: { app.kubernetes.io/name: postgres }
+    title: { en: postgres ReplicaSet, ja: postgres ReplicaSet, zh-CN: postgres ReplicaSet }
+  - &pod
+    id: api-object:namespaced:shop:Pod:web-a
+    category: api-object
+    kind: Pod
+    name: web-a
+    scope: namespaced
+    namespace: shop
+    nodeName: worker-a
+    labels: { app.kubernetes.io/name: web }
+    status: ready
+    semantics:
+      {
+        participatesInDataPath: true,
+        participatesInControlPath: true,
+        isConfiguration: false,
+        isRuntime: true,
+      }
+    title: { en: web-a Pod, ja: web-a Pod, zh-CN: web-a Pod }
+    summary: { en: Running web Pod., ja: 実行中の web Pod です。, zh-CN: 运行中的 web Pod。 }
+    sourceIds: [k8s-pods]
+    visual: { archetype: pod, size: md, group: web }
+    data: { uid: synthetic-uid-web-a, restartCount: 0 }
+  - <<: *pod
+    id: api-object:namespaced:shop:Pod:web-b
+    name: web-b
+    nodeName: worker-b
+    title: { en: web-b Pod, ja: web-b Pod, zh-CN: web-b Pod }
+    data: { uid: synthetic-uid-web-b, restartCount: 0 }
+  - <<: *pod
+    id: api-object:namespaced:shop:Pod:api-a
+    name: api-a
+    nodeName: worker-a
+    labels: { app.kubernetes.io/name: api }
+    title: { en: api-a Pod, ja: api-a Pod, zh-CN: api-a Pod }
+    visual: { archetype: pod, size: md, group: api }
+    data: { uid: synthetic-uid-a1, restartCount: 0 }
+  - <<: *pod
+    id: api-object:namespaced:shop:Pod:api-b
+    name: api-b
+    nodeName: worker-b
+    labels: { app.kubernetes.io/name: api }
+    title: { en: api-b Pod, ja: api-b Pod, zh-CN: api-b Pod }
+    visual: { archetype: pod, size: md, group: api }
+    data: { uid: synthetic-uid-b1, restartCount: 0 }
+  - <<: *pod
+    id: api-object:namespaced:shop:Pod:api-c
+    name: api-c
+    nodeName: worker-c
+    labels: { app.kubernetes.io/name: api }
+    title: { en: api-c Pod, ja: api-c Pod, zh-CN: api-c Pod }
+    visual: { archetype: pod, size: md, group: api }
+    data: { uid: synthetic-uid-c1, restartCount: 0 }
+  - <<: *pod
+    id: api-object:namespaced:shop:Pod:postgres-a
+    name: postgres-a
+    nodeName: worker-c
+    labels: { app.kubernetes.io/name: postgres }
+    title: { en: postgres-a Pod, ja: postgres-a Pod, zh-CN: postgres-a Pod }
+    visual: { archetype: pod, size: md, group: postgres }
+    data: { uid: synthetic-uid-db-a, restartCount: 0 }
+  - &service
+    id: api-object:namespaced:shop:Service:web
+    category: api-object
+    kind: Service
+    name: web
+    scope: namespaced
+    namespace: shop
+    status: ready
+    semantics:
+      {
+        participatesInDataPath: true,
+        participatesInControlPath: false,
+        isConfiguration: false,
+        isRuntime: false,
+      }
+    title: { en: web Service, ja: web Service, zh-CN: web Service }
+    summary:
+      {
+        en: Stable virtual access point for web backends.,
+        ja: web バックエンドへの安定した仮想入口です。,
+        zh-CN: web 后端的稳定虚拟入口。,
+      }
+    sourceIds: [k8s-services]
+    visual: { archetype: service, size: md }
+    data: { selector: 'app.kubernetes.io/name=web' }
+  - <<: *service
+    id: api-object:namespaced:shop:Service:api
+    name: api
+    title: { en: api Service, ja: api Service, zh-CN: api Service }
+    summary:
+      {
+        en: Stable virtual access point for api backends.,
+        ja: api バックエンドへの安定した仮想入口です。,
+        zh-CN: api 后端的稳定虚拟入口。,
+      }
+    data: { selector: 'app.kubernetes.io/name=api' }
+  - &slice
+    id: api-object:namespaced:shop:EndpointSlice:web-slice
+    category: api-object
+    kind: EndpointSlice
+    name: web-slice
+    scope: namespaced
+    namespace: shop
+    status: ready
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: true,
+        isConfiguration: true,
+        isRuntime: false,
+      }
+    title: { en: web EndpointSlice, ja: web EndpointSlice, zh-CN: web EndpointSlice }
+    summary:
+      {
+        en: Tracks ready web backends.,
+        ja: ready な web バックエンドを追跡します。,
+        zh-CN: 跟踪 ready 的 web 后端。,
+      }
+    sourceIds: [k8s-endpoint-slices]
+    visual: { archetype: endpointslice, size: md }
+  - <<: *slice
+    id: api-object:namespaced:shop:EndpointSlice:api-slice
+    name: api-slice
+    title: { en: api EndpointSlice, ja: api EndpointSlice, zh-CN: api EndpointSlice }
+    summary:
+      {
+        en: Tracks ready api backends.,
+        ja: ready な api バックエンドを追跡します。,
+        zh-CN: 跟踪 ready 的 api 后端。,
+      }
+  - id: external:external:global:Developer:developer
+    category: external
+    kind: Developer
+    name: developer
+    scope: external
+    status: healthy
+    semantics:
+      {
+        participatesInDataPath: false,
+        participatesInControlPath: true,
+        isConfiguration: false,
+        isRuntime: true,
+      }
+    title: { en: Developer, ja: 開発者, zh-CN: 开发者 }
+    summary:
+      {
+        en: Submits desired state through the API.,
+        ja: API から望ましい状態を送信します。,
+        zh-CN: 通过 API 提交期望状态。,
+      }
+    sourceIds: [k8s-api]
+    visual: { archetype: external, size: md }
+  - id: external:external:global:Browser:shop-user
+    category: external
+    kind: Browser
+    name: shop-user
+    scope: external
+    status: healthy
+    semantics:
+      {
+        participatesInDataPath: true,
+        participatesInControlPath: false,
+        isConfiguration: false,
+        isRuntime: true,
+      }
+    title: { en: Browser, ja: ブラウザー, zh-CN: 浏览器 }
+    summary:
+      {
+        en: Synthetic external client.,
+        ja: 合成の外部クライアントです。,
+        zh-CN: 虚构的外部客户端。,
+      }
+    sourceIds: [k8s-networking-overview]
+    visual: { archetype: external, size: md }
+relations:
+  - &ownership
+    id: owns-web-rs
+    type: owns
+    from: api-object:namespaced:shop:Deployment:web
+    to: api-object:namespaced:shop:ReplicaSet:web-rs
+    semantic: ownership
+    directed: true
+    title: { en: manages, ja: 管理, zh-CN: 管理 }
+    sourceIds: [k8s-deployments]
+  - <<: *ownership
+    id: owns-api-rs
+    from: api-object:namespaced:shop:Deployment:api
+    to: api-object:namespaced:shop:ReplicaSet:api-rs
+  - <<: *ownership
+    id: owns-postgres-rs
+    from: api-object:namespaced:shop:Deployment:postgres
+    to: api-object:namespaced:shop:ReplicaSet:postgres-rs
+  - &podOwner
+    <<: *ownership
+    id: owns-web-a
+    from: api-object:namespaced:shop:ReplicaSet:web-rs
+    to: api-object:namespaced:shop:Pod:web-a
+    sourceIds: [k8s-replicasets]
+  - <<: *podOwner
+    id: owns-web-b
+    to: api-object:namespaced:shop:Pod:web-b
+  - <<: *podOwner
+    id: owns-api-a
+    from: api-object:namespaced:shop:ReplicaSet:api-rs
+    to: api-object:namespaced:shop:Pod:api-a
+  - <<: *podOwner
+    id: owns-api-b
+    from: api-object:namespaced:shop:ReplicaSet:api-rs
+    to: api-object:namespaced:shop:Pod:api-b
+  - <<: *podOwner
+    id: owns-api-c
+    from: api-object:namespaced:shop:ReplicaSet:api-rs
+    to: api-object:namespaced:shop:Pod:api-c
+  - <<: *podOwner
+    id: owns-postgres-a
+    from: api-object:namespaced:shop:ReplicaSet:postgres-rs
+    to: api-object:namespaced:shop:Pod:postgres-a
+  - &scheduled
+    id: scheduled-web-a
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:web-a
+    to: infrastructure:cluster:global:Node:worker-a
+    semantic: placement
+    directed: true
+    title: { en: scheduled on, ja: 配置先, zh-CN: 调度到 }
+    sourceIds: [k8s-nodes]
+  - <<: *scheduled
+    id: scheduled-web-b
+    from: api-object:namespaced:shop:Pod:web-b
+    to: infrastructure:cluster:global:Node:worker-b
+  - <<: *scheduled
+    id: scheduled-api-a
+    from: api-object:namespaced:shop:Pod:api-a
+    to: infrastructure:cluster:global:Node:worker-a
+  - <<: *scheduled
+    id: scheduled-api-b
+    from: api-object:namespaced:shop:Pod:api-b
+    to: infrastructure:cluster:global:Node:worker-b
+  - <<: *scheduled
+    id: scheduled-api-c
+    from: api-object:namespaced:shop:Pod:api-c
+    to: infrastructure:cluster:global:Node:worker-c
+  - <<: *scheduled
+    id: scheduled-postgres-a
+    from: api-object:namespaced:shop:Pod:postgres-a
+    to: infrastructure:cluster:global:Node:worker-c
+  - &selects
+    id: selects-web
+    type: selects
+    from: api-object:namespaced:shop:Service:web
+    to: api-object:namespaced:shop:Pod:web-a
+    semantic: selection
+    directed: true
+    title: { en: selects, ja: 選択, zh-CN: 选择 }
+    sourceIds: [k8s-services]
+  - <<: *selects
+    id: selects-web-b
+    to: api-object:namespaced:shop:Pod:web-b
+  - <<: *selects
+    id: selects-api-a
+    from: api-object:namespaced:shop:Service:api
+    to: api-object:namespaced:shop:Pod:api-a
+  - <<: *selects
+    id: selects-api-b
+    from: api-object:namespaced:shop:Service:api
+    to: api-object:namespaced:shop:Pod:api-b
+  - <<: *selects
+    id: selects-api-c
+    from: api-object:namespaced:shop:Service:api
+    to: api-object:namespaced:shop:Pod:api-c
+  - &endpoint
+    id: endpoint-web
+    type: contains-endpoint-for
+    from: api-object:namespaced:shop:EndpointSlice:web-slice
+    to: api-object:namespaced:shop:Service:web
+    semantic: configuration
+    directed: true
+    title: { en: endpoints for, ja: endpoint の対象, zh-CN: 后端属于 }
+    sourceIds: [k8s-endpoint-slices]
+  - <<: *endpoint
+    id: endpoint-api
+    from: api-object:namespaced:shop:EndpointSlice:api-slice
+    to: api-object:namespaced:shop:Service:api
+  - id: api-stores-etcd
+    type: stores-in
+    from: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    to: runtime-component:cluster:global:Etcd:etcd
+    semantic: control-observation
+    directed: true
+    title: { en: persists API data, ja: API データを保存, zh-CN: 持久化 API 数据 }
+    sourceIds: [k8s-components]
+  - id: scheduler-watches-api
+    type: watches
+    from: runtime-component:cluster:global:Scheduler:kube-scheduler
+    to: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    semantic: control-observation
+    directed: true
+    title: { en: watches API state, ja: API 状態を監視, zh-CN: 观察 API 状态 }
+    sourceIds: [k8s-components]
+  - id: controller-watches-api
+    type: watches
+    from: runtime-component:cluster:global:ControllerManager:kube-controller-manager
+    to: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    semantic: control-observation
+    directed: true
+    title: { en: reconciles API state, ja: API 状態を調整, zh-CN: 协调 API 状态 }
+    sourceIds: [k8s-components]
+  - &kubeletRuntime
+    id: kubelet-runtime-a
+    type: implemented-by
+    from: runtime-component:node:worker-a:Kubelet:kubelet
+    to: runtime-component:node:worker-a:ContainerRuntime:runtime
+    semantic: control-observation
+    directed: true
+    title: { en: starts through, ja: 経由して起動, zh-CN: 通过其启动 }
+    sourceIds: [k8s-cri]
+  - <<: *kubeletRuntime
+    id: kubelet-runtime-b
+    from: runtime-component:node:worker-b:Kubelet:kubelet
+    to: runtime-component:node:worker-b:ContainerRuntime:runtime
+  - <<: *kubeletRuntime
+    id: kubelet-runtime-c
+    from: runtime-component:node:worker-c:Kubelet:kubelet
+    to: runtime-component:node:worker-c:ContainerRuntime:runtime

@@ -1,0 +1,65 @@
+schemaVersion: 1
+terms:
+  - id: label
+    term: { en: Label, ja: ラベル, zh-CN: Label }
+    definition:
+      {
+        en: Key/value metadata attached to a Kubernetes object.,
+        ja: オブジェクトに付けるキーと値のメタデータです。,
+        zh-CN: 附加在 Kubernetes 对象上的键值元数据。,
+      }
+    sourceIds: [k8s-labels]
+  - id: service
+    term: { en: Service, ja: Service, zh-CN: Service }
+    definition:
+      {
+        en: A stable network abstraction for a changing backend set.,
+        ja: 変化するバックエンドに安定した入口を与える抽象です。,
+        zh-CN: 为变化的后端集合提供稳定入口的网络抽象。,
+      }
+    sourceIds: [k8s-services]
+  - id: selector
+    term: { en: Selector, ja: セレクター, zh-CN: Selector }
+    definition:
+      {
+        en: A query that matches objects by labels.,
+        ja: ラベルでオブジェクトを照合する条件です。,
+        zh-CN: 通过 Label 匹配对象的条件。,
+      }
+    sourceIds: [k8s-labels]
+  - id: endpoint
+    term: { en: Endpoint, ja: エンドポイント, zh-CN: Endpoint }
+    definition:
+      {
+        en: A concrete network backend address.,
+        ja: 実際のネットワークバックエンドアドレスです。,
+        zh-CN: 具体的网络后端地址。,
+      }
+    sourceIds: [k8s-endpoint-slices]
+  - id: endpoint-slice
+    term: { en: EndpointSlice, ja: EndpointSlice, zh-CN: EndpointSlice }
+    definition:
+      {
+        en: An API object that tracks Service backend endpoints.,
+        ja: Service のバックエンドを追跡する API オブジェクトです。,
+        zh-CN: 跟踪 Service 后端 Endpoint 的 API 对象。,
+      }
+    sourceIds: [k8s-endpoint-slices]
+  - id: cluster-ip
+    term: { en: ClusterIP, ja: ClusterIP, zh-CN: ClusterIP }
+    definition:
+      {
+        en: A virtual address used to access a Service inside a cluster.,
+        ja: クラスター内で Service にアクセスする仮想アドレスです。,
+        zh-CN: 集群内访问 Service 的虚拟地址。,
+      }
+    sourceIds: [k8s-services]
+  - id: service-data-plane
+    term: { en: Service data plane, ja: Service データプレーン, zh-CN: Service 数据面 }
+    definition:
+      {
+        en: The implementation that directs traffic to selected endpoints.,
+        ja: トラフィックを選択済み endpoint へ送る実装です。,
+        zh-CN: 将流量导向已选 Endpoint 的实现。,
+      }
+    sourceIds: [k8s-services]

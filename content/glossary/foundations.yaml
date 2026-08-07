@@ -1,0 +1,146 @@
+schemaVersion: 1
+terms:
+  - id: cluster
+    term: { en: Cluster, ja: クラスター, zh-CN: 集群 }
+    definition:
+      {
+        en: A control plane and one or more worker nodes acting together.,
+        ja: コントロールプレーンとワーカーノードからなる集合です。,
+        zh-CN: 由控制面和一个或多个工作节点组成的整体。,
+      }
+    sourceIds: [k8s-cluster-architecture]
+  - id: desired-state
+    term: { en: Desired state, ja: 望ましい状態, zh-CN: 期望状态 }
+    definition:
+      {
+        en: The state you declare that Kubernetes should maintain.,
+        ja: Kubernetes に維持してほしいと宣言する状態です。,
+        zh-CN: 你声明并希望 Kubernetes 持续维持的状态。,
+      }
+    sourceIds: [k8s-objects]
+  - id: control-plane
+    term: { en: Control plane, ja: コントロールプレーン, zh-CN: 控制面 }
+    definition:
+      {
+        en: Components that manage cluster state and decisions.,
+        ja: クラスターの状態と判断を管理するコンポーネント群です。,
+        zh-CN: 管理集群状态和决策的一组组件。,
+      }
+    sourceIds: [k8s-components]
+  - id: node
+    term: { en: Node, ja: Node, zh-CN: Node }
+    definition:
+      {
+        en: A worker machine where assigned Pods run.,
+        ja: 割り当てられた Pod が動くワーカーマシンです。,
+        zh-CN: 承载已调度 Pod 的工作机器。,
+      }
+    sourceIds: [k8s-nodes]
+  - id: pod
+    term: { en: Pod, ja: Pod, zh-CN: Pod }
+    definition:
+      {
+        en: One or more containers sharing network and storage context.,
+        ja: ネットワークとストレージの文脈を共有するコンテナ群です。,
+        zh-CN: 共享网络与存储上下文的一个或多个容器。,
+      }
+    sourceIds: [k8s-pods]
+  - id: namespace
+    term: { en: Namespace, ja: Namespace, zh-CN: Namespace }
+    definition:
+      {
+        en: A logical scope for namespaced Kubernetes objects.,
+        ja: 名前空間付きオブジェクトの論理的なスコープです。,
+        zh-CN: namespaced Kubernetes 对象的逻辑作用域。,
+      }
+    sourceIds: [k8s-namespaces]
+  - id: scheduling
+    term: { en: Scheduling, ja: スケジューリング, zh-CN: 调度 }
+    definition:
+      {
+        en: Choosing a Node for an unscheduled Pod.,
+        ja: 未配置 Pod の Node を選ぶことです。,
+        zh-CN: 为尚未调度的 Pod 选择 Node。,
+      }
+    sourceIds: [k8s-nodes]
+  - id: manifest
+    term: { en: Manifest, ja: マニフェスト, zh-CN: 清单 }
+    definition:
+      {
+        en: A file that declares a Kubernetes API object.,
+        ja: Kubernetes API オブジェクトを宣言するファイルです。,
+        zh-CN: 声明 Kubernetes API 对象的文件。,
+      }
+    sourceIds: [k8s-objects]
+  - id: kubernetes-api
+    term: { en: Kubernetes API, ja: Kubernetes API, zh-CN: Kubernetes API }
+    definition:
+      {
+        en: The central interface for Kubernetes component interactions.,
+        ja: Kubernetes コンポーネントが対話する中心的な入口です。,
+        zh-CN: Kubernetes 组件交互的核心入口。,
+      }
+    sourceIds: [k8s-api]
+  - id: api-object
+    term: { en: API object, ja: API オブジェクト, zh-CN: API 对象 }
+    definition:
+      {
+        en: A persistent record of intent or state exposed through the API.,
+        ja: API で扱う意図または状態の記録です。,
+        zh-CN: 通过 API 暴露的意图或状态记录。,
+      }
+    sourceIds: [k8s-objects]
+  - id: deployment
+    term: { en: Deployment, ja: Deployment, zh-CN: Deployment }
+    definition:
+      {
+        en: A controller object that manages ReplicaSets and replaceable Pods.,
+        ja: ReplicaSet と交換可能な Pod を管理するオブジェクトです。,
+        zh-CN: 管理 ReplicaSet 和可替换 Pod 的控制对象。,
+      }
+    sourceIds: [k8s-deployments]
+  - id: replicaset
+    term: { en: ReplicaSet, ja: ReplicaSet, zh-CN: ReplicaSet }
+    definition:
+      {
+        en: A controller that maintains a desired number of Pod replicas.,
+        ja: 指定数の Pod レプリカを維持するコントローラーです。,
+        zh-CN: 维持指定 Pod 副本数量的控制器。,
+      }
+    sourceIds: [k8s-replicasets]
+  - id: controller
+    term: { en: Controller, ja: コントローラー, zh-CN: 控制器 }
+    definition:
+      {
+        en: A loop that works to move current state toward desired state.,
+        ja: 現在状態を望ましい状態へ近づける制御ループです。,
+        zh-CN: 让当前状态趋近期望状态的控制循环。,
+      }
+    sourceIds: [k8s-components]
+  - id: scheduler
+    term: { en: Scheduler, ja: スケジューラー, zh-CN: 调度器 }
+    definition:
+      {
+        en: The component that selects a Node for an unscheduled Pod.,
+        ja: 未配置 Pod の Node を選ぶコンポーネントです。,
+        zh-CN: 为未调度 Pod 选择 Node 的组件。,
+      }
+    sourceIds: [k8s-components]
+  - id: binding
+    term: { en: Binding, ja: バインディング, zh-CN: 绑定 }
+    definition:
+      {
+        en: Recording the selected Node assignment for a Pod.,
+        ja: Pod に選んだ Node の割り当てを記録することです。,
+        zh-CN: 记录为 Pod 选定的 Node。,
+      }
+    sourceIds: [k8s-components]
+  - id: cri
+    term: { en: CRI, ja: CRI, zh-CN: CRI }
+    definition:
+      {
+        en: The interface between kubelet and a container runtime.,
+        ja: kubelet とコンテナランタイムの間のインターフェースです。,
+        zh-CN: kubelet 与容器运行时之间的接口。,
+      }
+    sourceIds: [k8s-cri]

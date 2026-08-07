@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Production build
+dist/
+
+# Test and coverage artifacts
+coverage/
+playwright-report/
+test-results/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Tooling and editor state
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# TypeScript incremental state
+*.tsbuildinfo

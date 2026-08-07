@@ -1,0 +1,277 @@
+schemaVersion: 1
+id: kubernetes-foundations
+title: { en: Kubernetes Foundations, ja: Kubernetes 基礎, zh-CN: Kubernetes 基础 }
+summary:
+  {
+    en: Build an accurate mental model by watching the system move.,
+    ja: 動きを見ながら正確なメンタルモデルを作ります。,
+    zh-CN: 通过观察系统运动建立准确的心智模型。,
+  }
+lessonOrder:
+  - cluster-overview
+  - pod-and-placement
+  - manifest-to-running-pod
+  - service-and-endpoints
+  - container-restart-vs-pod-replacement
+  - probes
+  - rolling-update
+  - pod-network-and-cni
+  - dns-and-service-discovery
+  - service-types
+  - gateway-api
+  - ingress-and-gateway
+  - full-external-request
+  - configmap-and-secret
+  - ephemeral-storage
+  - pvc-pv-storageclass
+  - statefulset
+  - requests-and-limits
+  - pending-and-scheduling
+  - hpa
+  - common-failure-states
+  - final-503-challenge
+lessons:
+  - id: cluster-overview
+    chapterId: foundations
+    status: available
+    prerequisites: []
+    title:
+      {
+        en: What a Kubernetes cluster contains,
+        ja: Kubernetes クラスターの構成,
+        zh-CN: Kubernetes 集群包含什么,
+      }
+    learningOutcome:
+      {
+        en: Identify the control plane and worker nodes.,
+        ja: コントロールプレーンと worker Node を区別する。,
+        zh-CN: 区分控制面与工作 Node。,
+      }
+    estimatedMinutes: 5
+  - id: pod-and-placement
+    chapterId: foundations
+    status: available
+    prerequisites: [cluster-overview]
+    title:
+      { en: 'Pods, Namespaces, and Nodes', ja: Pod・Namespace・Node, zh-CN: Pod、Namespace 与 Node }
+    learningOutcome:
+      {
+        en: Separate logical scope from physical placement.,
+        ja: 論理スコープと物理配置を区別する。,
+        zh-CN: 区分逻辑作用域与物理放置。,
+      }
+    estimatedMinutes: 6
+  - id: manifest-to-running-pod
+    chapterId: foundations
+    status: available
+    prerequisites: [pod-and-placement]
+    title:
+      {
+        en: From manifest to running Pod,
+        ja: マニフェストから実行中 Pod へ,
+        zh-CN: 从清单到运行中的 Pod,
+      }
+    learningOutcome:
+      {
+        en: Explain each component's responsibility.,
+        ja: 各コンポーネントの責務を説明する。,
+        zh-CN: 说明各组件的职责。,
+      }
+    estimatedMinutes: 7
+  - id: service-and-endpoints
+    chapterId: networking-resilience
+    status: available
+    prerequisites: [manifest-to-running-pod]
+    title:
+      {
+        en: How a Service reaches changing Pods,
+        ja: Service が変化する Pod に届く仕組み,
+        zh-CN: Service 如何访问变化的 Pod,
+      }
+    learningOutcome:
+      {
+        en: 'Explain selectors, EndpointSlices, and stable access.',
+        ja: selector・EndpointSlice・安定した入口を説明する。,
+        zh-CN: 解释 Selector、EndpointSlice 与稳定入口。,
+      }
+    estimatedMinutes: 7
+  - id: container-restart-vs-pod-replacement
+    chapterId: networking-resilience
+    status: available
+    prerequisites: [service-and-endpoints]
+    title:
+      {
+        en: Container restart is not Pod replacement,
+        ja: コンテナ再起動と Pod 置換の違い,
+        zh-CN: 容器重启不等于 Pod 替换,
+      }
+    learningOutcome:
+      {
+        en: Distinguish a restart inside a Pod from a replacement Pod.,
+        ja: Pod 内の再起動と Pod 置換を区別する。,
+        zh-CN: 区分 Pod 内重启与替换 Pod。,
+      }
+    estimatedMinutes: 6
+  - {
+      id: probes,
+      chapterId: networking-resilience,
+      status: planned,
+      prerequisites: [container-restart-vs-pod-replacement],
+      title: { en: Probes, ja: Probe, zh-CN: 探针 },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 6,
+    }
+  - {
+      id: rolling-update,
+      chapterId: networking-resilience,
+      status: planned,
+      prerequisites: [probes],
+      title: { en: Rolling updates, ja: ローリング更新, zh-CN: 滚动更新 },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 7,
+    }
+  - {
+      id: pod-network-and-cni,
+      chapterId: networking-resilience,
+      status: planned,
+      prerequisites: [rolling-update],
+      title: { en: Pod network and CNI, ja: Pod ネットワークと CNI, zh-CN: Pod 网络与 CNI },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 8,
+    }
+  - {
+      id: dns-and-service-discovery,
+      chapterId: networking-resilience,
+      status: planned,
+      prerequisites: [pod-network-and-cni],
+      title: { en: DNS and service discovery, ja: DNS とサービス検出, zh-CN: DNS 与服务发现 },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 7,
+    }
+  - {
+      id: service-types,
+      chapterId: external-traffic,
+      status: planned,
+      prerequisites: [dns-and-service-discovery],
+      title: { en: Service types, ja: Service タイプ, zh-CN: Service 类型 },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 6,
+    }
+  - {
+      id: gateway-api,
+      chapterId: external-traffic,
+      status: planned,
+      prerequisites: [service-types],
+      title: { en: Gateway API, ja: Gateway API, zh-CN: Gateway API },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 8,
+    }
+  - {
+      id: ingress-and-gateway,
+      chapterId: external-traffic,
+      status: planned,
+      prerequisites: [gateway-api],
+      title: { en: Ingress and Gateway, ja: Ingress と Gateway, zh-CN: Ingress 与 Gateway },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 7,
+    }
+  - {
+      id: full-external-request,
+      chapterId: external-traffic,
+      status: planned,
+      prerequisites: [ingress-and-gateway],
+      title: { en: Full external request, ja: 外部リクエスト全体, zh-CN: 完整外部请求 },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 8,
+    }
+  - {
+      id: configmap-and-secret,
+      chapterId: configuration-storage,
+      status: planned,
+      prerequisites: [full-external-request],
+      title: { en: ConfigMap and Secret, ja: ConfigMap と Secret, zh-CN: ConfigMap 与 Secret },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 7,
+    }
+  - {
+      id: ephemeral-storage,
+      chapterId: configuration-storage,
+      status: planned,
+      prerequisites: [configmap-and-secret],
+      title: { en: Ephemeral storage, ja: 一時ストレージ, zh-CN: 临时存储 },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 6,
+    }
+  - {
+      id: pvc-pv-storageclass,
+      chapterId: configuration-storage,
+      status: planned,
+      prerequisites: [ephemeral-storage],
+      title:
+        {
+          en: 'PVC, PV, and StorageClass',
+          ja: PVC・PV・StorageClass,
+          zh-CN: PVC、PV 与 StorageClass,
+        },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 8,
+    }
+  - {
+      id: statefulset,
+      chapterId: configuration-storage,
+      status: planned,
+      prerequisites: [pvc-pv-storageclass],
+      title: { en: StatefulSet, ja: StatefulSet, zh-CN: StatefulSet },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 8,
+    }
+  - {
+      id: requests-and-limits,
+      chapterId: resources-scaling,
+      status: planned,
+      prerequisites: [statefulset],
+      title: { en: Requests and limits, ja: request と limit, zh-CN: Requests 与 Limits },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 8,
+    }
+  - {
+      id: pending-and-scheduling,
+      chapterId: resources-scaling,
+      status: planned,
+      prerequisites: [requests-and-limits],
+      title: { en: Pending and scheduling, ja: Pending とスケジューリング, zh-CN: Pending 与调度 },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 7,
+    }
+  - {
+      id: hpa,
+      chapterId: resources-scaling,
+      status: planned,
+      prerequisites: [pending-and-scheduling],
+      title:
+        {
+          en: Horizontal Pod Autoscaling,
+          ja: Horizontal Pod Autoscaling,
+          zh-CN: 水平 Pod 自动扩缩,
+        },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 8,
+    }
+  - {
+      id: common-failure-states,
+      chapterId: resources-scaling,
+      status: planned,
+      prerequisites: [hpa],
+      title: { en: Common failure states, ja: よくある障害状態, zh-CN: 常见故障状态 },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 8,
+    }
+  - {
+      id: final-503-challenge,
+      chapterId: resources-scaling,
+      status: planned,
+      prerequisites: [common-failure-states],
+      title: { en: Final 503 challenge, ja: 最終 503 チャレンジ, zh-CN: 最终 503 挑战 },
+      learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 },
+      estimatedMinutes: 10,
+    }

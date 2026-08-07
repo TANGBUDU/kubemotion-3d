@@ -1,0 +1,298 @@
+schemaVersion: 1
+id: manifest-to-running-pod
+scenarioId: demo-shop
+chapterId: foundations
+title:
+  {
+    en: From a Deployment manifest to a running Pod,
+    ja: Deployment マニフェストから実行中 Pod へ,
+    zh-CN: 从 Deployment 清单到运行中的 Pod,
+  }
+summary:
+  {
+    en: Follow control responsibilities without inventing a synchronous pipeline.,
+    ja: 同期パイプラインと誤解せず制御責務を追います。,
+    zh-CN: 跟随控制职责，同时避免虚构同步流水线。,
+  }
+learningOutcome:
+  {
+    en: 'Explain how API server, etcd, controllers, scheduler, kubelet, and runtime cooperate.',
+    ja: API サーバー・etcd・controller・scheduler・kubelet・runtime の協調を説明する。,
+    zh-CN: 解释 API Server、etcd、控制器、Scheduler、kubelet 与运行时如何协作。,
+  }
+prerequisites: [pod-and-placement]
+sourceIds: [k8s-api, k8s-components, k8s-deployments, k8s-replicasets, k8s-cri]
+verifiedAt: '2026-08-07'
+baseProjection:
+  view: control-flow
+  cameraPresetId: control-flow
+  resetEntities: true
+  entityRules:
+    - {
+        selector: { byCategory: runtime-component },
+        visible: true,
+        emphasis: normal,
+        labelMode: short,
+      }
+    - {
+        selector: { byIds: [external:external:global:Developer:developer] },
+        visible: true,
+        emphasis: normal,
+        labelMode: full,
+      }
+    - {
+        selector: { byKind: Deployment, namespace: shop },
+        visible: true,
+        emphasis: dimmed,
+        labelMode: short,
+      }
+    - {
+        selector: { byKind: ReplicaSet, namespace: shop },
+        visible: true,
+        emphasis: dimmed,
+        labelMode: short,
+      }
+    - {
+        selector: { byKind: Pod, namespace: shop },
+        visible: true,
+        emphasis: dimmed,
+        labelMode: short,
+      }
+steps:
+  - id: apply-manifest
+    title:
+      {
+        en: Submit desired state through the API,
+        ja: API から望ましい状態を送る,
+        zh-CN: 通过 API 提交期望状态,
+      }
+    learningOutcome:
+      {
+        en: Place the client outside the control plane.,
+        ja: クライアントをコントロールプレーンの外として捉える。,
+        zh-CN: 明确客户端位于控制面之外。,
+      }
+    narration:
+      {
+        en: A client such as kubectl submits a Deployment object through the Kubernetes API. The client is not a control-plane component.,
+        ja: kubectl などのクライアントは Kubernetes API から Deployment オブジェクトを送ります。クライアントはコントロールプレーンのコンポーネントではありません。,
+        zh-CN: kubectl 等客户端通过 Kubernetes API 提交 Deployment 对象；客户端不是控制面组件。,
+      }
+    introducesTerms: [manifest, kubernetes-api]
+    usesTerms: [desired-state]
+    sourceIds: [k8s-api, k8s-objects]
+    projectionPatch:
+      { entityRules: [{ selector: { byKind: KubeAPIServer }, emphasis: focused, labelMode: full }] }
+    transition:
+      [
+        {
+          type: api-request,
+          path:
+            [
+              external:external:global:Developer:developer,
+              runtime-component:cluster:global:KubeAPIServer:kube-apiserver,
+            ],
+          label:
+            {
+              en: Submit Deployment manifest,
+              ja: Deployment マニフェストを送信,
+              zh-CN: 提交 Deployment 清单,
+            },
+          durationMs: 1200,
+        },
+      ]
+  - id: persist-object
+    title: { en: API state is persisted, ja: API 状態を保存する, zh-CN: 持久化 API 状态 }
+    learningOutcome:
+      {
+        en: Explain etcd as the Kubernetes API data store.,
+        ja: etcd を Kubernetes API データストアとして説明する。,
+        zh-CN: 说明 etcd 是 Kubernetes API 数据存储。,
+      }
+    narration:
+      {
+        en: The API server persists Kubernetes API data in etcd. The teaching motion is conceptual; the client does not connect directly to etcd.,
+        ja: API サーバーは Kubernetes API データを etcd に保存します。この動きは概念表現であり、クライアントが etcd に直接接続するわけではありません。,
+        zh-CN: API Server 将 Kubernetes API 数据持久化到 etcd。动画是概念简化，客户端不会直接连接 etcd。,
+      }
+    introducesTerms: [api-object]
+    usesTerms: [kubernetes-api]
+    sourceIds: [k8s-components]
+    projectionPatch:
+      { relationRules: [{ byIds: [api-stores-etcd], visible: true, emphasis: focused }] }
+    transition:
+      [
+        {
+          type: api-request,
+          path:
+            [
+              runtime-component:cluster:global:KubeAPIServer:kube-apiserver,
+              runtime-component:cluster:global:Etcd:etcd,
+            ],
+          label: { en: Persist API data, ja: API データを保存, zh-CN: 持久化 API 数据 },
+          durationMs: 900,
+        },
+      ]
+  - id: deployment-replicaset
+    title:
+      {
+        en: Controllers reconcile object relationships,
+        ja: controller がオブジェクト関係を調整する,
+        zh-CN: 控制器协调对象关系,
+      }
+    learningOutcome:
+      {
+        en: Follow Deployment ownership without treating it as traffic.,
+        ja: Deployment の ownership をトラフィックと混同せず追う。,
+        zh-CN: 跟随 Deployment 所有权关系，不把它当成业务流量。,
+      }
+    narration:
+      {
+        en: 'A Deployment manages a ReplicaSet; that ReplicaSet maintains Pod replicas. Deployment and ReplicaSet are control objects, not processes that forward application traffic.',
+        ja: Deployment は ReplicaSet を管理し、ReplicaSet が Pod レプリカを維持します。Deployment と ReplicaSet は制御オブジェクトでありアプリ通信を転送するプロセスではありません。,
+        zh-CN: Deployment 管理 ReplicaSet，ReplicaSet 维持 Pod 副本。它们是控制对象，不是转发业务流量的进程。,
+      }
+    introducesTerms: [deployment, replicaset, controller]
+    usesTerms: [deployment, pod, desired-state]
+    sourceIds: [k8s-deployments, k8s-replicasets]
+    projectionPatch:
+      entityRules:
+        - {
+            selector:
+              {
+                byIds:
+                  [
+                    api-object:namespaced:shop:Deployment:api,
+                    api-object:namespaced:shop:ReplicaSet:api-rs,
+                    api-object:namespaced:shop:Pod:api-a,
+                  ],
+              },
+            emphasis: focused,
+            labelMode: full,
+          }
+      relationRules: [{ byIds: [owns-api-rs, owns-api-a], visible: true, emphasis: focused }]
+    transition:
+      [
+        {
+          type: reconcile-pulse,
+          entityId: runtime-component:cluster:global:ControllerManager:kube-controller-manager,
+          durationMs: 1000,
+        },
+      ]
+  - id: scheduler-assigns-node
+    title:
+      {
+        en: Scheduler records a Node choice,
+        ja: scheduler が Node 選択を記録する,
+        zh-CN: Scheduler 记录 Node 选择,
+      }
+    learningOutcome:
+      {
+        en: Limit scheduler responsibility to placement decisions.,
+        ja: scheduler の責務を配置判断に限定する。,
+        zh-CN: 将 Scheduler 职责限定为放置决策。,
+      }
+    narration:
+      {
+        en: The scheduler observes an unscheduled Pod and records a selected Node. It does not download images or start containers.,
+        ja: scheduler は未配置 Pod を観測し選んだ Node を記録します。イメージの取得やコンテナ起動は行いません。,
+        zh-CN: Scheduler 观察未调度 Pod 并记录选定 Node；它不下载镜像，也不启动容器。,
+      }
+    introducesTerms: [scheduler, binding]
+    usesTerms: [pod, node, scheduling, kubernetes-api]
+    sourceIds: [k8s-components]
+    projectionPatch:
+      entityRules:
+        - { selector: { byKind: Scheduler }, emphasis: focused, labelMode: full }
+        - {
+            selector: { byIds: [api-object:namespaced:shop:Pod:api-b] },
+            emphasis: focused,
+            statusOverride: pending,
+            labelMode: full,
+          }
+      relationRules: [{ byIds: [scheduled-api-b], visible: true, emphasis: focused }]
+    transition:
+      [
+        {
+          type: reconcile-pulse,
+          entityId: runtime-component:cluster:global:Scheduler:kube-scheduler,
+          durationMs: 1000,
+        },
+      ]
+  - id: kubelet-starts
+    title:
+      {
+        en: kubelet asks the runtime to start containers,
+        ja: kubelet が runtime にコンテナ起動を依頼する,
+        zh-CN: kubelet 请求运行时启动容器,
+      }
+    learningOutcome:
+      {
+        en: Separate kubelet from the container runtime.,
+        ja: kubelet とコンテナランタイムを区別する。,
+        zh-CN: 区分 kubelet 与容器运行时。,
+      }
+    narration:
+      {
+        en: kubelet observes Pods assigned to its Node and works through the Container Runtime Interface. The container runtime actually starts and manages containers.,
+        ja: kubelet は自分の Node に割り当てられた Pod を観測し CRI を通じて動作します。実際にコンテナを起動し管理するのはコンテナランタイムです。,
+        zh-CN: kubelet 观察分配给本 Node 的 Pod，并通过 CRI 协作；真正启动和管理容器的是容器运行时。,
+      }
+    introducesTerms: [cri]
+    usesTerms: [pod, node]
+    sourceIds: [k8s-components, k8s-cri]
+    projectionPatch:
+      entityRules:
+        - { selector: { byNode: worker-b }, visible: true, emphasis: focused, labelMode: full }
+        - { selector: { byIds: [api-object:namespaced:shop:Pod:api-b] }, statusOverride: starting }
+    transition:
+      [
+        {
+          type: api-request,
+          path:
+            [
+              runtime-component:cluster:global:KubeAPIServer:kube-apiserver,
+              runtime-component:node:worker-b:Kubelet:kubelet,
+              runtime-component:node:worker-b:ContainerRuntime:runtime,
+            ],
+          label: { en: Observe and start, ja: 観測して起動, zh-CN: 观察并启动 },
+          durationMs: 1300,
+        },
+      ]
+  - id: running
+    title: { en: Continuous loops converge, ja: 継続的なループが収束する, zh-CN: 持续循环趋于收敛 }
+    learningOutcome:
+      {
+        en: Reject the idea of a one-time synchronous call chain.,
+        ja: 一度きりの同期呼び出しチェーンという誤解を避ける。,
+        zh-CN: 避免把过程理解为一次性的同步调用链。,
+      }
+    narration:
+      {
+        en: 'The Pod becomes ready. Kubernetes components continuously watch and update API state; this animation is a teaching sequence, not a literal one-time call chain.',
+        ja: Pod が ready になります。Kubernetes コンポーネントは API 状態を継続的に監視・更新します。このアニメーションは学習用の順序であり一度きりの呼び出しチェーンではありません。,
+        zh-CN: Pod 变为 ready。Kubernetes 组件持续观察并更新 API 状态；此动画是教学顺序，不是一次性的真实调用链。,
+      }
+    introducesTerms: []
+    usesTerms: [pod, kubernetes-api, controller, scheduler, cri]
+    sourceIds: [k8s-components, k8s-cri]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector: { byIds: [api-object:namespaced:shop:Pod:api-b] },
+              statusOverride: ready,
+              emphasis: focused,
+            },
+          ],
+      }
+    transition:
+      [
+        {
+          type: status-change,
+          entityId: api-object:namespaced:shop:Pod:api-b,
+          state: ready,
+          durationMs: 700,
+        },
+      ]

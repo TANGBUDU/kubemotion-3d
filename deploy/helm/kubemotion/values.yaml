@@ -1,0 +1,19 @@
+replicaCount: 2
+image:
+  repository: ghcr.io/example/kubemotion-3d
+  tag: '0.1.0'
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 80
+ingress:
+  enabled: false
+  className: ''
+  host: kubemotion.example
+resources:
+  requests: { cpu: 25m, memory: 32Mi }
+  limits: { cpu: 200m, memory: 128Mi }
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

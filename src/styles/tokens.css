@@ -1,0 +1,26 @@
+:root {
+  --bg-0: #08111f;
+  --bg-1: #0d1a2b;
+  --panel: #101f33;
+  --panel-elevated: #14263d;
+  --border: #29415e;
+  --text-primary: #eef6ff;
+  --text-secondary: #9fb3c8;
+  --accent: #5eb6ff;
+  --focus: #8bd3ff;
+  --success: #45c486;
+  --warning: #f0b44d;
+  --danger: #ef6a78;
+  --control-flow: #b792ff;
+  --dns-flow: #45d6d0;
+  --storage-flow: #62c998;
+  --header-height: 60px;
+  color-scheme: dark;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+}

@@ -1,0 +1,208 @@
+schemaVersion: 1
+sources:
+  k8s-cluster-architecture:
+    {
+      title: Kubernetes Cluster Architecture,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/architecture/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-components:
+    {
+      title: Kubernetes Components,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/overview/components/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-objects:
+    {
+      title: Kubernetes Objects,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/overview/working-with-objects/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-api:
+    {
+      title: The Kubernetes API,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/overview/kubernetes-api/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-pods:
+    {
+      title: Pods,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/workloads/pods/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-pod-lifecycle:
+    {
+      title: Pod Lifecycle,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-namespaces:
+    {
+      title: Namespaces,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-nodes:
+    {
+      title: Nodes,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/architecture/nodes/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-labels:
+    {
+      title: Labels and Selectors,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-deployments:
+    {
+      title: Deployments,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-replicasets:
+    {
+      title: ReplicaSets,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-services:
+    {
+      title: Services,
+      Load Balancing,
+      and Networking,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/services-networking/service/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-endpoint-slices:
+    {
+      title: EndpointSlices,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/services-networking/endpoint-slices/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-networking-overview:
+    {
+      title: Services,
+      Networking,
+      and Storage,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/services-networking/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-probes:
+    {
+      title: Liveness,
+      Readiness,
+      and Startup Probes,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-resources:
+    {
+      title: Resource Management for Pods and Containers,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-hpa:
+    {
+      title: Horizontal Pod Autoscaling,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-secrets:
+    {
+      title: Secrets,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/configuration/secret/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-secret-good-practices:
+    {
+      title: Good Practices for Kubernetes Secrets,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/security/secrets-good-practices/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-persistent-volumes:
+    {
+      title: Persistent Volumes,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/storage/persistent-volumes/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-storage-classes:
+    {
+      title: Storage Classes,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/storage/storage-classes/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-cri:
+    {
+      title: Container Runtime Interface,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/architecture/cri/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  gateway-api-kubernetes:
+    {
+      title: Gateway API,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/services-networking/gateway/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  gateway-api-overview:
+    {
+      title: Gateway API Overview,
+      authority: Gateway API Documentation,
+      url: https://gateway-api.sigs.k8s.io/docs/concepts/api-overview/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }
+  k8s-ingress:
+    {
+      title: Ingress,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/services-networking/ingress/,
+      verifiedAt: '2026-08-07',
+      type: official-documentation,
+    }

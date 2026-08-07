@@ -1,0 +1,287 @@
+schemaVersion: 1
+id: container-restart-vs-pod-replacement
+scenarioId: demo-shop
+chapterId: networking-resilience
+title:
+  {
+    en: Container restart is not Pod replacement,
+    ja: コンテナ再起動と Pod 置換の違い,
+    zh-CN: 容器重启不等于 Pod 替换,
+  }
+summary:
+  {
+    en: Compare two different recovery mechanisms.,
+    ja: 二つの異なる復旧メカニズムを比較します。,
+    zh-CN: 比较两种不同的恢复机制。,
+  }
+learningOutcome:
+  {
+    en: Distinguish a container restart inside one Pod from a new replacement Pod.,
+    ja: 同じ Pod 内のコンテナ再起動と新しい置換 Pod を区別する。,
+    zh-CN: 区分同一 Pod 内的容器重启与新的替换 Pod。,
+  }
+prerequisites: [service-and-endpoints]
+sourceIds: [k8s-pod-lifecycle, k8s-replicasets, k8s-components]
+verifiedAt: '2026-08-07'
+baseProjection:
+  view: placement
+  cameraPresetId: placement
+  resetEntities: true
+  entityRules:
+    - { selector: { byKind: Node }, visible: true, emphasis: dimmed, labelMode: short }
+    - {
+        selector: { byLabel: { key: app.kubernetes.io/name, value: api }, namespace: shop },
+        visible: true,
+        emphasis: normal,
+        labelMode: short,
+      }
+    - {
+        selector:
+          {
+            byIds:
+              [
+                runtime-component:node:worker-a:Kubelet:kubelet,
+                api-object:namespaced:shop:ReplicaSet:api-rs,
+              ],
+          },
+        visible: true,
+        emphasis: normal,
+        labelMode: full,
+      }
+  relationRules: [{ byType: scheduled-on, visible: true, emphasis: dimmed }]
+steps:
+  - id: healthy-pod
+    title:
+      { en: Start with one healthy Pod, ja: healthy な Pod から始める, zh-CN: 从一个健康 Pod 开始 }
+    learningOutcome:
+      {
+        en: 'Record Pod identity, Node, and restart count.',
+        ja: Pod ID・Node・再起動回数を確認する。,
+        zh-CN: 记录 Pod 身份、Node 与重启次数。,
+      }
+    narration:
+      {
+        en: 'Focus on api-a. Its synthetic Pod UID is synthetic-uid-a1, restart count is 0, and it is assigned to worker-a.',
+        ja: api-a に注目します。合成 Pod UID は synthetic-uid-a1、再起動回数は 0、worker-a に配置されています。,
+        zh-CN: 聚焦 api-a：虚构 Pod UID 为 synthetic-uid-a1，重启次数为 0，位于 worker-a。,
+      }
+    introducesTerms: [pod-uid, restart-count]
+    usesTerms: [pod, node]
+    sourceIds: [k8s-pod-lifecycle]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector: { byIds: [api-object:namespaced:shop:Pod:api-a] },
+              emphasis: focused,
+              labelMode: full,
+            },
+          ],
+      }
+    transition:
+      [{ type: focus-camera, entityId: api-object:namespaced:shop:Pod:api-a, durationMs: 800 }]
+  - id: container-crash
+    title: { en: The container process exits, ja: コンテナプロセスが終了する, zh-CN: 容器进程退出 }
+    learningOutcome:
+      {
+        en: Keep the Pod object while the container fails.,
+        ja: コンテナ障害中も Pod オブジェクトを保つ。,
+        zh-CN: 容器失败时保持 Pod 对象。,
+      }
+    narration:
+      {
+        en: 'The container process exits, but the Pod shell and UID remain. A process exit does not by itself mean the entire Pod object was replaced.',
+        ja: コンテナプロセスは終了しますが Pod の外殻と UID は残ります。プロセス終了だけで Pod オブジェクト全体が置換されたとは限りません。,
+        zh-CN: 容器进程退出，但 Pod 外壳和 UID 保持；进程退出本身不代表整个 Pod 对象已被替换。,
+      }
+    introducesTerms: []
+    usesTerms: [pod, pod-uid]
+    sourceIds: [k8s-pod-lifecycle]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector: { byIds: [api-object:namespaced:shop:Pod:api-a] },
+              statusOverride: failed,
+              emphasis: focused,
+            },
+          ],
+      }
+    transition:
+      [
+        {
+          type: lifecycle,
+          entityId: api-object:namespaced:shop:Pod:api-a,
+          state: failed,
+          durationMs: 800,
+        },
+      ]
+  - id: kubelet-restart
+    title:
+      {
+        en: kubelet restarts the container,
+        ja: kubelet がコンテナを再起動する,
+        zh-CN: kubelet 重启容器,
+      }
+    learningOutcome:
+      {
+        en: Connect restart policy to a same-Pod restart.,
+        ja: 再起動ポリシーと同一 Pod 内の再起動を結ぶ。,
+        zh-CN: 将重启策略与同一 Pod 内重启联系起来。,
+      }
+    narration:
+      {
+        en: kubelet responds according to the Pod restart policy and observed state. The container restarts inside the same Pod; the Pod UID stays the same and restart count increases. Not every failure is caused by a liveness probe.,
+        ja: kubelet は Pod の再起動ポリシーと観測状態に従います。コンテナは同じ Pod 内で再起動し Pod UID は同じまま再起動回数が増えます。すべての障害が liveness probe 原因ではありません。,
+        zh-CN: kubelet 根据 Pod 重启策略和观察到的状态处理。容器在同一 Pod 内重启，Pod UID 不变，重启次数增加；并非所有失败都源于 liveness probe。,
+      }
+    introducesTerms: [restart-policy]
+    usesTerms: [pod, pod-uid, restart-count]
+    sourceIds: [k8s-pod-lifecycle, k8s-components]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector: { byIds: [runtime-component:node:worker-a:Kubelet:kubelet] },
+              emphasis: focused,
+            },
+            { selector: { byIds: [api-object:namespaced:shop:Pod:api-a] }, statusOverride: ready },
+          ],
+      }
+    transition:
+      [
+        {
+          type: reconcile-pulse,
+          entityId: runtime-component:node:worker-a:Kubelet:kubelet,
+          durationMs: 900,
+        },
+      ]
+  - id: pod-deleted
+    title:
+      {
+        en: Now remove the Pod object,
+        ja: 次に Pod オブジェクトを削除する,
+        zh-CN: 现在移除 Pod 对象,
+      }
+    learningOutcome:
+      {
+        en: See deletion as distinct from a container restart.,
+        ja: 削除をコンテナ再起動と区別する。,
+        zh-CN: 区分 Pod 删除与容器重启。,
+      }
+    narration:
+      {
+        en: This time the whole Pod object disappears. The ReplicaSet observes fewer current replicas than desired. That is a different event from restarting a container inside an existing Pod.,
+        ja: 今度は Pod オブジェクト全体が消えます。ReplicaSet は現在のレプリカ数が望ましい数より少ないと観測します。既存 Pod 内のコンテナ再起動とは別の出来事です。,
+        zh-CN: 这次整个 Pod 对象消失。ReplicaSet 观察到当前副本少于期望副本；这与现有 Pod 内重启容器是不同事件。,
+      }
+    introducesTerms: []
+    usesTerms: [pod, replicaset, desired-state]
+    sourceIds: [k8s-replicasets, k8s-pod-lifecycle]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector: { byIds: [api-object:namespaced:shop:Pod:api-a] },
+              visible: false,
+              emphasis: hidden,
+            },
+            {
+              selector: { byIds: [api-object:namespaced:shop:ReplicaSet:api-rs] },
+              emphasis: focused,
+            },
+          ],
+      }
+    transition:
+      [
+        {
+          type: lifecycle,
+          entityId: api-object:namespaced:shop:Pod:api-a,
+          state: terminating,
+          durationMs: 900,
+        },
+      ]
+  - id: replacement-pod
+    title:
+      {
+        en: A controller creates a replacement,
+        ja: controller が置換 Pod を作る,
+        zh-CN: 控制器创建替换 Pod,
+      }
+    learningOutcome:
+      {
+        en: Treat the replacement as a new identity that may move.,
+        ja: 置換 Pod を移動しうる新しい ID として捉える。,
+        zh-CN: 把替换 Pod 理解为可能换位置的新身份。,
+      }
+    narration:
+      {
+        en: 'The ReplicaSet reconciliation loop causes a new Pod to be created. The scheduler may place it on worker-c. The replacement has its own name, UID, and status; local temporary data from the old Pod is not automatically preserved.',
+        ja: ReplicaSet の制御ループにより新しい Pod が作られ、scheduler は worker-c に配置する場合があります。置換 Pod は独自の名前・UID・状態を持ち、古い Pod のローカル一時データは自動保存されません。,
+        zh-CN: ReplicaSet 协调循环促使创建新 Pod，Scheduler 可将其放到 worker-c。替换 Pod 拥有自己的名称、UID 和状态，旧 Pod 的本地临时数据不会自动保留。,
+      }
+    introducesTerms: []
+    usesTerms: [replicaset, controller, scheduler, pod-uid]
+    sourceIds: [k8s-replicasets, k8s-components]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector: { byIds: [api-object:namespaced:shop:Pod:api-c] },
+              visible: true,
+              emphasis: focused,
+              labelMode: full,
+            },
+            {
+              selector: { byIds: [infrastructure:cluster:global:Node:worker-c] },
+              emphasis: focused,
+            },
+          ],
+      }
+    transition:
+      [
+        {
+          type: reconcile-pulse,
+          entityId: runtime-component:cluster:global:ControllerManager:kube-controller-manager,
+          durationMs: 1000,
+        },
+      ]
+  - id: comparison
+    title: { en: Compare the identities, ja: ID の違いを比較する, zh-CN: 比较两种身份变化 }
+    learningOutcome:
+      {
+        en: State the difference without ambiguity.,
+        ja: 違いを曖昧さなく説明する。,
+        zh-CN: 明确说明两者差异。,
+      }
+    narration:
+      {
+        en: Container restart means the same Pod UID and Node assignment while restart count increases. Pod replacement means a new Pod UID and it may run on another Node with its own status.,
+        ja: コンテナ再起動では Pod UID と Node 配置は同じで再起動回数が増えます。Pod 置換では新しい Pod UID となり、独自の状態を持って別 Node で動く場合があります。,
+        zh-CN: 容器重启保持同一 Pod UID 和 Node 分配，重启次数增加；Pod 替换产生新 Pod UID，拥有自己的状态，并可能运行在另一 Node。,
+      }
+    introducesTerms: []
+    usesTerms: [pod, pod-uid, restart-count, node]
+    sourceIds: [k8s-pod-lifecycle, k8s-replicasets]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector:
+                {
+                  byIds:
+                    [api-object:namespaced:shop:Pod:api-a, api-object:namespaced:shop:Pod:api-c],
+                },
+              visible: true,
+              emphasis: focused,
+              labelMode: full,
+            },
+          ],
+      }
+    transition: [{ type: layout-transition, durationMs: 700 }]

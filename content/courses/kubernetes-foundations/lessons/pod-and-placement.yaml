@@ -1,0 +1,176 @@
+schemaVersion: 1
+id: pod-and-placement
+scenarioId: demo-shop
+chapterId: foundations
+title:
+  { en: 'Pods, Namespaces, and Nodes', ja: Pod・Namespace・Node, zh-CN: Pod、Namespace 与 Node }
+summary:
+  {
+    en: Compare logical ownership with physical Pod placement.,
+    ja: 論理的な所属と Pod の物理配置を比較します。,
+    zh-CN: 比较逻辑归属与 Pod 的物理放置。,
+  }
+learningOutcome:
+  {
+    en: Explain that a Pod belongs to a Namespace and is scheduled to a Node.,
+    ja: Pod が Namespace に属し Node に配置されることを説明する。,
+    zh-CN: 解释 Pod 属于 Namespace，同时被调度到 Node。,
+  }
+prerequisites: [cluster-overview]
+sourceIds: [k8s-pods, k8s-namespaces, k8s-nodes]
+verifiedAt: '2026-08-07'
+baseProjection:
+  view: logical
+  cameraPresetId: logical
+  resetEntities: true
+  entityRules:
+    - { selector: { byKind: Namespace }, visible: true, emphasis: normal, labelMode: full }
+    - {
+        selector: { byKind: Pod, namespace: shop },
+        visible: true,
+        emphasis: normal,
+        labelMode: short,
+      }
+steps:
+  - id: pod-shell
+    title: { en: A Pod groups containers, ja: Pod はコンテナをまとめる, zh-CN: Pod 组合容器 }
+    learningOutcome:
+      { en: Describe the Pod boundary., ja: Pod の境界を説明する。, zh-CN: 描述 Pod 边界。 }
+    narration:
+      {
+        en: A Pod contains one or more containers that share network and storage context and are scheduled together.,
+        ja: Pod はネットワークとストレージの文脈を共有し一緒に配置される一つ以上のコンテナを含みます。,
+        zh-CN: Pod 包含一个或多个共享网络和存储上下文、并被共同调度的容器。,
+      }
+    introducesTerms: [pod]
+    usesTerms: []
+    sourceIds: [k8s-pods]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector: { byIds: [api-object:namespaced:shop:Pod:api-a] },
+              emphasis: focused,
+              labelMode: full,
+            },
+          ],
+      }
+    transition:
+      [{ type: focus-camera, entityId: api-object:namespaced:shop:Pod:api-a, durationMs: 700 }]
+  - id: pod-ip
+    title:
+      { en: One Pod network identity, ja: Pod ごとのネットワーク ID, zh-CN: 每个 Pod 的网络身份 }
+    learningOutcome:
+      {
+        en: Treat the Pod as the primary network identity.,
+        ja: Pod を主なネットワーク ID として捉える。,
+        zh-CN: 把 Pod 视为主要网络身份。,
+      }
+    narration:
+      {
+        en: Containers in one Pod share its network namespace and IP. Replacement Pods may receive a different identity and address.,
+        ja: 一つの Pod のコンテナはネットワーク名前空間と IP を共有します。置換 Pod は別の ID とアドレスを持つ場合があります。,
+        zh-CN: 同一 Pod 中的容器共享其网络命名空间和 IP；替换 Pod 可能获得不同身份与地址。,
+      }
+    introducesTerms: []
+    usesTerms: [pod]
+    sourceIds: [k8s-pods]
+    projectionPatch: {}
+    transition:
+      [
+        {
+          type: callout,
+          entityId: api-object:namespaced:shop:Pod:api-a,
+          label: { en: Shared Pod network, ja: 共有 Pod ネットワーク, zh-CN: 共享的 Pod 网络 },
+          durationMs: 700,
+        },
+      ]
+  - id: logical-namespace
+    title:
+      {
+        en: Namespace is a logical scope,
+        ja: Namespace は論理スコープ,
+        zh-CN: Namespace 是逻辑作用域,
+      }
+    learningOutcome:
+      {
+        en: Organize namespaced objects without nesting Nodes.,
+        ja: Node を入れ子にせず名前空間付きオブジェクトを整理する。,
+        zh-CN: 组织 namespaced 对象而不把 Node 嵌套其中。,
+      }
+    narration:
+      {
+        en: Namespace groups namespaced API objects. Nodes remain cluster-scoped and do not sit inside a Namespace.,
+        ja: Namespace は名前空間付き API オブジェクトをまとめます。Node はクラスター範囲であり Namespace の中にはありません。,
+        zh-CN: Namespace 组织 namespaced API 对象；Node 是集群级对象，不位于 Namespace 内。,
+      }
+    introducesTerms: [namespace]
+    usesTerms: [pod]
+    sourceIds: [k8s-namespaces, k8s-nodes]
+    projectionPatch: { entityRules: [{ selector: { byKind: Namespace }, emphasis: focused }] }
+    transition: [{ type: layout-transition, durationMs: 700 }]
+  - id: physical-placement
+    title:
+      {
+        en: Placement answers where Pods run,
+        ja: Placement は Pod の実行場所を示す,
+        zh-CN: Placement 回答 Pod 在哪里运行,
+      }
+    learningOutcome:
+      {
+        en: Read Pod-to-Node scheduling relationships.,
+        ja: Pod と Node の配置関係を読む。,
+        zh-CN: 读取 Pod 到 Node 的调度关系。,
+      }
+    narration:
+      {
+        en: The same Pods now move to Node slots. A Pod still belongs to its Namespace while its nodeName records physical placement. Deployments and Services do not run inside Nodes.,
+        ja: 同じ Pod が Node スロットへ移動します。Pod は Namespace に属したまま nodeName が物理配置を記録します。Deployment と Service は Node 内で実行されません。,
+        zh-CN: 同一批 Pod 移到 Node 槽位；Pod 仍属于 Namespace，同时由 nodeName 记录物理放置。Deployment 和 Service 不运行在 Node 内。,
+      }
+    introducesTerms: [scheduling]
+    usesTerms: [pod, namespace, node]
+    sourceIds: [k8s-pods, k8s-nodes]
+    projectionPatch:
+      view: placement
+      cameraPresetId: placement
+      entityRules:
+        - { selector: { byKind: Node }, visible: true, emphasis: normal, labelMode: full }
+      relationRules: [{ byType: scheduled-on, visible: true, emphasis: normal }]
+    transition: [{ type: layout-transition, durationMs: 1100 }]
+  - id: same-object-two-views
+    title:
+      {
+        en: 'One object, two useful views',
+        ja: 同じオブジェクト、二つの視点,
+        zh-CN: 同一对象，两种视图,
+      }
+    learningOutcome:
+      {
+        en: Preserve Pod identity across views.,
+        ja: view をまたいで Pod の同一性を保つ。,
+        zh-CN: 在视图之间保持 Pod 身份。,
+      }
+    narration:
+      {
+        en: Logical view answers what belongs together. Placement view answers where Pods run. The highlighted Pod keeps the same stable ID in both views.,
+        ja: Logical view は所属を、Placement view は実行場所を示します。強調された Pod の安定 ID は両方で同じです。,
+        zh-CN: Logical 回答哪些对象属于一起，Placement 回答 Pod 在哪里运行；高亮 Pod 在两种视图中保持同一稳定 ID。,
+      }
+    introducesTerms: []
+    usesTerms: [pod, namespace, scheduling]
+    sourceIds: [k8s-pods, k8s-namespaces, k8s-nodes]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector: { byIds: [api-object:namespaced:shop:Pod:api-a] },
+              emphasis: focused,
+              labelMode: full,
+            },
+          ],
+      }
+    transition:
+      [{ type: focus-camera, entityId: api-object:namespaced:shop:Pod:api-a, durationMs: 700 }]

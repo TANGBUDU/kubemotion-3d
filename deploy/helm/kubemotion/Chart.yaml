@@ -1,0 +1,6 @@
+apiVersion: v2
+name: kubemotion
+description: A static, interactive Kubernetes teaching site
+type: application
+version: 0.1.0
+appVersion: '0.1.0'

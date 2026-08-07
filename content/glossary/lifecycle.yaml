@@ -1,0 +1,29 @@
+schemaVersion: 1
+terms:
+  - id: pod-uid
+    term: { en: Pod UID, ja: Pod UID, zh-CN: Pod UID }
+    definition:
+      {
+        en: The unique identity of one Pod object.,
+        ja: ひとつの Pod オブジェクトの固有 ID です。,
+        zh-CN: 一个 Pod 对象的唯一身份。,
+      }
+    sourceIds: [k8s-pod-lifecycle]
+  - id: restart-count
+    term: { en: Restart count, ja: 再起動回数, zh-CN: 重启次数 }
+    definition:
+      {
+        en: The observed container restarts within a Pod.,
+        ja: Pod 内で観測されたコンテナ再起動回数です。,
+        zh-CN: Pod 内已观察到的容器重启次数。,
+      }
+    sourceIds: [k8s-pod-lifecycle]
+  - id: restart-policy
+    term: { en: Restart policy, ja: 再起動ポリシー, zh-CN: 重启策略 }
+    definition:
+      {
+        en: Pod-level policy that guides kubelet container restarts.,
+        ja: kubelet のコンテナ再起動を決める Pod レベルの方針です。,
+        zh-CN: 指导 kubelet 重启容器的 Pod 级策略。,
+      }
+    sourceIds: [k8s-pod-lifecycle]

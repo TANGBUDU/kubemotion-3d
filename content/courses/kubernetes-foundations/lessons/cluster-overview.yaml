@@ -1,0 +1,199 @@
+schemaVersion: 1
+id: cluster-overview
+scenarioId: demo-shop
+chapterId: foundations
+title:
+  {
+    en: What a Kubernetes cluster contains,
+    ja: Kubernetes クラスターの構成,
+    zh-CN: Kubernetes 集群包含什么,
+  }
+summary:
+  {
+    en: 'Separate the cluster boundary, control plane, and worker Nodes.',
+    ja: クラスター境界・コントロールプレーン・worker Node を区別します。,
+    zh-CN: 区分集群边界、控制面与工作 Node。,
+  }
+learningOutcome:
+  {
+    en: Identify the control plane and worker Nodes without treating them as one machine.,
+    ja: コントロールプレーンと worker Node を一台の機械と誤解せず識別する。,
+    zh-CN: 识别控制面与工作 Node，不把它们误解为一台机器。,
+  }
+prerequisites: []
+sourceIds: [k8s-cluster-architecture, k8s-components, k8s-objects]
+verifiedAt: '2026-08-07'
+baseProjection:
+  view: overview
+  cameraPresetId: overview
+  resetEntities: true
+  entityRules:
+    - { selector: { byKind: Cluster }, visible: true, emphasis: normal, labelMode: full }
+steps:
+  - id: one-machine-problem
+    title:
+      {
+        en: 'One system, not one machine',
+        ja: 一つのシステム、ただし一台ではない,
+        zh-CN: 一个系统，但不是一台机器,
+      }
+    learningOutcome:
+      {
+        en: Recognize the cluster as a system boundary.,
+        ja: クラスターをシステム境界として捉える。,
+        zh-CN: 把集群理解为系统边界。,
+      }
+    narration:
+      {
+        en: A Kubernetes cluster is a control plane plus one or more worker Nodes. The boundary is conceptual; it is not a giant nested machine.,
+        ja: Kubernetes クラスターはコントロールプレーンと一つ以上の worker Node からなります。境界は概念であり、巨大な入れ子の機械ではありません。,
+        zh-CN: Kubernetes 集群由控制面和一个或多个工作 Node 组成。这个边界是概念边界，不是层层嵌套的巨型机器。,
+      }
+    introducesTerms: [cluster]
+    usesTerms: []
+    sourceIds: [k8s-cluster-architecture]
+    projectionPatch: {}
+    transition:
+      [
+        {
+          type: callout,
+          entityId: infrastructure:cluster:global:Cluster:demo-shop,
+          label: { en: System boundary, ja: システム境界, zh-CN: 系统边界 },
+          durationMs: 700,
+        },
+      ]
+  - id: desired-state
+    title: { en: Declare the state you want, ja: 望ましい状態を宣言する, zh-CN: 声明你希望的状态 }
+    learningOutcome:
+      {
+        en: Understand desired state as an API declaration.,
+        ja: 望ましい状態を API 宣言として理解する。,
+        zh-CN: 理解期望状态是 API 声明。,
+      }
+    narration:
+      {
+        en: You declare API objects such as Deployments. Controllers continuously work to move current state toward that desired state.,
+        ja: Deployment などの API オブジェクトを宣言し、コントローラーが現在状態を望ましい状態へ継続的に近づけます。,
+        zh-CN: 你声明 Deployment 等 API 对象，控制器持续推动当前状态趋近期望状态。,
+      }
+    introducesTerms: [desired-state]
+    usesTerms: [cluster]
+    sourceIds: [k8s-objects, k8s-components]
+    projectionPatch:
+      entityRules:
+        - {
+            selector: { byKind: Deployment, namespace: shop },
+            visible: true,
+            emphasis: focused,
+            labelMode: short,
+          }
+        - {
+            selector: { byKind: ControllerManager },
+            visible: true,
+            emphasis: normal,
+            labelMode: short,
+          }
+    transition:
+      [
+        {
+          type: reconcile-pulse,
+          entityId: runtime-component:cluster:global:ControllerManager:kube-controller-manager,
+          durationMs: 900,
+        },
+      ]
+  - id: control-plane
+    title:
+      {
+        en: The control plane makes cluster decisions,
+        ja: コントロールプレーンが判断する,
+        zh-CN: 控制面做出集群决策,
+      }
+    learningOutcome:
+      {
+        en: Identify the core control-plane runtime components.,
+        ja: 主要なコントロールプレーン実行コンポーネントを識別する。,
+        zh-CN: 识别核心控制面运行组件。,
+      }
+    narration:
+      {
+        en: 'The API server exposes the API, etcd stores API data, the scheduler selects Nodes, and controllers reconcile state. These responsibilities are related but distinct.',
+        ja: API サーバーは API を公開し、etcd は API データを保存し、scheduler は Node を選び、controller は状態を調整します。責務は関連しますが別々です。,
+        zh-CN: API Server 提供 API，etcd 保存 API 数据，Scheduler 选择 Node，Controller 协调状态；这些职责相关但不同。,
+      }
+    introducesTerms: [control-plane]
+    usesTerms: [cluster, desired-state]
+    sourceIds: [k8s-components]
+    projectionPatch:
+      entityRules:
+        - { selector: { byKind: KubeAPIServer }, visible: true, emphasis: focused, labelMode: full }
+        - { selector: { byKind: Etcd }, visible: true, emphasis: normal, labelMode: full }
+        - { selector: { byKind: Scheduler }, visible: true, emphasis: normal, labelMode: full }
+        - {
+            selector: { byKind: ControllerManager },
+            visible: true,
+            emphasis: normal,
+            labelMode: full,
+          }
+    transition:
+      [
+        {
+          type: focus-camera,
+          entityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver,
+          durationMs: 800,
+        },
+      ]
+  - id: worker-nodes
+    title:
+      { en: Worker Nodes run Pods, ja: worker Node が Pod を実行する, zh-CN: 工作 Node 运行 Pod }
+    learningOutcome:
+      {
+        en: Recognize Nodes as Pod execution locations.,
+        ja: Node を Pod の実行場所として理解する。,
+        zh-CN: 把 Node 理解为 Pod 的运行位置。,
+      }
+    narration:
+      {
+        en: 'Nodes are worker machines. kubelet manages assigned Pods on each Node, while the container runtime starts containers.',
+        ja: Node は worker マシンです。各 Node の kubelet が割り当て済み Pod を管理し、コンテナランタイムがコンテナを起動します。,
+        zh-CN: Node 是工作机器。每个 Node 上的 kubelet 管理已分配 Pod，容器运行时实际启动容器。,
+      }
+    introducesTerms: [node]
+    usesTerms: [cluster]
+    sourceIds: [k8s-nodes, k8s-components]
+    projectionPatch:
+      entityRules:
+        - { selector: { byKind: Node }, visible: true, emphasis: focused, labelMode: full }
+        - { selector: { byKind: Kubelet }, visible: true, emphasis: normal, labelMode: short }
+        - {
+            selector: { byKind: ContainerRuntime },
+            visible: true,
+            emphasis: normal,
+            labelMode: short,
+          }
+    transition: [{ type: layout-transition, durationMs: 900 }]
+  - id: cluster-summary
+    title: { en: Control and work stay distinct, ja: 制御と実行を区別する, zh-CN: 区分控制与工作 }
+    learningOutcome:
+      {
+        en: Summarize the cluster's two broad areas.,
+        ja: クラスターの二つの大きな領域をまとめる。,
+        zh-CN: 总结集群的两个主要区域。,
+      }
+    narration:
+      {
+        en: The control plane manages API state and decisions. Worker Nodes provide locations where Pods run. The components cooperate through continuously observed state.,
+        ja: コントロールプレーンは API 状態と判断を管理し、worker Node は Pod の実行場所を提供します。コンポーネントは継続的に観測される状態を通して協調します。,
+        zh-CN: 控制面管理 API 状态和决策，工作 Node 提供 Pod 运行位置；组件围绕持续观察的状态协作。,
+      }
+    introducesTerms: []
+    usesTerms: [cluster, control-plane, node]
+    sourceIds: [k8s-cluster-architecture, k8s-components]
+    projectionPatch:
+      entityRules:
+        - {
+            selector: { byKind: Pod, namespace: shop },
+            visible: true,
+            emphasis: normal,
+            labelMode: short,
+          }
+    transition: [{ type: layout-transition, durationMs: 700 }]

@@ -1,0 +1,277 @@
+schemaVersion: 1
+id: service-and-endpoints
+scenarioId: demo-shop
+chapterId: networking-resilience
+title:
+  {
+    en: How a Service reaches changing Pods,
+    ja: Service が変化する Pod に届く仕組み,
+    zh-CN: Service 如何访问变化的 Pod,
+  }
+summary:
+  {
+    en: 'Connect labels, selectors, EndpointSlices, and a stable Service portal.',
+    ja: label・selector・EndpointSlice・安定した Service 入口を結びます。,
+    zh-CN: 串联 Label、Selector、EndpointSlice 与稳定 Service 入口。,
+  }
+learningOutcome:
+  {
+    en: Distinguish stable Service access from replaceable Pod endpoints.,
+    ja: 安定した Service 入口と交換可能な Pod endpoint を区別する。,
+    zh-CN: 区分稳定 Service 访问与可替换 Pod Endpoint。,
+  }
+prerequisites: [manifest-to-running-pod]
+sourceIds: [k8s-labels, k8s-services, k8s-endpoint-slices, k8s-networking-overview]
+verifiedAt: '2026-08-07'
+baseProjection:
+  view: logical
+  cameraPresetId: logical
+  resetEntities: true
+  entityRules:
+    - { selector: { byKind: Namespace }, visible: true, emphasis: dimmed, labelMode: short }
+    - {
+        selector: { byLabel: { key: app.kubernetes.io/name, value: api }, namespace: shop },
+        visible: true,
+        emphasis: normal,
+        labelMode: full,
+      }
+    - {
+        selector:
+          {
+            byIds:
+              [
+                api-object:namespaced:shop:Service:api,
+                api-object:namespaced:shop:EndpointSlice:api-slice,
+                api-object:namespaced:shop:Pod:web-a,
+              ],
+          },
+        visible: true,
+        emphasis: normal,
+        labelMode: full,
+      }
+steps:
+  - id: labels
+    title: { en: Labels describe membership, ja: label が所属を表す, zh-CN: Label 描述成员关系 }
+    learningOutcome:
+      {
+        en: Read key/value metadata on Pods.,
+        ja: Pod のキーと値のメタデータを読む。,
+        zh-CN: 读取 Pod 上的键值元数据。,
+      }
+    narration:
+      {
+        en: Each api Pod carries app.kubernetes.io/name=api. Labels are key/value metadata used to organize and select objects.,
+        ja: 各 api Pod は app.kubernetes.io/name=api を持ちます。label はオブジェクトの整理と選択に使うキーと値のメタデータです。,
+        zh-CN: 每个 api Pod 都带有 app.kubernetes.io/name=api。Label 是用于组织和选择对象的键值元数据。,
+      }
+    introducesTerms: [label]
+    usesTerms: [pod]
+    sourceIds: [k8s-labels]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector: { byLabel: { key: app.kubernetes.io/name, value: api }, namespace: shop },
+              emphasis: focused,
+            },
+          ],
+      }
+    transition:
+      [
+        {
+          type: callout,
+          entityId: api-object:namespaced:shop:Pod:api-a,
+          label:
+            {
+              en: app.kubernetes.io/name=api,
+              ja: app.kubernetes.io/name=api,
+              zh-CN: app.kubernetes.io/name=api,
+            },
+          durationMs: 800,
+        },
+      ]
+  - id: service-selector
+    title:
+      {
+        en: A Service selects by labels,
+        ja: Service が label で選択する,
+        zh-CN: Service 通过 Label 选择,
+      }
+    learningOutcome:
+      {
+        en: Explain selector-based membership.,
+        ja: selector による所属判定を説明する。,
+        zh-CN: 解释基于 Selector 的成员选择。,
+      }
+    narration:
+      {
+        en: The api Service usually selects matching Pods by label. It does not hard-code temporary Pod names.,
+        ja: api Service は通常 label が一致する Pod を選びます。一時的な Pod 名を固定指定しません。,
+        zh-CN: api Service 通常按 Label 选择匹配的 Pod，而不是硬编码临时 Pod 名称。,
+      }
+    introducesTerms: [service, selector]
+    usesTerms: [label, pod]
+    sourceIds: [k8s-services, k8s-labels]
+    projectionPatch:
+      {
+        entityRules: [{ selector: { byKind: Service, namespace: shop }, emphasis: focused }],
+        relationRules: [{ byType: selects, visible: true, emphasis: focused }],
+      }
+    transition: [{ type: relation-reveal, relationId: selects-api-a, durationMs: 700 }]
+  - id: endpoint-slice
+    title:
+      {
+        en: EndpointSlice tracks concrete backends,
+        ja: EndpointSlice が実際のバックエンドを追跡する,
+        zh-CN: EndpointSlice 跟踪具体后端,
+      }
+    learningOutcome:
+      {
+        en: Connect the Service to a changing endpoint set.,
+        ja: Service を変化する endpoint 集合に結びつける。,
+        zh-CN: 将 Service 与变化的 Endpoint 集合联系起来。,
+      }
+    narration:
+      {
+        en: EndpointSlice API objects represent the ready backend endpoints for a Service and let Kubernetes update that set efficiently.,
+        ja: EndpointSlice API オブジェクトは Service の ready なバックエンドを表し、その集合を効率よく更新できるようにします。,
+        zh-CN: EndpointSlice API 对象表示 Service 的 ready 后端 Endpoint，并帮助 Kubernetes 高效更新该集合。,
+      }
+    introducesTerms: [endpoint, endpoint-slice]
+    usesTerms: [service, pod]
+    sourceIds: [k8s-endpoint-slices]
+    projectionPatch:
+      {
+        entityRules: [{ selector: { byKind: EndpointSlice, namespace: shop }, emphasis: focused }],
+        relationRules: [{ byType: contains-endpoint-for, visible: true, emphasis: focused }],
+      }
+    transition: [{ type: relation-reveal, relationId: endpoint-api, durationMs: 700 }]
+  - id: internal-request
+    title:
+      {
+        en: Traffic uses the stable portal,
+        ja: トラフィックは安定した入口を使う,
+        zh-CN: 流量使用稳定入口,
+      }
+    learningOutcome:
+      {
+        en: Follow data traffic without traversing configuration objects.,
+        ja: 設定オブジェクトを通過させずデータ通信を追う。,
+        zh-CN: 跟随数据流量而不让其穿过配置对象。,
+      }
+    narration:
+      {
+        en: 'A web Pod sends a request to the stable api Service portal, and the Service data plane directs it to a ready endpoint. The Service is not necessarily a proxy process, and the implementation is not fixed to kube-proxy.',
+        ja: web Pod は安定した api Service 入口へリクエストし、Service データプレーンが ready endpoint へ送ります。Service 自体が必ず proxy プロセスであるわけではなく、実装は kube-proxy に固定されません。,
+        zh-CN: web Pod 向稳定的 api Service 入口发请求，Service 数据面将其导向 ready Endpoint。Service 本身并非必然的代理进程，实现也不限定为 kube-proxy。,
+      }
+    introducesTerms: [cluster-ip, service-data-plane]
+    usesTerms: [service, endpoint, pod]
+    sourceIds: [k8s-services, k8s-networking-overview]
+    projectionPatch: { view: traffic, cameraPresetId: traffic }
+    transition:
+      [
+        {
+          type: data-packet,
+          path:
+            [
+              api-object:namespaced:shop:Pod:web-a,
+              api-object:namespaced:shop:Service:api,
+              api-object:namespaced:shop:Pod:api-b,
+            ],
+          label: { en: Application request, ja: アプリケーションリクエスト, zh-CN: 业务请求 },
+          durationMs: 1500,
+        },
+      ]
+  - id: pod-replaced
+    title:
+      {
+        en: Backends change; the Service remains,
+        ja: バックエンドは変わり Service は残る,
+        zh-CN: 后端变化，Service 保持,
+      }
+    learningOutcome:
+      {
+        en: Preserve the stable Service abstraction during replacement.,
+        ja: Pod 置換中も安定した Service 抽象を保つ。,
+        zh-CN: 在 Pod 替换期间保持稳定 Service 抽象。,
+      }
+    narration:
+      {
+        en: 'One Pod endpoint can disappear and a replacement can gain a new identity. EndpointSlice membership changes, but clients continue to use the same Service portal.',
+        ja: ある Pod endpoint が消え、置換 Pod が新しい ID を得ることがあります。EndpointSlice の所属は変わりますが、クライアントは同じ Service 入口を使い続けます。,
+        zh-CN: 一个 Pod Endpoint 可以消失，替换 Pod 获得新身份；EndpointSlice 成员会更新，但客户端继续使用同一个 Service 入口。,
+      }
+    introducesTerms: []
+    usesTerms: [pod, endpoint-slice, service]
+    sourceIds: [k8s-services, k8s-endpoint-slices]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector: { byIds: [api-object:namespaced:shop:Pod:api-a] },
+              visible: false,
+              emphasis: hidden,
+            },
+            { selector: { byIds: [api-object:namespaced:shop:Service:api] }, emphasis: focused },
+          ],
+      }
+    transition:
+      [
+        {
+          type: lifecycle,
+          entityId: api-object:namespaced:shop:Pod:api-a,
+          state: terminating,
+          durationMs: 900,
+        },
+      ]
+  - id: summary
+    title:
+      {
+        en: 'Stable access, changing membership',
+        ja: 安定した入口と変化する所属,
+        zh-CN: 稳定入口与变化成员,
+      }
+    learningOutcome:
+      {
+        en: Summarize the three networking roles.,
+        ja: 三つのネットワーク上の役割をまとめる。,
+        zh-CN: 总结三个网络角色。,
+      }
+    narration:
+      {
+        en: Labels define membership. EndpointSlices track backends. Services provide a stable access point.,
+        ja: label が所属を定義し、EndpointSlice がバックエンドを追跡し、Service が安定した入口を提供します。,
+        zh-CN: Label 定义成员关系，EndpointSlice 跟踪后端，Service 提供稳定访问点。,
+      }
+    introducesTerms: []
+    usesTerms: [label, endpoint-slice, service]
+    sourceIds: [k8s-labels, k8s-services, k8s-endpoint-slices]
+    projectionPatch:
+      {
+        entityRules:
+          [
+            {
+              selector:
+                {
+                  byIds:
+                    [
+                      api-object:namespaced:shop:Service:api,
+                      api-object:namespaced:shop:EndpointSlice:api-slice,
+                    ],
+                },
+              emphasis: focused,
+            },
+          ],
+      }
+    transition:
+      [
+        {
+          type: callout,
+          entityId: api-object:namespaced:shop:Service:api,
+          label: { en: Stable access point, ja: 安定した入口, zh-CN: 稳定访问点 },
+          durationMs: 700,
+        },
+      ]
