@@ -40,8 +40,8 @@ export function AboutPage() {
           <ShieldCheck />
           <h2>Privacy boundary</h2>
           <p>
-            The current release uses only a synthetic snapshot. It does not read cluster
-            credentials, metrics, logs, traces, or send browser data to a backend.
+            The current release uses only synthetic snapshots. It does not read cluster credentials,
+            metrics, logs, traces, or send browser data to a backend.
           </p>
         </article>
         <article>
@@ -56,9 +56,10 @@ export function AboutPage() {
       <section className="roadmap">
         <h2>{t.roadmap}</h2>
         <p>
-          The world-state rebuild includes one fully verified lesson. The remaining curriculum is
-          visible here only as a non-interactive roadmap until each lesson passes the same factual,
-          accessibility, and visual validation gates.
+          The world-state rebuild includes two fully verified lessons: one Pod lifecycle and one
+          Service traffic story. The remaining curriculum is visible here only as a non-interactive
+          roadmap until each lesson passes the same factual, accessibility, and visual validation
+          gates.
         </p>
         <div className="roadmap-list">
           {course.lessons.map((lesson, index) => (

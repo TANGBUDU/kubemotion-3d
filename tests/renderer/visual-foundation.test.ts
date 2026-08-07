@@ -4,15 +4,18 @@ import type { EntityViewState, RelationViewState, ViewProjection } from '../../s
 import { calculateLayout } from '../../src/renderer/LayoutEngine';
 import { getRelationStyle, RelationRegistry } from '../../src/renderer/RelationRegistry';
 import { SceneRegistry } from '../../src/renderer/SceneRegistry';
+import { SceneStage } from '../../src/renderer/scene/SceneStage';
 import {
   UnsupportedVisualError,
   VisualFactoryRegistry,
 } from '../../src/renderer/VisualFactoryRegistry';
 import {
+  ApiServerVisualHandle,
   ContainerVisualHandle,
   ControllerManagerVisualHandle,
   GenericVisualHandle,
   KubeletVisualHandle,
+  KubectlVisualHandle,
   NodeVisualHandle,
   PodVisualHandle,
   ReplicaSetVisualHandle,
@@ -41,14 +44,17 @@ const makeEntity = (
       ? 'runtime-instance'
       : kind === 'Node'
         ? 'infrastructure'
-        : kind === 'Kubelet' || kind === 'ControllerManager' || kind === 'Scheduler'
-          ? 'runtime-component'
-          : 'api-object',
+        : kind === 'Kubectl'
+          ? 'external'
+          : kind === 'Kubelet' ||
+              kind === 'KubeAPIServer' ||
+              kind === 'ControllerManager' ||
+              kind === 'Scheduler'
+            ? 'runtime-component'
+            : 'api-object',
   kind,
   name: id.split(':').at(-1) ?? id,
-  ...(kind === 'Node' || kind === 'Kubelet' || kind === 'ControllerManager' || kind === 'Scheduler'
-    ? {}
-    : { namespace: 'shop' }),
+  ...(kind === 'Pod' || kind === 'Container' || kind === 'ReplicaSet' ? { namespace: 'shop' } : {}),
   status: kind === 'Container' || kind === 'Pod' ? 'running' : 'healthy',
   data,
   title: text(id),
@@ -66,7 +72,9 @@ const makeEntity = (
               ? 'replicaset'
               : kind === 'Kubelet'
                 ? 'runtime'
-                : 'control-plane',
+                : kind === 'Kubectl'
+                  ? 'external'
+                  : 'control-plane',
   },
 });
 
@@ -91,6 +99,8 @@ const replicaSet = makeEntity('rs:api', 'ReplicaSet', {
 const kubelet = makeEntity('component:kubelet', 'Kubelet', { nodeName: node.name });
 const controller = makeEntity('component:controller', 'ControllerManager', {});
 const scheduler = makeEntity('component:scheduler', 'Scheduler', {});
+const apiServer = makeEntity('component:api-server', 'KubeAPIServer', {});
+const kubectl = makeEntity('external:kubectl', 'Kubectl', { role: 'operator-trigger' });
 
 const makeRelation = (
   id: RelationId,
@@ -126,8 +136,10 @@ const snapshot = (
     container,
     replicaSet,
     kubelet,
+    apiServer,
     controller,
     scheduler,
+    kubectl,
   ],
   relationValues: readonly WorldRelation[] = [contains, scheduled, owns],
   revision = 1,
@@ -152,10 +164,46 @@ const viewFor = (world: WorldSnapshot): ViewProjection => {
     entityStates,
     relationStates,
     callouts: [],
+    activeRoutes: [],
   };
 };
 
 describe('visual factory foundation', () => {
+  it('keeps normal surfaces neutral while focused entities receive status emissive emphasis', () => {
+    const registry = new VisualFactoryRegistry();
+    const normalHandle = registry.create(
+      makeEntity('infrastructure:cluster:global:Node:normal', 'Node', {}),
+      normal,
+      { allowGeneric: false },
+    );
+    const focusedHandle = registry.create(
+      makeEntity('infrastructure:cluster:global:Node:focused', 'Node', {}),
+      { ...normal, emphasis: 'focused' },
+      { allowGeneric: false },
+    );
+    const intensities = (root: THREE.Object3D): number[] => {
+      const result: number[] = [];
+      root.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        for (const material of materials) {
+          if (material instanceof THREE.MeshStandardMaterial) {
+            result.push(material.emissiveIntensity);
+          }
+        }
+      });
+      return result;
+    };
+
+    expect(intensities(normalHandle.root).every((value) => value === 0)).toBe(true);
+    expect(intensities(focusedHandle.root).some((value) => value >= 0.32)).toBe(true);
+    expect(intensities(focusedHandle.root).every((value) => value <= 0.45)).toBe(true);
+    focusedHandle.update(focusedHandle.entity, normal);
+    expect(intensities(focusedHandle.root).every((value) => value === 0)).toBe(true);
+    normalHandle.dispose();
+    focusedHandle.dispose();
+  });
+
   it('uses a specialized visual for every golden-lesson kind', () => {
     const registry = new VisualFactoryRegistry();
     const expectations: readonly (readonly [WorldEntity, object])[] = [
@@ -164,8 +212,10 @@ describe('visual factory foundation', () => {
       [container, ContainerVisualHandle.prototype],
       [replicaSet, ReplicaSetVisualHandle.prototype],
       [kubelet, KubeletVisualHandle.prototype],
+      [apiServer, ApiServerVisualHandle.prototype],
       [controller, ControllerManagerVisualHandle.prototype],
       [scheduler, SchedulerVisualHandle.prototype],
+      [kubectl, KubectlVisualHandle.prototype],
     ];
     for (const [item, prototype] of expectations) {
       const handle = registry.create(item, normal, { allowGeneric: false });
@@ -173,6 +223,59 @@ describe('visual factory foundation', () => {
       expect(handle.root.userData.genericVisual).not.toBe(true);
       handle.dispose();
     }
+  });
+
+  it('uses distinct control-plane silhouettes without canvas badges or placeholder solids', () => {
+    const registry = new VisualFactoryRegistry();
+    const handles = [apiServer, controller, scheduler, kubectl].map((entity) =>
+      registry.create(entity, normal, { allowGeneric: false }),
+    );
+    const roles = handles.map((handle) => {
+      const result: string[] = [];
+      handle.root.traverse((object) => {
+        if (typeof object.userData.role === 'string') result.push(object.userData.role);
+        if (object instanceof THREE.Mesh) {
+          expect(object.geometry).not.toBeInstanceOf(THREE.TorusKnotGeometry);
+          expect(object.geometry).not.toBeInstanceOf(THREE.ConeGeometry);
+        }
+      });
+      return result;
+    });
+    expect(roles[0]?.filter((role) => role === 'api-control-port')).toHaveLength(5);
+    expect(roles[1]?.filter((role) => role === 'reconcile-loop')).toHaveLength(2);
+    expect(roles[2]?.filter((role) => role === 'scheduler-node-output')).toHaveLength(3);
+    expect(roles[3]).toContain('kubectl-delete-trigger');
+    expect(roles.flat()).not.toContain('text-badge');
+    for (const handle of handles) handle.dispose();
+  });
+
+  it('updates ReplicaSet counters in place and exposes a non-color-only deficit state', () => {
+    const handle = new ReplicaSetVisualHandle(replicaSet, normal);
+    const segmentUuids: string[] = [];
+    handle.root.traverse((object) => {
+      if (object.userData.role === 'counter-segment') segmentUuids.push(object.uuid);
+    });
+    const deficitReplicaSet: WorldEntity = {
+      ...replicaSet,
+      data: { desiredReplicas: 3, currentReplicas: 2, readyReplicas: 2 },
+    };
+    handle.update(deficitReplicaSet, normal);
+    const updatedSegmentUuids: string[] = [];
+    let deficitVisible = false;
+    handle.root.traverse((object) => {
+      if (object.userData.role === 'counter-segment') updatedSegmentUuids.push(object.uuid);
+      if (object.userData.role === 'replicaset-deficit') deficitVisible = object.visible;
+    });
+    expect(updatedSegmentUuids).toEqual(segmentUuids);
+    expect(handle.root.userData.counters).toEqual({ desired: 3, current: 2, ready: 2 });
+    expect(handle.root.userData.hasDeficit).toBe(true);
+    expect(deficitVisible).toBe(true);
+    expect(handle.setCounterAnimation('data.currentReplicas', 3)).toBe(true);
+    expect(handle.root.userData.counters).toEqual({ desired: 3, current: 3, ready: 2 });
+    expect(handle.setCounterAnimation('data.currentReplicas')).toBe(true);
+    expect(handle.root.userData.counters).toEqual({ desired: 3, current: 2, ready: 2 });
+    expect(handle.setCounterAnimation('data.unknownCounter', 9)).toBe(false);
+    handle.dispose();
   });
 
   it('marks fallback visuals and can reject them for a golden scene', () => {
@@ -213,7 +316,7 @@ describe('visual factory foundation', () => {
       data: { ...container.data, restartCount: 1, instanceGeneration: 2 },
     };
     const after = snapshot(
-      [node, pod, restarted, replicaSet, kubelet, controller, scheduler],
+      [node, pod, restarted, replicaSet, kubelet, apiServer, controller, scheduler, kubectl],
       [contains, scheduled, owns],
       2,
     );
@@ -274,12 +377,76 @@ describe('SceneRegistry lifecycle', () => {
     const view = viewFor(world);
     registry.sync(world, view);
     registry.applyLayout(calculateLayout({ world, view }));
-    expect(registry.guideCount).toBe(1);
+    expect(registry.guideCount).toBe(4);
+    const tray = scene.getObjectByName('layout-guide:pending-lane');
+    expect(tray?.userData.role).toBe('unscheduled-pods-tray');
+    expect(tray?.userData.empty).toBe(true);
+    const labels = registry.layoutLabels();
+    expect(labels.map((label) => label.id)).toEqual([
+      'layout:control-plane-zone',
+      'layout:workload-state-zone',
+      'layout:pending-lane',
+      'layout:worker-nodes-zone',
+    ]);
+    expect(labels.find((label) => label.kind === 'tray-title')).toMatchObject({
+      text: 'UNSCHEDULED PODS',
+      zoneId: 'workload-state',
+      kind: 'tray-title',
+    });
+    expect(labels.filter((label) => label.kind === 'zone-title')).toHaveLength(3);
+    expect(labels.every((label) => label.worldPosition.every(Number.isFinite))).toBe(true);
     expect(registry.raycastTargets().every((item) => item.userData.role !== 'layout-guide')).toBe(
       true,
     );
     registry.clear();
     expect(registry.guideCount).toBe(0);
+    expect(registry.layoutLabels()).toEqual([]);
+  });
+
+  it('mounts the Kubelet entity into the owning Node instead of leaving it at scene root', () => {
+    const scene = new THREE.Scene();
+    const registry = new SceneRegistry(scene, new VisualFactoryRegistry(), { allowGeneric: false });
+    const world = snapshot();
+    const view = viewFor(world);
+    registry.sync(world, view);
+    const layout = calculateLayout({ world, view });
+    registry.applyLayout(layout);
+    const nodeHandle = registry.get(node.id);
+    const kubeletHandle = registry.get(kubelet.id);
+    expect(nodeHandle).toBeInstanceOf(NodeVisualHandle);
+    expect(kubeletHandle).toBeInstanceOf(KubeletVisualHandle);
+    if (
+      !(nodeHandle instanceof NodeVisualHandle) ||
+      !(kubeletHandle instanceof KubeletVisualHandle)
+    ) {
+      return;
+    }
+    expect(kubeletHandle.root.parent).toBe(nodeHandle.kubeletMount);
+    expect(nodeHandle.hasKubelet(kubelet.id)).toBe(true);
+    const worldPosition = kubeletHandle.root.getWorldPosition(new THREE.Vector3());
+    expect(worldPosition.toArray()).toEqual(layout.entities.get(kubelet.id)?.position);
+    registry.clear();
+  });
+});
+
+describe('lesson stage semantics', () => {
+  it('publishes ordered zone-title and legend anchors for a DOM label layer', () => {
+    const parent = new THREE.Group();
+    const stage = new SceneStage(parent);
+    const control = stage.getLabelAnchorWorld('control-plane');
+    const workload = stage.getLabelAnchorWorld('workload-state');
+    const workers = stage.getLabelAnchorWorld('worker-nodes');
+    expect(control?.z).toBeLessThan(workload?.z ?? Number.NEGATIVE_INFINITY);
+    expect(workload?.z).toBeLessThan(workers?.z ?? Number.NEGATIVE_INFINITY);
+    expect(stage.labelAnchors.get('control-plane')?.userData.domLabel).toMatchObject({
+      labelClass: 'zone-title',
+      text: 'CONTROL PLANE',
+    });
+    expect(stage.labelAnchors.get('logical-layout-note')?.userData.domLabel.labelClass).toBe(
+      'fixed-legend',
+    );
+    stage.dispose();
+    expect(stage.labelAnchors.size).toBe(0);
   });
 });
 

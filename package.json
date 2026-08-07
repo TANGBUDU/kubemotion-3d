@@ -17,6 +17,7 @@
     "format:check": "prettier --check .",
     "content:validate": "tsx scripts/validate-content.ts",
     "content:index": "tsx scripts/generate-content-index.ts",
+    "visual:capture": "tsx scripts/capture-visual-acceptance.ts",
     "test": "vitest",
     "test:unit": "vitest",
     "test:e2e": "playwright test",

@@ -31,6 +31,13 @@ export default defineConfig({
       name: 'desktop-chromium',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
     },
-    { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
+    {
+      name: 'desktop-1280-chromium',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 720 } },
+    },
+    {
+      name: 'mobile-chromium',
+      use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 } },
+    },
   ],
 });
