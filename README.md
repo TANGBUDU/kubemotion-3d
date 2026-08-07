@@ -24,10 +24,11 @@ a Pod.
 
 The Pod lifecycle lesson shows three semantic zones, API-mediated control routes, a real
 unscheduled tray, Node racks with embedded kubelets and Pod bays, Pods as shells containing child
-Containers, and in-place ReplicaSet counters. The traffic lesson separates the stable Service
-address, EndpointSlice API state, and the selected Ready backend. Both use fixed EvidencePanels,
-collision-aware labels, persistent wide teaching routes, explicit replay, and reduced-motion
-fallbacks.
+Container status slots, and in-place ReplicaSet counters. A runtime restart is evidenced by
+`containerID`, `restartCount`, `state`, and `lastState`; ReplicaSet counters are presented as
+`SPEC / OBSERVED / READY`. The traffic lesson separates the stable Service address, EndpointSlice
+API state, and the selected Ready backend. Both use fixed EvidencePanels, collision-aware labels,
+persistent wide teaching routes, explicit replay, and reduced-motion fallbacks.
 
 ## Architecture
 
