@@ -12,6 +12,7 @@ export type {
   CueOfType,
   CueProgressEvent,
   RelationAnimationTarget,
+  TeachingRouteAnimationTarget,
 } from './animation/contracts';
 
 /**
@@ -27,7 +28,7 @@ export class AnimationCoordinator {
 
   public constructor(private readonly baseContext: AnimationContext) {
     this.pool = new AnimationTokenPool(baseContext.scene);
-    this.handlers = new CueHandlerRegistry(this.pool);
+    this.handlers = new CueHandlerRegistry();
   }
 
   /** Returns false only when the request was a duplicate/stale playback command. */
@@ -124,6 +125,15 @@ export class AnimationCoordinator {
 
   public lastPlaybackId(stepKey: string): number | undefined {
     return this.lastPlaybackIds.get(stepKey);
+  }
+
+  /**
+   * Starts a new authored application of a step. React rerenders remain deduped,
+   * while back/forward or direct navigation may replay the same playback id.
+   */
+  public forgetPlayback(stepKey: string): void {
+    if (this.disposed) throw new Error('Cannot reset playback after coordinator disposal.');
+    this.lastPlaybackIds.delete(stepKey);
   }
 
   public dispose(): void {

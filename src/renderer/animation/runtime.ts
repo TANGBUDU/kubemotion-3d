@@ -99,29 +99,44 @@ type ActiveState = 'idle' | 'running' | 'finished' | 'cancelled' | 'disposed';
 export abstract class TimedActiveCue implements ActiveCue {
   private state: ActiveState = 'idle';
   private readonly startedAt: number;
+  private readonly delayMs: number;
+  private effectsStarted = false;
   public readonly durationMs: number;
 
   protected constructor(
     requestedDurationMs: number,
     protected readonly context: ResolvedAnimationContext,
+    requestedDelayMs = 0,
   ) {
     this.startedAt = context.now();
+    this.delayMs = context.reducedMotion ? 0 : Math.max(0, requestedDelayMs);
     this.durationMs = context.reducedMotion
       ? Math.min(Math.max(1, requestedDurationMs), REDUCED_MOTION_MAX_MS)
       : Math.max(1, requestedDurationMs);
   }
 
+  private startEffects(): void {
+    if (this.effectsStarted) return;
+    this.effectsStarted = true;
+    this.onStart();
+  }
+
   public begin(): this {
     if (this.state !== 'idle') return this;
     this.state = 'running';
-    this.onStart();
+    // Establish the authored "before" visual immediately; delay only gates progression.
+    // This prevents the already-synced final world from flashing before a causal effect begins.
+    this.startEffects();
     this.context.markDirty?.();
     return this;
   }
 
   public update(now: number): boolean {
     if (this.state !== 'running') return false;
-    const linearProgress = clamp01((now - this.startedAt) / this.durationMs);
+    const elapsed = Math.max(0, now - this.startedAt);
+    if (elapsed < this.delayMs) return true;
+    this.startEffects();
+    const linearProgress = clamp01((elapsed - this.delayMs) / this.durationMs);
     this.onUpdate(this.easing(linearProgress), linearProgress);
     this.context.markDirty?.();
     return linearProgress < 1;
@@ -129,6 +144,7 @@ export abstract class TimedActiveCue implements ActiveCue {
 
   public finish(): void {
     if (this.state !== 'running') return;
+    this.startEffects();
     this.onUpdate(1, 1);
     this.onFinish();
     this.state = 'finished';

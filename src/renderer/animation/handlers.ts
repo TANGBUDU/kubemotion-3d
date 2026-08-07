@@ -1,6 +1,5 @@
-import * as THREE from 'three';
 import type { TransitionCue } from '../../course/types';
-import type { AnchorKind, EntityVisualHandle } from '../VisualHandles';
+import type { EntityVisualHandle } from '../VisualHandles';
 import type {
   ActiveCue,
   AnimationPhase,
@@ -8,16 +7,7 @@ import type {
   CueOfType,
   ResolvedAnimationContext,
 } from './contracts';
-import {
-  NoopActiveCue,
-  TimedActiveCue,
-  VisualBaseline,
-  easeOutCubic,
-  pointAlongPath,
-  type TokenLease,
-  type TokenStyle,
-} from './runtime';
-import type { AnimationTokenPool } from './runtime';
+import { NoopActiveCue, TimedActiveCue, VisualBaseline } from './runtime';
 
 const event = <TCue extends TransitionCue>(cue: TCue, phase: AnimationPhase, progress: number) =>
   ({ cue, phase, progress }) as const;
@@ -30,63 +20,43 @@ const getLiveEntity = (
   return handle && !handle.isDisposed ? handle : undefined;
 };
 
-const getAnchor = (
-  context: ResolvedAnimationContext,
-  entityId: string,
-  anchor: AnchorKind,
-): THREE.Vector3 | undefined => getLiveEntity(context, entityId)?.getAnchor(anchor);
+type RouteFlowCue = CueOfType<'data-packet' | 'dns-query' | 'api-request'>;
 
-class TokenMotion {
-  private lease: TokenLease | undefined;
-  private readonly scratch = new THREE.Vector3();
+class RouteFlowMotion {
+  private readonly target;
+  private started = false;
+  private released = false;
 
   public constructor(
-    private readonly pool: AnimationTokenPool,
-    private readonly points: readonly THREE.Vector3[],
-    private readonly style: TokenStyle,
-    private readonly reducedMotion: boolean,
-  ) {}
+    routeId: string,
+    private readonly context: ResolvedAnimationContext,
+  ) {
+    this.target = context.getRoute?.(routeId);
+  }
 
   public start(): void {
-    if (this.points.length < 2 || this.lease) return;
-    this.lease = this.pool.acquire(this.style);
-    const first = this.points[0];
-    const last = this.points.at(-1);
-    if (this.reducedMotion && last) this.lease.mesh.position.copy(last);
-    else if (first) this.lease.mesh.position.copy(first);
-    this.lease.mesh.material.opacity = 0;
+    if (this.started) return;
+    this.started = true;
+    this.target?.setFlowProgress(this.context.reducedMotion ? 1 : 0);
   }
 
   public update(progress: number): void {
-    const mesh = this.lease?.mesh;
-    if (!mesh) return;
-    if (!this.reducedMotion) {
-      pointAlongPath(this.points, easeOutCubic(progress), this.scratch);
-      mesh.position.copy(this.scratch);
-    }
-    mesh.material.opacity = Math.sin(Math.PI * progress);
-    const scale = 0.78 + Math.sin(Math.PI * progress) * 0.38;
-    mesh.scale.setScalar(this.reducedMotion ? 1 : scale);
+    this.target?.setFlowProgress(this.context.reducedMotion ? 1 : progress);
   }
 
   public release(): void {
-    this.lease?.release();
-    this.lease = undefined;
+    if (!this.started || this.released) return;
+    this.released = true;
+    this.target?.finishFlow();
   }
 }
 
-type PathCue = Extract<TransitionCue, { readonly path: readonly string[] }>;
-
 class DataPathActiveCue extends TimedActiveCue {
-  private readonly motion: TokenMotion;
+  private readonly motion: RouteFlowMotion;
 
-  public constructor(cue: PathCue, context: ResolvedAnimationContext, pool: AnimationTokenPool) {
-    super(cue.durationMs, context);
-    const points = cue.path.flatMap((entityId) => {
-      const anchor = getAnchor(context, entityId, 'data-path');
-      return anchor ? [anchor] : [];
-    });
-    this.motion = new TokenMotion(pool, points, cue.type, context.reducedMotion);
+  public constructor(cue: RouteFlowCue, context: ResolvedAnimationContext) {
+    super(cue.durationMs, context, cue.delayMs);
+    this.motion = new RouteFlowMotion(cue.routeId, context);
   }
 
   protected override onStart(): void {
@@ -110,14 +80,11 @@ class DataPathActiveCue extends TimedActiveCue {
   }
 }
 
-export class DataPathCueHandler implements CueHandler<PathCue> {
-  public constructor(
-    public readonly type: PathCue['type'],
-    private readonly pool: AnimationTokenPool,
-  ) {}
+export class DataPathCueHandler implements CueHandler<RouteFlowCue> {
+  public constructor(public readonly type: RouteFlowCue['type']) {}
 
-  public start(cue: PathCue, context: ResolvedAnimationContext): ActiveCue {
-    return new DataPathActiveCue(cue, context, this.pool).begin();
+  public start(cue: RouteFlowCue, context: ResolvedAnimationContext): ActiveCue {
+    return new DataPathActiveCue(cue, context).begin();
   }
 }
 
@@ -126,7 +93,7 @@ class FocusCameraActiveCue extends TimedActiveCue {
     private readonly cue: CueOfType<'focus-camera'>,
     context: ResolvedAnimationContext,
   ) {
-    super(cue.durationMs, context);
+    super(cue.durationMs, context, cue.delayMs);
   }
 
   protected override onStart(): void {
@@ -160,7 +127,7 @@ class LayoutTransitionActiveCue extends TimedActiveCue {
     private readonly cue: CueOfType<'layout-transition'>,
     context: ResolvedAnimationContext,
   ) {
-    super(cue.durationMs, context);
+    super(cue.durationMs, context, cue.delayMs);
   }
 
   protected override onStart(): void {
@@ -197,7 +164,7 @@ abstract class EntityVisualActiveCue<TCue extends TransitionCue> extends TimedAc
     protected readonly handle: EntityVisualHandle,
     context: ResolvedAnimationContext,
   ) {
-    super(cue.durationMs, context);
+    super(cue.durationMs, context, cue.delayMs);
     this.baseline = new VisualBaseline(handle.root);
   }
 
@@ -274,6 +241,43 @@ export class ContainerRestartCueHandler implements CueHandler<CueOfType<'contain
   }
 }
 
+class ContainerStartActiveCue extends EntityVisualActiveCue<CueOfType<'container-start'>> {
+  protected override onStart(): void {
+    this.baseline.setVisible(true);
+    if (!this.context.reducedMotion) this.baseline.setScaleFactor(0.82, 0.58, 0.82);
+    this.baseline.setOpacityFactor(0.28);
+  }
+
+  protected override onUpdate(progress: number): void {
+    if (!this.context.reducedMotion) {
+      const settle = Math.sin(Math.PI * progress) * 0.06;
+      this.baseline.setScaleFactor(
+        0.82 + progress * 0.18 + settle,
+        0.58 + progress * 0.42 + settle,
+        0.82 + progress * 0.18 + settle,
+      );
+    }
+    this.baseline.setOpacityFactor(0.28 + progress * 0.72);
+  }
+
+  protected override onFinish(): void {
+    this.restore();
+  }
+
+  protected override onCancel(): void {
+    this.restore();
+  }
+}
+
+/** First startup of a waiting Container; intentionally distinct from a restart generation. */
+export class ContainerStartCueHandler implements CueHandler<CueOfType<'container-start'>> {
+  public readonly type = 'container-start' as const;
+  public start(cue: CueOfType<'container-start'>, context: ResolvedAnimationContext): ActiveCue {
+    const handle = getLiveEntity(context, cue.entityId);
+    return handle ? new ContainerStartActiveCue(cue, handle, context).begin() : new NoopActiveCue();
+  }
+}
+
 class EntityEnterActiveCue extends EntityVisualActiveCue<CueOfType<'entity-enter'>> {
   protected override onStart(): void {
     this.baseline.setVisible(true);
@@ -331,23 +335,18 @@ export class EntityExitCueHandler implements CueHandler<CueOfType<'entity-exit'>
 class ReconcilePulseActiveCue extends TimedActiveCue {
   private readonly fromBaseline: VisualBaseline | undefined;
   private readonly toBaseline: VisualBaseline | undefined;
-  private readonly motion: TokenMotion;
+  private readonly motion: RouteFlowMotion;
 
   public constructor(
     private readonly cue: CueOfType<'reconcile-pulse'>,
     context: ResolvedAnimationContext,
-    pool: AnimationTokenPool,
   ) {
-    super(cue.durationMs, context);
+    super(cue.durationMs, context, cue.delayMs);
     const from = getLiveEntity(context, cue.fromEntityId);
     const to = getLiveEntity(context, cue.toEntityId);
     this.fromBaseline = from ? new VisualBaseline(from.root) : undefined;
     this.toBaseline = to ? new VisualBaseline(to.root) : undefined;
-    const points = [
-      getAnchor(context, cue.fromEntityId, 'control'),
-      getAnchor(context, cue.toEntityId, 'control'),
-    ].filter((point): point is THREE.Vector3 => point !== undefined);
-    this.motion = new TokenMotion(pool, points, 'reconcile', context.reducedMotion);
+    this.motion = new RouteFlowMotion(cue.routeId, context);
   }
 
   protected override onStart(): void {
@@ -390,30 +389,23 @@ class ReconcilePulseActiveCue extends TimedActiveCue {
 
 export class ReconcilePulseCueHandler implements CueHandler<CueOfType<'reconcile-pulse'>> {
   public readonly type = 'reconcile-pulse' as const;
-  public constructor(private readonly pool: AnimationTokenPool) {}
   public start(cue: CueOfType<'reconcile-pulse'>, context: ResolvedAnimationContext): ActiveCue {
-    return new ReconcilePulseActiveCue(cue, context, this.pool).begin();
+    return new ReconcilePulseActiveCue(cue, context).begin();
   }
 }
 
 class SchedulerAssignmentActiveCue extends TimedActiveCue {
   private readonly podBaseline: VisualBaseline | undefined;
-  private readonly motion: TokenMotion;
+  private readonly motion: RouteFlowMotion;
 
   public constructor(
     private readonly cue: CueOfType<'scheduler-assignment'>,
     context: ResolvedAnimationContext,
-    pool: AnimationTokenPool,
   ) {
-    super(cue.durationMs, context);
+    super(cue.durationMs, context, cue.delayMs);
     const pod = getLiveEntity(context, cue.podId);
     this.podBaseline = pod ? new VisualBaseline(pod.root) : undefined;
-    const points = [
-      getAnchor(context, cue.schedulerId, 'control'),
-      getAnchor(context, cue.podId, 'placement'),
-      getAnchor(context, cue.nodeId, 'placement'),
-    ].filter((point): point is THREE.Vector3 => point !== undefined);
-    this.motion = new TokenMotion(pool, points, 'scheduler', context.reducedMotion);
+    this.motion = new RouteFlowMotion(cue.routeId, context);
   }
 
   protected override onStart(): void {
@@ -458,12 +450,11 @@ export class SchedulerAssignmentCueHandler implements CueHandler<
   CueOfType<'scheduler-assignment'>
 > {
   public readonly type = 'scheduler-assignment' as const;
-  public constructor(private readonly pool: AnimationTokenPool) {}
   public start(
     cue: CueOfType<'scheduler-assignment'>,
     context: ResolvedAnimationContext,
   ): ActiveCue {
-    return new SchedulerAssignmentActiveCue(cue, context, this.pool).begin();
+    return new SchedulerAssignmentActiveCue(cue, context).begin();
   }
 }
 
@@ -472,7 +463,7 @@ class CounterChangeActiveCue extends TimedActiveCue {
     private readonly cue: CueOfType<'counter-change'>,
     context: ResolvedAnimationContext,
   ) {
-    super(cue.durationMs, context);
+    super(cue.durationMs, context, cue.delayMs);
   }
 
   private emit(phase: AnimationPhase, progress: number, value: number): void {
@@ -511,7 +502,7 @@ class RelationRevealActiveCue extends TimedActiveCue {
     private readonly cue: CueOfType<'relation-reveal'>,
     context: ResolvedAnimationContext,
   ) {
-    super(cue.durationMs, context);
+    super(cue.durationMs, context, cue.delayMs);
     const target = context.getRelation?.(cue.relationId);
     this.baseline = target ? new VisualBaseline(target.root) : undefined;
   }
@@ -550,7 +541,7 @@ class CalloutActiveCue extends TimedActiveCue {
     private readonly cue: CueOfType<'callout'>,
     context: ResolvedAnimationContext,
   ) {
-    super(cue.durationMs, context);
+    super(cue.durationMs, context, cue.delayMs);
   }
 
   protected override onStart(): void {
@@ -590,6 +581,7 @@ export class CueHandlerRegistry {
   private readonly layoutTransition = new LayoutTransitionCueHandler();
   private readonly containerFailure = new ContainerFailureCueHandler();
   private readonly containerRestart = new ContainerRestartCueHandler();
+  private readonly containerStart = new ContainerStartCueHandler();
   private readonly entityExit = new EntityExitCueHandler();
   private readonly entityEnter = new EntityEnterCueHandler();
   private readonly reconcilePulse: ReconcilePulseCueHandler;
@@ -598,12 +590,12 @@ export class CueHandlerRegistry {
   private readonly relationReveal = new RelationRevealCueHandler();
   private readonly callout = new CalloutCueHandler();
 
-  public constructor(pool: AnimationTokenPool) {
-    this.dataPacket = new DataPathCueHandler('data-packet', pool);
-    this.dnsQuery = new DataPathCueHandler('dns-query', pool);
-    this.apiRequest = new DataPathCueHandler('api-request', pool);
-    this.reconcilePulse = new ReconcilePulseCueHandler(pool);
-    this.schedulerAssignment = new SchedulerAssignmentCueHandler(pool);
+  public constructor() {
+    this.dataPacket = new DataPathCueHandler('data-packet');
+    this.dnsQuery = new DataPathCueHandler('dns-query');
+    this.apiRequest = new DataPathCueHandler('api-request');
+    this.reconcilePulse = new ReconcilePulseCueHandler();
+    this.schedulerAssignment = new SchedulerAssignmentCueHandler();
   }
 
   public start(cue: TransitionCue, context: ResolvedAnimationContext): ActiveCue {
@@ -622,6 +614,8 @@ export class CueHandlerRegistry {
         return this.containerFailure.start(cue, context);
       case 'container-restart':
         return this.containerRestart.start(cue, context);
+      case 'container-start':
+        return this.containerStart.start(cue, context);
       case 'entity-exit':
         return this.entityExit.start(cue, context);
       case 'entity-enter':

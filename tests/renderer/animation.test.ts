@@ -86,6 +86,9 @@ interface Harness {
   readonly handles: Readonly<Record<'a' | 'b' | 'c', TestHandle>>;
   readonly relationRoot: THREE.Group;
   readonly relationMaterial: THREE.LineBasicMaterial;
+  readonly routeRoot: THREE.Group;
+  readonly routeProgress: number[];
+  readonly routeFinishes: { value: number };
   readonly phases: string[];
   readonly counterValues: number[];
   readonly coordinator: AnimationCoordinator;
@@ -117,6 +120,12 @@ const createHarness = (reducedMotion = false): Harness => {
   );
   scene.add(relationRoot);
 
+  const routeRoot = new THREE.Group();
+  routeRoot.name = 'teaching-route:main';
+  scene.add(routeRoot);
+  const routeProgress: number[] = [];
+  const routeFinishes = { value: 0 };
+
   const phases: string[] = [];
   const counterValues: number[] = [];
   const context: AnimationContext = {
@@ -125,6 +134,16 @@ const createHarness = (reducedMotion = false): Harness => {
     now: () => 0,
     getEntity: (entityId) => Object.values(handles).find((handle) => handle.entityId === entityId),
     getRelation: (relationId) => (relationId === 'r1' ? { root: relationRoot } : undefined),
+    getRoute: (routeId) =>
+      routeId === 'route:main'
+        ? {
+            root: routeRoot,
+            setFlowProgress: (progress) => routeProgress.push(progress),
+            finishFlow: () => {
+              routeFinishes.value += 1;
+            },
+          }
+        : undefined,
     focusCamera: ({ phase }) => phases.push(`focus:${phase}`),
     transitionLayout: ({ phase }) => phases.push(`layout:${phase}`),
     reconcilePulse: ({ phase }) => phases.push(`reconcile:${phase}`),
@@ -144,6 +163,9 @@ const createHarness = (reducedMotion = false): Harness => {
     handles,
     relationRoot,
     relationMaterial,
+    routeRoot,
+    routeProgress,
+    routeFinishes,
     phases,
     counterValues,
     coordinator,
@@ -161,18 +183,31 @@ const createHarness = (reducedMotion = false): Harness => {
 };
 
 const cueCases: readonly [string, TransitionCue][] = [
-  ['data packet', { type: 'data-packet', path: ['a', 'b'], label: localized, durationMs: 1_000 }],
-  ['DNS query', { type: 'dns-query', path: ['a', 'b'], label: localized, durationMs: 1_000 }],
-  ['API request', { type: 'api-request', path: ['a', 'b'], label: localized, durationMs: 1_000 }],
+  [
+    'data packet',
+    { type: 'data-packet', routeId: 'route:main', label: localized, durationMs: 1_000 },
+  ],
+  ['DNS query', { type: 'dns-query', routeId: 'route:main', label: localized, durationMs: 1_000 }],
+  [
+    'API request',
+    { type: 'api-request', routeId: 'route:main', label: localized, durationMs: 1_000 },
+  ],
   ['camera focus', { type: 'focus-camera', entityId: 'a', durationMs: 1_000 }],
   ['layout', { type: 'layout-transition', durationMs: 1_000 }],
   ['container failure', { type: 'container-failure', entityId: 'a', durationMs: 1_000 }],
   ['container restart', { type: 'container-restart', entityId: 'a', durationMs: 1_000 }],
+  ['container start', { type: 'container-start', entityId: 'a', durationMs: 1_000 }],
   ['entity exit', { type: 'entity-exit', entityId: 'a', durationMs: 1_000 }],
   ['entity enter', { type: 'entity-enter', entityId: 'a', durationMs: 1_000 }],
   [
     'reconcile pulse',
-    { type: 'reconcile-pulse', fromEntityId: 'a', toEntityId: 'b', durationMs: 1_000 },
+    {
+      type: 'reconcile-pulse',
+      fromEntityId: 'a',
+      toEntityId: 'b',
+      routeId: 'route:main',
+      durationMs: 1_000,
+    },
   ],
   [
     'scheduler assignment',
@@ -181,6 +216,7 @@ const cueCases: readonly [string, TransitionCue][] = [
       schedulerId: 'a',
       podId: 'b',
       nodeId: 'c',
+      routeId: 'route:main',
       durationMs: 1_000,
     },
   ],
@@ -240,14 +276,22 @@ describe('AnimationCoordinator cue lifecycle', () => {
     const mutatingCues: readonly TransitionCue[] = [
       { type: 'container-failure', entityId: 'a', durationMs: 1_000 },
       { type: 'container-restart', entityId: 'a', durationMs: 1_000 },
+      { type: 'container-start', entityId: 'a', durationMs: 1_000 },
       { type: 'entity-enter', entityId: 'a', durationMs: 1_000 },
       { type: 'entity-exit', entityId: 'a', durationMs: 1_000 },
-      { type: 'reconcile-pulse', fromEntityId: 'a', toEntityId: 'b', durationMs: 1_000 },
+      {
+        type: 'reconcile-pulse',
+        fromEntityId: 'a',
+        toEntityId: 'b',
+        routeId: 'route:main',
+        durationMs: 1_000,
+      },
       {
         type: 'scheduler-assignment',
         schedulerId: 'a',
         podId: 'b',
         nodeId: 'c',
+        routeId: 'route:main',
         durationMs: 1_000,
       },
       { type: 'relation-reveal', relationId: 'r1', durationMs: 1_000 },
@@ -296,6 +340,83 @@ describe('AnimationCoordinator cue lifecycle', () => {
     expect(harness.phases).toContain('exit:a');
     harness.dispose();
   });
+
+  it('uses authored delays to show the request route before entity exit begins', () => {
+    const harness = createHarness();
+    const baseline = snapshot(harness.handles.a);
+    const playback: PlaybackRequest = {
+      stepKey: 'lesson:causal-delete',
+      playbackId: 1,
+      transition: {
+        cues: [
+          {
+            type: 'api-request',
+            routeId: 'route:main',
+            label: localized,
+            durationMs: 700,
+          },
+          { type: 'entity-exit', entityId: 'a', delayMs: 520, durationMs: 720 },
+        ],
+      },
+    };
+
+    harness.coordinator.play(playback);
+    expect(harness.routeProgress).toEqual([0]);
+    expect(snapshot(harness.handles.a)).toEqual(baseline);
+    harness.coordinator.update(500);
+    expect(harness.routeProgress.at(-1)).toBeGreaterThan(0);
+    expect(snapshot(harness.handles.a)).toEqual(baseline);
+    harness.coordinator.update(700);
+    expect(harness.handles.a.mesh.material.opacity).toBeLessThan(baseline.opacity);
+    harness.coordinator.finish();
+    expect(harness.routeFinishes.value).toBe(1);
+    expect(harness.phases.filter((phase) => phase === 'exit:a')).toHaveLength(1);
+    harness.dispose();
+  });
+
+  it('cancels and finishes delayed cues idempotently', () => {
+    const harness = createHarness();
+    const delayedRoute: TransitionCue = {
+      type: 'api-request',
+      routeId: 'route:main',
+      label: localized,
+      delayMs: 500,
+      durationMs: 700,
+    };
+    harness.coordinator.play(request(delayedRoute, 1));
+    expect(harness.routeProgress).toEqual([0]);
+    harness.coordinator.cancel();
+    harness.coordinator.cancel();
+    expect(harness.routeFinishes.value).toBe(1);
+
+    harness.coordinator.play(request(delayedRoute, 2));
+    harness.coordinator.finish();
+    harness.coordinator.finish();
+    expect(harness.routeProgress).toEqual([0, 0, 1]);
+    expect(harness.routeFinishes.value).toBe(2);
+    harness.dispose();
+  });
+
+  it('holds an entered entity in its authored before-state until the causal delay elapses', () => {
+    const harness = createHarness();
+    const baseline = snapshot(harness.handles.a);
+    const cue: TransitionCue = {
+      type: 'entity-enter',
+      entityId: 'a',
+      delayMs: 500,
+      durationMs: 700,
+    };
+    harness.coordinator.play(request(cue));
+    expect(harness.handles.a.mesh.material.opacity).toBe(0);
+    harness.coordinator.update(499);
+    expect(harness.handles.a.mesh.material.opacity).toBe(0);
+    harness.coordinator.update(850);
+    expect(harness.handles.a.mesh.material.opacity).toBeGreaterThan(0);
+    expect(harness.handles.a.mesh.material.opacity).toBeLessThan(baseline.opacity);
+    harness.coordinator.finish();
+    expect(snapshot(harness.handles.a)).toEqual(baseline);
+    harness.dispose();
+  });
 });
 
 describe('AnimationCoordinator playback identity and replay safety', () => {
@@ -310,6 +431,17 @@ describe('AnimationCoordinator playback identity and replay safety', () => {
     expect(snapshot(harness.handles.a)).toEqual(inFlight);
     expect(harness.coordinator.activeCount).toBe(1);
     expect(harness.coordinator.lastPlaybackId('lesson:step')).toBe(7);
+    harness.dispose();
+  });
+
+  it('allows the same playback identity after a new authored step application', () => {
+    const harness = createHarness();
+    const cue: TransitionCue = { type: 'container-restart', entityId: 'a', durationMs: 1_000 };
+    expect(harness.coordinator.play(request(cue, 7))).toBe(true);
+    harness.coordinator.finish();
+    harness.coordinator.forgetPlayback('lesson:step');
+    expect(harness.coordinator.play(request(cue, 7))).toBe(true);
+    expect(harness.coordinator.activeCount).toBe(1);
     harness.dispose();
   });
 
@@ -330,27 +462,25 @@ describe('AnimationCoordinator playback identity and replay safety', () => {
     harness.dispose();
   });
 
-  it('reuses and explicitly releases transient path tokens', () => {
+  it('drives and releases the token on the renderer-owned persistent route', () => {
     const harness = createHarness();
     const cue: TransitionCue = {
       type: 'data-packet',
-      path: ['a', 'b', 'c'],
+      routeId: 'route:main',
       label: localized,
       durationMs: 1_000,
     };
     harness.coordinator.play(request(cue, 1));
-    expect(harness.coordinator.leasedTokenCount).toBe(1);
-    expect(harness.coordinator.pooledCount).toBe(0);
+    expect(harness.routeProgress).toEqual([0]);
+    harness.coordinator.update(500);
+    expect(harness.routeProgress.at(-1)).toBeCloseTo(0.5);
+    expect(harness.scene.getObjectByName('animation-token')).toBeUndefined();
     harness.coordinator.finish();
-    expect(harness.coordinator.leasedTokenCount).toBe(0);
-    expect(harness.coordinator.pooledCount).toBe(1);
+    expect(harness.routeFinishes.value).toBe(1);
 
     harness.coordinator.play(request(cue, 2));
-    expect(harness.coordinator.leasedTokenCount).toBe(1);
-    expect(harness.coordinator.pooledCount).toBe(0);
     harness.coordinator.cancel();
-    expect(harness.coordinator.leasedTokenCount).toBe(0);
-    expect(harness.coordinator.pooledCount).toBe(1);
+    expect(harness.routeFinishes.value).toBe(2);
     harness.dispose();
   });
 });
@@ -370,7 +500,7 @@ describe('AnimationCoordinator reduced motion', () => {
     harness.dispose();
   });
 
-  it('snaps camera intent and fades a stationary endpoint token in at most 140ms', () => {
+  it('snaps camera intent and preserves route direction in at most 140ms', () => {
     const harness = createHarness(true);
     const focus: TransitionCue = { type: 'focus-camera', entityId: 'a', durationMs: 5_000 };
     harness.coordinator.play(request(focus, 1));
@@ -379,18 +509,34 @@ describe('AnimationCoordinator reduced motion', () => {
 
     const packet: TransitionCue = {
       type: 'data-packet',
-      path: ['a', 'c'],
+      routeId: 'route:main',
       label: localized,
       durationMs: 5_000,
     };
     harness.coordinator.play(request(packet, 2));
-    const token = harness.scene.getObjectByName('animation-token');
-    expect(token).toBeInstanceOf(THREE.Mesh);
-    expect(token?.position.toArray()).toEqual(harness.handles.c.getAnchor('data-path').toArray());
+    expect(harness.routeProgress).toEqual([1]);
+    expect(harness.scene.getObjectByName('animation-token')).toBeUndefined();
     harness.coordinator.update(70);
-    expect(token?.position.toArray()).toEqual(harness.handles.c.getAnchor('data-path').toArray());
+    expect(harness.routeProgress.at(-1)).toBe(1);
     expect(harness.coordinator.update(140)).toBe(false);
+    expect(harness.routeFinishes.value).toBe(1);
     expect(harness.coordinator.leasedTokenCount).toBe(0);
+    harness.dispose();
+  });
+
+  it('collapses authored delays for an immediately legible reduced-motion result', () => {
+    const harness = createHarness(true);
+    const baseline = snapshot(harness.handles.a);
+    const cue: TransitionCue = {
+      type: 'container-start',
+      entityId: 'a',
+      delayMs: 5_000,
+      durationMs: 2_000,
+    };
+    harness.coordinator.play(request(cue));
+    expect(harness.handles.a.mesh.material.opacity).toBeLessThan(baseline.opacity);
+    expect(harness.coordinator.update(140)).toBe(false);
+    expect(snapshot(harness.handles.a)).toEqual(baseline);
     harness.dispose();
   });
 

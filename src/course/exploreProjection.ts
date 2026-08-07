@@ -92,6 +92,7 @@ export function createExploreProjection(
     entityStates,
     relationStates,
     callouts: [],
+    activeRoutes: [],
     cameraPresetId: view,
   };
 }

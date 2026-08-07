@@ -31,10 +31,32 @@ export interface SceneCallout {
   readonly text: LocalizedText;
 }
 
+export type RouteAnchorKind =
+  'center' | 'label' | 'ownership' | 'placement' | 'control' | 'data-path' | 'composition';
+
+export type RouteSemantic = 'control' | 'scheduling' | 'data-flow' | 'dns';
+
+export interface RouteHop {
+  readonly fromEntityId: EntityId;
+  readonly fromAnchor: RouteAnchorKind;
+  readonly toEntityId: EntityId;
+  readonly toAnchor: RouteAnchorKind;
+  readonly label?: LocalizedText;
+}
+
+export interface ActiveTeachingRoute {
+  readonly id: string;
+  readonly semantic: RouteSemantic;
+  readonly hops: readonly RouteHop[];
+  readonly label?: LocalizedText;
+  readonly persistAfterAnimation: boolean;
+  readonly numbered?: boolean;
+}
+
 export interface ComparisonRowModel {
   readonly property: LocalizedText;
-  readonly containerRestart: string;
-  readonly podReplacement: string;
+  readonly containerRestart: LocalizedText;
+  readonly podReplacement: LocalizedText;
 }
 
 export interface ComparisonPanelModel {
@@ -48,6 +70,7 @@ export interface ViewProjection {
   readonly entityStates: Readonly<Record<EntityId, EntityViewState>>;
   readonly relationStates: Readonly<Record<RelationId, RelationViewState>>;
   readonly callouts: readonly SceneCallout[];
+  readonly activeRoutes: readonly ActiveTeachingRoute[];
   readonly comparison?: ComparisonPanelModel;
 }
 
@@ -94,35 +117,45 @@ export interface ViewProjectionPatch {
   readonly entityRules?: readonly EntityViewRule[];
   readonly relationRules?: readonly RelationViewRule[];
   readonly callouts?: readonly SceneCallout[];
+  readonly activeRoutes?: readonly ActiveTeachingRoute[];
   readonly comparison?: ComparisonRequest;
 }
 
 interface TimedCue {
   readonly durationMs: number;
+  /** Optional causal offset. Reduced-motion playback intentionally collapses this delay. */
+  readonly delayMs?: number;
 }
 
+type RoutedFlowCue<TType extends 'data-packet' | 'dns-query' | 'api-request'> = {
+  readonly type: TType;
+  readonly routeId: string;
+  readonly label: LocalizedText;
+} & TimedCue;
+
 export type TransitionCue =
-  | ({
-      readonly type: 'data-packet' | 'dns-query' | 'api-request';
-      readonly path: readonly EntityId[];
-      readonly label: LocalizedText;
-    } & TimedCue)
+  | RoutedFlowCue<'data-packet'>
+  | RoutedFlowCue<'dns-query'>
+  | RoutedFlowCue<'api-request'>
   | ({ readonly type: 'focus-camera'; readonly entityId: EntityId } & TimedCue)
-  | ({ readonly type: 'layout-transition' } & TimedCue)
+  | ({ readonly type: 'layout-transition'; readonly entityIds?: readonly EntityId[] } & TimedCue)
   | ({ readonly type: 'container-failure'; readonly entityId: EntityId } & TimedCue)
   | ({ readonly type: 'container-restart'; readonly entityId: EntityId } & TimedCue)
+  | ({ readonly type: 'container-start'; readonly entityId: EntityId } & TimedCue)
   | ({ readonly type: 'entity-exit'; readonly entityId: EntityId } & TimedCue)
   | ({ readonly type: 'entity-enter'; readonly entityId: EntityId } & TimedCue)
   | ({
       readonly type: 'reconcile-pulse';
       readonly fromEntityId: EntityId;
       readonly toEntityId: EntityId;
+      readonly routeId: string;
     } & TimedCue)
   | ({
       readonly type: 'scheduler-assignment';
       readonly schedulerId: EntityId;
       readonly podId: EntityId;
       readonly nodeId: EntityId;
+      readonly routeId: string;
     } & TimedCue)
   | ({
       readonly type: 'counter-change';
@@ -148,11 +181,34 @@ export interface PlaybackRequest {
   readonly transition: TransitionPlan;
 }
 
+export type EvidenceChangeKind = 'added' | 'removed' | 'changed' | 'unchanged';
+
+export interface EvidenceRow {
+  readonly id: string;
+  readonly entityId: EntityId;
+  readonly change: EvidenceChangeKind;
+  readonly label: LocalizedText;
+  readonly before?: LocalizedText;
+  readonly after?: LocalizedText;
+  readonly path?: string;
+}
+
+export interface EvidenceRequest {
+  readonly entityIds: readonly EntityId[];
+  readonly mode: 'none' | 'snapshot' | 'diff' | 'diff-with-context';
+}
+
 export interface LessonStepV2 {
   readonly id: string;
   readonly title: LocalizedText;
   readonly learningOutcome: LocalizedText;
   readonly narration: LocalizedText;
+  readonly teaching: {
+    readonly whatChanged: LocalizedText;
+    readonly whyItHappened: LocalizedText;
+    readonly takeaway: LocalizedText;
+  };
+  readonly evidence: EvidenceRequest;
   readonly introducesTerms: readonly string[];
   readonly usesTerms: readonly string[];
   readonly sourceIds: readonly SourceId[];
@@ -183,6 +239,7 @@ export interface CompiledStep {
   readonly beforeWorld: WorldSnapshot;
   readonly world: WorldSnapshot;
   readonly worldDiff: WorldDiff;
+  readonly evidence: readonly EvidenceRow[];
   readonly view: ViewProjection;
   readonly transition: TransitionPlan;
 }

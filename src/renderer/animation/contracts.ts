@@ -24,6 +24,13 @@ export interface RelationAnimationTarget {
   readonly root: THREE.Object3D;
 }
 
+/** The animation layer drives the renderer-owned route that is already visible in the scene. */
+export interface TeachingRouteAnimationTarget {
+  readonly root: THREE.Object3D;
+  setFlowProgress(progress: number): void;
+  finishFlow(): void;
+}
+
 /**
  * Renderer-owned capabilities used by animations. SceneController can provide these callbacks
  * without exposing React, DOM state, camera internals, or a concrete relation registry.
@@ -32,6 +39,7 @@ export interface AnimationContext {
   readonly scene: THREE.Scene;
   readonly getEntity: (entityId: EntityId) => EntityVisualHandle | undefined;
   readonly getRelation?: (relationId: RelationId) => RelationAnimationTarget | undefined;
+  readonly getRoute?: (routeId: string) => TeachingRouteAnimationTarget | undefined;
   readonly now?: () => number;
   readonly reducedMotion?: boolean;
   readonly markDirty?: () => void;

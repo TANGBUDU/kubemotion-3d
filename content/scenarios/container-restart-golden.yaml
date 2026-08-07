@@ -98,6 +98,21 @@ entities:
       }
     sourceIds: [k8s-components, k8s-pod-lifecycle]
     visual: { archetype: runtime, size: sm, group: worker-c }
+  - id: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    category: runtime-component
+    kind: KubeAPIServer
+    name: kube-apiserver
+    status: healthy
+    data: { role: api-gateway }
+    title: { en: API Server, ja: API サーバー, zh-CN: API Server }
+    summary:
+      {
+        en: Exposes the Kubernetes HTTP API used by clients and control-plane components.,
+        ja: クライアントとコントロールプレーンコンポーネントが使う Kubernetes HTTP API を公開します。,
+        zh-CN: 提供客户端和控制面组件使用的 Kubernetes HTTP API。,
+      }
+    sourceIds: [k8s-api, k8s-components]
+    visual: { archetype: control-plane, size: lg, group: control }
   - id: runtime-component:cluster:global:ControllerManager:kube-controller-manager
     category: runtime-component
     kind: ControllerManager
@@ -128,6 +143,23 @@ entities:
       }
     sourceIds: [k8s-components]
     visual: { archetype: control-plane, size: md, group: control }
+  - id: external:external:global:Kubectl:kubectl
+    category: external
+    kind: Kubectl
+    name: kubectl
+    status: healthy
+    data:
+      actorType: synthetic-teaching-action
+      command: kubectl delete pod api-7f8d9-a
+    title: { en: kubectl actor, ja: kubectl 操作者, zh-CN: kubectl 操作者 }
+    summary:
+      {
+        en: Synthetic learner action that intentionally requests deletion through the API Server.,
+        ja: 比較のため API Server 経由で意図的に削除を要求する合成学習アクションです。,
+        zh-CN: 为了进行对比，通过 API Server 主动请求删除的虚构教学操作。,
+      }
+    sourceIds: [k8s-api, k8s-pods]
+    visual: { archetype: external, size: md, group: control }
   - id: api-object:namespaced:shop:ReplicaSet:api-rs
     category: api-object
     kind: ReplicaSet
@@ -359,3 +391,67 @@ relations:
     semantic: composition
     title: { en: contains runtime, ja: ランタイムを内包, zh-CN: 包含运行实例 }
     sourceIds: [k8s-pods]
+  - id: controller-watches-api-server
+    type: watches
+    from: runtime-component:cluster:global:ControllerManager:kube-controller-manager
+    to: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    directed: true
+    semantic: control-observation
+    title: { en: watches API state, ja: API 状態を監視, zh-CN: 观察 API 状态 }
+    sourceIds: [k8s-components, k8s-api]
+  - id: scheduler-watches-api-server
+    type: watches
+    from: runtime-component:cluster:global:Scheduler:kube-scheduler
+    to: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    directed: true
+    semantic: control-observation
+    title: { en: watches unbound Pods, ja: 未割り当て Pod を監視, zh-CN: 观察未绑定 Pod }
+    sourceIds: [k8s-components, k8s-api]
+  - id: kubelet-a-reports-api-server
+    type: reports-to
+    from: runtime-component:node:worker-a:Kubelet:kubelet
+    to: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    directed: true
+    semantic: control-observation
+    title: { en: observes and reports, ja: 監視と報告, zh-CN: 观察并报告 }
+    sourceIds: [k8s-components, k8s-api]
+  - id: kubelet-b-reports-api-server
+    type: reports-to
+    from: runtime-component:node:worker-b:Kubelet:kubelet
+    to: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    directed: true
+    semantic: control-observation
+    title: { en: observes and reports, ja: 監視と報告, zh-CN: 观察并报告 }
+    sourceIds: [k8s-components, k8s-api]
+  - id: kubelet-c-reports-api-server
+    type: reports-to
+    from: runtime-component:node:worker-c:Kubelet:kubelet
+    to: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    directed: true
+    semantic: control-observation
+    title: { en: observes and reports, ja: 監視と報告, zh-CN: 观察并报告 }
+    sourceIds: [k8s-components, k8s-api]
+  - id: kubectl-requests-api-server
+    type: reports-to
+    from: external:external:global:Kubectl:kubectl
+    to: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    directed: true
+    semantic: control-observation
+    title: { en: sends API request, ja: API リクエストを送信, zh-CN: 发送 API 请求 }
+    sourceIds: [k8s-api]
+  - id: api-exposes-api-rs
+    type: references
+    from: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    to: api-object:namespaced:shop:ReplicaSet:api-rs
+    directed: true
+    semantic: control-observation
+    title: { en: exposes API object, ja: API オブジェクトを公開, zh-CN: 提供 API 对象 }
+    sourceIds: [k8s-api, k8s-replicasets]
+  - id: api-exposes-api-a-old
+    type: references
+    from: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    to: api-object:namespaced:shop:Pod:api-a-old
+    directed: true
+    semantic: control-observation
+    title: { en: exposes Pod API object, ja: Pod API オブジェクトを公開, zh-CN: 提供 Pod API 对象 }
+    sourceIds: [k8s-api, k8s-pods]

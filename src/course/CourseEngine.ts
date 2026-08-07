@@ -7,6 +7,7 @@ import {
 } from '../world';
 import type { EntityId, RelationId, WorldEntity, WorldSnapshot } from '../world/types';
 import type {
+  ActiveTeachingRoute,
   ComparisonPanelModel,
   ComparisonRequest,
   CompiledLesson,
@@ -20,6 +21,7 @@ import type {
   ViewProjection,
   ViewProjectionPatch,
 } from './types';
+import { humanizeWorldDiff } from './diff/humanizeWorldDiff';
 
 const emptyTransition: TransitionPlan = { cues: [] };
 
@@ -51,6 +53,7 @@ function initialProjection(world: WorldSnapshot): ViewProjection {
     entityStates,
     relationStates,
     callouts: [],
+    activeRoutes: [],
   };
 }
 
@@ -139,6 +142,7 @@ export function applyViewProjectionPatch(
     entityStates,
     relationStates,
     callouts: patch.callouts ?? [],
+    activeRoutes: patch.activeRoutes ?? [],
   });
 }
 
@@ -204,18 +208,42 @@ function buildComparison(
     rows: [
       {
         property: { en: 'Pod ID', ja: 'Pod ID', 'zh-CN': 'Pod ID' },
-        containerRestart: `same ${restartedPod.id}`,
-        podReplacement: `${oldPodId} removed; new ${replacementPod.id}`,
+        containerRestart: {
+          en: `same ${restartedPod.id}`,
+          ja: `同一 ${restartedPod.id}`,
+          'zh-CN': `同一 ${restartedPod.id}`,
+        },
+        podReplacement: {
+          en: `${oldPodId} removed; new ${replacementPod.id}`,
+          ja: `${oldPodId} を削除、新規 ${replacementPod.id}`,
+          'zh-CN': `删除 ${oldPodId}；新建 ${replacementPod.id}`,
+        },
       },
       {
         property: { en: 'Pod UID', ja: 'Pod UID', 'zh-CN': 'Pod UID' },
-        containerRestart: `unchanged ${restartedPodData.uid}`,
-        podReplacement: `new ${replacementPodData.uid}`,
+        containerRestart: {
+          en: `unchanged ${restartedPodData.uid}`,
+          ja: `変更なし ${restartedPodData.uid}`,
+          'zh-CN': `未改变 ${restartedPodData.uid}`,
+        },
+        podReplacement: {
+          en: `new ${replacementPodData.uid}`,
+          ja: `新規 ${replacementPodData.uid}`,
+          'zh-CN': `新建 ${replacementPodData.uid}`,
+        },
       },
       {
         property: { en: 'Node', ja: 'Node', 'zh-CN': 'Node' },
-        containerRestart: `unchanged ${restartedPodData.nodeName ?? 'Unscheduled'}`,
-        podReplacement: `may change; here ${replacementPodData.nodeName ?? 'Unscheduled'}`,
+        containerRestart: {
+          en: `unchanged ${restartedPodData.nodeName ?? 'Unscheduled'}`,
+          ja: `変更なし ${restartedPodData.nodeName ?? '未スケジュール'}`,
+          'zh-CN': `未改变 ${restartedPodData.nodeName ?? '未调度'}`,
+        },
+        podReplacement: {
+          en: `may change; here ${replacementPodData.nodeName ?? 'Unscheduled'}`,
+          ja: `変わり得る；ここでは ${replacementPodData.nodeName ?? '未スケジュール'}`,
+          'zh-CN': `可能改变；此处为 ${replacementPodData.nodeName ?? '未调度'}`,
+        },
       },
       {
         property: {
@@ -223,13 +251,28 @@ function buildComparison(
           ja: 'Container 再起動回数',
           'zh-CN': '容器重启次数',
         },
-        containerRestart: `${originalContainerData.restartCount} → ${restartedContainerData.restartCount}`,
-        podReplacement: `new Container starts at ${replacementContainerData.restartCount}`,
+        containerRestart: {
+          en: `${originalContainerData.restartCount} → ${restartedContainerData.restartCount}`,
+          ja: `${originalContainerData.restartCount} → ${restartedContainerData.restartCount}`,
+          'zh-CN': `${originalContainerData.restartCount} → ${restartedContainerData.restartCount}`,
+        },
+        podReplacement: {
+          en: `new Container starts at ${replacementContainerData.restartCount}`,
+          ja: `新しい Container は ${replacementContainerData.restartCount} から開始`,
+          'zh-CN': `新容器从 ${replacementContainerData.restartCount} 开始`,
+        },
       },
       {
         property: { en: 'Pod object', ja: 'Pod オブジェクト', 'zh-CN': 'Pod 对象' },
-        containerRestart: originalPod.id === restartedPod.id ? 'remains' : 'changed',
-        podReplacement: 'old removed; new object created',
+        containerRestart:
+          originalPod.id === restartedPod.id
+            ? { en: 'remains', ja: '維持', 'zh-CN': '保持不变' }
+            : { en: 'changed', ja: '変更', 'zh-CN': '已改变' },
+        podReplacement: {
+          en: 'old removed; new object created',
+          ja: '旧オブジェクトを削除し、新規作成',
+          'zh-CN': '删除旧对象并创建新对象',
+        },
       },
       {
         property: {
@@ -237,8 +280,16 @@ function buildComparison(
           ja: 'ローカル一時データ',
           'zh-CN': '本地临时数据',
         },
-        containerRestart: 'same Pod lifecycle only',
-        podReplacement: 'not automatically preserved',
+        containerRestart: {
+          en: 'same Pod lifecycle only',
+          ja: '同じ Pod ライフサイクル内のみ',
+          'zh-CN': '仅限同一 Pod 生命周期',
+        },
+        podReplacement: {
+          en: 'not automatically preserved',
+          ja: '自動では保持されない',
+          'zh-CN': '不会自动保留',
+        },
       },
     ],
   });
@@ -258,13 +309,89 @@ function requireEntity(world: WorldSnapshot, id: EntityId, cue: TransitionCue): 
   if (!world.entities[id]) throw new Error(`${cue.type} references missing entity: ${id}`);
 }
 
+const routedCueSemantics = {
+  'data-packet': 'data-flow',
+  'dns-query': 'dns',
+  'api-request': 'control',
+  'reconcile-pulse': 'control',
+  'scheduler-assignment': 'scheduling',
+} as const;
+
+type RoutedCue = Extract<TransitionCue, { readonly routeId: string }>;
+
+function routeForCue(
+  cue: RoutedCue,
+  routes: ReadonlyMap<string, ActiveTeachingRoute>,
+): ActiveTeachingRoute {
+  const route = routes.get(cue.routeId);
+  if (!route) throw new Error(`${cue.type} references missing active route: ${cue.routeId}`);
+  const expected = routedCueSemantics[cue.type];
+  if (route.semantic !== expected) {
+    throw new Error(
+      `${cue.type} requires a ${expected} route, but ${route.id} is ${route.semantic}`,
+    );
+  }
+  return route;
+}
+
+function routeContainsEntity(route: ActiveTeachingRoute, entityId: EntityId): boolean {
+  return route.hops.some((hop) => hop.fromEntityId === entityId || hop.toEntityId === entityId);
+}
+
+function validateActiveRoutes(
+  routes: readonly ActiveTeachingRoute[],
+  transition: TransitionPlan,
+  beforeWorld: WorldSnapshot,
+  world: WorldSnapshot,
+): ReadonlyMap<string, ActiveTeachingRoute> {
+  const byId = new Map<string, ActiveTeachingRoute>();
+  for (const route of routes) {
+    if (byId.has(route.id)) throw new Error(`Duplicate active route ID: ${route.id}`);
+    if (route.hops.length === 0) throw new Error(`Active route ${route.id} has no hops`);
+    for (let index = 1; index < route.hops.length; index += 1) {
+      const previous = route.hops[index - 1];
+      const current = route.hops[index];
+      if (previous && current && previous.toEntityId !== current.fromEntityId) {
+        throw new Error(
+          `Active route ${route.id} is discontinuous between hops ${index} and ${index + 1}`,
+        );
+      }
+    }
+    byId.set(route.id, route);
+  }
+
+  const deleteRouteIds = new Set(
+    transition.cues
+      .filter(
+        (cue): cue is Extract<TransitionCue, { type: 'api-request' }> => cue.type === 'api-request',
+      )
+      .map((cue) => cue.routeId),
+  );
+  for (const route of routes) {
+    const allowBeforeEndpoint = deleteRouteIds.has(route.id);
+    for (const hop of route.hops) {
+      for (const endpoint of [hop.fromEntityId, hop.toEntityId]) {
+        if (world.entities[endpoint]) continue;
+        if (allowBeforeEndpoint && beforeWorld.entities[endpoint]) continue;
+        throw new Error(`Active route ${route.id} references missing entity: ${endpoint}`);
+      }
+    }
+  }
+  return byId;
+}
+
 function validateTransitionCue(
   cue: TransitionCue,
   beforeWorld: WorldSnapshot,
   world: WorldSnapshot,
+  routes: ReadonlyMap<string, ActiveTeachingRoute>,
 ): void {
   switch (cue.type) {
     case 'layout-transition':
+      for (const entityId of cue.entityIds ?? []) {
+        requireEntity(beforeWorld, entityId, cue);
+        requireEntity(world, entityId, cue);
+      }
       return;
     case 'entity-exit':
       requireEntity(beforeWorld, cue.entityId, cue);
@@ -283,25 +410,56 @@ function validateTransitionCue(
     case 'reconcile-pulse':
       requireEntity(world, cue.fromEntityId, cue);
       requireEntity(world, cue.toEntityId, cue);
+      if (!routeContainsEntity(routeForCue(cue, routes), cue.fromEntityId))
+        throw new Error(`${cue.routeId} does not include reconcile source ${cue.fromEntityId}`);
+      if (!routeContainsEntity(routeForCue(cue, routes), cue.toEntityId))
+        throw new Error(`${cue.routeId} does not include reconcile target ${cue.toEntityId}`);
       return;
     case 'scheduler-assignment':
       requireEntity(world, cue.schedulerId, cue);
       requireEntity(world, cue.podId, cue);
       requireEntity(world, cue.nodeId, cue);
+      for (const id of [cue.schedulerId, cue.podId, cue.nodeId]) {
+        if (!routeContainsEntity(routeForCue(cue, routes), id))
+          throw new Error(`${cue.routeId} does not include scheduler assignment entity ${id}`);
+      }
       return;
     case 'counter-change': {
       const before = beforeWorld.entities[cue.entityId];
       const after = world.entities[cue.entityId];
       if (!before || !after) throw new Error(`counter-change target is not present in both worlds`);
+      if (cue.from === cue.to) throw new Error(`counter-change must describe a factual change`);
       if (valueAtPath(before, cue.field) !== cue.from || valueAtPath(after, cue.field) !== cue.to) {
         throw new Error(`counter-change values contradict ${cue.field}`);
+      }
+      return;
+    }
+    case 'container-start': {
+      const before = beforeWorld.entities[cue.entityId];
+      const after = world.entities[cue.entityId];
+      if (!before || !after || before.kind !== 'Container' || after.kind !== 'Container') {
+        throw new Error(`container-start target must be one Container present in both worlds`);
+      }
+      if (
+        (before.status !== 'waiting' && before.status !== 'starting') ||
+        after.status !== 'running'
+      ) {
+        throw new Error(`container-start must transition a waiting/starting Container to running`);
+      }
+      const beforeData = getContainerData(before);
+      const afterData = getContainerData(after);
+      if (
+        beforeData.restartCount !== afterData.restartCount ||
+        beforeData.instanceGeneration !== afterData.instanceGeneration
+      ) {
+        throw new Error(`container-start cannot increment restartCount or instanceGeneration`);
       }
       return;
     }
     case 'data-packet':
     case 'dns-query':
     case 'api-request':
-      for (const id of cue.path) requireEntity(world, id, cue);
+      routeForCue(cue, routes);
       return;
     case 'focus-camera':
     case 'container-failure':
@@ -311,12 +469,74 @@ function validateTransitionCue(
   }
 }
 
-function validateTransition(
+const cueDelay = (cue: TransitionCue): number => cue.delayMs ?? 0;
+
+function requireCausalOffset(
+  transition: TransitionPlan,
+  causeType: TransitionCue['type'],
+  effectType: TransitionCue['type'],
+): void {
+  const cause = transition.cues.find((cue) => cue.type === causeType);
+  const effect = transition.cues.find((cue) => cue.type === effectType);
+  if (!cause || !effect) return;
+  if (cueDelay(effect) <= cueDelay(cause)) {
+    throw new Error(`${effectType} must start after ${causeType} to preserve causal order`);
+  }
+}
+
+function validateCausalTiming(transition: TransitionPlan): void {
+  requireCausalOffset(transition, 'api-request', 'entity-exit');
+  requireCausalOffset(transition, 'reconcile-pulse', 'entity-enter');
+  requireCausalOffset(transition, 'reconcile-pulse', 'container-restart');
+  requireCausalOffset(transition, 'reconcile-pulse', 'container-start');
+  requireCausalOffset(transition, 'scheduler-assignment', 'layout-transition');
+}
+
+function validateReplicaSetCounterCoverage(
   transition: TransitionPlan,
   beforeWorld: WorldSnapshot,
   world: WorldSnapshot,
 ): void {
-  for (const cue of transition.cues) validateTransitionCue(cue, beforeWorld, world);
+  const fields = ['desiredReplicas', 'currentReplicas', 'readyReplicas'] as const;
+  for (const before of Object.values(beforeWorld.entities)) {
+    if (before.kind !== 'ReplicaSet') continue;
+    const after = world.entities[before.id];
+    if (!after || after.kind !== 'ReplicaSet') continue;
+    for (const field of fields) {
+      const from = before.data[field];
+      const to = after.data[field];
+      if (from === to) continue;
+      const covered = transition.cues.some(
+        (cue) =>
+          cue.type === 'counter-change' &&
+          cue.entityId === before.id &&
+          cue.field === `data.${field}` &&
+          cue.from === from &&
+          cue.to === to,
+      );
+      if (!covered) {
+        throw new Error(`ReplicaSet ${before.id} change to data.${field} needs counter-change cue`);
+      }
+    }
+  }
+}
+
+function validateTransition(
+  transition: TransitionPlan,
+  beforeWorld: WorldSnapshot,
+  world: WorldSnapshot,
+  view: ViewProjection,
+): void {
+  const routes = validateActiveRoutes(view.activeRoutes, transition, beforeWorld, world);
+  const routedCueIds = transition.cues
+    .filter((cue): cue is RoutedCue => 'routeId' in cue)
+    .map((cue) => cue.routeId);
+  if (new Set(routedCueIds).size !== routedCueIds.length) {
+    throw new Error('A transition cannot animate the same active route more than once');
+  }
+  for (const cue of transition.cues) validateTransitionCue(cue, beforeWorld, world, routes);
+  validateCausalTiming(transition);
+  validateReplicaSetCounterCoverage(transition, beforeWorld, world);
 }
 
 export const courseEngine = {
@@ -344,7 +564,8 @@ export const courseEngine = {
         });
       }
       const transition = freezeValue(authoredStep.transition ?? emptyTransition);
-      validateTransition(transition, beforeWorld, world);
+      validateTransition(transition, beforeWorld, world, view);
+      const worldDiff = computeWorldDiff(beforeWorld, world);
       compiledSteps.push(
         freezeValue({
           lessonId: lesson.id,
@@ -352,7 +573,8 @@ export const courseEngine = {
           index,
           beforeWorld,
           world,
-          worldDiff: computeWorldDiff(beforeWorld, world),
+          worldDiff,
+          evidence: humanizeWorldDiff(beforeWorld, world, worldDiff, authoredStep.evidence),
           view,
           transition,
         }),

@@ -176,6 +176,37 @@ const calloutSchema = z
   .object({ id: z.string().min(1), entityId: entityIdSchema, text: localizedTextSchema })
   .strict();
 
+const routeAnchorKindSchema = z.enum([
+  'center',
+  'label',
+  'ownership',
+  'placement',
+  'control',
+  'data-path',
+  'composition',
+]);
+
+const routeHopSchema = z
+  .object({
+    fromEntityId: entityIdSchema,
+    fromAnchor: routeAnchorKindSchema,
+    toEntityId: entityIdSchema,
+    toAnchor: routeAnchorKindSchema,
+    label: localizedTextSchema.optional(),
+  })
+  .strict();
+
+const activeTeachingRouteSchema = z
+  .object({
+    id: z.string().min(1),
+    semantic: z.enum(['control', 'scheduling', 'data-flow', 'dns']),
+    hops: z.array(routeHopSchema).min(1),
+    label: localizedTextSchema.optional(),
+    persistAfterAnimation: z.boolean(),
+    numbered: z.boolean().optional(),
+  })
+  .strict();
+
 const comparisonRequestSchema = z
   .object({
     type: z.literal('container-restart-vs-pod-replacement'),
@@ -194,48 +225,75 @@ export const viewProjectionPatchSchema = z
     entityRules: z.array(entityViewRuleSchema).optional(),
     relationRules: z.array(relationViewRuleSchema).optional(),
     callouts: z.array(calloutSchema).optional(),
+    activeRoutes: z.array(activeTeachingRouteSchema).optional(),
     comparison: comparisonRequestSchema.optional(),
   })
   .strict();
 
 const durationMs = z.number().int().min(80).max(6000);
+const delayMs = z.number().int().min(0).max(6000).optional();
 const transitionCueSchema = z.discriminatedUnion('type', [
   z
     .object({
       type: z.literal('data-packet'),
-      path: z.array(entityIdSchema).min(2),
+      routeId: z.string().min(1),
       label: localizedTextSchema,
       durationMs,
+      delayMs,
     })
     .strict(),
   z
     .object({
       type: z.literal('dns-query'),
-      path: z.array(entityIdSchema).min(2),
+      routeId: z.string().min(1),
       label: localizedTextSchema,
       durationMs,
+      delayMs,
     })
     .strict(),
   z
     .object({
       type: z.literal('api-request'),
-      path: z.array(entityIdSchema).min(2),
+      routeId: z.string().min(1),
       label: localizedTextSchema,
       durationMs,
+      delayMs,
     })
     .strict(),
-  z.object({ type: z.literal('focus-camera'), entityId: entityIdSchema, durationMs }).strict(),
-  z.object({ type: z.literal('layout-transition'), durationMs }).strict(),
-  z.object({ type: z.literal('container-failure'), entityId: entityIdSchema, durationMs }).strict(),
-  z.object({ type: z.literal('container-restart'), entityId: entityIdSchema, durationMs }).strict(),
-  z.object({ type: z.literal('entity-exit'), entityId: entityIdSchema, durationMs }).strict(),
-  z.object({ type: z.literal('entity-enter'), entityId: entityIdSchema, durationMs }).strict(),
+  z
+    .object({ type: z.literal('focus-camera'), entityId: entityIdSchema, durationMs, delayMs })
+    .strict(),
+  z
+    .object({
+      type: z.literal('layout-transition'),
+      entityIds: z.array(entityIdSchema).min(1).optional(),
+      durationMs,
+      delayMs,
+    })
+    .strict(),
+  z
+    .object({ type: z.literal('container-failure'), entityId: entityIdSchema, durationMs, delayMs })
+    .strict(),
+  z
+    .object({ type: z.literal('container-restart'), entityId: entityIdSchema, durationMs, delayMs })
+    .strict(),
+  z
+    .object({ type: z.literal('container-start'), entityId: entityIdSchema, durationMs, delayMs })
+    .strict(),
+  z
+    .object({ type: z.literal('entity-exit'), entityId: entityIdSchema, durationMs, delayMs })
+    .strict(),
+  z
+    .object({ type: z.literal('entity-enter'), entityId: entityIdSchema, durationMs, delayMs })
+    .strict(),
   z
     .object({
       type: z.literal('reconcile-pulse'),
       fromEntityId: entityIdSchema,
       toEntityId: entityIdSchema,
+      routeId: z.string().min(1),
       durationMs,
+      delayMs,
     })
     .strict(),
   z
@@ -244,7 +302,9 @@ const transitionCueSchema = z.discriminatedUnion('type', [
       schedulerId: entityIdSchema,
       podId: entityIdSchema,
       nodeId: entityIdSchema,
+      routeId: z.string().min(1),
       durationMs,
+      delayMs,
     })
     .strict(),
   z
@@ -255,10 +315,16 @@ const transitionCueSchema = z.discriminatedUnion('type', [
       from: z.number(),
       to: z.number(),
       durationMs,
+      delayMs,
     })
     .strict(),
   z
-    .object({ type: z.literal('relation-reveal'), relationId: relationIdSchema, durationMs })
+    .object({
+      type: z.literal('relation-reveal'),
+      relationId: relationIdSchema,
+      durationMs,
+      delayMs,
+    })
     .strict(),
   z
     .object({
@@ -266,6 +332,7 @@ const transitionCueSchema = z.discriminatedUnion('type', [
       entityId: entityIdSchema,
       label: localizedTextSchema,
       durationMs,
+      delayMs,
     })
     .strict(),
 ]);
@@ -293,6 +360,19 @@ export const lessonV2Schema = z
             title: localizedTextSchema,
             learningOutcome: localizedTextSchema,
             narration: localizedTextSchema,
+            teaching: z
+              .object({
+                whatChanged: localizedTextSchema,
+                whyItHappened: localizedTextSchema,
+                takeaway: localizedTextSchema,
+              })
+              .strict(),
+            evidence: z
+              .object({
+                entityIds: z.array(entityIdSchema),
+                mode: z.enum(['none', 'snapshot', 'diff', 'diff-with-context']),
+              })
+              .strict(),
             introducesTerms: z.array(z.string()),
             usesTerms: z.array(z.string()),
             sourceIds: z.array(sourceIdSchema),
