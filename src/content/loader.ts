@@ -1,10 +1,12 @@
 import { parse } from 'yaml';
 import courseRaw from '../../content/courses/kubernetes-foundations/course.yaml?raw';
 import goldenLessonRaw from '../../content/courses/kubernetes-foundations/lessons/container-restart-vs-pod-replacement.yaml?raw';
+import serviceLessonRaw from '../../content/courses/kubernetes-foundations/lessons/service-routes-to-pods.yaml?raw';
 import foundationsRaw from '../../content/glossary/foundations.yaml?raw';
 import lifecycleRaw from '../../content/glossary/lifecycle.yaml?raw';
 import networkingRaw from '../../content/glossary/networking.yaml?raw';
 import goldenScenarioRaw from '../../content/scenarios/container-restart-golden.yaml?raw';
+import serviceScenarioRaw from '../../content/scenarios/service-routes-to-pods.yaml?raw';
 import sourcesRaw from '../../content/sources.yaml?raw';
 import type { CourseManifest, GlossaryTerm, LessonV2, SourceEntry } from '../course/types';
 import { validateWorldSnapshot } from '../world/validation';
@@ -40,12 +42,24 @@ function authoringScenarioToWorld(raw: string): WorldSnapshot {
   });
 }
 
-export const scenario: WorldSnapshot = authoringScenarioToWorld(goldenScenarioRaw);
+export const scenarios: readonly WorldSnapshot[] = [
+  authoringScenarioToWorld(goldenScenarioRaw),
+  authoringScenarioToWorld(serviceScenarioRaw),
+];
+export const scenarioById = new Map(scenarios.map((item) => [item.scenarioId, item]));
+if (scenarioById.size !== scenarios.length) throw new Error('Duplicate scenario ID');
+
+/** Backward-compatible alias for the home/explore golden teaching world. */
+const goldenScenario = scenarioById.get('container-restart-golden');
+if (!goldenScenario) throw new Error('Golden scenario is missing');
+export const scenario: WorldSnapshot = goldenScenario;
 export const course: CourseManifest = courseSchema.parse(parseYaml(courseRaw));
 export const lessons: readonly LessonV2[] = [
   lessonV2Schema.parse(parseYaml(goldenLessonRaw)) as unknown as LessonV2,
+  lessonV2Schema.parse(parseYaml(serviceLessonRaw)) as unknown as LessonV2,
 ];
 export const lessonById = new Map(lessons.map((lesson) => [lesson.id, lesson]));
+if (lessonById.size !== lessons.length) throw new Error('Duplicate lesson ID');
 
 export const glossary: readonly GlossaryTerm[] = [
   foundationsRaw,

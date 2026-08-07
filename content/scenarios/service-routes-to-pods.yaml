@@ -1,0 +1,291 @@
+schemaVersion: 2
+scenarioId: service-routes-to-pods
+revision: 0
+entities:
+  - id: infrastructure:cluster:global:Node:worker-client
+    category: infrastructure
+    kind: Node
+    name: worker-client
+    status: ready
+    data: { rackOrder: 1, podSlotCount: 2 }
+    title: { en: worker-client, ja: worker-client, zh-CN: worker-client }
+    summary:
+      en: Synthetic Node hosting the client Pod; hidden in the traffic-focused lesson view.
+      ja: クライアント Pod を実行する合成 Node。トラフィック中心のレッスンビューでは非表示です。
+      zh-CN: 运行客户端 Pod 的合成 Node；在流量课程视图中隐藏。
+    sourceIds: [k8s-nodes]
+    visual: { archetype: node, size: xl, group: placement-context }
+
+  - id: infrastructure:cluster:global:Node:worker-backends
+    category: infrastructure
+    kind: Node
+    name: worker-backends
+    status: ready
+    data: { rackOrder: 2, podSlotCount: 4 }
+    title: { en: worker-backends, ja: worker-backends, zh-CN: worker-backends }
+    summary:
+      en: Synthetic Node hosting the three backend Pods; hidden in the traffic-focused lesson view.
+      ja: 3 つのバックエンド Pod を実行する合成 Node。トラフィック中心のレッスンビューでは非表示です。
+      zh-CN: 运行三个后端 Pod 的合成 Node；在流量课程视图中隐藏。
+    sourceIds: [k8s-nodes]
+    visual: { archetype: node, size: xl, group: placement-context }
+
+  - id: api-object:namespaced:shop:Pod:traffic-client
+    category: api-object
+    kind: Pod
+    name: traffic-client
+    namespace: shop
+    labels: { app.kubernetes.io/name: traffic-client }
+    status: ready
+    data:
+      uid: synthetic-uid-client-01
+      nodeName: worker-client
+      phase: Running
+      restartPolicy: Always
+      trafficRole: client
+      podIP: 192.0.2.50
+    title: { en: Client Pod, ja: クライアント Pod, zh-CN: 客户端 Pod }
+    summary:
+      en: A synthetic in-cluster client that sends a request to the api Service.
+      ja: api Service にリクエストを送る、クラスター内の合成クライアントです。
+      zh-CN: 向 api Service 发送请求的集群内合成客户端。
+    sourceIds: [k8s-pods, k8s-services]
+    visual: { archetype: pod, size: md, group: client }
+
+  - id: api-object:namespaced:shop:Service:api
+    category: api-object
+    kind: Service
+    name: api
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      serviceType: ClusterIP
+      clusterIP: 198.51.100.42
+      syntheticAddress: true
+      selector: { app.kubernetes.io/name: api }
+      ports:
+        - { name: http, port: 8080, targetPort: 8080, protocol: TCP }
+    title: { en: api Service, ja: api Service, zh-CN: api Service }
+    summary:
+      en: A stable virtual entry that selects the api backend Pods.
+      ja: api バックエンド Pod を選択する、安定した仮想入口です。
+      zh-CN: 选择 api 后端 Pod 的稳定虚拟入口。
+    sourceIds: [k8s-services, k8s-labels]
+    visual: { archetype: service, size: lg, group: service-entry }
+
+  - id: api-object:namespaced:shop:EndpointSlice:api-slice
+    category: api-object
+    kind: EndpointSlice
+    name: api-slice
+    namespace: shop
+    labels: { kubernetes.io/service-name: api }
+    status: ready
+    data:
+      addressType: IPv4
+      serviceName: api
+      ports:
+        - { name: http, port: 8080, protocol: TCP }
+      endpoints:
+        - address: 192.0.2.11
+          targetRef: api-object:namespaced:shop:Pod:api-a
+          conditions: { ready: true, serving: true, terminating: false }
+        - address: 192.0.2.12
+          targetRef: api-object:namespaced:shop:Pod:api-b
+          conditions: { ready: true, serving: true, terminating: false }
+        - address: 192.0.2.13
+          targetRef: api-object:namespaced:shop:Pod:api-c
+          conditions: { ready: true, serving: true, terminating: false }
+    title: { en: api EndpointSlice, ja: api EndpointSlice, zh-CN: api EndpointSlice }
+    summary:
+      en: An API object that records the current endpoint addresses and readiness conditions for the Service.
+      ja: Service の現在の endpoint アドレスと readiness 条件を記録する API オブジェクトです。
+      zh-CN: 记录该 Service 当前 Endpoint 地址及就绪条件的 API 对象。
+    sourceIds: [k8s-endpoint-slices]
+    visual: { archetype: endpointslice, size: lg, group: endpoint-membership }
+
+  - id: api-object:namespaced:shop:Pod:api-a
+    category: api-object
+    kind: Pod
+    name: api-a
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      uid: synthetic-uid-api-a-01
+      nodeName: worker-backends
+      phase: Running
+      restartPolicy: Always
+      trafficRole: backend
+      podIP: 192.0.2.11
+      containerPort: 8080
+    title: { en: api-a Pod, ja: api-a Pod, zh-CN: api-a Pod }
+    summary:
+      en: The first ready backend selected for the initial request.
+      ja: 最初のリクエストに選ばれる ready なバックエンドです。
+      zh-CN: 第一次请求选中的 Ready 后端。
+    sourceIds: [k8s-pods, k8s-services]
+    visual: { archetype: pod, size: md, group: api-backends }
+
+  - id: api-object:namespaced:shop:Pod:api-b
+    category: api-object
+    kind: Pod
+    name: api-b
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      uid: synthetic-uid-api-b-01
+      nodeName: worker-backends
+      phase: Running
+      restartPolicy: Always
+      trafficRole: backend
+      podIP: 192.0.2.12
+      containerPort: 8080
+    title: { en: api-b Pod, ja: api-b Pod, zh-CN: api-b Pod }
+    summary:
+      en: A second ready backend for the api Service.
+      ja: api Service の 2 番目の ready なバックエンドです。
+      zh-CN: api Service 的第二个 Ready 后端。
+    sourceIds: [k8s-pods, k8s-services]
+    visual: { archetype: pod, size: md, group: api-backends }
+
+  - id: api-object:namespaced:shop:Pod:api-c
+    category: api-object
+    kind: Pod
+    name: api-c
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      uid: synthetic-uid-api-c-01
+      nodeName: worker-backends
+      phase: Running
+      restartPolicy: Always
+      trafficRole: backend
+      podIP: 192.0.2.13
+      containerPort: 8080
+    title: { en: api-c Pod, ja: api-c Pod, zh-CN: api-c Pod }
+    summary:
+      en: A ready backend that receives traffic after api-a becomes NotReady.
+      ja: api-a が NotReady になった後にトラフィックを受ける ready なバックエンドです。
+      zh-CN: api-a 变为 NotReady 后接收流量的 Ready 后端。
+    sourceIds: [k8s-pods, k8s-services]
+    visual: { archetype: pod, size: md, group: api-backends }
+
+relations:
+  - id: scheduled-client-on-worker-client
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:traffic-client
+    to: infrastructure:cluster:global:Node:worker-client
+    directed: true
+    semantic: placement
+    title:
+      {
+        en: client scheduled on worker-client,
+        ja: client を worker-client に配置,
+        zh-CN: client 调度到 worker-client,
+      }
+    sourceIds: [k8s-pods, k8s-nodes]
+  - id: scheduled-api-a-on-worker-backends
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:api-a
+    to: infrastructure:cluster:global:Node:worker-backends
+    directed: true
+    semantic: placement
+    title:
+      {
+        en: api-a scheduled on worker-backends,
+        ja: api-a を worker-backends に配置,
+        zh-CN: api-a 调度到 worker-backends,
+      }
+    sourceIds: [k8s-pods, k8s-nodes]
+  - id: scheduled-api-b-on-worker-backends
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:api-b
+    to: infrastructure:cluster:global:Node:worker-backends
+    directed: true
+    semantic: placement
+    title:
+      {
+        en: api-b scheduled on worker-backends,
+        ja: api-b を worker-backends に配置,
+        zh-CN: api-b 调度到 worker-backends,
+      }
+    sourceIds: [k8s-pods, k8s-nodes]
+  - id: scheduled-api-c-on-worker-backends
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:api-c
+    to: infrastructure:cluster:global:Node:worker-backends
+    directed: true
+    semantic: placement
+    title:
+      {
+        en: api-c scheduled on worker-backends,
+        ja: api-c を worker-backends に配置,
+        zh-CN: api-c 调度到 worker-backends,
+      }
+    sourceIds: [k8s-pods, k8s-nodes]
+
+  - id: service-selects-api-a
+    type: selects
+    from: api-object:namespaced:shop:Service:api
+    to: api-object:namespaced:shop:Pod:api-a
+    directed: true
+    semantic: selection
+    title: { en: selector matches api-a, ja: selector が api-a に一致, zh-CN: Selector 匹配 api-a }
+    sourceIds: [k8s-services, k8s-labels]
+  - id: service-selects-api-b
+    type: selects
+    from: api-object:namespaced:shop:Service:api
+    to: api-object:namespaced:shop:Pod:api-b
+    directed: true
+    semantic: selection
+    title: { en: selector matches api-b, ja: selector が api-b に一致, zh-CN: Selector 匹配 api-b }
+    sourceIds: [k8s-services, k8s-labels]
+  - id: service-selects-api-c
+    type: selects
+    from: api-object:namespaced:shop:Service:api
+    to: api-object:namespaced:shop:Pod:api-c
+    directed: true
+    semantic: selection
+    title: { en: selector matches api-c, ja: selector が api-c に一致, zh-CN: Selector 匹配 api-c }
+    sourceIds: [k8s-services, k8s-labels]
+
+  - id: endpoint-slice-for-api-service
+    type: contains-endpoint-for
+    from: api-object:namespaced:shop:EndpointSlice:api-slice
+    to: api-object:namespaced:shop:Service:api
+    directed: true
+    semantic: configuration
+    title:
+      { en: endpoints for api Service, ja: api Service の endpoint, zh-CN: api Service 的 Endpoint }
+    sourceIds: [k8s-endpoint-slices, k8s-services]
+
+  - id: endpoint-slice-references-api-a
+    type: references
+    from: api-object:namespaced:shop:EndpointSlice:api-slice
+    to: api-object:namespaced:shop:Pod:api-a
+    directed: true
+    semantic: endpoint-membership
+    title: { en: ready endpoint api-a, ja: ready endpoint api-a, zh-CN: Ready Endpoint api-a }
+    sourceIds: [k8s-endpoint-slices]
+    data: { address: 192.0.2.11, ready: true, serving: true, terminating: false }
+  - id: endpoint-slice-references-api-b
+    type: references
+    from: api-object:namespaced:shop:EndpointSlice:api-slice
+    to: api-object:namespaced:shop:Pod:api-b
+    directed: true
+    semantic: endpoint-membership
+    title: { en: ready endpoint api-b, ja: ready endpoint api-b, zh-CN: Ready Endpoint api-b }
+    sourceIds: [k8s-endpoint-slices]
+    data: { address: 192.0.2.12, ready: true, serving: true, terminating: false }
+  - id: endpoint-slice-references-api-c
+    type: references
+    from: api-object:namespaced:shop:EndpointSlice:api-slice
+    to: api-object:namespaced:shop:Pod:api-c
+    directed: true
+    semantic: endpoint-membership
+    title: { en: ready endpoint api-c, ja: ready endpoint api-c, zh-CN: Ready Endpoint api-c }
+    sourceIds: [k8s-endpoint-slices]
+    data: { address: 192.0.2.13, ready: true, serving: true, terminating: false }

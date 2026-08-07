@@ -11,7 +11,7 @@ lessonOrder:
   - cluster-overview
   - pod-and-placement
   - manifest-to-running-pod
-  - service-and-endpoints
+  - service-routes-to-pods
   - container-restart-vs-pod-replacement
   - probes
   - rolling-update
@@ -78,25 +78,25 @@ lessons:
         zh-CN: 说明各组件的职责。,
       }
     estimatedMinutes: 7
-  - id: service-and-endpoints
+  - id: service-routes-to-pods
     chapterId: networking-resilience
-    status: planned
-    prerequisites: [manifest-to-running-pod]
+    status: available
+    prerequisites: []
     title:
       {
-        en: How a Service reaches changing Pods,
-        ja: Service が変化する Pod に届く仕組み,
-        zh-CN: Service 如何访问变化的 Pod,
+        en: How a Service routes to ready Pods,
+        ja: Service が ready な Pod へルーティングする仕組み,
+        zh-CN: Service 如何将流量路由到 Ready Pod,
       }
     learningOutcome:
       {
-        en: 'Explain selectors, EndpointSlices, and stable access.',
-        ja: selector・EndpointSlice・安定した入口を説明する。,
-        zh-CN: 解释 Selector、EndpointSlice 与稳定入口。,
+        en: 'Distinguish stable Service access, endpoint readiness, and backend selection.',
+        ja: 安定した Service 入口、endpoint readiness、backend 選択を区別する。,
+        zh-CN: 区分稳定 Service 访问、Endpoint 就绪和后端选择。,
       }
-    estimatedMinutes: 7
+    estimatedMinutes: 6
   - id: container-restart-vs-pod-replacement
-    chapterId: networking-resilience
+    chapterId: workloads-self-healing
     status: available
     prerequisites: []
     title:

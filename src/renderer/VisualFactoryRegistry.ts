@@ -1,17 +1,19 @@
 import type { EntityViewState } from '../course/types';
 import type { WorldEntity } from '../world/types';
-import {
-  ContainerVisualHandle,
-  ControllerManagerVisualHandle,
-  GenericVisualHandle,
-  KubeletVisualHandle,
-  NodeVisualHandle,
-  PodVisualHandle,
-  ReplicaSetVisualHandle,
-  SchedulerVisualHandle,
-  type EntityVisualHandle,
-  type VisualContext,
-} from './VisualHandles';
+import { ApiServerVisualHandle } from './visuals/ApiServerVisual';
+import type { EntityVisualHandle, VisualContext } from './visuals/BaseVisualHandle';
+import { ClientVisualHandle } from './visuals/ClientVisual';
+import { ContainerVisualHandle } from './visuals/ContainerVisual';
+import { ControllerManagerVisualHandle } from './visuals/ControllerManagerVisual';
+import { EndpointSliceVisualHandle } from './visuals/EndpointSliceVisual';
+import { GenericUnsupportedVisual } from './visuals/GenericUnsupportedVisual';
+import { KubeletVisualHandle } from './visuals/KubeletVisual';
+import { KubectlVisualHandle } from './visuals/KubectlVisual';
+import { NodeVisualHandle } from './visuals/NodeVisual';
+import { PodVisualHandle } from './visuals/PodVisual';
+import { ReplicaSetVisualHandle } from './visuals/ReplicaSetVisual';
+import { SchedulerVisualHandle } from './visuals/SchedulerVisual';
+import { ServiceVisualHandle } from './visuals/ServiceVisual';
 
 export interface EntityVisualFactory {
   readonly id: string;
@@ -38,11 +40,16 @@ const factory = (
 const isControllerManager = (entity: WorldEntity): boolean =>
   entity.kind === 'ControllerManager' || entity.kind === 'KubeControllerManager';
 
+const isApiServer = (entity: WorldEntity): boolean =>
+  entity.kind === 'KubeAPIServer' || entity.kind === 'ApiServer' || entity.kind === 'APIServer';
+
 export const GOLDEN_LESSON_VISUAL_KINDS = Object.freeze([
   'Node',
   'Pod',
   'Container',
   'ReplicaSet',
+  'KubeAPIServer',
+  'Kubectl',
   'Kubelet',
   'ControllerManager',
   'KubeControllerManager',
@@ -66,6 +73,11 @@ export class UnsupportedVisualError extends Error {
 
 const builtInFactories = (): readonly EntityVisualFactory[] => [
   factory('node-rack', (entity) => entity.kind === 'Node', NodeVisualHandle),
+  factory(
+    'client-pod-emitter',
+    (entity) => entity.kind === 'Pod' && entity.data.trafficRole === 'client',
+    ClientVisualHandle,
+  ),
   factory('pod-shell', (entity) => entity.kind === 'Pod', PodVisualHandle),
   factory(
     'container-instance',
@@ -73,6 +85,14 @@ const builtInFactories = (): readonly EntityVisualFactory[] => [
     ContainerVisualHandle,
   ),
   factory('replicaset-counter', (entity) => entity.kind === 'ReplicaSet', ReplicaSetVisualHandle),
+  factory('service-routing-hub', (entity) => entity.kind === 'Service', ServiceVisualHandle),
+  factory(
+    'endpoint-slice-table',
+    (entity) => entity.kind === 'EndpointSlice',
+    EndpointSliceVisualHandle,
+  ),
+  factory('api-server-gateway', isApiServer, ApiServerVisualHandle),
+  factory('kubectl-command-entry', (entity) => entity.kind === 'Kubectl', KubectlVisualHandle),
   factory('kubelet-agent', (entity) => entity.kind === 'Kubelet', KubeletVisualHandle),
   factory('controller-manager', isControllerManager, ControllerManagerVisualHandle),
   factory('scheduler', (entity) => entity.kind === 'Scheduler', SchedulerVisualHandle),
@@ -108,7 +128,7 @@ export class VisualFactoryRegistry implements EntityVisualFactoryResolver {
     const visualFactory = this.resolve(entity);
     if (visualFactory) return visualFactory.create(entity, view, context);
     if (context.allowGeneric === false) throw new UnsupportedVisualError(entity);
-    return new GenericVisualHandle(entity, view);
+    return new GenericUnsupportedVisual(entity, view);
   }
 
   public supportsSpecialized(entity: WorldEntity): boolean {

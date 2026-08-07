@@ -1,0 +1,552 @@
+schemaVersion: 2
+id: service-routes-to-pods
+scenarioId: service-routes-to-pods
+chapterId: networking-resilience
+title:
+  en: How a Service routes to ready Pods
+  ja: Service が ready な Pod へルーティングする仕組み
+  zh-CN: Service 如何将流量路由到 Ready Pod
+summary:
+  en: Trace one in-cluster request through a stable Service to a ready backend, then watch it reroute when an endpoint becomes NotReady.
+  ja: クラスター内の 1 つのリクエストを安定した Service から ready なバックエンドまで追い、endpoint が NotReady になったときの再ルーティングを確認します。
+  zh-CN: 跟踪一次集群内请求如何经由稳定 Service 到达 Ready 后端，并观察某个 Endpoint 变为 NotReady 后的改道。
+learningOutcome:
+  en: Distinguish the stable Service address, EndpointSlice membership, and the concrete backend chosen for each request.
+  ja: 安定した Service アドレス、EndpointSlice のメンバーシップ、各リクエストで選ばれる具体的なバックエンドを区別する。
+  zh-CN: 区分稳定的 Service 地址、EndpointSlice 成员关系和每次请求实际选中的后端。
+prerequisites: []
+sourceIds: [k8s-pods, k8s-labels, k8s-services, k8s-endpoint-slices, k8s-networking-overview]
+verifiedAt: '2026-08-08'
+
+baseView:
+  view: traffic
+  cameraPresetId: traffic
+  resetEntities: true
+  entityRules:
+    - selector: { byCategory: api-object }
+      visible: true
+      emphasis: normal
+      labelMode: short
+      inspectorMode: none
+    - selector: { byKind: Service, namespace: shop }
+      visible: true
+      emphasis: normal
+      labelMode: full
+    - selector: { byKind: EndpointSlice, namespace: shop }
+      visible: true
+      emphasis: normal
+      labelMode: full
+  relationRules:
+    - byType: selects
+      visible: true
+      emphasis: dimmed
+    - byType: contains-endpoint-for
+      visible: true
+      emphasis: dimmed
+    - byType: references
+      visible: true
+      emphasis: dimmed
+  activeRoutes: []
+
+steps:
+  - id: identify-traffic-objects
+    title:
+      en: Identify the traffic objects
+      ja: トラフィックに関わるオブジェクトを確認する
+      zh-CN: 识别流量相关对象
+    learningOutcome:
+      en: Locate the client Pod, stable Service, EndpointSlice, and three backend Pods.
+      ja: クライアント Pod、安定した Service、EndpointSlice、3 つのバックエンド Pod を見つける。
+      zh-CN: 找到客户端 Pod、稳定 Service、EndpointSlice 和三个后端 Pod。
+    narration:
+      en: The client addresses the api Service. The EndpointSlice records three concrete backend endpoints, one for each api Pod.
+      ja: クライアントは api Service を宛先にします。EndpointSlice は各 api Pod に対応する 3 つの具体的な backend endpoint を記録します。
+      zh-CN: 客户端访问 api Service；EndpointSlice 记录三个具体后端 Endpoint，每个对应一个 api Pod。
+    teaching:
+      whatChanged:
+        en: Nothing has changed yet; the scene separates the client, stable entry, endpoint record, and backend set.
+        ja: まだ変更はありません。シーンはクライアント、安定した入口、endpoint の記録、バックエンド集合を分けて示します。
+        zh-CN: 当前尚无变化；场景将客户端、稳定入口、Endpoint 记录和后端集合分开展示。
+      whyItHappened:
+        en: These objects have different jobs even though they cooperate to deliver one request.
+        ja: 1 つのリクエストを届けるために協調しますが、それぞれの役割は異なります。
+        zh-CN: 它们协作完成一次请求，但职责并不相同。
+      takeaway:
+        en: A Service, an EndpointSlice, and a Pod are distinct API objects—not interchangeable layers.
+        ja: Service、EndpointSlice、Pod は別々の API オブジェクトであり、同じ層ではありません。
+        zh-CN: Service、EndpointSlice 和 Pod 是不同的 API 对象，不能混为一层。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Service:api
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+        - api-object:namespaced:shop:Pod:traffic-client
+      mode: snapshot
+    introducesTerms: [pod, service, endpoint-slice]
+    usesTerms: []
+    sourceIds: [k8s-pods, k8s-services, k8s-endpoint-slices]
+    viewPatch:
+      resetEntities: true
+      entityRules:
+        - selector: { byCategory: api-object }
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+        - selector: { byKind: Service, namespace: shop }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byKind: EndpointSlice, namespace: shop }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:traffic-client] }
+          emphasis: focused
+          inspectorMode: expanded
+      activeRoutes: []
+
+  - id: stable-service-entry
+    title:
+      en: The Service stays stable
+      ja: Service は安定したまま
+      zh-CN: Service 保持稳定
+    learningOutcome:
+      en: Read the stable ClusterIP and port that the client uses.
+      ja: クライアントが使う安定した ClusterIP とポートを読み取る。
+      zh-CN: 读取客户端使用的稳定 ClusterIP 和端口。
+    narration:
+      en: The synthetic api Service exposes ClusterIP 198.51.100.42 and TCP port 8080. Clients keep using this entry while eligible backends change.
+      ja: 合成 api Service は ClusterIP 198.51.100.42 と TCP ポート 8080 を公開します。利用可能なバックエンドが変わっても、クライアントはこの入口を使い続けます。
+      zh-CN: 合成 api Service 提供 ClusterIP 198.51.100.42 和 TCP 端口 8080；即使可用后端变化，客户端仍使用这个入口。
+    teaching:
+      whatChanged:
+        en: Focus moves to the Service and its stable address; the world state is unchanged.
+        ja: フォーカスが Service とその安定したアドレスへ移ります。ワールド状態は変わりません。
+        zh-CN: 焦点移到 Service 及其稳定地址，世界状态没有变化。
+      whyItHappened:
+        en: The Service provides a durable virtual entry instead of asking clients to track individual Pod addresses.
+        ja: Service は、クライアントに個々の Pod アドレスを追わせず、持続的な仮想入口を提供します。
+        zh-CN: Service 提供持久的虚拟入口，无需客户端追踪每个 Pod 地址。
+      takeaway:
+        en: The Service address is stable; the selected backend for a request can vary.
+        ja: Service アドレスは安定していますが、リクエストで選ばれるバックエンドは変わり得ます。
+        zh-CN: Service 地址稳定，但每次请求选中的后端可以变化。
+    evidence:
+      entityIds: [api-object:namespaced:shop:Service:api]
+      mode: snapshot
+    introducesTerms: [cluster-ip, selector]
+    usesTerms: [service, pod]
+    sourceIds: [k8s-services, k8s-labels]
+    viewPatch:
+      resetEntities: true
+      entityRules:
+        - selector: { byCategory: api-object }
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+        - selector: { byKind: Service, namespace: shop }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byKind: EndpointSlice, namespace: shop }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Service:api] }
+          emphasis: focused
+          inspectorMode: expanded
+      callouts:
+        - id: stable-service-address
+          entityId: api-object:namespaced:shop:Service:api
+          text:
+            {
+              en: 'Stable ClusterIP · TCP 8080',
+              ja: '安定した ClusterIP · TCP 8080',
+              zh-CN: '稳定 ClusterIP · TCP 8080',
+            }
+      activeRoutes: []
+
+  - id: endpoint-slice-backends
+    title:
+      en: EndpointSlice lists eligible backends
+      ja: EndpointSlice が利用可能なバックエンドを示す
+      zh-CN: EndpointSlice 列出可用后端
+    learningOutcome:
+      en: Read all three endpoint addresses and their readiness conditions.
+      ja: 3 つの endpoint アドレスと readiness 条件を読み取る。
+      zh-CN: 读取三个 Endpoint 地址及其就绪条件。
+    narration:
+      en: The EndpointSlice contains all three endpoints and their conditions. At this moment, every endpoint has ready=true.
+      ja: EndpointSlice には 3 つの endpoint とその条件が含まれます。この時点ではすべて ready=true です。
+      zh-CN: EndpointSlice 包含三个 Endpoint 及其条件；此刻三者均为 ready=true。
+    teaching:
+      whatChanged:
+        en: Focus moves to the EndpointSlice and its three Ready slots; no API object has mutated.
+        ja: フォーカスが EndpointSlice と 3 つの Ready スロットへ移ります。API オブジェクトはまだ変化していません。
+        zh-CN: 焦点移到 EndpointSlice 及三个 Ready 槽位，API 对象尚未变化。
+      whyItHappened:
+        en: EndpointSlice records concrete addresses and per-endpoint conditions for the Service backend set.
+        ja: EndpointSlice は Service のバックエンド集合について、具体的なアドレスと endpoint ごとの条件を記録します。
+        zh-CN: EndpointSlice 为 Service 后端集合记录具体地址和每个 Endpoint 的条件。
+      takeaway:
+        en: EndpointSlice can contain both Ready and NotReady endpoints; readiness is a condition, not membership itself.
+        ja: EndpointSlice には Ready と NotReady の両方が含まれ得ます。readiness は条件であり、メンバーシップそのものではありません。
+        zh-CN: EndpointSlice 可同时包含 Ready 和 NotReady Endpoint；就绪是条件，不等同于是否存在于列表中。
+    evidence:
+      entityIds: [api-object:namespaced:shop:EndpointSlice:api-slice]
+      mode: snapshot
+    introducesTerms: [endpoint]
+    usesTerms: [endpoint-slice, service, pod]
+    sourceIds: [k8s-endpoint-slices, k8s-services]
+    viewPatch:
+      resetEntities: true
+      entityRules:
+        - selector: { byCategory: api-object }
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+        - selector: { byKind: Service, namespace: shop }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byKind: EndpointSlice, namespace: shop }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:EndpointSlice:api-slice] }
+          emphasis: focused
+          inspectorMode: expanded
+      relationRules:
+        - byType: references
+          visible: true
+          emphasis: focused
+        - byType: contains-endpoint-for
+          visible: true
+          emphasis: focused
+      callouts:
+        - id: endpoint-readiness-summary
+          entityId: api-object:namespaced:shop:EndpointSlice:api-slice
+          text:
+            {
+              en: '3 endpoints · 3 Ready',
+              ja: '3 endpoints · 3 Ready',
+              zh-CN: '3 个 Endpoint · 3 个 Ready',
+            }
+      activeRoutes: []
+
+  - id: request-ready-backend
+    title:
+      en: A request reaches one ready backend
+      ja: リクエストが 1 つの ready なバックエンドへ届く
+      zh-CN: 请求到达一个 Ready 后端
+    learningOutcome:
+      en: Trace one logical request from the client through the Service to api-a.
+      ja: クライアントから Service を経由して api-a へ至る 1 つの論理リクエストを追う。
+      zh-CN: 跟踪一次逻辑请求如何从客户端经 Service 到达 api-a。
+    narration:
+      en: This request enters through the stable Service and is represented as reaching ready endpoint api-a. EndpointSlice remains beside the path as API state, not a network hop.
+      ja: このリクエストは安定した Service から入り、ready endpoint の api-a に届くものとして表現されます。EndpointSlice は API 状態であり、ネットワーク hop ではありません。
+      zh-CN: 该请求从稳定 Service 入口进入，并表示为到达 Ready Endpoint api-a；EndpointSlice 是旁侧的 API 状态，不是网络 Hop。
+    teaching:
+      whatChanged:
+        en: A persistent route now shows client → Service → api-a, with moving data-flow markers.
+        ja: client → Service → api-a の永続ルートと、移動するデータフローマーカーが表示されます。
+        zh-CN: 现在持续显示 client → Service → api-a 路线，并带有移动的数据流标记。
+      whyItHappened:
+        en: api-a is one of the endpoints whose readiness condition is true.
+        ja: api-a は readiness 条件が true の endpoint の 1 つだからです。
+        zh-CN: 因为 api-a 是就绪条件为 true 的 Endpoint 之一。
+      takeaway:
+        en: This is a logical teaching path. The concrete Service data plane depends on the cluster implementation.
+        ja: これは論理的な学習経路です。具体的な Service データプレーンはクラスター実装によって異なります。
+        zh-CN: 这是逻辑教学路径；具体 Service 数据面取决于集群实现。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Service:api
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+        - api-object:namespaced:shop:Pod:api-a
+      mode: snapshot
+    introducesTerms: [service-data-plane]
+    usesTerms: [service, endpoint, pod]
+    sourceIds: [k8s-services, k8s-endpoint-slices, k8s-networking-overview]
+    viewPatch:
+      resetEntities: true
+      entityRules:
+        - selector: { byCategory: api-object }
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+        - selector: { byKind: Service, namespace: shop }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byKind: EndpointSlice, namespace: shop }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a] }
+          emphasis: focused
+          inspectorMode: expanded
+      relationRules:
+        - byType: selects
+          visible: true
+          emphasis: dimmed
+        - byType: references
+          visible: true
+          emphasis: dimmed
+      activeRoutes:
+        - id: client-service-api-a
+          semantic: data-flow
+          label:
+            {
+              en: Request to ready api-a,
+              ja: ready な api-a へのリクエスト,
+              zh-CN: 发往 Ready api-a 的请求,
+            }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:traffic-client
+              fromAnchor: data-path
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: data-path
+              label: { en: enter Service, ja: Service に入る, zh-CN: 进入 Service }
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: data-path
+              toEntityId: api-object:namespaced:shop:Pod:api-a
+              toAnchor: data-path
+              label:
+                {
+                  en: route to Ready api-a,
+                  ja: Ready api-a へルーティング,
+                  zh-CN: 路由到 Ready api-a,
+                }
+    transition:
+      cues:
+        - type: data-packet
+          routeId: client-service-api-a
+          label: { en: Request packet, ja: リクエストパケット, zh-CN: 请求数据包 }
+          durationMs: 1500
+
+  - id: reroute-not-ready-endpoint
+    title:
+      en: Traffic reroutes around a NotReady endpoint
+      ja: NotReady endpoint を避けて再ルーティングする
+      zh-CN: 流量绕过 NotReady Endpoint 改道
+    learningOutcome:
+      en: Observe api-a remain listed with ready=false while the next request reaches api-c.
+      ja: api-a が ready=false のまま一覧に残り、次のリクエストが api-c へ届くことを確認する。
+      zh-CN: 观察 api-a 以 ready=false 继续留在列表中，而下一次请求到达 api-c。
+    narration:
+      en: api-a becomes NotReady. Its EndpointSlice entry remains present with ready=false, while the logical request route changes to ready backend api-c.
+      ja: api-a が NotReady になります。EndpointSlice の entry は ready=false で残り、論理リクエストの経路は ready な api-c へ変わります。
+      zh-CN: api-a 变为 NotReady；它仍以 ready=false 保留在 EndpointSlice 中，而逻辑请求路线改到 Ready 后端 api-c。
+    teaching:
+      whatChanged:
+        en: api-a and its endpoint condition become NotReady; the visible route changes from api-a to api-c.
+        ja: api-a とその endpoint 条件が NotReady になり、表示ルートが api-a から api-c へ変わります。
+        zh-CN: api-a 及其 Endpoint 条件变为 NotReady，可见路线从 api-a 改到 api-c。
+      whyItHappened:
+        en: The endpoint still exists, but it is no longer eligible for ordinary Service traffic while ready=false.
+        ja: endpoint 自体は存在しますが、ready=false の間は通常の Service トラフィックの対象外です。
+        zh-CN: Endpoint 仍然存在，但 ready=false 时不再适合承接普通 Service 流量。
+      takeaway:
+        en: Readiness changes the eligible backend set without changing the Service address.
+        ja: readiness は Service アドレスを変えずに、利用可能なバックエンド集合を変えます。
+        zh-CN: 就绪状态会改变可用后端集合，但不会改变 Service 地址。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+        - api-object:namespaced:shop:Pod:api-a
+        - api-object:namespaced:shop:Pod:api-c
+        - api-object:namespaced:shop:Service:api
+      mode: diff-with-context
+    introducesTerms: []
+    usesTerms: [service, endpoint-slice, endpoint, pod, service-data-plane]
+    sourceIds: [k8s-services, k8s-endpoint-slices]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-a
+          patch: { status: not-ready }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:EndpointSlice:api-slice
+          patch:
+            data:
+              endpoints:
+                - address: 192.0.2.11
+                  targetRef: api-object:namespaced:shop:Pod:api-a
+                  conditions: { ready: false, serving: true, terminating: false }
+                - address: 192.0.2.12
+                  targetRef: api-object:namespaced:shop:Pod:api-b
+                  conditions: { ready: true, serving: true, terminating: false }
+                - address: 192.0.2.13
+                  targetRef: api-object:namespaced:shop:Pod:api-c
+                  conditions: { ready: true, serving: true, terminating: false }
+        - op: patch-relation
+          relationId: endpoint-slice-references-api-a
+          patch:
+            data: { address: 192.0.2.11, ready: false, serving: true, terminating: false }
+            title:
+              {
+                en: NotReady endpoint api-a,
+                ja: NotReady endpoint api-a,
+                zh-CN: NotReady Endpoint api-a,
+              }
+    viewPatch:
+      resetEntities: true
+      entityRules:
+        - selector: { byCategory: api-object }
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+        - selector: { byKind: Service, namespace: shop }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byKind: EndpointSlice, namespace: shop }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules:
+        - byType: references
+          visible: true
+          emphasis: focused
+      callouts:
+        - id: api-a-not-ready
+          entityId: api-object:namespaced:shop:Pod:api-a
+          text:
+            {
+              en: 'Endpoint condition · ready=false',
+              ja: 'endpoint 条件 · ready=false',
+              zh-CN: 'Endpoint 条件 · ready=false',
+            }
+      activeRoutes:
+        - id: client-service-api-c
+          semantic: data-flow
+          label:
+            {
+              en: Rerouted request to ready api-c,
+              ja: ready な api-c へ再ルーティング,
+              zh-CN: 改道至 Ready api-c 的请求,
+            }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:traffic-client
+              fromAnchor: data-path
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: data-path
+              label: { en: enter same Service, ja: 同じ Service に入る, zh-CN: 进入同一 Service }
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: data-path
+              toEntityId: api-object:namespaced:shop:Pod:api-c
+              toAnchor: data-path
+              label:
+                {
+                  en: reroute to Ready api-c,
+                  ja: Ready api-c へ再ルーティング,
+                  zh-CN: 改道至 Ready api-c,
+                }
+    transition:
+      cues:
+        - type: data-packet
+          routeId: client-service-api-c
+          label: { en: Rerouted request, ja: 再ルーティングされたリクエスト, zh-CN: 改道后的请求 }
+          durationMs: 1500
+
+  - id: complete-service-path
+    title:
+      en: Trace the complete Service path
+      ja: Service の全経路をたどる
+      zh-CN: 串起完整 Service 路径
+    learningOutcome:
+      en: Summarize the stable entry, endpoint readiness, and selected backend as separate facts.
+      ja: 安定した入口、endpoint readiness、選択されたバックエンドを別々の事実として要約する。
+      zh-CN: 将稳定入口、Endpoint 就绪和选中后端总结为三个独立事实。
+    narration:
+      en: The client still uses the same Service address. EndpointSlice still contains three endpoints, now with two Ready and one NotReady, and traffic is shown reaching api-c.
+      ja: クライアントは同じ Service アドレスを使い続けます。EndpointSlice には 3 つの endpoint が残り、2 つが Ready、1 つが NotReady で、トラフィックは api-c に届きます。
+      zh-CN: 客户端仍使用同一个 Service 地址；EndpointSlice 仍有三个 Endpoint，此时两个 Ready、一个 NotReady，流量显示到达 api-c。
+    teaching:
+      whatChanged:
+        en: The final view keeps the rerouted path visible while returning focus to the unchanged Service.
+        ja: 最終ビューでは再ルーティング後の経路を表示したまま、変わらない Service にフォーカスを戻します。
+        zh-CN: 最终视图保留改道后的路线，并将焦点移回未改变的 Service。
+      whyItHappened:
+        en: Service identity, endpoint condition, and per-request backend selection evolve on different timescales.
+        ja: Service の ID、endpoint 条件、リクエストごとのバックエンド選択は、それぞれ異なる時間軸で変化します。
+        zh-CN: Service 身份、Endpoint 条件和逐请求后端选择会在不同时间尺度上变化。
+      takeaway:
+        en: Client → stable Service → selected Ready Pod is the data path; EndpointSlice is the API record that informs eligible backends.
+        ja: client → 安定した Service → 選択された Ready Pod がデータ経路で、EndpointSlice は利用可能なバックエンドを示す API 記録です。
+        zh-CN: client → 稳定 Service → 选中的 Ready Pod 是数据路径；EndpointSlice 是描述可用后端的 API 记录。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Service:api
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+        - api-object:namespaced:shop:Pod:api-a
+        - api-object:namespaced:shop:Pod:api-c
+      mode: snapshot
+    introducesTerms: []
+    usesTerms: [service, cluster-ip, endpoint-slice, endpoint, pod, service-data-plane]
+    sourceIds: [k8s-services, k8s-endpoint-slices, k8s-networking-overview]
+    viewPatch:
+      resetEntities: true
+      entityRules:
+        - selector: { byCategory: api-object }
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+        - selector: { byKind: Service, namespace: shop }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byKind: EndpointSlice, namespace: shop }
+          visible: true
+          emphasis: normal
+          labelMode: full
+      relationRules:
+        - byType: selects
+          visible: true
+          emphasis: dimmed
+        - byType: contains-endpoint-for
+          visible: true
+          emphasis: dimmed
+        - byType: references
+          visible: true
+          emphasis: dimmed
+      activeRoutes:
+        - id: client-service-api-c
+          semantic: data-flow
+          label:
+            {
+              en: Current request path to ready api-c,
+              ja: ready な api-c への現在のリクエスト経路,
+              zh-CN: 当前发往 Ready api-c 的请求路径,
+            }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:traffic-client
+              fromAnchor: data-path
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: data-path
+              label: { en: enter Service, ja: Service に入る, zh-CN: 进入 Service }
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: data-path
+              toEntityId: api-object:namespaced:shop:Pod:api-c
+              toAnchor: data-path
+              label:
+                {
+                  en: route to Ready api-c,
+                  ja: Ready api-c へルーティング,
+                  zh-CN: 路由到 Ready api-c,
+                }

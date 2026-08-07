@@ -11,7 +11,12 @@ import {
 } from '../src/content/schemas';
 import { courseEngine } from '../src/course/CourseEngine';
 import type { LessonV2 } from '../src/course/types';
-import { validateWorldSnapshot } from '../src/world';
+import {
+  getContainerData,
+  getPodData,
+  getReplicaSetData,
+  validateWorldSnapshot,
+} from '../src/world';
 import type { WorldSnapshot } from '../src/world/types';
 
 const root = resolve(import.meta.dirname, '..');
@@ -32,11 +37,12 @@ const lessonDirectory = 'content/courses/kubernetes-foundations/lessons';
 const lessonFiles = readdirSync(resolve(root, lessonDirectory))
   .filter((file) => file.endsWith('.yaml'))
   .sort();
+const scenarioDirectory = 'content/scenarios';
+const scenarioFiles = readdirSync(resolve(root, scenarioDirectory))
+  .filter((file) => file.endsWith('.yaml'))
+  .sort();
 const sourcesData = sourcesSchema.parse(yaml('content/sources.yaml'));
 const course = courseSchema.parse(yaml('content/courses/kubernetes-foundations/course.yaml'));
-const authoredScenario = scenarioV2AuthorSchema.parse(
-  yaml('content/scenarios/container-restart-golden.yaml'),
-);
 
 function uniqueRecord<T extends { readonly id: string }>(values: readonly T[], label: string) {
   const record: Record<string, T> = {};
@@ -47,13 +53,29 @@ function uniqueRecord<T extends { readonly id: string }>(values: readonly T[], l
   return record;
 }
 
-const scenario: WorldSnapshot = validateWorldSnapshot({
-  schemaVersion: 2,
-  scenarioId: authoredScenario.scenarioId,
-  revision: authoredScenario.revision,
-  entities: uniqueRecord(authoredScenario.entities, 'scenario entity'),
-  relations: uniqueRecord(authoredScenario.relations, 'scenario relation'),
-});
+const scenarios = new Map<string, WorldSnapshot>();
+const v2ScenarioFiles: string[] = [];
+for (const file of scenarioFiles) {
+  const raw = yaml(`${scenarioDirectory}/${file}`);
+  check(Boolean(raw && typeof raw === 'object'), `${file}: scenario must be an object`);
+  if ((raw as { schemaVersion?: unknown }).schemaVersion !== 2) continue;
+  v2ScenarioFiles.push(file);
+  const authored = scenarioV2AuthorSchema.parse(raw);
+  check(
+    !scenarios.has(authored.scenarioId),
+    `${file}: duplicate scenario ID ${authored.scenarioId}`,
+  );
+  scenarios.set(
+    authored.scenarioId,
+    validateWorldSnapshot({
+      schemaVersion: 2,
+      scenarioId: authored.scenarioId,
+      revision: authored.revision,
+      entities: uniqueRecord(authored.entities, `${file} entity`),
+      relations: uniqueRecord(authored.relations, `${file} relation`),
+    }),
+  );
+}
 
 const sourceIds = new Set(Object.keys(sourcesData.sources));
 function checkSources(ids: readonly string[], context: string): void {
@@ -132,7 +154,8 @@ const compiledLessons = [];
 for (const entry of available) {
   const lesson = v2Lessons.get(entry.id);
   check(lesson !== undefined, `${entry.id}: missing v2 lesson`);
-  check(lesson.scenarioId === scenario.scenarioId, `${lesson.id}: unknown scenario`);
+  const lessonScenario = scenarios.get(lesson.scenarioId);
+  check(lessonScenario !== undefined, `${lesson.id}: unknown scenario ${lesson.scenarioId}`);
   checkSources(lesson.sourceIds, lesson.id);
   const introduced = new Set<string>();
   for (const step of lesson.steps) {
@@ -147,10 +170,10 @@ for (const entry of available) {
     }
     checkSources(step.sourceIds, `${lesson.id}/${step.id}`);
   }
-  const compiled = courseEngine.compileLesson(lesson, scenario);
+  const compiled = courseEngine.compileLesson(lesson, lessonScenario);
   for (const [index, sequential] of compiled.steps.entries()) {
     check(
-      JSON.stringify(courseEngine.compileDirect(lesson, scenario, index)) ===
+      JSON.stringify(courseEngine.compileDirect(lesson, lessonScenario, index)) ===
         JSON.stringify(sequential),
       `${lesson.id}/${index}: direct compilation is not deterministic`,
     );
@@ -158,26 +181,76 @@ for (const entry of available) {
   compiledLessons.push(compiled);
 }
 
-for (const entity of Object.values(scenario.entities)) checkSources(entity.sourceIds, entity.id);
-for (const relation of Object.values(scenario.relations))
-  checkSources(relation.sourceIds, relation.id);
+for (const scenario of scenarios.values()) {
+  for (const entity of Object.values(scenario.entities)) checkSources(entity.sourceIds, entity.id);
+  for (const relation of Object.values(scenario.relations)) {
+    checkSources(relation.sourceIds, relation.id);
+  }
+}
 
 const golden = compiledLessons.find(
   (compiled) => compiled.lesson.id === 'container-restart-vs-pod-replacement',
 );
 check(golden !== undefined, 'golden lesson must be available');
-const pending = golden.steps.find((step) => step.stepId === 'replacement-pending');
-const healthy = golden.steps.find((step) => step.stepId === 'healthy-pod');
-const restarted = golden.steps.find((step) => step.stepId === 'container-restarted');
-check(pending !== undefined, 'golden lesson pending step is missing');
-check(healthy !== undefined, 'golden lesson healthy step is missing');
-check(restarted !== undefined, 'golden lesson restart step is missing');
-const newPodId = 'api-object:namespaced:shop:Pod:api-d-new';
-const oldContainerId = 'runtime-instance:shop:Pod:api-a-old:Container:api';
-check(!healthy.world.entities[newPodId], 'replacement Pod must not exist before creation');
+const goldenScenario = scenarios.get(golden.lesson.scenarioId);
+check(goldenScenario !== undefined, 'golden scenario must be available');
+const expectedGoldenSteps = [
+  'scene-orientation',
+  'healthy-baseline',
+  'container-exits',
+  'container-restarted',
+  'kubectl-delete-pod',
+  'controller-creates-replacement',
+  'replacement-pending',
+  'scheduler-binds-worker-c',
+  'kubelet-starts-container',
+  'compare-identities',
+] as const;
 check(
-  Boolean(pending.worldDiff.addedEntities.find((item) => item.id === newPodId)),
-  'identity replacement must add a new entity ID',
+  JSON.stringify(golden.steps.map((step) => step.stepId)) === JSON.stringify(expectedGoldenSteps),
+  'golden lesson must preserve the required ten-step teaching sequence',
+);
+
+const goldenStep = (stepId: (typeof expectedGoldenSteps)[number]) => {
+  const value = golden.steps.find((step) => step.stepId === stepId);
+  check(value !== undefined, `golden lesson step ${stepId} is missing`);
+  return value;
+};
+
+const baseline = goldenStep('healthy-baseline');
+const restarted = goldenStep('container-restarted');
+const deleted = goldenStep('kubectl-delete-pod');
+const created = goldenStep('controller-creates-replacement');
+const pending = goldenStep('replacement-pending');
+const scheduled = goldenStep('scheduler-binds-worker-c');
+const started = goldenStep('kubelet-starts-container');
+const apiServerId = 'runtime-component:cluster:global:KubeAPIServer:kube-apiserver';
+const kubectlId = 'external:external:global:Kubectl:kubectl';
+const newPodId = 'api-object:namespaced:shop:Pod:api-d-new';
+const oldPodId = 'api-object:namespaced:shop:Pod:api-a-old';
+const oldContainerId = 'runtime-instance:shop:Pod:api-a-old:Container:api';
+const newContainerId = 'runtime-instance:shop:Pod:api-d-new:Container:api';
+const replicaSetId = 'api-object:namespaced:shop:ReplicaSet:api-rs';
+
+check(
+  goldenScenario.entities[apiServerId]?.kind === 'KubeAPIServer',
+  'golden scenario must model API Server',
+);
+check(
+  goldenScenario.entities[kubectlId]?.kind === 'Kubectl',
+  'golden scenario must model the kubectl actor',
+);
+check(
+  goldenScenario.relations['kubectl-requests-api-server']?.from === kubectlId &&
+    goldenScenario.relations['kubectl-requests-api-server']?.to === apiServerId,
+  'kubectl must reach cluster objects through the API Server',
+);
+
+check(!baseline.world.entities[newPodId], 'replacement Pod must not exist in the baseline');
+check(
+  restarted.worldDiff.addedEntities.length === 0 &&
+    restarted.worldDiff.removedEntities.length === 0,
+  'in-place restart must preserve Pod and Container entity IDs',
 );
 check(
   restarted.worldDiff.updatedEntities.some(
@@ -185,10 +258,75 @@ check(
   ),
   'restart claim must patch Container restartCount',
 );
+check(
+  !deleted.world.entities[oldPodId] &&
+    !deleted.world.entities[oldContainerId] &&
+    !deleted.world.entities[newPodId],
+  'explicit deletion must remove the old Pod before replacement exists',
+);
+check(
+  getReplicaSetData(deleted.world.entities[replicaSetId]!).currentReplicas === 2 &&
+    getReplicaSetData(deleted.world.entities[replicaSetId]!).readyReplicas === 2,
+  'deletion must expose the ReplicaSet deficit',
+);
+check(
+  Boolean(created.worldDiff.addedEntities.find((item) => item.id === newPodId)) &&
+    Boolean(created.worldDiff.addedEntities.find((item) => item.id === newContainerId)),
+  'controller reconciliation must create distinct replacement identities',
+);
+check(
+  getPodData(created.world.entities[newPodId]!).nodeName === undefined &&
+    getPodData(created.world.entities[newPodId]!).phase === 'Pending' &&
+    created.world.entities[newContainerId]?.status === 'waiting',
+  'controller-created replacement must begin Pending and unscheduled',
+);
+check(
+  pending.worldDiff.addedEntities.length === 0 &&
+    pending.worldDiff.removedEntities.length === 0 &&
+    pending.worldDiff.updatedEntities.length === 0,
+  'the Pending teaching beat must observe the existing world without inventing a mutation',
+);
+check(
+  getPodData(scheduled.world.entities[newPodId]!).nodeName === 'worker-c' &&
+    getPodData(scheduled.world.entities[newPodId]!).phase === 'Pending' &&
+    scheduled.world.entities[newContainerId]?.status === 'waiting' &&
+    getReplicaSetData(scheduled.world.entities[replicaSetId]!).readyReplicas === 2,
+  'Scheduler binding must not start the Container or restore readiness',
+);
+check(
+  getPodData(started.world.entities[newPodId]!).phase === 'Running' &&
+    started.world.entities[newContainerId]?.status === 'running' &&
+    getContainerData(started.world.entities[newContainerId]!).restartCount === 0 &&
+    getReplicaSetData(started.world.entities[replicaSetId]!).readyReplicas === 3,
+  'kubelet startup must be the separate beat that restores readiness',
+);
+
+for (const step of golden.steps) {
+  const routes = new Map(step.view.activeRoutes.map((route) => [route.id, route]));
+  for (const cue of step.transition.cues) {
+    if ('routeId' in cue) {
+      check(routes.has(cue.routeId), `${step.stepId}: routed cue must reference an active route`);
+    }
+  }
+  for (const route of step.view.activeRoutes) {
+    if (route.semantic === 'control' || route.semantic === 'scheduling') {
+      check(
+        route.hops.some(
+          (hop) => hop.fromEntityId === apiServerId || hop.toEntityId === apiServerId,
+        ),
+        `${step.stepId}/${route.id}: golden control routes must expose API mediation`,
+      );
+    }
+  }
+  check(
+    step.stepId === 'scene-orientation' ? step.evidence.length === 0 : step.evidence.length > 0,
+    `${step.stepId}: compiled evidence must match the authored teaching mode`,
+  );
+}
 
 const contentPaths = [
   'content/sources.yaml',
-  'content/scenarios/container-restart-golden.yaml',
+  ...v2ScenarioFiles.map((file) => `${scenarioDirectory}/${file}`),
   ...lessonFiles.map((file) => `${lessonDirectory}/${file}`),
   ...readdirSync(resolve(root, 'content/glossary')).map((file) => `content/glossary/${file}`),
   'content/courses/kubernetes-foundations/course.yaml',
@@ -224,6 +362,14 @@ const misleadingPatterns: readonly [RegExp, string][] = [
 for (const [pattern, label] of misleadingPatterns)
   check(!pattern.test(contentText), `content: misleading claim (${label})`);
 
+const entityCount = [...scenarios.values()].reduce(
+  (total, scenario) => total + Object.keys(scenario.entities).length,
+  0,
+);
+const relationCount = [...scenarios.values()].reduce(
+  (total, scenario) => total + Object.keys(scenario.relations).length,
+  0,
+);
 console.log(
-  `Content validation passed: ${Object.keys(scenario.entities).length} entities, ${Object.keys(scenario.relations).length} relations, ${available.length} verified v2 lesson, ${course.lessons.length - available.length} planned lessons, ${terms.size} terms, ${sourceIds.size} official sources.`,
+  `Content validation passed: ${scenarios.size} v2 scenarios, ${entityCount} entities, ${relationCount} relations, ${available.length} verified v2 lessons, ${course.lessons.length - available.length} planned lessons, ${terms.size} terms, ${sourceIds.size} official sources.`,
 );
