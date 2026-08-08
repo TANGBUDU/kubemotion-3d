@@ -26,6 +26,10 @@ import { RouteSceneAdapter } from './relations/RouteSceneAdapter';
 import { RenderScheduler } from './RenderScheduler';
 import { SceneEnvironment } from './scene/SceneEnvironment';
 import { SceneLayers } from './scene/SceneLayers';
+import {
+  diagnoseRuntimeLayout,
+  type RuntimeLayoutDiagnostics,
+} from './scene/RuntimeHierarchyDiagnostics';
 import { SceneStage } from './scene/SceneStage';
 import { SceneRegistry } from './SceneRegistry';
 import { createEffectiveScenePlan } from './scene-grammar';
@@ -42,6 +46,23 @@ export interface SceneDiagnostics {
   readonly foundationMeshes: number;
   readonly localAlignmentMarks: number;
   readonly dominantGridMarks: number;
+  readonly visibleNodes: number;
+  readonly nodeBays: number;
+  readonly scheduledPods: number;
+  readonly scheduledPodsOutsideBays: number;
+  readonly duplicateBayAssignments: number;
+  readonly podPairOverlaps: number;
+  readonly podSystemModuleOverlaps: number;
+  readonly pendingPods: number;
+  readonly pendingPodsInsideNodes: number;
+  readonly nodeHandles: number;
+  readonly podHandles: number;
+  readonly mountedKubelets: number;
+  readonly mountedContainerRuntimes: number;
+  readonly orphanKubelets: number;
+  readonly orphanContainerRuntimes: number;
+  readonly containedContainers: number;
+  readonly containersOutsidePods: number;
   readonly activeAnimations: number;
   readonly geometries: number;
   readonly textures: number;
@@ -521,6 +542,26 @@ export class SceneController {
   public getDiagnostics(): SceneDiagnostics {
     const routeDiagnostics = this.activeRoutes.diagnostics;
     const stageDiagnostics = this.stage.diagnostics();
+    const runtimeHierarchyDiagnostics = this.registry.runtimeHierarchyDiagnostics;
+    const runtimeLayoutDiagnostics: RuntimeLayoutDiagnostics =
+      this.currentStep && this.layout
+        ? diagnoseRuntimeLayout(
+            this.currentStep.world,
+            this.currentStep.view,
+            this.layout,
+            (entityId) => this.registry.worldBoundsFor(entityId),
+          )
+        : {
+            visibleNodes: 0,
+            nodeBays: 0,
+            scheduledPods: 0,
+            scheduledPodsOutsideBays: 0,
+            duplicateBayAssignments: 0,
+            podPairOverlaps: 0,
+            podSystemModuleOverlaps: 0,
+            pendingPods: 0,
+            pendingPodsInsideNodes: 0,
+          };
     return {
       entityHandles: this.registry.size,
       relationHandles: this.relations.size + routeDiagnostics.routeHandles,
@@ -531,6 +572,8 @@ export class SceneController {
       foundationMeshes: stageDiagnostics.foundationMeshes,
       localAlignmentMarks: stageDiagnostics.localAlignmentMarks,
       dominantGridMarks: stageDiagnostics.dominantGridMarks,
+      ...runtimeLayoutDiagnostics,
+      ...runtimeHierarchyDiagnostics,
       activeAnimations: this.animations.activeCount,
       geometries: this.renderer.info.memory.geometries,
       textures: this.renderer.info.memory.textures,

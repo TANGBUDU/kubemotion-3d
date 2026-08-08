@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { EntityViewState, RelationViewState, ViewProjection } from '../../src/course/types';
 import { calculateLayout, type LayoutContainer } from '../../src/renderer/LayoutEngine';
+import { dimensions } from '../../src/renderer/design/dimensions';
 import type {
   EntityId,
   RelationId,
@@ -82,6 +83,15 @@ const podA = pod('api-a', 'worker-a');
 const podB = pod('api-b', 'worker-b');
 const podC = pod('api-c', 'worker-c');
 const pending = pod('api-pending');
+const kubeletA = entity('runtime-component:node:worker-a:Kubelet:kubelet', 'Kubelet', 'kubelet', {
+  nodeName: 'worker-a',
+});
+const runtimeA = entity(
+  'runtime-component:node:worker-a:ContainerRuntime:runtime',
+  'ContainerRuntime',
+  'container-runtime',
+  { nodeName: 'worker-a' },
+);
 
 const entities = [
   entity('infrastructure:cluster:global:Cluster:demo-shop', 'Cluster', 'demo-shop'),
@@ -104,6 +114,8 @@ const entities = [
   podB,
   podC,
   pending,
+  kubeletA,
+  runtimeA,
 ];
 const relations = [
   scheduledOn(podA, workerA),
@@ -196,6 +208,30 @@ describe('Overview foundation layout', () => {
       containerId: 'unscheduled-transit-lane',
     });
     expect(layout.entities.get(pending.id)?.parentId).toBeUndefined();
+
+    const workerPosition = layout.entities.get(workerA.id)?.position;
+    expect(workerPosition).toBeDefined();
+    if (!workerPosition) return;
+    expect(layout.entities.get(kubeletA.id)).toMatchObject({
+      lane: 'node-agent',
+      parentId: workerA.id,
+      containerId: `node:${workerA.id}`,
+      position: [
+        workerPosition[0] + dimensions.node.kubeletMountOffset[0],
+        dimensions.node.kubeletMountOffset[1],
+        workerPosition[2] + dimensions.node.kubeletMountOffset[2],
+      ],
+    });
+    expect(layout.entities.get(runtimeA.id)).toMatchObject({
+      lane: 'node-agent',
+      parentId: workerA.id,
+      containerId: `node:${workerA.id}`,
+      position: [
+        workerPosition[0] + dimensions.node.runtimeMountOffset[0],
+        dimensions.node.runtimeMountOffset[1],
+        workerPosition[2] + dimensions.node.runtimeMountOffset[2],
+      ],
+    });
   });
 
   it('does not reuse Placement geometry for Overview', () => {

@@ -78,6 +78,11 @@ comparison rows, or accessible factual summaries. Kubernetes facts come from the
 `data` fields: Pod phase and conditions, ContainerStatus fields, ReplicaSet counters, and the
 Service or EndpointSlice data model.
 
+Physical composition is also derived from factual fields rather than guessed from proximity. A
+scheduled Pod's `data.nodeName` selects its Node, a containment relation associates each Container
+status slot with its Pod, and a Kubelet or ContainerRuntime entity's Node identity selects its
+dedicated Node-local mount. Pending Pods have no Node parent and remain in the unscheduled lane.
+
 Settled semantic relations and active teaching routes are separate layers. An active route has an
 explicit semantic, ordered hops, source/target entity IDs, semantic anchors, optional short hop
 labels, and persistence/numbering policy. Control and scheduling lessons can expose API-mediated
@@ -137,8 +142,49 @@ dominant-grid marks so duplicate foundations or a returning full-stage grid are 
 than subjective review findings.
 
 Lesson scenes disable generic fallback visuals. Node, Pod, client Pod, Container, ReplicaSet, API
-Server, etcd, Cluster boundary, kubectl, kubelet, controller manager, scheduler, Service, and
-EndpointSlice each have a dedicated factory and visual handle.
+Server, etcd, Cluster boundary, kubectl, kubelet, Container runtime, controller manager, scheduler,
+Service, and EndpointSlice each have a dedicated factory and visual handle.
+
+## Runtime containment contract
+
+`dimensions.node` is the single source of truth for the Node footprint, chassis height, four Pod-bay
+anchors and bay size, Pod landing height, system-module strip, and the separate kubelet and
+Container-runtime mount offsets. `NodeVisualHandle`, Overview/Placement layout, runtime hierarchy
+diagnostics, and the static hierarchy baseline all consume that contract. A visual may not invent a
+second set of bay offsets.
+
+The physical hierarchy has three explicit composition levels:
+
+1. A Node chassis exposes exactly four load-bearing Pod bays plus an independent system-module
+   strip.
+2. A scheduled Pod occupies exactly one deterministic Node bay. A fifth scheduled Pod fails before
+   the layout is produced; there is no visual overflow row. A Pending Pod has no parent and must not
+   intersect a Node chassis.
+3. A Pod shell exposes exactly two deterministic Container slots. The Pod renders a short stable
+   UID fingerprint, and its aggregate restart badge is visible only while the contained Containers'
+   total `restartCount` is greater than zero. A third Container fails before changing the existing
+   composition.
+
+The kubelet and Container runtime are dedicated, selectable entity handles mounted in different
+positions on the Node's system strip. Their visual hierarchy makes local responsibility explicit:
+the kubelet is the Node agent, while the Container runtime exposes a CRI-facing execution model.
+Neither is a Pod, a Container status slot, or an application-traffic hop.
+
+`SceneDiagnostics` exposes two strict runtime groups. Layout validity reports `visibleNodes`,
+`nodeBays`, `scheduledPods`, `scheduledPodsOutsideBays`, `duplicateBayAssignments`,
+`podPairOverlaps`, `podSystemModuleOverlaps`, `pendingPods`, and `pendingPodsInsideNodes`. Scene
+composition reports `nodeHandles`, `podHandles`, `mountedKubelets`, `mountedContainerRuntimes`,
+`orphanKubelets`, `orphanContainerRuntimes`, `containedContainers`, and
+`containersOutsidePods`. Desktop acceptance requires every violation/orphan count to be zero for
+the reviewed runtime state; these fields prevent camera angle or label placement from concealing an
+invalid hierarchy.
+
+Nested composition changes the animation contract. Node-mounted system modules and Pod-mounted
+Containers inherit the transform of their parent. `captureLayoutTransition` therefore excludes a
+handle carrying `composedInNode` or `composedInPod`; interpolating the child again in world space
+would double-apply motion and make a valid child escape its mount during a transition. Detach and
+Node removal preserve world transforms before ownership changes, and disposal remains owned by the
+entity registry.
 
 ## Post-processing
 

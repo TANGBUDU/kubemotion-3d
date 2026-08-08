@@ -17,10 +17,11 @@ one independent grammar contract:
 | Storage      | Explain mount and persistence relationships                   | Pod, Container, PVC, PV, and storage backend                                                                    | Unrelated control-plane and network objects                                                    |
 
 Milestone 1 established these contracts and the safety policy. Milestone 2 implemented the shared
-bounded foundation and the Overview/Control Flow semantic-island layouts. Runtime-hierarchy model
-completion, full logical-model completion, responsive replanning, and authored-course migration
-remain owned by their later rebuild milestones; a grammar's declared camera, aggregation, or
-separation policy is not a claim that those later systems are already complete.
+bounded foundation and the Overview/Control Flow semantic-island layouts. Milestone 3 implemented
+the physical Node → Pod → Container hierarchy and its strict diagnostics. Full logical-model
+completion, responsive replanning, and authored-course migration remain owned by their later
+rebuild milestones; a grammar's declared camera, aggregation, or separation policy is not a claim
+that those later systems are already complete.
 
 ## Foundation ownership and layout independence
 
@@ -45,6 +46,40 @@ different coordinates and it is not the Placement allowlist with extra control-p
 The Overview etcd model has one permitted basic relation: API Server → etcd. No controller,
 scheduler, kubelet, external client, or application request connects directly to etcd in this basic
 teaching projection.
+
+## Runtime containment contract
+
+Placement & Runtime and the physical subset of Control Flow consume one `dimensions.node`
+contract. It defines each Node footprint, exactly four bay anchors, bay size, Pod landing height,
+the separate system-module strip, and distinct kubelet/runtime mount offsets. The model, layouts,
+diagnostics, and static hierarchy baseline may not maintain independent copies of these values.
+
+The physical hierarchy obeys these fail-closed rules:
+
+- each scheduled Pod has one visible Node parent, one unique bay index, and a footprint fully inside
+  that bay;
+- a Node supports exactly four scheduled Pods in this teaching model; a fifth fails layout rather
+  than creating an overflow row;
+- scheduled Pods may not overlap each other or the Node's system-module strip;
+- a Pending Pod has no Node parent and must remain outside every Node chassis;
+- Kubelet and ContainerRuntime entities use dedicated handles mounted at separate Node-local
+  anchors; an expected visible module may not remain orphaned at scene root;
+- each Pod provides two deterministic Container slots, and every visible Container handle must be
+  mounted fully inside one of them; a third child fails before mutating the composition.
+
+The Pod shell carries a short UID fingerprint and exposes a restart badge only when the sum of its
+contained Container `restartCount` values is positive. These visual affordances supplement the
+Evidence panel; they do not replace the complete Pod UID or ContainerStatus facts.
+
+Runtime acceptance uses strict diagnostics rather than screenshot appearance alone. Layout fields
+cover scheduled/Pending counts, outside-bay and inside-Node violations, duplicate bay assignments,
+and Pod/Pod or Pod/system-module overlaps. Scene fields cover mounted and orphaned kubelet/runtime
+handles plus contained and outside-Pod Containers. Violation and orphan counts must be zero while
+the positive counts prove that the expected hierarchy is actually present.
+
+Nested handles inherit parent movement. A composed kubelet, runtime, or Container is excluded from
+an additional world-space layout transition, preventing double interpolation from temporarily
+breaking an otherwise valid containment model.
 
 ## Effective scene plan
 
@@ -99,14 +134,18 @@ grammars lower those ceilings further where the explanation needs less context.
 Mobile budgets are part of the pure planning API and its deterministic tests. Viewport-driven
 renderer replanning and peer aggregation are intentionally tracked under the responsive-layout
 milestone; until then, compiled guided projections use the desktop profile and the existing label
-manager still applies its mobile screen-space label limit. The M2 390×844 foundation capture is
-therefore recorded as a known readability failure owned by M5, not as evidence that the desktop
-composition is automatically responsive.
+manager still applies its mobile screen-space label limit. The M2 foundation and M3 runtime
+hierarchy 390×844 captures are therefore recorded as known readability risks owned by M5, not as
+evidence that the desktop composition is automatically responsive.
 
 ## Hierarchy and relation rules
 
-- A visible Container cannot remain without its visible Pod.
-- Placement and Control Flow cannot show a scheduled Pod without its visible Node context.
+- A visible Container cannot remain without its visible Pod and one valid Pod-local slot.
+- Placement and Control Flow cannot show a scheduled Pod without its visible Node context, unique
+  bay, and non-overlapping system-module strip.
+- A Pending Pod cannot acquire a Node parent or intersect a Node chassis.
+- A visible Node-local Kubelet or ContainerRuntime must mount in the corresponding dedicated Node
+  module position.
 - Logical and Traffic views do not pull in full Node chassis merely because a Pod has a Node.
 - A persistent relation is visible only when both endpoints survive the grammar.
 - Focused relation families outrank dimmed background families before the two-family cap is

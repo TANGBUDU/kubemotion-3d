@@ -56,19 +56,45 @@ Verified lesson entities use dedicated visuals rather than a generic fallback.
 | Entity                | Implemented visual language                                                                  | Factual meaning shown to the learner                                                                                                                                                                |
 | --------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Cluster               | Compact front boundary plaque and short rails; never a floor slab.                           | Identifies the synthetic cluster teaching boundary without implying Namespace/Node containment or adding another physical platform.                                                                 |
-| Node                  | Dark rack or chassis with visible Pod bays, an embedded kubelet, Node name, and Node status. | Physical placement context. A Pod inside a bay is assigned to that Node.                                                                                                                            |
-| Pod                   | Translucent logical shell with a status header or rail and a named child visual.             | Pod UID, assigned Node, phase, and conditions remain separate factual fields. Detailed facts stay in the fixed Evidence panel instead of large world-space metadata slabs.                          |
-| Container status slot | Named child inside one Pod, with state-dependent form and status treatment.                  | Stable API-facing slot for one named Container within that Pod; runtime identity and restart evidence come from ContainerStatus fields.                                                             |
+| Node                  | Load-bearing chassis with four Pod bays, a separate system-module strip, name, and status.   | Physical placement context. A scheduled Pod inside one bay is assigned to that Node; a Pending Pod must remain outside.                                                                             |
+| Pod                   | Translucent shell with two child slots, status rail, UID fingerprint, and conditional badge. | Pod UID, assigned Node, phase, conditions, and aggregate Container restart count remain separate facts. The restart badge appears only when the count is positive.                                  |
+| Container status slot | Named solid child mounted in one of the two Pod slots, with a state-dependent shape.         | Stable API-facing slot for one named Container within that Pod; runtime identity and restart evidence come from ContainerStatus fields.                                                             |
 | ReplicaSet            | Three-part counter card labelled `SPEC`, `OBSERVED`, and `READY`.                            | `SPEC` maps to `.spec.replicas`; `OBSERVED` maps to `.status.replicas`; `READY` maps to `.status.readyReplicas`.                                                                                    |
 | API Server            | Kubernetes API interaction hub in the simplified control story.                              | API-mediated reads, watches, writes, and bindings may pass through it; it is not the cause of a Node-local process restart.                                                                         |
 | etcd                  | Three storage columns containing replicated-looking storage cells and one API-facing port.   | Conceptual Kubernetes API data store. In the basic model only the API Server connects to it; the cells are not a literal topology, quorum diagram, or application database.                         |
 | Controller Manager    | Reconciliation-loop visual with API-mediated control emphasis.                               | Observes workload state and creates a replacement Pod when the ReplicaSet has a replica deficit; it is not a network proxy.                                                                         |
 | Scheduler             | Amber scheduling and decision visual.                                                        | Selects a Node for an unscheduled Pod and records the binding through the API; it does not start Containers.                                                                                        |
-| kubelet               | Agent embedded in each Node visual.                                                          | Starts assigned Containers and owns the local same-Pod restart route. API observation can remain contextual without becoming the per-crash initiator.                                               |
+| kubelet               | Dedicated agent model mounted in the Node's system-module strip.                             | Starts assigned Containers and owns the local same-Pod restart route. API observation can remain contextual without becoming the per-crash initiator.                                               |
+| Container runtime     | Dedicated CRI/execution model mounted separately from kubelet in the Node chassis.           | Executes Containers for the Node through the runtime interface; it is neither a Pod nor the API-facing Container status slot shown inside a Pod.                                                    |
 | Service               | Stable logical entry in the traffic lesson.                                                  | Service identity and address stay stable while eligible backends can change. It is neither a running application Container nor a universal proxy object; concrete data-plane implementation varies. |
 | EndpointSlice         | Visible endpoint-state card beside the Service.                                              | Shows endpoint identity and `ready`, `serving`, and `terminating` conditions. It is adjacent API state, not an application packet hop in the current logical path.                                  |
 
 > The stable child entity represents the named Container status slot within one Pod. A runtime restart changes `containerID`, `state`, `lastState`, `ready`, `started`, and `restartCount`; it does not imply that one immutable runtime process survived.
+
+## Runtime containment language
+
+Runtime containment must be understandable from model geometry before labels are read. The Node
+chassis provides exactly four recessed Pod bays on one side and an independent system-module strip
+on the other. Kubelet and Container runtime use different embedded models and different mounts in
+that strip. They do not occupy Pod capacity, and a scheduled Pod may not overlap them.
+
+A scheduled Pod is centered on one deterministic bay and fully contained by its footprint. A
+Pending Pod has no Node parent and stays in the `UNSCHEDULED / TRANSIT` or workload-state area. No
+overflow row is permitted: a fifth scheduled Pod fails the layout gate instead of appearing above,
+beside, or through the chassis.
+
+Each Pod exposes two deterministic Container slots inside its translucent shell. A short
+eight-segment fingerprint is derived from the Pod UID so Pod identity remains visually stable while
+a Container runtime identity changes. A Container uses solid-dot, open-ring, or failure-stripe form
+in addition to color for running, waiting, or terminated state. The Pod restart badge is absent at
+zero and appears only when the aggregate contained `restartCount` is positive. A third Container is
+rejected before it can mutate the two valid slots.
+
+These are enforced relationships, not illustrative proximity. Screenshot diagnostics require zero
+scheduled Pods outside bays, duplicate bay assignments, Pod/Pod overlaps, Pod/system-module
+overlaps, Pending Pods inside Nodes, orphaned kubelet/runtime models, and Containers outside Pods.
+The separate positive counts for mounted system modules and contained Containers prove that a zero
+violation count was not achieved by hiding the hierarchy.
 
 ## Persistent relations
 
@@ -144,6 +170,10 @@ Animation is presentation over an already compiled transition. Cues can emphasiz
 pooled token along an owned route, or show entity entry, failure, restart, and removal, but they do
 not mutate the factual `WorldSnapshot`. Replay uses the same authored transition and returns to the
 same settled state. Cancellation restores presentation baselines before a later step takes over.
+
+Node-mounted kubelet/runtime models and Pod-mounted Containers inherit their parent's movement.
+They are excluded from an additional world-space layout interpolation while composed, preventing a
+nested child from drifting out of its valid mount during a Node or Pod transition.
 
 > Animation explains a causal teaching sequence between settled snapshots. It is not a packet capture, literal controller timing trace, guaranteed ordering trace, or promise of one Service data-plane implementation.
 

@@ -24,6 +24,9 @@ const CLUSTER_FOUNDATION = 'infrastructure:cluster:global:Cluster:demo-shop';
 const ETCD = 'runtime-component:cluster:global:Etcd:etcd';
 const KUBELET_A = 'runtime-component:node:worker-a:Kubelet:kubelet';
 const KUBELET_B = 'runtime-component:node:worker-b:Kubelet:kubelet';
+const CONTAINER_RUNTIMES = ['worker-a', 'worker-b', 'worker-c'].map(
+  (nodeName) => `runtime-component:node:${nodeName}:ContainerRuntime:runtime`,
+);
 const CONTROLLER_MANAGER =
   'runtime-component:cluster:global:ControllerManager:kube-controller-manager';
 const SCHEDULER = 'runtime-component:cluster:global:Scheduler:kube-scheduler';
@@ -117,7 +120,7 @@ function lessonWithLocalRestartRoute(route: ActiveTeachingRoute): LessonV2 {
 }
 
 describe('CourseEngine v2 factual timeline', () => {
-  it('loads Cluster and etcd context without exposing them in the original lesson base view', () => {
+  it('loads foundation and Node runtime context without exposing it in the original lesson base view', () => {
     expect(scenario.entities[CLUSTER_FOUNDATION]).toMatchObject({
       kind: 'Cluster',
       visual: { archetype: 'cluster' },
@@ -143,6 +146,21 @@ describe('CourseEngine v2 factual timeline', () => {
       emphasis: 'hidden',
     });
     expect(orientation.view.relationStates['api-stores-etcd']).toMatchObject({ visible: false });
+
+    for (const [index, runtimeId] of CONTAINER_RUNTIMES.entries()) {
+      const nodeName = `worker-${String.fromCharCode(97 + index)}`;
+      expect(scenario.entities[runtimeId]).toMatchObject({
+        kind: 'ContainerRuntime',
+        data: { nodeName, role: 'container-execution', interface: 'CRI' },
+      });
+      expect(orientation.view.entityStates[runtimeId]).toMatchObject({
+        visible: false,
+        emphasis: 'hidden',
+      });
+      expect(
+        orientation.view.relationStates[`kubelet-${nodeName.at(-1)}-uses-container-runtime`],
+      ).toMatchObject({ visible: false });
+    }
   });
 
   it('compiles the required ten-step lesson sequence', () => {

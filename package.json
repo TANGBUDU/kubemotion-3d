@@ -21,6 +21,7 @@
     "visual:baseline": "tsx scripts/capture-foundation-baseline.ts",
     "visual:m1": "tsx scripts/capture-scene-grammar-review.ts",
     "visual:m2": "tsx scripts/capture-foundation-review.ts",
+    "visual:m3": "tsx scripts/capture-runtime-hierarchy-review.ts",
     "visual:capture": "tsx scripts/capture-visual-acceptance.ts",
     "test": "vitest",
     "test:unit": "vitest",

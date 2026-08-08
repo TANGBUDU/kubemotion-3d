@@ -15,7 +15,7 @@
 | 0 — Baseline and protection           | COMPLETE    | `docs: capture rejected visual baseline and rebuild gates`              | Current findings, repeatable baseline capture, rejected reference, visual and route checklists                      |
 | 1 — Scene grammar and density         | COMPLETE    | `feat: add view-specific scene grammars and density budgets`            | Six grammar contracts, enforced projections, deterministic safety tests, six-view screenshots                       |
 | 2 — Foundation and semantic islands   | COMPLETE    | `feat: rebuild the cluster from a clear foundation`                     | One bounded foundation, three non-overlapping semantic islands, dedicated Cluster/etcd visuals, desktop screenshots |
-| 3 — Runtime hierarchy models          | NOT STARTED | `feat: make node pod and container hierarchy explicit`                  | —                                                                                                                   |
+| 3 — Runtime hierarchy models          | COMPLETE    | `feat: make runtime containment visually self-evident`                  | One Node dimension source, four bays, embedded system modules, strict containment diagnostics, desktop screenshots  |
 | 4 — Logical object models             | NOT STARTED | `feat: establish distinct logical Kubernetes object visuals`            | —                                                                                                                   |
 | 5 — Camera, labels, responsive layout | NOT STARTED | `feat: make teaching scenes readable across viewport sizes`             | —                                                                                                                   |
 | 6 — Persistent route engine           | NOT STARTED | `feat: replace free-flying tokens with persistent semantic routes`      | —                                                                                                                   |
@@ -187,9 +187,71 @@ navigation/panel collapse, viewport-specific entity replanning, camera framing, 
 composition belong to M5. M2 does not claim mobile readability simply because the same world can be
 rendered there.
 
+## Milestone 3 checklist
+
+- [x] Made `dimensions.node` the single geometry source for Node footprint, four bay anchors, Pod
+      landing height, system-module strip, and kubelet/runtime mount offsets.
+- [x] Rebuilt each Node as a load-bearing chassis with exactly four visible Pod bays and a separate
+      system-module strip that cannot overlap scheduled Pods.
+- [x] Embedded dedicated selectable `KubeletVisualHandle` and `ContainerRuntimeVisualHandle`
+      models at different Node-local mounts; neither is represented as a generic placeholder when
+      its entity is present.
+- [x] Made every scheduled Pod occupy one deterministic bay and fail fast when a fifth Pod would
+      overflow a four-bay Node instead of silently drawing an invalid extra row.
+- [x] Kept Pending Pods parentless and outside every Node chassis.
+- [x] Added a stable short Pod UID fingerprint, two deterministic Container slots inside the Pod
+      shell, and a restart badge that appears only when the aggregate `restartCount` is positive.
+- [x] Made a third Container fail before mutating the two-slot Pod composition.
+- [x] Added strict layout diagnostics for Node-bay containment, duplicate assignments, Pod/Pod and
+      Pod/system-module overlap, and Pending-Pod placement.
+- [x] Added strict scene-hierarchy diagnostics for mounted kubelets, mounted runtimes, orphaned
+      system modules, contained Containers, and Containers outside Pods.
+- [x] Fixed nested layout transitions so Node- and Pod-composed children inherit parent motion
+      instead of receiving a second world-space interpolation.
+- [x] Captured and reviewed the runtime hierarchy at three desktop teaching states and at the
+      390×844 mobile risk viewport.
+
+## Milestone 3 automated checks
+
+| Check                                        | Result                                                                                                                                |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm visual:m3`                             | PASS — three desktop acceptance captures, one recorded mobile-risk capture, and a diagnostics manifest                                |
+| Node geometry single-source tests            | PASS — visual mounts, layout slots, and diagnostics all consume `dimensions.node`                                                     |
+| Four-bay placement and overflow guards       | PASS — one Pod per bay; a fifth scheduled Pod fails before layout mutation                                                            |
+| Pod/Container anatomy tests                  | PASS — UID fingerprint, two contained slots, conditional restart badge, and state shapes                                              |
+| Runtime scene-composition tests              | PASS — kubelet/runtime mounts and Container containment survive sync, detach, removal, and disposal                                   |
+| Strict runtime-layout diagnostics            | PASS — rendered THREE AABBs, not nominal Pod dimensions, report no outside-bay, duplicate, overlap, or Pending-inside-Node violations |
+| Nested layout-transition regression          | PASS — composed children are excluded from duplicate world-space interpolation                                                        |
+| `pnpm format:check` / `pnpm lint`            | PASS                                                                                                                                  |
+| `pnpm typecheck` / `pnpm build`              | PASS                                                                                                                                  |
+| `pnpm content:validate` / `content:accuracy` | PASS                                                                                                                                  |
+| `pnpm test:unit -- --run` / `pnpm test:e2e`  | PASS                                                                                                                                  |
+
+## Milestone 3 screenshot review
+
+Manifest: [`evidence/m3/m3-runtime-hierarchy-manifest.json`](./evidence/m3/m3-runtime-hierarchy-manifest.json)
+
+| Capture                                                                                      | View / state                           | Viewport | Runtime-hierarchy result                                                                                    | M3 result                       |
+| -------------------------------------------------------------------------------------------- | -------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| [`m3-placement-runtime-1280x720.png`](./evidence/m3/m3-placement-runtime-1280x720.png)       | Placement & Runtime                    | 1280×720 | 3 Nodes / 12 bays / 3 Pods; all containment violations and label overlap/outside counts are zero            | PASS                            |
+| [`m3-pod-container-close-1440x900.png`](./evidence/m3/m3-pod-container-close-1440x900.png)   | Selected Pod / Container close-up      | 1440×900 | Pod shell, UID fingerprint, and contained Container slot pass; restart count zero correctly leaves no badge | PASS                            |
+| [`m3-pending-outside-node-1280x720.png`](./evidence/m3/m3-pending-outside-node-1280x720.png) | Replacement Pod still Pending, step 6  | 1280×720 | `pendingPods=1`, `pendingPodsInsideNodes=0`; every bay/overlap and label overlap/outside violation is zero  | PASS                            |
+| [`m3-pod-container-390x844.png`](./evidence/m3/m3-pod-container-390x844.png)                 | Runtime hierarchy, mobile risk capture | 390×844  | Filter controls occupy the upper frame; the scene is pushed down and clipped despite valid containment      | RECORDED — M5 risk, not M3 PASS |
+
+Human M3 result: PASS for desktop runtime containment. Without relying on detailed labels, the
+review captures expose the chain `Node chassis → Pod bay → Pod shell → Container status slot`,
+while the Node-local kubelet and Container runtime remain visibly separate from workload bays. The
+manifest's strict diagnostics make an attractive but invalid placement fail the gate: scheduled
+Pods must be inside unique bays, Pending Pods must be outside Nodes, system modules must not overlap
+Pods, and Container handles must remain inside their Pod slots.
+
+The 390×844 capture remains an explicit M5 risk. M3 proves geometry and containment at that
+viewport; it does not claim that the current mobile panel, camera framing, label budget, or teaching
+sheet makes the hierarchy comfortably readable.
+
 ## Next coherent task
 
-Milestone 3 must make the physical hierarchy self-explanatory through the models themselves:
-Node chassis → Pod bay → Pod shell → Container runtime module. It must preserve the M2 foundation
-and island ownership rules, keep Pending Pods outside every Node, and prove containment with model
-geometry and screenshot evidence rather than labels alone.
+Milestone 4 must replace the remaining generic logical-object vocabulary with distinct Kubernetes
+models. Deployment, ReplicaSet, Service, EndpointSlice, Namespace, and the relevant control-plane
+actors must remain recognizable from their model hierarchy and affordances before a learner relies
+on labels. M4 must preserve the M2 foundation ownership and the M3 runtime-containment gates.

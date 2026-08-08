@@ -448,4 +448,34 @@ describe('LabelManager deterministic screen-space layout', () => {
     expect(container.querySelectorAll('.scene-label')).toHaveLength(0);
     expect(manager.size).toBe(0);
   });
+
+  it('shows the Node-local Container Runtime label only while focused or selected', () => {
+    const container = document.createElement('div');
+    const runtime = makeHandle('runtime-a', 'ContainerRuntime', new THREE.Vector3());
+    const registry = makeRegistry([runtime]);
+    const manager = new LabelManager(container);
+
+    manager.sync(
+      registry,
+      makeView([runtime], () => ({ visible: true, emphasis: 'normal', labelMode: 'short' })),
+      'en',
+    );
+    expect(container.querySelector('[data-entity-id="runtime-a"]')).toBeNull();
+
+    manager.sync(
+      registry,
+      makeView([runtime], () => ({ visible: true, emphasis: 'focused', labelMode: 'short' })),
+      'en',
+    );
+    expect(container.querySelector('[data-entity-id="runtime-a"]')).not.toBeNull();
+
+    runtime.root.userData.selected = true;
+    manager.sync(
+      registry,
+      makeView([runtime], () => ({ visible: true, emphasis: 'normal', labelMode: 'short' })),
+      'en',
+    );
+    expect(container.querySelector('[data-entity-id="runtime-a"]')).not.toBeNull();
+    manager.clear();
+  });
 });

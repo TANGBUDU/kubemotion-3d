@@ -12,6 +12,11 @@ Delivered rebuild milestones on this branch:
   layout-owned semantic islands, dedicated Cluster/etcd visuals, and deterministic Overview and
   Control Flow placement. The desktop five-second gate passes; the intentionally recorded 390 px
   composition remains an explicit M5 responsibility.
+- M3 makes the runtime hierarchy structural: each Node has four dimension-backed Pod bays plus
+  separate kubelet and Container Runtime mounts; each Pod is an open translucent shell with two
+  deterministic Container slots, a short UID fingerprint, and a conditional restart badge.
+  Runtime diagnostics use rendered THREE AABBs and reject overflow, overlap, orphan modules,
+  Containers outside Pods, and Pending Pods inside Nodes.
 
 - immutable `WorldSnapshot` / `WorldPatch` / `WorldDiff` plus a separate `ViewProjection`;
 - two verified lessons:
@@ -60,14 +65,16 @@ Delivered rebuild milestones on this branch:
 - `pnpm format:check` — PASS;
 - `pnpm lint` — PASS;
 - `pnpm typecheck` — PASS;
-- `pnpm content:validate` — PASS (2 v2 scenarios, 27 entities, 29 relations, 2 verified v2
+- `pnpm content:validate` — PASS (2 v2 scenarios, 30 entities, 32 relations, 2 verified v2
   lessons, 20 planned lessons, 26 terms, 29 official sources);
-- `pnpm content:accuracy` — PASS (212 current-public text files, 30 forbidden patterns, 23 local
+- `pnpm content:accuracy` — PASS (218 current-public text files, 30 forbidden patterns, 23 local
   links, and all README, visualization, lifecycle, and Service invariants);
-- `pnpm test:unit -- --run` — PASS (35 files, 244 tests);
+- `pnpm test:unit -- --run` — PASS (38 files, 264 tests);
 - `pnpm build` — PASS;
 - `pnpm visual:m2` — PASS (four captures; desktop foundation/island gate passes with 0 measured
   entity-label overlap and 0 labels outside the stage; mobile risk recorded for M5);
+- `pnpm visual:m3` — PASS (four captures; 12 deterministic bays, 3 mounted kubelets, 3 mounted
+  runtimes, 3 contained Containers, no hierarchy/overlap failures; mobile risk recorded for M5);
 - `pnpm test:e2e` — PASS (132 passed, 45 skipped, 0 failed); skips are deliberate
   project/viewport ownership selections;
 - 20-cycle dual-lesson renderer resource pressure gate — PASS;

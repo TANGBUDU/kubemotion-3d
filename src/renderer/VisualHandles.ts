@@ -15,6 +15,7 @@ export {
   type ApiServerControlPort,
 } from './visuals/ApiServerVisual';
 export { ContainerVisualHandle } from './visuals/ContainerVisual';
+export { ContainerRuntimeVisualHandle } from './visuals/ContainerRuntimeVisual';
 export { ClientVisualHandle } from './visuals/ClientVisual';
 export { ClusterFoundationVisualHandle } from './visuals/ClusterFoundationVisual';
 export { ControllerManagerVisualHandle } from './visuals/ControllerManagerVisual';

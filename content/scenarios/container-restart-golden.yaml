@@ -114,6 +114,75 @@ entities:
       }
     sourceIds: [k8s-components, k8s-pod-lifecycle]
     visual: { archetype: runtime, size: sm, group: worker-c }
+  - id: runtime-component:node:worker-a:ContainerRuntime:runtime
+    category: runtime-component
+    kind: ContainerRuntime
+    name: container-runtime
+    status: healthy
+    data:
+      nodeName: worker-a
+      role: container-execution
+      interface: CRI
+    title:
+      {
+        en: Container runtime · worker-a,
+        ja: コンテナランタイム · worker-a,
+        zh-CN: 容器运行时 · worker-a,
+      }
+    summary:
+      {
+        en: Node-local runtime that starts and manages Containers through the CRI boundary.,
+        ja: CRI 境界を通じて Container を起動・管理する Node ローカルのランタイムです。,
+        zh-CN: 通过 CRI 边界启动和管理容器的 Node 本地运行时。,
+      }
+    sourceIds: [k8s-cri, k8s-components]
+    visual: { archetype: runtime, size: sm, group: worker-a }
+  - id: runtime-component:node:worker-b:ContainerRuntime:runtime
+    category: runtime-component
+    kind: ContainerRuntime
+    name: container-runtime
+    status: healthy
+    data:
+      nodeName: worker-b
+      role: container-execution
+      interface: CRI
+    title:
+      {
+        en: Container runtime · worker-b,
+        ja: コンテナランタイム · worker-b,
+        zh-CN: 容器运行时 · worker-b,
+      }
+    summary:
+      {
+        en: Node-local runtime that starts and manages Containers through the CRI boundary.,
+        ja: CRI 境界を通じて Container を起動・管理する Node ローカルのランタイムです。,
+        zh-CN: 通过 CRI 边界启动和管理容器的 Node 本地运行时。,
+      }
+    sourceIds: [k8s-cri, k8s-components]
+    visual: { archetype: runtime, size: sm, group: worker-b }
+  - id: runtime-component:node:worker-c:ContainerRuntime:runtime
+    category: runtime-component
+    kind: ContainerRuntime
+    name: container-runtime
+    status: healthy
+    data:
+      nodeName: worker-c
+      role: container-execution
+      interface: CRI
+    title:
+      {
+        en: Container runtime · worker-c,
+        ja: コンテナランタイム · worker-c,
+        zh-CN: 容器运行时 · worker-c,
+      }
+    summary:
+      {
+        en: Node-local runtime that starts and manages Containers through the CRI boundary.,
+        ja: CRI 境界を通じて Container を起動・管理する Node ローカルのランタイムです。,
+        zh-CN: 通过 CRI 边界启动和管理容器的 Node 本地运行时。,
+      }
+    sourceIds: [k8s-cri, k8s-components]
+    visual: { archetype: runtime, size: sm, group: worker-c }
   - id: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
     category: runtime-component
     kind: KubeAPIServer
@@ -505,6 +574,30 @@ relations:
     semantic: control-observation
     title: { en: observes and reports, ja: 監視と報告, zh-CN: 观察并报告 }
     sourceIds: [k8s-components, k8s-api]
+  - id: kubelet-a-uses-container-runtime
+    type: implemented-by
+    from: runtime-component:node:worker-a:Kubelet:kubelet
+    to: runtime-component:node:worker-a:ContainerRuntime:runtime
+    directed: true
+    semantic: control-observation
+    title: { en: starts through CRI, ja: CRI 経由で起動, zh-CN: 通过 CRI 启动 }
+    sourceIds: [k8s-cri]
+  - id: kubelet-b-uses-container-runtime
+    type: implemented-by
+    from: runtime-component:node:worker-b:Kubelet:kubelet
+    to: runtime-component:node:worker-b:ContainerRuntime:runtime
+    directed: true
+    semantic: control-observation
+    title: { en: starts through CRI, ja: CRI 経由で起動, zh-CN: 通过 CRI 启动 }
+    sourceIds: [k8s-cri]
+  - id: kubelet-c-uses-container-runtime
+    type: implemented-by
+    from: runtime-component:node:worker-c:Kubelet:kubelet
+    to: runtime-component:node:worker-c:ContainerRuntime:runtime
+    directed: true
+    semantic: control-observation
+    title: { en: starts through CRI, ja: CRI 経由で起動, zh-CN: 通过 CRI 启动 }
+    sourceIds: [k8s-cri]
   - id: kubectl-requests-api-server
     type: reports-to
     from: external:external:global:Kubectl:kubectl

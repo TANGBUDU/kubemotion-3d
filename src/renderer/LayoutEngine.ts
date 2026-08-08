@@ -8,7 +8,7 @@ import type {
   WorldRelation,
   WorldSnapshot,
 } from '../world/types';
-import { NodeVisualHandle } from './visuals/NodeVisual';
+import { dimensions } from './design/dimensions';
 
 export type Position = readonly [number, number, number];
 
@@ -85,12 +85,8 @@ export interface LayoutModule {
   calculate(input: LayoutInput): LayoutResult;
 }
 
-const SLOT_OFFSETS: readonly Position[] = [
-  [-1.22, 0.38, -0.82],
-  [1.22, 0.38, -0.82],
-  [-1.22, 0.38, 0.82],
-  [1.22, 0.38, 0.82],
-];
+const NODE_BAY_COUNT = dimensions.node.bayAnchors.length;
+const NODE_RACK_SPACING = dimensions.node.width + 0.2;
 
 const TEACHING_ZONES = Object.freeze({
   controlPlane: Object.freeze({ centerZ: -5.25, depth: 2.55 }),
@@ -248,25 +244,35 @@ const allocateSlot = (
   if (
     preferred !== undefined &&
     preferred >= 0 &&
-    preferred < SLOT_OFFSETS.length &&
+    preferred < NODE_BAY_COUNT &&
     !used.has(preferred)
   ) {
     return preferred;
   }
-  const initial = stableHash(entityId) % SLOT_OFFSETS.length;
-  for (let offset = 0; offset < SLOT_OFFSETS.length; offset += 1) {
-    const candidate = (initial + offset) % SLOT_OFFSETS.length;
+  const initial = stableHash(entityId) % NODE_BAY_COUNT;
+  for (let offset = 0; offset < NODE_BAY_COUNT; offset += 1) {
+    const candidate = (initial + offset) % NODE_BAY_COUNT;
     if (!used.has(candidate)) return candidate;
   }
-  return SLOT_OFFSETS.length + used.size - SLOT_OFFSETS.length;
+  throw new Error(
+    `Cannot place scheduled Pod "${entityId}": all ${NODE_BAY_COUNT} Node bays are occupied.`,
+  );
 };
 
-const overflowSlotOffset = (slotIndex: number): Position => {
-  if (slotIndex < SLOT_OFFSETS.length) return SLOT_OFFSETS[slotIndex] ?? [0, 0.38, 0];
-  const overflowIndex = slotIndex - SLOT_OFFSETS.length;
-  const column = overflowIndex % 3;
-  const row = Math.floor(overflowIndex / 3);
-  return [-1.45 + column * 1.45, 1.82 + row * 1.45, 0];
+const nodeBayOffset = (slotIndex: number): Position => {
+  const anchor = dimensions.node.bayAnchors[slotIndex];
+  if (!anchor) {
+    throw new Error(
+      `Invalid Node bay index ${slotIndex}; expected an index from 0 to ${NODE_BAY_COUNT - 1}.`,
+    );
+  }
+  return [anchor[0], dimensions.node.podLandingY, anchor[1]];
+};
+
+const nodeModuleOffset = (entity: WorldEntity): Position | undefined => {
+  if (entity.kind === 'Kubelet') return dimensions.node.kubeletMountOffset;
+  if (entity.kind === 'ContainerRuntime') return dimensions.node.runtimeMountOffset;
+  return undefined;
 };
 
 export class PlacementLayout implements LayoutModule {
@@ -288,7 +294,7 @@ export class PlacementLayout implements LayoutModule {
     const nodeXById = new Map<EntityId, number>();
 
     visibleNodes.forEach((node, nodeIndex) => {
-      const x = (nodeIndex - (visibleNodes.length - 1) / 2) * 6.4;
+      const x = (nodeIndex - (visibleNodes.length - 1) / 2) * NODE_RACK_SPACING;
       nodeXById.set(node.id, x);
       layouts.set(node.id, {
         entityId: node.id,
@@ -340,12 +346,18 @@ export class PlacementLayout implements LayoutModule {
       const containerId = `node:${node.id}`;
       const used = new Set<number>();
       const occupied = new Map<number, EntityId>();
-      for (const pod of scheduledPods.get(node.id) ?? []) {
+      const nodePods = scheduledPods.get(node.id) ?? [];
+      if (nodePods.length > NODE_BAY_COUNT) {
+        throw new Error(
+          `Cannot place ${nodePods.length} scheduled Pods on Node "${node.name}": capacity is ${NODE_BAY_COUNT} bays.`,
+        );
+      }
+      for (const pod of nodePods) {
         const preferred = previousSlot(previous, pod.id, containerId);
         const slotIndex = allocateSlot(pod.id, used, preferred);
         used.add(slotIndex);
         occupied.set(slotIndex, pod.id);
-        const [offsetX, offsetY, offsetZ] = overflowSlotOffset(slotIndex);
+        const [offsetX, offsetY, offsetZ] = nodeBayOffset(slotIndex);
         layouts.set(pod.id, {
           entityId: pod.id,
           position: [x + offsetX, offsetY, TEACHING_ZONES.workerNodes.centerZ + offsetZ],
@@ -355,10 +367,9 @@ export class PlacementLayout implements LayoutModule {
           slotIndex,
         });
       }
-      const slotCount = Math.max(SLOT_OFFSETS.length, ...[...used].map((index) => index + 1), 4);
       const slots: LayoutSlot[] = [];
-      for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
-        const [offsetX, offsetY, offsetZ] = overflowSlotOffset(slotIndex);
+      for (let slotIndex = 0; slotIndex < NODE_BAY_COUNT; slotIndex += 1) {
+        const [offsetX, offsetY, offsetZ] = nodeBayOffset(slotIndex);
         const occupiedBy = occupied.get(slotIndex);
         slots.push({
           id: `${containerId}:slot:${slotIndex}`,
@@ -374,22 +385,26 @@ export class PlacementLayout implements LayoutModule {
         entityId: node.id,
         bounds: {
           center: [x, 0.2, TEACHING_ZONES.workerNodes.centerZ],
-          size: [NodeVisualHandle.footprint.width, 0.5, NodeVisualHandle.footprint.depth],
+          size: [dimensions.node.width, 0.5, dimensions.node.depth],
         },
         slots,
       });
     }
 
-    const nodeAgents = visibleEntities.filter((entity) => entity.kind === 'Kubelet').sort(byId);
+    const nodeAgents = visibleEntities
+      .filter((entity) => entity.kind === 'Kubelet' || entity.kind === 'ContainerRuntime')
+      .sort(byId);
     for (const agent of nodeAgents) {
       const nodeName = dataNodeName(agent) ?? relatedNodeName(agent, allRelations, nodesById);
       const node = nodeName ? nodesByName.get(nodeName) : undefined;
       if (!node) continue;
       const x = nodeXById.get(node.id) ?? 0;
-      const [kubeletX, kubeletY, kubeletZ] = NodeVisualHandle.kubeletOffset;
+      const offset = nodeModuleOffset(agent);
+      if (!offset) continue;
+      const [moduleX, moduleY, moduleZ] = offset;
       layouts.set(agent.id, {
         entityId: agent.id,
-        position: [x + kubeletX, kubeletY, TEACHING_ZONES.workerNodes.centerZ + kubeletZ],
+        position: [x + moduleX, moduleY, TEACHING_ZONES.workerNodes.centerZ + moduleZ],
         lane: 'node-agent',
         parentId: node.id,
         containerId: `node:${node.id}`,
@@ -753,7 +768,7 @@ export class OverviewLayout implements LayoutModule {
     const nodesById = new Map(nodes.map((node) => [node.id, node] as const));
     const nodeXById = new Map<EntityId, number>();
     nodes.forEach((node, index) => {
-      const x = (index - (nodes.length - 1) / 2) * 6.4;
+      const x = (index - (nodes.length - 1) / 2) * NODE_RACK_SPACING;
       nodeXById.set(node.id, x);
       layouts.set(node.id, {
         entityId: node.id,
@@ -800,11 +815,17 @@ export class OverviewLayout implements LayoutModule {
       const containerId = `node:${node.id}`;
       const used = new Set<number>();
       const occupied = new Map<number, EntityId>();
-      for (const pod of scheduledPods.get(node.id) ?? []) {
+      const nodePods = scheduledPods.get(node.id) ?? [];
+      if (nodePods.length > NODE_BAY_COUNT) {
+        throw new Error(
+          `Cannot place ${nodePods.length} scheduled Pods on Node "${node.name}": capacity is ${NODE_BAY_COUNT} bays.`,
+        );
+      }
+      for (const pod of nodePods) {
         const slotIndex = allocateSlot(pod.id, used, previousSlot(previous, pod.id, containerId));
         used.add(slotIndex);
         occupied.set(slotIndex, pod.id);
-        const [offsetX, offsetY, offsetZ] = overflowSlotOffset(slotIndex);
+        const [offsetX, offsetY, offsetZ] = nodeBayOffset(slotIndex);
         layouts.set(pod.id, {
           entityId: pod.id,
           position: [x + offsetX, offsetY, OVERVIEW_ZONES.workers.centerZ + offsetZ],
@@ -821,9 +842,10 @@ export class OverviewLayout implements LayoutModule {
         entityId: node.id,
         bounds: {
           center: [x, 0.2, OVERVIEW_ZONES.workers.centerZ],
-          size: [NodeVisualHandle.footprint.width, 0.5, NodeVisualHandle.footprint.depth],
+          size: [dimensions.node.width, 0.5, dimensions.node.depth],
         },
-        slots: SLOT_OFFSETS.map(([offsetX, offsetY, offsetZ], slotIndex) => {
+        slots: dimensions.node.bayAnchors.map((_, slotIndex) => {
+          const [offsetX, offsetY, offsetZ] = nodeBayOffset(slotIndex);
           const occupiedBy = occupied.get(slotIndex);
           return {
             id: `${containerId}:slot:${slotIndex}`,
@@ -880,12 +902,16 @@ export class OverviewLayout implements LayoutModule {
       }),
     });
 
-    const nodeAgents = visible.filter((entity) => entity.kind === 'Kubelet').sort(byId);
+    const nodeAgents = visible
+      .filter((entity) => entity.kind === 'Kubelet' || entity.kind === 'ContainerRuntime')
+      .sort(byId);
     for (const agent of nodeAgents) {
       const nodeName = dataNodeName(agent) ?? relatedNodeName(agent, relations, nodesById);
       const node = nodeName ? nodesByName.get(nodeName) : undefined;
       if (!node) continue;
-      const [offsetX, offsetY, offsetZ] = NodeVisualHandle.kubeletOffset;
+      const offset = nodeModuleOffset(agent);
+      if (!offset) continue;
+      const [offsetX, offsetY, offsetZ] = offset;
       layouts.set(agent.id, {
         entityId: agent.id,
         position: [

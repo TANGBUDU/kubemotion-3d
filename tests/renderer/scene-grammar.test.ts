@@ -197,6 +197,50 @@ describe('foundation-first scene grammars', () => {
     ).toThrow(/kind "ReplicaSet" is not allowed in overview view/);
   });
 
+  it('admits the kubelet-to-container-runtime hop in Control Flow', () => {
+    const kubeletId = 'runtime-component:node:worker-b:Kubelet:kubelet';
+    const runtimeId = 'runtime-component:node:worker-b:ContainerRuntime:runtime';
+    const authored = fullyVisibleProjection(scenario, 'control-flow');
+    const plan = createEffectiveScenePlan(scenario, {
+      ...authored,
+      entityStates: Object.fromEntries(
+        Object.entries(authored.entityStates).map(([id, state]) => [
+          id,
+          {
+            ...state,
+            visible: id === kubeletId || id === runtimeId,
+            emphasis: id === kubeletId || id === runtimeId ? 'focused' : 'hidden',
+          },
+        ]),
+      ) as Record<EntityId, EntityViewState>,
+      relationStates: Object.fromEntries(
+        Object.entries(authored.relationStates).map(([id, state]) => [
+          id,
+          { ...state, visible: false },
+        ]),
+      ) as Record<RelationId, RelationViewState>,
+      activeRoutes: [
+        {
+          id: 'kubelet-starts-container',
+          semantic: 'node-runtime',
+          persistAfterAnimation: true,
+          hops: [
+            {
+              fromEntityId: kubeletId,
+              fromAnchor: 'control',
+              toEntityId: runtimeId,
+              toAnchor: 'control',
+            },
+          ],
+        },
+      ],
+    });
+    expect(plan.visibleEntityIds).toContain(runtimeId);
+    expect(plan.projection.activeRoutes.flatMap((route) => route.hops)).toContainEqual(
+      expect.objectContaining({ toEntityId: runtimeId }),
+    );
+  });
+
   it('rejects active-route token demand above the selected grammar budget', () => {
     const authored = fullyVisibleProjection(scenario, 'overview');
     const ids = ['KubeAPIServer', 'ControllerManager', 'Scheduler', 'Node'].map((kind) => {

@@ -72,7 +72,7 @@ describe('captured layout transition', () => {
     const handle = podHandle();
     const transition = captureLayoutTransition(
       layout([4.6, 0.28, -2.05]),
-      layout([7.62, 0.38, 2.03]),
+      layout([7.62, 0.58, 2.03]),
       [POD_ID],
       () => handle,
     );
@@ -83,12 +83,12 @@ describe('captured layout transition', () => {
     expect(handle.root.position.toArray()).toEqual([4.6, 0.28, -2.05]);
     transition?.apply(0.5);
     expect(handle.root.position.x).toBeCloseTo(6.11);
-    expect(handle.root.position.y).toBeCloseTo(0.33);
+    expect(handle.root.position.y).toBeCloseTo(0.43);
     expect(handle.root.position.z).toBeCloseTo(-0.01);
     transition?.finish();
     transition?.finish();
     expect(handle.root.position.x).toBeCloseTo(7.62);
-    expect(handle.root.position.y).toBeCloseTo(0.38);
+    expect(handle.root.position.y).toBeCloseTo(0.58);
     expect(handle.root.position.z).toBeCloseTo(2.03);
   });
 
@@ -96,6 +96,20 @@ describe('captured layout transition', () => {
     const handle = podHandle();
     expect(
       captureLayoutTransition(layout([1, 2, 3]), layout([1, 2, 3]), [POD_ID], () => handle),
+    ).toBeUndefined();
+  });
+
+  it('lets Node-local and Pod-local modules follow their parent without double translation', () => {
+    const nodeLocal = podHandle();
+    nodeLocal.root.userData.composedInNode = 'node:worker-a';
+    const podLocal = podHandle();
+    podLocal.root.userData.composedInPod = 'pod:api-a';
+
+    expect(
+      captureLayoutTransition(layout([1, 0, 1]), layout([5, 0, 5]), [POD_ID], () => nodeLocal),
+    ).toBeUndefined();
+    expect(
+      captureLayoutTransition(layout([1, 0, 1]), layout([5, 0, 5]), [POD_ID], () => podLocal),
     ).toBeUndefined();
   });
 });

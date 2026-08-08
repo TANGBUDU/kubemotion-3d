@@ -277,6 +277,13 @@ export class LabelManager {
       if (!state || !state.visible || state.emphasis === 'hidden' || state.labelMode === 'none') {
         continue;
       }
+      if (
+        handle.entity.kind === 'ContainerRuntime' &&
+        state.emphasis !== 'focused' &&
+        handle.root.userData.selected !== true
+      ) {
+        continue;
+      }
       active.add(handle.entityId);
       let record = this.labels.get(handle.entityId);
       if (!record) {

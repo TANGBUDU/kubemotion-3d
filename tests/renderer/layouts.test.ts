@@ -6,6 +6,7 @@ import type {
   ViewProjection,
 } from '../../src/course/types';
 import { calculateLayout } from '../../src/renderer/LayoutEngine';
+import { dimensions } from '../../src/renderer/design/dimensions';
 import { sceneGrammarFor } from '../../src/renderer/scene-grammar';
 import type {
   EntityId,
@@ -33,6 +34,7 @@ const entity = (
         : kind === 'Kubectl'
           ? 'external'
           : kind === 'Kubelet' ||
+              kind === 'ContainerRuntime' ||
               kind === 'KubeAPIServer' ||
               kind === 'ControllerManager' ||
               kind === 'Scheduler'
@@ -57,9 +59,11 @@ const entity = (
               ? 'replicaset'
               : kind === 'Kubelet'
                 ? 'runtime'
-                : kind === 'Kubectl'
-                  ? 'external'
-                  : 'control-plane',
+                : kind === 'ContainerRuntime'
+                  ? 'runtime'
+                  : kind === 'Kubectl'
+                    ? 'external'
+                    : 'control-plane',
   },
 });
 
@@ -127,6 +131,9 @@ const kubectl = entity('external:kubectl', 'Kubectl', 'kubectl', {});
 const kubeletMoon = entity('component:kubelet-moon', 'Kubelet', 'kubelet-moon', {
   nodeName: 'moon-node',
 });
+const runtimeMoon = entity('component:runtime-moon', 'ContainerRuntime', 'runtime-moon', {
+  nodeName: 'moon-node',
+});
 
 const entities = [
   nodeMoon,
@@ -141,6 +148,7 @@ const entities = [
   scheduler,
   kubectl,
   kubeletMoon,
+  runtimeMoon,
 ];
 const relations = [
   relation('scheduled:moon', 'scheduled-on', 'placement', podMoon.id, nodeMoon.id),
@@ -175,6 +183,21 @@ const projection = (snapshot: WorldSnapshot, view: ViewMode = 'placement'): View
   };
 };
 
+interface Footprint {
+  readonly centerX: number;
+  readonly centerZ: number;
+  readonly width: number;
+  readonly depth: number;
+}
+
+const footprintsOverlap = (left: Footprint, right: Footprint): boolean =>
+  Math.abs(left.centerX - right.centerX) < (left.width + right.width) / 2 &&
+  Math.abs(left.centerZ - right.centerZ) < (left.depth + right.depth) / 2;
+
+const footprintFits = (inner: Footprint, outer: Footprint): boolean =>
+  Math.abs(inner.centerX - outer.centerX) + inner.width / 2 <= outer.width / 2 &&
+  Math.abs(inner.centerZ - outer.centerZ) + inner.depth / 2 <= outer.depth / 2;
+
 describe('PlacementLayout', () => {
   it('is deterministic and derives racks from arbitrary Node names', () => {
     const view = projection(world);
@@ -202,7 +225,70 @@ describe('PlacementLayout', () => {
       );
       expect(rack.slots.length).toBeGreaterThanOrEqual(4);
       expect(rack.slots.some((slot) => slot.occupiedBy === pod.id)).toBe(true);
+
+      const slot = rack.slots.find((candidate) => candidate.occupiedBy === pod.id);
+      expect(slot).toBeDefined();
+      if (!slot) continue;
+      expect(podLayout.position).toEqual(slot.position);
+      expect(podLayout.position[1]).toBe(dimensions.node.podLandingY);
+      expect(
+        footprintFits(
+          {
+            centerX: podLayout.position[0],
+            centerZ: podLayout.position[2],
+            width: dimensions.pod.width * 1.16,
+            depth: dimensions.pod.depth * 1.16,
+          },
+          {
+            centerX: slot.position[0],
+            centerZ: slot.position[2],
+            width: dimensions.node.bayWidth,
+            depth: dimensions.node.bayDepth,
+          },
+        ),
+      ).toBe(true);
     }
+  });
+
+  it('uses one non-overlapping four-bay geometry source with an independent system strip', () => {
+    expect(dimensions.node.bayAnchors).toHaveLength(4);
+    expect(dimensions.node.bayWidth).toBeGreaterThanOrEqual(dimensions.pod.width * 1.16);
+    expect(dimensions.node.bayDepth).toBeGreaterThanOrEqual(dimensions.pod.depth * 1.16);
+
+    const nodeFootprint: Footprint = {
+      centerX: 0,
+      centerZ: 0,
+      width: dimensions.node.width,
+      depth: dimensions.node.depth,
+    };
+    const bayFootprints = dimensions.node.bayAnchors.map(([centerX, centerZ]): Footprint => ({
+      centerX,
+      centerZ,
+      width: dimensions.node.bayWidth,
+      depth: dimensions.node.bayDepth,
+    }));
+    const [stripWidth, , stripDepth] = dimensions.node.systemModuleStrip.size;
+    const [stripX, , stripZ] = dimensions.node.systemModuleStrip.center;
+    const systemStrip: Footprint = {
+      centerX: stripX,
+      centerZ: stripZ,
+      width: stripWidth,
+      depth: stripDepth,
+    };
+
+    for (const bay of bayFootprints) {
+      expect(footprintFits(bay, nodeFootprint)).toBe(true);
+      expect(footprintsOverlap(bay, systemStrip)).toBe(false);
+    }
+    for (let leftIndex = 0; leftIndex < bayFootprints.length; leftIndex += 1) {
+      for (let rightIndex = leftIndex + 1; rightIndex < bayFootprints.length; rightIndex += 1) {
+        const left = bayFootprints[leftIndex];
+        const right = bayFootprints[rightIndex];
+        if (!left || !right) continue;
+        expect(footprintsOverlap(left, right)).toBe(false);
+      }
+    }
+    expect(footprintFits(systemStrip, nodeFootprint)).toBe(true);
   });
 
   it('uses dedicated pending and control lanes and attaches kubelet to its Node', () => {
@@ -222,6 +308,82 @@ describe('PlacementLayout', () => {
     expect(layout.containers.some((container) => container.kind === 'worker-lane')).toBe(true);
     expect(layout.entities.get(kubeletMoon.id)?.parentId).toBe(nodeMoon.id);
     expect(layout.entities.get(kubeletMoon.id)?.lane).toBe('node-agent');
+    expect(layout.entities.get(runtimeMoon.id)?.parentId).toBe(nodeMoon.id);
+    expect(layout.entities.get(runtimeMoon.id)?.lane).toBe('node-agent');
+
+    const nodePosition = layout.entities.get(nodeMoon.id)?.position;
+    expect(nodePosition).toBeDefined();
+    if (!nodePosition) return;
+    expect(layout.entities.get(kubeletMoon.id)?.position).toEqual([
+      nodePosition[0] + dimensions.node.kubeletMountOffset[0],
+      dimensions.node.kubeletMountOffset[1],
+      nodePosition[2] + dimensions.node.kubeletMountOffset[2],
+    ]);
+    expect(layout.entities.get(runtimeMoon.id)?.position).toEqual([
+      nodePosition[0] + dimensions.node.runtimeMountOffset[0],
+      dimensions.node.runtimeMountOffset[1],
+      nodePosition[2] + dimensions.node.runtimeMountOffset[2],
+    ]);
+  });
+
+  it('keeps Pending Pod AABBs outside every Node and assigns no physical parent', () => {
+    const layout = calculateLayout({ world, view: projection(world) });
+    const pending = layout.entities.get(podPending.id);
+    const tray = layout.containers.find((container) => container.kind === 'pending-lane');
+    expect(pending).toBeDefined();
+    expect(pending?.parentId).toBeUndefined();
+    expect(pending?.containerId).toBe(tray?.id);
+    if (!pending || !tray) return;
+
+    const pendingFootprint: Footprint = {
+      centerX: pending.position[0],
+      centerZ: pending.position[2],
+      width: dimensions.pod.width * 1.16,
+      depth: dimensions.pod.depth * 1.16,
+    };
+    expect(
+      footprintFits(pendingFootprint, {
+        centerX: tray.bounds.center[0],
+        centerZ: tray.bounds.center[2],
+        width: tray.bounds.size[0],
+        depth: tray.bounds.size[2],
+      }),
+    ).toBe(true);
+    for (const rack of layout.containers.filter((container) => container.kind === 'node-rack')) {
+      expect(
+        footprintsOverlap(pendingFootprint, {
+          centerX: rack.bounds.center[0],
+          centerZ: rack.bounds.center[2],
+          width: rack.bounds.size[0],
+          depth: rack.bounds.size[2],
+        }),
+      ).toBe(false);
+    }
+  });
+
+  it('fails fast instead of inventing an overflow slot for a fifth scheduled Pod', () => {
+    const crowdedPods = Array.from({ length: 5 }, (_, index) => ({
+      ...podMoon,
+      id: `pod:crowded-${index}`,
+      name: `crowded-${index}`,
+      data: {
+        ...podMoon.data,
+        uid: `uid-crowded-${index}`,
+      },
+    })) satisfies WorldEntity[];
+    const crowdedWorld: WorldSnapshot = {
+      ...world,
+      entities: Object.fromEntries(
+        [nodeMoon, ...crowdedPods].map((item) => [item.id, item] as const),
+      ),
+      relations: {},
+    };
+
+    for (const viewMode of ['placement', 'overview'] as const) {
+      expect(() =>
+        calculateLayout({ world: crowdedWorld, view: projection(crowdedWorld, viewMode) }),
+      ).toThrowError('Cannot place 5 scheduled Pods on Node "moon-node": capacity is 4 bays.');
+    }
   });
 
   it('orders semantic zones and keeps an empty unscheduled tray visible', () => {

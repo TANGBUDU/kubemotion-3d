@@ -55,6 +55,12 @@ export function captureLayoutTransition(
     const to = final.positions.get(entityId);
     const handle = getEntity(entityId);
     if (!from || !to || !handle || handle.isDisposed) continue;
+    if (
+      typeof handle.root.userData.composedInNode === 'string' ||
+      typeof handle.root.userData.composedInPod === 'string'
+    ) {
+      continue;
+    }
     const fromVector = new THREE.Vector3(...from);
     const toVector = new THREE.Vector3(...to);
     if (fromVector.distanceToSquared(toVector) < 1e-8) continue;

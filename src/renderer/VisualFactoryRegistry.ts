@@ -4,6 +4,7 @@ import { ApiServerVisualHandle } from './visuals/ApiServerVisual';
 import type { EntityVisualHandle, VisualContext } from './visuals/BaseVisualHandle';
 import { ClientVisualHandle } from './visuals/ClientVisual';
 import { ClusterFoundationVisualHandle } from './visuals/ClusterFoundationVisual';
+import { ContainerRuntimeVisualHandle } from './visuals/ContainerRuntimeVisual';
 import { ContainerVisualHandle } from './visuals/ContainerVisual';
 import { ControllerManagerVisualHandle } from './visuals/ControllerManagerVisual';
 import { EndpointSliceVisualHandle } from './visuals/EndpointSliceVisual';
@@ -50,6 +51,7 @@ export const GOLDEN_LESSON_VISUAL_KINDS = Object.freeze([
   'Node',
   'Pod',
   'Container',
+  'ContainerRuntime',
   'ReplicaSet',
   'KubeAPIServer',
   'Etcd',
@@ -92,6 +94,11 @@ const builtInFactories = (): readonly EntityVisualFactory[] => [
     'container-instance',
     (entity) => entity.kind === 'Container' && entity.category === 'runtime-status',
     ContainerVisualHandle,
+  ),
+  factory(
+    'container-runtime-cri-executor',
+    (entity) => entity.kind === 'ContainerRuntime',
+    ContainerRuntimeVisualHandle,
   ),
   factory('replicaset-counter', (entity) => entity.kind === 'ReplicaSet', ReplicaSetVisualHandle),
   factory('service-routing-hub', (entity) => entity.kind === 'Service', ServiceVisualHandle),

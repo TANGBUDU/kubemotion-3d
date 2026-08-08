@@ -1,18 +1,25 @@
 export const dimensions = Object.freeze({
   stage: Object.freeze({ width: 22, depth: 15, floorHeight: 0.28, cornerRadius: 0.42 }),
   node: Object.freeze({
-    width: 5.2,
+    width: 6.2,
     depth: 3.8,
     chassisHeight: 0.48,
     wallHeight: 0.44,
-    bayWidth: 1.72,
-    bayDepth: 1.2,
-    slotOffsets: Object.freeze([
-      Object.freeze([-1.22, -0.82] as const),
-      Object.freeze([1.22, -0.82] as const),
-      Object.freeze([-1.22, 0.82] as const),
-      Object.freeze([1.22, 0.82] as const),
+    bayWidth: 2.12,
+    bayDepth: 1.72,
+    podLandingY: 0.58,
+    bayAnchors: Object.freeze([
+      Object.freeze([-1.9, -0.87] as const),
+      Object.freeze([0.34, -0.87] as const),
+      Object.freeze([-1.9, 0.87] as const),
+      Object.freeze([0.34, 0.87] as const),
     ]),
+    systemModuleStrip: Object.freeze({
+      center: Object.freeze([2.36, 0.58, 0] as const),
+      size: Object.freeze([1.4, 0.1, 3.32] as const),
+    }),
+    kubeletMountOffset: Object.freeze([2.36, 0.74, -0.88] as const),
+    runtimeMountOffset: Object.freeze([2.36, 0.74, 0.88] as const),
   }),
   pod: Object.freeze({
     width: 1.72,
@@ -31,4 +38,4 @@ export const dimensions = Object.freeze({
   camera: Object.freeze({ safeFrameRatio: 0.06, fitPadding: 1.12, minViewHeight: 8 }),
 });
 
-export type NodeSlotOffset = (typeof dimensions.node.slotOffsets)[number];
+export type NodeBayAnchor = (typeof dimensions.node.bayAnchors)[number];

@@ -92,8 +92,9 @@ export const createVisualHierarchyBaseline = (): VisualHierarchyBaseline => {
   const pod = new PodVisualHandle(podEntity, focused);
   const container = new ContainerVisualHandle(containerEntity, focused);
   pod.attachContainer(container);
-  const [slotX, slotZ] = dimensions.node.slotOffsets[0] ?? [-1.22, -0.82];
-  pod.root.position.set(slotX, 0.53, slotZ);
+  const firstBayAnchor = dimensions.node.bayAnchors[0];
+  if (!firstBayAnchor) throw new Error('Node hierarchy baseline requires at least one Pod bay.');
+  pod.root.position.set(firstBayAnchor[0], dimensions.node.podLandingY, firstBayAnchor[1]);
   root.add(node.root, pod.root);
   return {
     root,

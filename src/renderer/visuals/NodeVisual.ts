@@ -17,21 +17,42 @@ export class NodeVisualHandle extends BaseVisualHandle {
     width: dimensions.node.width,
     depth: dimensions.node.depth,
   });
-  public static readonly kubeletOffset = Object.freeze([1.78, 0.74, 1.5] as const);
+  public static readonly kubeletOffset = dimensions.node.kubeletMountOffset;
+  public static readonly runtimeOffset = dimensions.node.runtimeMountOffset;
 
   public readonly embeddedKubelet = new THREE.Group();
+  public readonly embeddedRuntime = new THREE.Group();
   public readonly kubeletMount = new THREE.Group();
+  public readonly runtimeMount = new THREE.Group();
   private readonly chassisMaterial: THREE.MeshStandardMaterial;
   private readonly statusMaterial: THREE.MeshBasicMaterial;
   private readonly statusIndicator: THREE.Mesh;
   private readonly alertBars = new THREE.Group();
   private readonly kubeletPlaceholder = new THREE.Group();
+  private readonly runtimePlaceholder = new THREE.Group();
   private mountedKubeletId: EntityId | undefined;
+  private mountedRuntimeId: EntityId | undefined;
 
   public constructor(entity: WorldEntity, view: EntityViewState) {
-    super(entity, view, 3.05);
+    super(entity, view, 3.65);
     this.root.userData.visualKind = 'node-chassis';
     this.root.userData.hasEmbeddedKubelet = true;
+    this.root.userData.hasEmbeddedRuntime = true;
+    this.root.userData.nodeBayCount = dimensions.node.bayAnchors.length;
+    this.root.userData.nodeBayAnchors = Object.freeze(
+      dimensions.node.bayAnchors.map(([x, z]) =>
+        Object.freeze([x, dimensions.node.podLandingY, z]),
+      ),
+    );
+    this.root.userData.nodeBaySize = Object.freeze([
+      dimensions.node.bayWidth,
+      dimensions.node.bayDepth,
+    ]);
+    this.root.userData.podLandingY = dimensions.node.podLandingY;
+    this.root.userData.systemModuleMounts = Object.freeze({
+      kubelet: dimensions.node.kubeletMountOffset,
+      containerRuntime: dimensions.node.runtimeMountOffset,
+    });
 
     const chassisGeometry = this.ownGeometry(
       createRoundedBoxGeometry(
@@ -73,14 +94,16 @@ export class NodeVisualHandle extends BaseVisualHandle {
 
     this.addSidewalls();
     this.addPodBays();
+    this.addSystemModuleStrip();
     this.addFrontPanel();
     this.addEmbeddedKubelet();
+    this.addEmbeddedRuntime();
 
     const statusGeometry = this.ownGeometry(new THREE.CylinderGeometry(0.105, 0.105, 0.055, 18));
     this.statusMaterial = this.ownMaterial(createFlatAccentMaterial(palette.healthy));
     this.statusIndicator = new THREE.Mesh(statusGeometry, this.statusMaterial);
     this.statusIndicator.rotation.x = Math.PI / 2;
-    this.statusIndicator.position.set(2.1, 0.49, -1.92);
+    this.statusIndicator.position.set(2.55, 0.49, -1.92);
     this.statusIndicator.userData.role = 'node-status-indicator';
     this.addContent(this.statusIndicator);
     this.addAlertBars();
@@ -114,7 +137,8 @@ export class NodeVisualHandle extends BaseVisualHandle {
       wall.userData.role = 'node-sidewall';
       this.addContent(wall);
     }
-    for (const x of [-2.48, 2.48]) {
+    const sidewallX = dimensions.node.width / 2 - 0.1;
+    for (const x of [-sidewallX, sidewallX]) {
       const wall = new THREE.Mesh(shortWallGeometry, wallMaterial);
       wall.position.set(x, 0.6, 0);
       wall.castShadow = true;
@@ -130,25 +154,48 @@ export class NodeVisualHandle extends BaseVisualHandle {
     const bayMaterial = this.ownMaterial(
       createSurfaceMaterial({ tone: 'secondary', roughness: 0.7, metalness: 0.04 }),
     );
-    dimensions.node.slotOffsets.forEach(([x, z], slotIndex) => {
+    dimensions.node.bayAnchors.forEach(([x, z], slotIndex) => {
       const bay = new THREE.Mesh(bayGeometry, bayMaterial);
-      bay.position.set(x, 0.53, z);
+      bay.position.set(x, dimensions.node.podLandingY - 0.05, z);
       bay.receiveShadow = true;
       bay.userData.role = 'pod-bay';
       bay.userData.slotIndex = slotIndex;
+      bay.userData.landingY = dimensions.node.podLandingY;
       this.addContent(bay);
     });
 
     const dividerMaterial = this.ownMaterial(createFlatAccentMaterial(palette.borderSubtle, 0.72));
-    const centerDividerGeometry = this.ownGeometry(new THREE.BoxGeometry(0.045, 0.025, 3.15));
-    const crossDividerGeometry = this.ownGeometry(new THREE.BoxGeometry(4.45, 0.025, 0.045));
+    const centerDividerGeometry = this.ownGeometry(new THREE.BoxGeometry(0.045, 0.025, 3.3));
+    const crossDividerGeometry = this.ownGeometry(new THREE.BoxGeometry(4.28, 0.025, 0.045));
     const centerDivider = new THREE.Mesh(centerDividerGeometry, dividerMaterial);
     const crossDivider = new THREE.Mesh(crossDividerGeometry, dividerMaterial);
-    centerDivider.position.y = 0.57;
-    crossDivider.position.y = 0.57;
+    centerDivider.position.set(-0.78, dimensions.node.podLandingY - 0.01, 0);
+    crossDivider.position.set(-0.78, dimensions.node.podLandingY - 0.01, 0);
     centerDivider.userData.role = 'slot-divider';
     crossDivider.userData.role = 'slot-divider';
     this.addContent(centerDivider, crossDivider);
+  }
+
+  private addSystemModuleStrip(): void {
+    const [centerX, centerY, centerZ] = dimensions.node.systemModuleStrip.center;
+    const [width, height, depth] = dimensions.node.systemModuleStrip.size;
+    const stripGeometry = this.ownGeometry(createRoundedBoxGeometry(width, height, depth, 0.1, 4));
+    const stripMaterial = this.ownMaterial(
+      createSurfaceMaterial({ tone: 'recessed', roughness: 0.74, metalness: 0.05 }),
+    );
+    const strip = new THREE.Mesh(stripGeometry, stripMaterial);
+    strip.position.set(centerX, centerY, centerZ);
+    strip.receiveShadow = true;
+    strip.userData.role = 'node-system-module-strip';
+    strip.userData.mountCount = 2;
+    this.addContent(strip);
+
+    const dividerGeometry = this.ownGeometry(new THREE.BoxGeometry(width - 0.16, 0.025, 0.055));
+    const dividerMaterial = this.ownMaterial(createFlatAccentMaterial(palette.borderNeutral, 0.82));
+    const divider = new THREE.Mesh(dividerGeometry, dividerMaterial);
+    divider.position.set(centerX, centerY + height / 2 + 0.014, centerZ);
+    divider.userData.role = 'node-system-module-divider';
+    this.addContent(divider);
   }
 
   private addFrontPanel(): void {
@@ -157,16 +204,40 @@ export class NodeVisualHandle extends BaseVisualHandle {
       createSurfaceMaterial({ tone: 'elevated', roughness: 0.5, metalness: 0.1 }),
     );
     const plaque = new THREE.Mesh(plaqueGeometry, plaqueMaterial);
-    plaque.position.set(-0.45, 0.42, -1.94);
+    plaque.position.set(-1.72, 0.42, -1.94);
     plaque.userData.role = 'node-name-plaque';
     this.addContent(plaque);
 
-    const railGeometry = this.ownGeometry(createRoundedBoxGeometry(1.22, 0.1, 0.08, 0.035));
-    const railMaterial = this.ownMaterial(createFlatAccentMaterial(palette.borderNeutral));
-    const rail = new THREE.Mesh(railGeometry, railMaterial);
-    rail.position.set(1.23, 0.42, -1.99);
-    rail.userData.role = 'node-resource-rail';
-    this.addContent(rail);
+    const resourceStripGeometry = this.ownGeometry(
+      createRoundedBoxGeometry(2.02, 0.18, 0.1, 0.045),
+    );
+    const resourceStripMaterial = this.ownMaterial(
+      createSurfaceMaterial({ tone: 'recessed', roughness: 0.68, metalness: 0.05 }),
+    );
+    const resourceStrip = new THREE.Mesh(resourceStripGeometry, resourceStripMaterial);
+    resourceStrip.position.set(0.62, 0.42, -1.95);
+    resourceStrip.userData.role = 'node-resource-strip';
+    resourceStrip.userData.segmentCount = 4;
+    this.addContent(resourceStrip);
+
+    const segmentGeometry = this.ownGeometry(createRoundedBoxGeometry(0.36, 0.085, 0.025, 0.018));
+    const segmentMaterial = this.ownMaterial(createFlatAccentMaterial(palette.dataFlow, 0.78));
+    for (let index = 0; index < 4; index += 1) {
+      const segment = new THREE.Mesh(segmentGeometry, segmentMaterial);
+      segment.position.set(0.02 + index * 0.4, 0.42, -2.015);
+      segment.userData.role = 'node-resource-segment';
+      segment.userData.segmentIndex = index;
+      this.addContent(segment);
+    }
+
+    const statusDeckGeometry = this.ownGeometry(createRoundedBoxGeometry(0.62, 0.24, 0.1, 0.045));
+    const statusDeckMaterial = this.ownMaterial(
+      createSurfaceMaterial({ tone: 'elevated', roughness: 0.52, metalness: 0.08 }),
+    );
+    const statusDeck = new THREE.Mesh(statusDeckGeometry, statusDeckMaterial);
+    statusDeck.position.set(2.55, 0.42, -1.95);
+    statusDeck.userData.role = 'node-status-strip';
+    this.addContent(statusDeck);
 
     const ventGeometry = this.ownGeometry(createVentGeometry(0.28, 0.035));
     const ventMaterial = this.ownMaterial(createFlatAccentMaterial(palette.borderSubtle));
@@ -219,9 +290,53 @@ export class NodeVisualHandle extends BaseVisualHandle {
 
     this.kubeletMount.name = 'kubelet-entity-mount';
     this.kubeletMount.userData.role = 'kubelet-entity-mount';
+    this.kubeletMount.userData.moduleKind = 'Kubelet';
     this.kubeletMount.userData.selectable = false;
     this.embeddedKubelet.add(this.kubeletMount);
     this.addContent(this.embeddedKubelet);
+  }
+
+  private addEmbeddedRuntime(): void {
+    this.embeddedRuntime.name = 'embedded-container-runtime';
+    this.embeddedRuntime.position.set(...NodeVisualHandle.runtimeOffset);
+    this.embeddedRuntime.userData.role = 'embedded-container-runtime';
+    this.embeddedRuntime.userData.selectable = false;
+
+    const bayGeometry = this.ownGeometry(createRoundedBoxGeometry(1.28, 0.12, 0.68, 0.075));
+    const bayMaterial = this.ownMaterial(
+      createSurfaceMaterial({ tone: 'recessed', roughness: 0.7, metalness: 0.04 }),
+    );
+    const bay = new THREE.Mesh(bayGeometry, bayMaterial);
+    bay.position.y = -0.055;
+    bay.userData.role = 'container-runtime-bay';
+    this.embeddedRuntime.add(bay);
+
+    this.runtimePlaceholder.name = 'container-runtime-placeholder';
+    this.runtimePlaceholder.userData.role = 'container-runtime-placeholder';
+    const moduleGeometry = this.ownGeometry(createRoundedBoxGeometry(1.08, 0.32, 0.5, 0.07));
+    const moduleMaterial = this.ownMaterial(
+      createSurfaceMaterial({ color: palette.surfaceSecondary, roughness: 0.5, metalness: 0.22 }),
+    );
+    const module = new THREE.Mesh(moduleGeometry, moduleMaterial);
+    module.position.y = 0.16;
+    module.castShadow = true;
+    module.userData.role = 'container-runtime-placeholder-module';
+    this.runtimePlaceholder.add(module);
+
+    const socketGeometry = this.ownGeometry(new THREE.CylinderGeometry(0.1, 0.1, 0.04, 12));
+    const socketMaterial = this.ownMaterial(createFlatAccentMaterial(palette.scheduling, 0.76));
+    const socket = new THREE.Mesh(socketGeometry, socketMaterial);
+    socket.position.set(0, 0.34, 0);
+    socket.userData.role = 'container-runtime-placeholder-cri-port';
+    this.runtimePlaceholder.add(socket);
+    this.embeddedRuntime.add(this.runtimePlaceholder);
+
+    this.runtimeMount.name = 'container-runtime-entity-mount';
+    this.runtimeMount.userData.role = 'container-runtime-entity-mount';
+    this.runtimeMount.userData.moduleKind = 'ContainerRuntime';
+    this.runtimeMount.userData.selectable = false;
+    this.embeddedRuntime.add(this.runtimeMount);
+    this.addContent(this.embeddedRuntime);
   }
 
   public attachKubelet(handle: EntityVisualHandle): void {
@@ -236,13 +351,14 @@ export class NodeVisualHandle extends BaseVisualHandle {
     this.root.userData.kubeletEntityId = handle.entityId;
   }
 
-  public detachKubelet(entityId: EntityId): THREE.Group | undefined {
+  public detachKubelet(entityId: EntityId, destination?: THREE.Object3D): THREE.Group | undefined {
     if (entityId !== this.mountedKubeletId) return undefined;
     const root = this.kubeletMount.children.find(
       (child): child is THREE.Group =>
         child instanceof THREE.Group && child.userData.entityId === entityId,
     );
-    root?.removeFromParent();
+    if (root && destination) destination.attach(root);
+    else root?.removeFromParent();
     if (root) delete root.userData.composedInNode;
     this.mountedKubeletId = undefined;
     this.kubeletPlaceholder.visible = true;
@@ -252,6 +368,37 @@ export class NodeVisualHandle extends BaseVisualHandle {
 
   public hasKubelet(entityId: EntityId): boolean {
     return this.mountedKubeletId === entityId;
+  }
+
+  public attachRuntime(handle: EntityVisualHandle): void {
+    if (handle.entityId === this.mountedRuntimeId && handle.root.parent === this.runtimeMount)
+      return;
+    handle.root.removeFromParent();
+    handle.root.position.set(0, 0, 0);
+    handle.root.userData.composedInNode = this.entityId;
+    this.runtimeMount.add(handle.root);
+    this.mountedRuntimeId = handle.entityId;
+    this.runtimePlaceholder.visible = false;
+    this.root.userData.runtimeEntityId = handle.entityId;
+  }
+
+  public detachRuntime(entityId: EntityId, destination?: THREE.Object3D): THREE.Group | undefined {
+    if (entityId !== this.mountedRuntimeId) return undefined;
+    const root = this.runtimeMount.children.find(
+      (child): child is THREE.Group =>
+        child instanceof THREE.Group && child.userData.entityId === entityId,
+    );
+    if (root && destination) destination.attach(root);
+    else root?.removeFromParent();
+    if (root) delete root.userData.composedInNode;
+    this.mountedRuntimeId = undefined;
+    this.runtimePlaceholder.visible = true;
+    delete this.root.userData.runtimeEntityId;
+    return root;
+  }
+
+  public hasRuntime(entityId: EntityId): boolean {
+    return this.mountedRuntimeId === entityId;
   }
 
   private addAlertBars(): void {
@@ -286,9 +433,11 @@ export class NodeVisualHandle extends BaseVisualHandle {
   }
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
-    if (anchor === 'label') return new THREE.Vector3(-0.45, 0.96, -1.95);
+    if (anchor === 'label') return new THREE.Vector3(-1.72, 0.96, -1.95);
     if (anchor === 'placement') return new THREE.Vector3(0, 0.6, 0);
-    if (anchor === 'control') return new THREE.Vector3(1.78, 0.78, 1.5);
+    if (anchor === 'control') {
+      return new THREE.Vector3(...dimensions.node.kubeletMountOffset);
+    }
     if (anchor === 'data-path') return new THREE.Vector3(0, 0.72, -1.75);
     return super.anchorOffset(anchor);
   }

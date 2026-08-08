@@ -15,6 +15,14 @@ import { shortResourceName } from '../design/typography';
 import { BaseVisualHandle, type AnchorKind } from './BaseVisualHandle';
 import type { ContainerVisualHandle } from './ContainerVisual';
 
+const CONTAINER_SLOT_ANCHORS = Object.freeze([
+  Object.freeze([-0.42, 0, 0] as const),
+  Object.freeze([0.42, 0, 0] as const),
+]);
+
+const shortUid = (uid: string): string =>
+  uid.length <= 8 ? uid : `${uid.slice(0, 4)}\u2026${uid.slice(-4)}`;
+
 export class PodVisualHandle extends BaseVisualHandle {
   public readonly shell: THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
   public readonly containerBay = new THREE.Group();
@@ -23,11 +31,16 @@ export class PodVisualHandle extends BaseVisualHandle {
   private readonly runningMarker: THREE.Mesh;
   private readonly pendingMarker: THREE.Mesh;
   private readonly failureMarker = new THREE.Group();
+  private readonly uidFingerprint = new THREE.Group();
+  private readonly uidFingerprintSegments: THREE.Mesh[] = [];
+  private readonly restartBadge = new THREE.Group();
   private readonly containers = new Map<EntityId, ContainerVisualHandle>();
+  private readonly evidenceUnsubscribers = new Map<EntityId, () => void>();
 
   public constructor(entity: WorldEntity, view: EntityViewState) {
     super(entity, view, 1.08);
     this.root.userData.visualKind = 'pod-shell';
+    this.root.userData.openTop = true;
 
     const shellGeometry = this.ownGeometry(
       createRoundedBoxGeometry(
@@ -65,7 +78,7 @@ export class PodVisualHandle extends BaseVisualHandle {
       createRoundedBoxGeometry(
         dimensions.pod.width - 0.08,
         dimensions.pod.headerHeight,
-        dimensions.pod.depth - 0.08,
+        0.28,
         0.11,
       ),
     );
@@ -73,9 +86,9 @@ export class PodVisualHandle extends BaseVisualHandle {
       createSurfaceMaterial({ tone: 'elevated', roughness: 0.46, metalness: 0.08 }),
     );
     this.header = new THREE.Mesh(headerGeometry, headerMaterial);
-    this.header.position.y = 1.38;
+    this.header.position.set(0, 1.38, -dimensions.pod.depth / 2 + 0.16);
     this.header.castShadow = true;
-    this.header.userData.role = 'pod-header';
+    this.header.userData.role = 'pod-open-header-rail';
     this.addContent(this.header);
     this.addPodPictogram();
 
@@ -94,6 +107,8 @@ export class PodVisualHandle extends BaseVisualHandle {
     this.containerBay.userData.role = 'container-bay-contents';
     this.addContent(this.containerBay);
 
+    this.addContainerSlots();
+
     const railGeometry = this.ownGeometry(createRoundedBoxGeometry(1.1, 0.085, 0.055, 0.028));
     this.statusRailMaterial = this.ownMaterial(createFlatAccentMaterial(palette.healthy));
     const rail = new THREE.Mesh(railGeometry, this.statusRailMaterial);
@@ -104,7 +119,27 @@ export class PodVisualHandle extends BaseVisualHandle {
     this.runningMarker = this.createRunningMarker();
     this.pendingMarker = this.createPendingMarker();
     this.addFailureMarker();
+    this.addUidFingerprint();
+    this.addRestartBadge();
+    this.root.userData.containerSlotCount = CONTAINER_SLOT_ANCHORS.length;
+    this.root.userData.containerSlotAnchors = CONTAINER_SLOT_ANCHORS.map((anchor) => [...anchor]);
     this.update(entity, view);
+  }
+
+  private addContainerSlots(): void {
+    const geometry = this.ownGeometry(createRoundedBoxGeometry(0.82, 0.045, 0.88, 0.055));
+    const material = this.ownMaterial(
+      createSurfaceMaterial({ tone: 'recessed', roughness: 0.76, metalness: 0.02 }),
+    );
+    for (const [slotIndex, anchor] of CONTAINER_SLOT_ANCHORS.entries()) {
+      const slot = new THREE.Mesh(geometry, material);
+      slot.position.set(anchor[0], -0.005, anchor[2]);
+      slot.receiveShadow = true;
+      slot.userData.role = 'pod-container-slot';
+      slot.userData.slotIndex = slotIndex;
+      slot.userData.slotAnchor = [...anchor];
+      this.containerBay.add(slot);
+    }
   }
 
   private addPodPictogram(): void {
@@ -156,6 +191,65 @@ export class PodVisualHandle extends BaseVisualHandle {
     this.addContent(this.failureMarker);
   }
 
+  private addUidFingerprint(): void {
+    const geometry = this.ownGeometry(new THREE.BoxGeometry(0.026, 0.12, 0.018));
+    const material = this.ownMaterial(createFlatAccentMaterial(0xd8edf8, 0.94));
+    this.uidFingerprint.position.set(-0.28, 1.39, -0.718);
+    this.uidFingerprint.userData.role = 'pod-uid-fingerprint';
+    for (let index = 0; index < 8; index += 1) {
+      const segment = new THREE.Mesh(geometry, material);
+      segment.position.x = index * 0.055;
+      segment.userData.role = 'pod-uid-fingerprint-segment';
+      segment.userData.segmentIndex = index;
+      this.uidFingerprintSegments.push(segment);
+      this.uidFingerprint.add(segment);
+    }
+    this.addContent(this.uidFingerprint);
+  }
+
+  private updateUidFingerprint(uid: string): void {
+    const compactUid = shortUid(uid);
+    for (const [index, segment] of this.uidFingerprintSegments.entries()) {
+      const code = uid.charCodeAt(index % uid.length);
+      const scale = 0.44 + (code % 5) * 0.14;
+      segment.scale.y = scale;
+      segment.position.y = (scale - 1) * 0.06;
+      segment.userData.fingerprintValue = code % 5;
+    }
+    this.uidFingerprint.userData.shortUid = compactUid;
+    this.root.userData.shortUid = compactUid;
+  }
+
+  private addRestartBadge(): void {
+    const surfaceGeometry = this.ownGeometry(new THREE.CircleGeometry(0.145, 24));
+    const surfaceMaterial = this.ownMaterial(
+      createSurfaceMaterial({ tone: 'recessed', roughness: 0.68, metalness: 0.03 }),
+    );
+    const surface = new THREE.Mesh(surfaceGeometry, surfaceMaterial);
+    surface.userData.role = 'pod-restart-badge-surface';
+    this.restartBadge.add(surface);
+
+    const loopGeometry = this.ownGeometry(new THREE.TorusGeometry(0.076, 0.018, 8, 20, 5));
+    const loopMaterial = this.ownMaterial(createFlatAccentMaterial(palette.pending));
+    const loop = new THREE.Mesh(loopGeometry, loopMaterial);
+    loop.position.z = 0.012;
+    loop.rotation.z = 0.44;
+    loop.userData.role = 'pod-restart-badge-loop';
+    this.restartBadge.add(loop);
+
+    const arrowGeometry = this.ownGeometry(new THREE.ConeGeometry(0.034, 0.085, 3));
+    const arrow = new THREE.Mesh(arrowGeometry, loopMaterial);
+    arrow.position.set(-0.073, 0.05, 0.014);
+    arrow.rotation.z = -0.7;
+    arrow.userData.role = 'pod-restart-badge-arrow';
+    this.restartBadge.add(arrow);
+
+    this.restartBadge.position.set(0.61, 1.09, -0.718);
+    this.restartBadge.userData.role = 'pod-restart-badge';
+    this.restartBadge.visible = false;
+    this.addContent(this.restartBadge);
+  }
+
   public attachContainer(handle: ContainerVisualHandle): void {
     if (this.isDisposed || handle.isDisposed) return;
     const data = getContainerData(handle.entity);
@@ -164,7 +258,24 @@ export class PodVisualHandle extends BaseVisualHandle {
         `Container "${handle.entityId}" belongs to "${data.podId}", not "${this.entityId}".`,
       );
     }
+    const current = this.containers.get(handle.entityId);
+    if (!current && this.containers.size >= CONTAINER_SLOT_ANCHORS.length) {
+      throw new Error(
+        `Pod "${this.entityId}" supports ${CONTAINER_SLOT_ANCHORS.length} container slots; cannot attach Container "${handle.entityId}".`,
+      );
+    }
+    if (current && current !== handle) {
+      this.evidenceUnsubscribers.get(handle.entityId)?.();
+      this.evidenceUnsubscribers.delete(handle.entityId);
+      current.root.removeFromParent();
+    }
     this.containers.set(handle.entityId, handle);
+    if (!this.evidenceUnsubscribers.has(handle.entityId)) {
+      this.evidenceUnsubscribers.set(
+        handle.entityId,
+        handle.onEvidenceChange(() => this.refreshContainerEvidence()),
+      );
+    }
     this.containerBay.add(handle.root);
     handle.root.userData.composedInPod = this.entityId;
     this.layoutContainers();
@@ -176,6 +287,10 @@ export class PodVisualHandle extends BaseVisualHandle {
     if (!handle) return;
     handle.root.removeFromParent();
     delete handle.root.userData.composedInPod;
+    delete handle.root.userData.containerSlotIndex;
+    delete handle.root.userData.containerSlotAnchor;
+    this.evidenceUnsubscribers.get(containerId)?.();
+    this.evidenceUnsubscribers.delete(containerId);
     this.containers.delete(containerId);
     this.layoutContainers();
     this.refreshContainerEvidence();
@@ -189,9 +304,14 @@ export class PodVisualHandle extends BaseVisualHandle {
     const handles = [...this.containers.values()].sort((left, right) =>
       left.entityId.localeCompare(right.entityId),
     );
-    const center = (handles.length - 1) / 2;
     handles.forEach((handle, index) => {
-      handle.root.position.set((index - center) * 0.7, 0, 0);
+      const anchor = CONTAINER_SLOT_ANCHORS[index];
+      if (!anchor) {
+        throw new Error(`Pod "${this.entityId}" has no container slot at index ${index}.`);
+      }
+      handle.root.position.set(anchor[0], anchor[1], anchor[2]);
+      handle.root.userData.containerSlotIndex = index;
+      handle.root.userData.containerSlotAnchor = [...anchor];
     });
   }
 
@@ -202,6 +322,9 @@ export class PodVisualHandle extends BaseVisualHandle {
     );
     this.root.userData.restartCount = restartCount;
     this.root.userData.containerCount = this.containers.size;
+    this.root.userData.restartBadgeVisible = restartCount > 0;
+    this.restartBadge.userData.restartCount = restartCount;
+    this.restartBadge.visible = restartCount > 0;
   }
 
   protected override updateVisual(entity: WorldEntity): void {
@@ -223,6 +346,7 @@ export class PodVisualHandle extends BaseVisualHandle {
     this.failureMarker.visible = failed;
 
     this.root.userData.uid = data.uid;
+    this.updateUidFingerprint(data.uid);
     this.root.userData.nodeName = data.nodeName ?? null;
     this.root.userData.phase = data.phase;
     this.root.userData.conditions = Object.freeze({ ...data.conditions });
@@ -244,9 +368,13 @@ export class PodVisualHandle extends BaseVisualHandle {
   }
 
   protected override onDispose(): void {
+    for (const unsubscribe of this.evidenceUnsubscribers.values()) unsubscribe();
+    this.evidenceUnsubscribers.clear();
     for (const handle of this.containers.values()) {
       handle.root.removeFromParent();
       delete handle.root.userData.composedInPod;
+      delete handle.root.userData.containerSlotIndex;
+      delete handle.root.userData.containerSlotAnchor;
     }
     this.containers.clear();
   }

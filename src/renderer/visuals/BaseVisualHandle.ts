@@ -88,6 +88,7 @@ export abstract class BaseVisualHandle implements EntityVisualHandle {
     this.focusRing.renderOrder = 16;
     this.focusRing.visible = false;
     this.focusRing.userData.role = 'focus-ring';
+    this.focusRing.userData.excludeFromBounds = true;
     this.focusRing.userData.selectable = false;
     this.root.add(this.focusRing);
   }
@@ -210,7 +211,18 @@ export abstract class BaseVisualHandle implements EntityVisualHandle {
 
   public getWorldBounds(target: THREE.Box3 = new THREE.Box3()): THREE.Box3 {
     this.content.updateWorldMatrix(true, true);
-    return target.setFromObject(this.content, true);
+    target.makeEmpty();
+    const objectBounds = new THREE.Box3();
+    this.content.traverseVisible((object) => {
+      if (object.userData.excludeFromBounds === true) return;
+      const geometry = (object as THREE.Mesh | THREE.Line | THREE.Points).geometry;
+      if (!(geometry instanceof THREE.BufferGeometry)) return;
+      if (!geometry.boundingBox) geometry.computeBoundingBox();
+      if (!geometry.boundingBox) return;
+      objectBounds.copy(geometry.boundingBox).applyMatrix4(object.matrixWorld);
+      target.union(objectBounds);
+    });
+    return target;
   }
 
   protected onDispose(): void {}

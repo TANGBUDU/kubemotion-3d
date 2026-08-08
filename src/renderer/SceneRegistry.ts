@@ -3,10 +3,12 @@ import type { EntityViewState, ViewProjection } from '../course/types';
 import type { EntityId, WorldEntity, WorldSnapshot } from '../world/types';
 import type { LayoutContainer, LayoutResult } from './LayoutEngine';
 import { VisualFactoryRegistry, type EntityVisualFactoryResolver } from './VisualFactoryRegistry';
+import { dimensions } from './design/dimensions';
 import { createRoundedBoxGeometry } from './design/geometry';
 import { createFlatAccentMaterial, createSurfaceMaterial } from './design/materials';
 import { palette } from './design/palette';
 import type { EntityVisualHandle, VisualContext } from './visuals/BaseVisualHandle';
+import { ContainerRuntimeVisualHandle } from './visuals/ContainerRuntimeVisual';
 import { ContainerVisualHandle } from './visuals/ContainerVisual';
 import { KubeletVisualHandle } from './visuals/KubeletVisual';
 import { NodeVisualHandle } from './visuals/NodeVisual';
@@ -24,6 +26,17 @@ export interface LayoutLabelAnchor {
   readonly worldPosition: readonly [number, number, number];
   readonly zoneId?: 'control-plane' | 'workload-state' | 'worker-nodes';
   readonly kind: 'zone-title' | 'tray-title';
+}
+
+export interface RuntimeHierarchyDiagnostics {
+  readonly nodeHandles: number;
+  readonly podHandles: number;
+  readonly mountedKubelets: number;
+  readonly mountedContainerRuntimes: number;
+  readonly orphanKubelets: number;
+  readonly orphanContainerRuntimes: number;
+  readonly containedContainers: number;
+  readonly containersOutsidePods: number;
 }
 
 interface LayoutGuideHandle {
@@ -337,9 +350,52 @@ const visibleInHierarchy = (object: THREE.Object3D, root: THREE.Object3D): boole
 const disposalRank = (handle: EntityVisualHandle): number => {
   if (handle instanceof ContainerVisualHandle) return 0;
   if (handle instanceof PodVisualHandle) return 1;
-  if (handle instanceof KubeletVisualHandle) return 2;
+  if (handle instanceof KubeletVisualHandle || handle instanceof ContainerRuntimeVisualHandle)
+    return 2;
   if (handle instanceof NodeVisualHandle) return 3;
   return 4;
+};
+
+const isNodeSystemModule = (
+  handle: EntityVisualHandle,
+): handle is KubeletVisualHandle | ContainerRuntimeVisualHandle =>
+  handle instanceof KubeletVisualHandle || handle instanceof ContainerRuntimeVisualHandle;
+
+const isContainedInPod = (
+  handle: ContainerVisualHandle,
+  pod: EntityVisualHandle | undefined,
+): pod is PodVisualHandle => {
+  if (!(pod instanceof PodVisualHandle) || !pod.hasContainer(handle.entityId)) return false;
+  if (handle.root.parent !== pod.containerBay) return false;
+  const slotIndex = handle.root.userData.containerSlotIndex;
+  const slotAnchor = handle.root.userData.containerSlotAnchor;
+  const slotCount = pod.root.userData.containerSlotCount;
+  if (
+    typeof slotIndex !== 'number' ||
+    !Number.isInteger(slotIndex) ||
+    typeof slotCount !== 'number' ||
+    slotIndex < 0 ||
+    slotIndex >= slotCount ||
+    !Array.isArray(slotAnchor) ||
+    slotAnchor.length !== 3 ||
+    !slotAnchor.every((value) => typeof value === 'number' && Number.isFinite(value))
+  ) {
+    return false;
+  }
+  const epsilon = 1e-5;
+  if (
+    Math.abs(handle.root.position.x - slotAnchor[0]) > epsilon ||
+    Math.abs(handle.root.position.y - slotAnchor[1]) > epsilon ||
+    Math.abs(handle.root.position.z - slotAnchor[2]) > epsilon
+  ) {
+    return false;
+  }
+  const halfWidth = (dimensions.container.width * Math.abs(handle.root.scale.x)) / 2;
+  const halfDepth = (dimensions.container.depth * Math.abs(handle.root.scale.z)) / 2;
+  return (
+    Math.abs(handle.root.position.x) + halfWidth <= dimensions.pod.width / 2 + epsilon &&
+    Math.abs(handle.root.position.z) + halfDepth <= dimensions.pod.depth / 2 + epsilon
+  );
 };
 
 const LAYOUT_LABEL_ORDER: Readonly<Record<string, number>> = Object.freeze({
@@ -467,7 +523,7 @@ export class SceneRegistry {
       if (entityLayout.lane === 'composition' && handle instanceof ContainerVisualHandle) continue;
       if (
         entityLayout.lane === 'node-agent' &&
-        handle instanceof KubeletVisualHandle &&
+        isNodeSystemModule(handle) &&
         handle.root.userData.composedInNode === entityLayout.parentId
       ) {
         continue;
@@ -479,7 +535,7 @@ export class SceneRegistry {
 
   private syncNodeComposition(layout: LayoutResult): void {
     for (const handle of this.handles.values()) {
-      if (!(handle instanceof KubeletVisualHandle)) continue;
+      if (!isNodeSystemModule(handle)) continue;
       const entityLayout = layout.entities.get(handle.entityId);
       const desiredNodeId = entityLayout?.lane === 'node-agent' ? entityLayout.parentId : undefined;
       const currentNodeId =
@@ -488,15 +544,21 @@ export class SceneRegistry {
           : undefined;
       if (currentNodeId && currentNodeId !== desiredNodeId) {
         const currentNode = this.handles.get(currentNodeId);
-        if (currentNode instanceof NodeVisualHandle) currentNode.detachKubelet(handle.entityId);
+        if (currentNode instanceof NodeVisualHandle) {
+          if (handle instanceof KubeletVisualHandle) {
+            currentNode.detachKubelet(handle.entityId, this.scene);
+          } else {
+            currentNode.detachRuntime(handle.entityId, this.scene);
+          }
+        }
       }
       const desiredNode = desiredNodeId ? this.handles.get(desiredNodeId) : undefined;
       if (desiredNode instanceof NodeVisualHandle) {
-        desiredNode.attachKubelet(handle);
+        if (handle instanceof KubeletVisualHandle) desiredNode.attachKubelet(handle);
+        else desiredNode.attachRuntime(handle);
       } else if (handle.root.parent !== this.scene) {
-        handle.root.removeFromParent();
+        this.scene.attach(handle.root);
         delete handle.root.userData.composedInNode;
-        this.scene.add(handle.root);
       }
     }
   }
@@ -543,14 +605,27 @@ export class SceneRegistry {
       const node = nodeId ? this.handles.get(nodeId) : undefined;
       if (node instanceof NodeVisualHandle) node.detachKubelet(entityId);
     }
+    if (handle instanceof ContainerRuntimeVisualHandle) {
+      const nodeId =
+        typeof handle.root.userData.composedInNode === 'string'
+          ? handle.root.userData.composedInNode
+          : undefined;
+      const node = nodeId ? this.handles.get(nodeId) : undefined;
+      if (node instanceof NodeVisualHandle) node.detachRuntime(entityId);
+    }
     if (handle instanceof NodeVisualHandle) {
       for (const candidate of this.handles.values()) {
         if (
           candidate instanceof KubeletVisualHandle &&
           candidate.root.userData.composedInNode === handle.entityId
         ) {
-          handle.detachKubelet(candidate.entityId);
-          this.scene.add(candidate.root);
+          handle.detachKubelet(candidate.entityId, this.scene);
+        }
+        if (
+          candidate instanceof ContainerRuntimeVisualHandle &&
+          candidate.root.userData.composedInNode === handle.entityId
+        ) {
+          handle.detachRuntime(candidate.entityId, this.scene);
         }
       }
     }
@@ -647,6 +722,13 @@ export class SceneRegistry {
     return this.handles.values();
   }
 
+  /** Returns the rendered teaching object's bounds, excluding its selection halo. */
+  public worldBoundsFor(entityId: EntityId): THREE.Box3 | undefined {
+    const handle = this.handles.get(entityId);
+    if (!handle || handle.isDisposed || handle.root.userData.activeWorld !== true) return undefined;
+    return handle.getWorldBounds?.();
+  }
+
   public get size(): number {
     return this.handles.size;
   }
@@ -661,5 +743,64 @@ export class SceneRegistry {
         guide.root.userData.role === 'semantic-island' ||
         guide.root.userData.role === 'unscheduled-pods-tray',
     ).length;
+  }
+
+  public get runtimeHierarchyDiagnostics(): RuntimeHierarchyDiagnostics {
+    let nodeHandles = 0;
+    let podHandles = 0;
+    let mountedKubelets = 0;
+    let mountedContainerRuntimes = 0;
+    let orphanKubelets = 0;
+    let orphanContainerRuntimes = 0;
+    let containedContainers = 0;
+    let containersOutsidePods = 0;
+    for (const handle of this.handles.values()) {
+      if (handle instanceof NodeVisualHandle) {
+        nodeHandles += 1;
+        continue;
+      }
+      if (handle instanceof PodVisualHandle) {
+        podHandles += 1;
+        continue;
+      }
+      if (handle instanceof ContainerVisualHandle) {
+        const podId =
+          typeof handle.root.userData.composedInPod === 'string'
+            ? handle.root.userData.composedInPod
+            : undefined;
+        if (isContainedInPod(handle, podId ? this.handles.get(podId) : undefined)) {
+          containedContainers += 1;
+        } else {
+          containersOutsidePods += 1;
+        }
+        continue;
+      }
+      if (!isNodeSystemModule(handle)) continue;
+      const nodeId =
+        typeof handle.root.userData.composedInNode === 'string'
+          ? handle.root.userData.composedInNode
+          : undefined;
+      const node = nodeId ? this.handles.get(nodeId) : undefined;
+      const mounted =
+        node instanceof NodeVisualHandle &&
+        (handle instanceof KubeletVisualHandle
+          ? node.hasKubelet(handle.entityId) && handle.root.parent === node.kubeletMount
+          : node.hasRuntime(handle.entityId) && handle.root.parent === node.runtimeMount);
+      if (handle instanceof KubeletVisualHandle) {
+        if (mounted) mountedKubelets += 1;
+        else orphanKubelets += 1;
+      } else if (mounted) mountedContainerRuntimes += 1;
+      else orphanContainerRuntimes += 1;
+    }
+    return {
+      nodeHandles,
+      podHandles,
+      mountedKubelets,
+      mountedContainerRuntimes,
+      orphanKubelets,
+      orphanContainerRuntimes,
+      containedContainers,
+      containersOutsidePods,
+    };
   }
 }
