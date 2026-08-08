@@ -1,13 +1,13 @@
 @media (max-width: 720px) {
   :root {
-    --lesson-header-height: 48px;
-    --lesson-timeline-height: 44px;
+    --lesson-header-height: calc(48px + env(safe-area-inset-top, 0px));
+    --lesson-timeline-height: calc(44px + env(safe-area-inset-bottom, 0px));
   }
 
   .lesson-shell {
     height: 100svh;
     grid-template-rows:
-      var(--lesson-header-height) minmax(48svh, 1fr) minmax(205px, 34svh)
+      var(--lesson-header-height) minmax(0, 1fr) minmax(205px, 34svh)
       var(--lesson-timeline-height);
   }
 
@@ -23,7 +23,8 @@
   .lesson-header {
     grid-template-columns: 44px minmax(0, 1fr) auto;
     gap: 7px;
-    padding: 2px 6px;
+    padding: calc(2px + env(safe-area-inset-top, 0px)) max(6px, env(safe-area-inset-right, 0px)) 2px
+      max(6px, env(safe-area-inset-left, 0px));
   }
 
   .lesson-heading p {
@@ -36,9 +37,9 @@
 
   .lesson-progress {
     position: absolute;
-    right: 118px;
+    right: calc(118px + env(safe-area-inset-right, 0px));
     bottom: 3px;
-    left: 57px;
+    left: calc(57px + env(safe-area-inset-left, 0px));
     display: block;
   }
 
@@ -87,7 +88,7 @@
 
   .lesson-stage-frame {
     grid-row: 2;
-    margin: 6px 6px 0;
+    margin: 6px max(6px, env(safe-area-inset-right, 0px)) 0 max(6px, env(safe-area-inset-left, 0px));
     border-radius: 13px;
   }
 
@@ -137,7 +138,7 @@
 
   .mobile-teaching-sheet {
     grid-row: 3;
-    margin: 5px 6px 0;
+    margin: 5px max(6px, env(safe-area-inset-right, 0px)) 0 max(6px, env(safe-area-inset-left, 0px));
     overflow: hidden;
     border-radius: 13px 13px 0 0;
     box-shadow: 0 -14px 38px rgb(0 0 0 / 24%);
@@ -201,7 +202,7 @@
   }
 
   .lesson-shell:has(.mobile-teaching-sheet.is-collapsed) {
-    grid-template-rows: var(--lesson-header-height) minmax(48svh, 1fr) 130px var(
+    grid-template-rows: var(--lesson-header-height) minmax(0, 1fr) 130px var(
         --lesson-timeline-height
       );
   }
@@ -267,7 +268,8 @@
   .step-timeline {
     grid-row: 4;
     gap: 3px;
-    padding: 0 4px;
+    padding: 0 max(4px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px)
+      max(4px, env(safe-area-inset-left, 0px));
   }
 
   .timeline-edge-button {
@@ -299,17 +301,23 @@
     height: var(--touch-target);
   }
 
+  .drawer-layer {
+    inset: var(--lesson-header-height) 0 var(--lesson-timeline-height);
+  }
+
   .course-drawer {
-    inset: 6px;
+    inset: 6px max(6px, env(safe-area-inset-right, 0px)) 6px
+      max(6px, env(safe-area-inset-left, 0px));
     width: auto;
     padding: 15px;
   }
 
   .inspector-drawer {
-    top: calc(var(--header-height) + 6px);
-    right: 6px;
-    bottom: 6px;
-    width: calc(100vw - 12px);
+    top: calc(var(--lesson-header-height) + 6px);
+    right: max(6px, env(safe-area-inset-right, 0px));
+    bottom: calc(var(--lesson-timeline-height) + 6px);
+    left: max(6px, env(safe-area-inset-left, 0px));
+    width: auto;
     padding: 14px;
   }
 

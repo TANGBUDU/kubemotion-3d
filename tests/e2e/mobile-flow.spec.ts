@@ -45,6 +45,28 @@ test('mobile teaching sheet, timeline, drawers, and controls do not cover one an
   await expect(courseDialog).toBeVisible();
   await courseDialog.getByRole('button', { name: /Close course contents/i }).click();
 
+  const sourcesAction = page.getByRole('button', { name: /^Sources/i });
+  await sourcesAction.click();
+  const detailsDrawer = page.locator('.inspector-drawer[role="dialog"]');
+  const sourcesTab = detailsDrawer.getByRole('tab', { name: /Sources/i });
+  const termsTab = detailsDrawer.getByRole('tab', { name: /Terms/i });
+  await expect(sourcesTab).toHaveAttribute('aria-selected', 'true');
+  await expect(sourcesTab).toHaveAttribute('tabindex', '0');
+  const closeDetails = detailsDrawer.locator('.drawer-header button');
+  await detailsDrawer.getByRole('link').last().focus();
+  await page.keyboard.press('Tab');
+  await expect(closeDetails).not.toBeFocused();
+  const lessonUrl = page.url();
+  await sourcesTab.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(termsTab).toBeFocused();
+  await expect(termsTab).toHaveAttribute('aria-selected', 'true');
+  await expect(page).toHaveURL(lessonUrl);
+  await expect(detailsDrawer).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(detailsDrawer).toBeHidden();
+  await expect(sourcesAction).toBeFocused();
+
   await page.getByRole('button', { name: /Go to step 7:/i }).click();
   await expect(page).toHaveURL(/container-restart-vs-pod-replacement\/6$/);
   await expect(page.getByTestId('teaching-step-heading')).toContainText('Pending and unscheduled');

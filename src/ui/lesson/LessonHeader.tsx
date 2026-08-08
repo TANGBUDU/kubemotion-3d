@@ -1,4 +1,4 @@
-import { Camera, Languages, List, Play } from 'lucide-react';
+import { Camera, Languages, List, Play, RotateCcw } from 'lucide-react';
 import type { Locale } from '../../app/types';
 import { lessonUi } from './copy';
 
@@ -9,6 +9,7 @@ export interface LessonHeaderProps {
   readonly stepCount: number;
   readonly locale: Locale;
   readonly courseOpen: boolean;
+  readonly canResetCamera: boolean;
   readonly onOpenCourse: () => void;
   readonly onReplay: () => void;
   readonly onResetCamera: () => void;
@@ -22,6 +23,7 @@ export function LessonHeader({
   stepCount,
   locale,
   courseOpen,
+  canResetCamera,
   onOpenCourse,
   onReplay,
   onResetCamera,
@@ -29,6 +31,8 @@ export function LessonHeader({
 }: LessonHeaderProps) {
   const t = lessonUi(locale);
   const progress = ((stepIndex + 1) / stepCount) * 100;
+  const isFinalStep = stepIndex === stepCount - 1;
+  const replayLabel = isFinalStep ? t.restartLesson : t.replay;
 
   return (
     <header className="lesson-header">
@@ -53,17 +57,23 @@ export function LessonHeader({
         </span>
       </div>
       <div className="lesson-header-actions">
-        <button type="button" aria-label={t.replay} title={t.replay} onClick={onReplay}>
-          <Play size={17} aria-hidden="true" />
+        <button type="button" aria-label={replayLabel} title={replayLabel} onClick={onReplay}>
+          {isFinalStep ? (
+            <RotateCcw size={17} aria-hidden="true" />
+          ) : (
+            <Play size={17} aria-hidden="true" />
+          )}
         </button>
-        <button
-          type="button"
-          aria-label={t.resetCamera}
-          title={t.resetCamera}
-          onClick={onResetCamera}
-        >
-          <Camera size={18} aria-hidden="true" />
-        </button>
+        {canResetCamera && (
+          <button
+            type="button"
+            aria-label={t.resetCamera}
+            title={t.resetCamera}
+            onClick={onResetCamera}
+          >
+            <Camera size={18} aria-hidden="true" />
+          </button>
+        )}
         <label className="lesson-language">
           <Languages size={17} aria-hidden="true" />
           <span className="sr-only">{t.language}</span>

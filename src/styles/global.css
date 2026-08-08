@@ -103,6 +103,21 @@ button:disabled {
   align-items: center;
   margin-left: auto;
 }
+.header-reset-status {
+  position: fixed;
+  z-index: 70;
+  top: calc(var(--header-height) + 12px);
+  right: max(16px, env(safe-area-inset-right, 0px));
+  max-width: min(360px, calc(100vw - 32px));
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--success) 48%, var(--border));
+  border-radius: 9px;
+  background: rgb(12 35 49 / 96%);
+  box-shadow: var(--shadow-panel);
+  color: var(--text-primary);
+  font-size: 12px;
+}
 .motion-toggle {
   display: flex;
   align-items: center;
@@ -752,8 +767,14 @@ button.secondary {
   overflow: hidden;
 }
 .explore-tools {
+  overflow-x: hidden;
   border-right: 1px solid var(--border);
   padding: 18px 15px;
+}
+.explore-tools input,
+.explore-tools select {
+  width: 100%;
+  min-width: 0;
 }
 .beta-chip {
   margin-left: auto;
@@ -1034,18 +1055,91 @@ button.secondary {
   }
 }
 @media (max-width: 720px) {
+  .app-shell:not(:has(.lesson-shell)) {
+    --header-height: calc(112px + env(safe-area-inset-top));
+  }
+
   .app-header {
-    padding: 0 14px;
-    gap: 10px;
+    display: grid;
+    height: var(--header-height);
+    grid-template-areas:
+      'brand navigation'
+      'actions actions';
+    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-rows: 56px 56px;
+    gap: 0 8px;
+    padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right)) 0
+      max(12px, env(safe-area-inset-left));
+  }
+  .brand {
+    grid-area: brand;
+    width: var(--touch-target);
+    min-width: var(--touch-target);
+    height: var(--touch-target);
+    justify-content: center;
   }
   .brand span:last-child {
     display: none;
   }
+  .app-primary-nav {
+    grid-area: navigation;
+    min-width: 0;
+    width: 100%;
+    justify-self: stretch;
+    gap: 2px;
+  }
   .app-header nav a {
-    min-width: 56px;
+    display: flex;
+    min-width: 0;
+    min-height: var(--touch-target);
+    flex: 1 1 0;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 6px;
+    white-space: nowrap;
+  }
+  .app-header .nav-beta {
+    margin-left: 0;
+  }
+  .header-actions {
+    grid-area: actions;
+    width: 100%;
+    min-width: 0;
+    height: 56px;
+    gap: 8px;
+    margin-left: 0;
+    border-top: 1px solid var(--border-soft);
+  }
+  .motion-toggle {
+    min-width: 0;
+    min-height: var(--touch-target);
+    flex: 1 1 0;
+    justify-content: center;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+  }
+  .motion-toggle input {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    padding: 0;
+    margin: 0;
   }
   .motion-toggle span {
-    display: none;
+    white-space: nowrap;
+  }
+  .header-actions #locale {
+    width: 88px;
+    min-width: 88px;
+    height: var(--touch-target);
+    padding: 8px;
+  }
+  .header-actions .icon-button {
+    width: var(--touch-target);
+    min-width: var(--touch-target);
+    height: var(--touch-target);
   }
   .home-page {
     padding: 48px 20px;
@@ -1080,7 +1174,9 @@ button.secondary {
     width: auto;
   }
   .explore-tools {
-    max-height: 320px;
+    max-height: min(44svh, 360px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border-bottom: 1px solid var(--border);
   }
   .explore-stage {

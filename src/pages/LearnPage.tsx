@@ -5,10 +5,11 @@ import { SceneViewport } from '../components/SceneViewport';
 import { course, glossaryById, lessonById, scenarioById, sources } from '../content/loader';
 import { courseEngine } from '../course/CourseEngine';
 import type { PlaybackRequest } from '../course/types';
-import { useAppStore } from '../state/appStore';
+import { orderedAvailableLessons, resolveLessonEntry, useAppStore } from '../state/appStore';
 import { CompareView } from '../ui/lesson/CompareView';
 import { CourseDrawer } from '../ui/lesson/CourseDrawer';
 import { InspectorDrawer, type DetailSection } from '../ui/lesson/InspectorDrawer';
+import { LessonCompletionCard } from '../ui/lesson/LessonCompletionCard';
 import { LessonHeader } from '../ui/lesson/LessonHeader';
 import { LessonShell } from '../ui/lesson/LessonShell';
 import { MobileTeachingSheet } from '../ui/lesson/MobileTeachingSheet';
@@ -20,7 +21,7 @@ import { useMediaQuery } from '../ui/lesson/useMediaQuery';
 import { getContainerData, getPodData, getReplicaSetData } from '../world';
 import type { EntityId, WorldEntity } from '../world/types';
 
-const GOLDEN_LESSON = 'container-restart-vs-pod-replacement';
+const availableLessons = orderedAvailableLessons(course, lessonById);
 
 const chapterTitles: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   en: {
@@ -60,13 +61,12 @@ function podForEntity(
   return undefined;
 }
 
-function isTypingTarget(target: EventTarget | null): boolean {
+function isInteractiveTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return (
     target.isContentEditable ||
-    target.tagName === 'INPUT' ||
-    target.tagName === 'TEXTAREA' ||
-    target.tagName === 'SELECT'
+    target.closest('input, textarea, select, button, a[href], [role="tab"], [role="dialog"]') !==
+      null
   );
 }
 
@@ -111,6 +111,15 @@ export function LearnPage() {
   const selectEntity = useAppStore((state) => state.selectEntity);
   const enterLesson = useAppStore((state) => state.enterLesson);
   const setLessonStep = useAppStore((state) => state.setLessonStep);
+  const completeLesson = useAppStore((state) => state.completeLesson);
+  const savedLessonId = useAppStore((state) => state.lessonId);
+  const savedStepIndex = useAppStore((state) => state.stepIndex);
+  const completedLessonIds = useAppStore((state) => state.completedLessonIds);
+  const resumeEntry = resolveLessonEntry(availableLessons, {
+    lessonId: savedLessonId,
+    stepIndex: savedStepIndex,
+    completedLessonIds,
+  });
   const lesson = params.lessonId ? lessonById.get(params.lessonId) : undefined;
   const compiled = useMemo(() => {
     if (!lesson) return undefined;
@@ -133,6 +142,7 @@ export function LearnPage() {
     stepIndex >= 0 &&
     stepIndex < lesson.steps.length,
   );
+  const isFinalStep = Boolean(valid && lesson && stepIndex === lesson.steps.length - 1);
 
   const go = useCallback(
     (index: number) => {
@@ -164,6 +174,7 @@ export function LearnPage() {
     setDetailSection(section);
     setDetailsOpen(true);
   }, []);
+  const restartLesson = useCallback(() => go(0), [go]);
 
   useEffect(() => {
     if (valid && lesson) enterLesson(lesson.id, stepIndex);
@@ -177,7 +188,7 @@ export function LearnPage() {
         selectEntity(undefined);
         return;
       }
-      if (isTypingTarget(event.target)) return;
+      if (isInteractiveTarget(event.target)) return;
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
         go(stepIndex - 1);
@@ -188,15 +199,23 @@ export function LearnPage() {
       }
       if (event.key.toLowerCase() === 'r' && !event.metaKey && !event.ctrlKey && !event.altKey) {
         event.preventDefault();
-        setPlaybackId((value) => value + 1);
+        if (isFinalStep) restartLesson();
+        else setPlaybackId((value) => value + 1);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [go, selectEntity, stepIndex]);
+  }, [go, isFinalStep, restartLesson, selectEntity, stepIndex]);
 
-  if (!params.lessonId) return <Navigate to={`/learn/${GOLDEN_LESSON}/0`} replace />;
-  if (!valid || !lesson || !compiled) return <Navigate to={`/learn/${GOLDEN_LESSON}/0`} replace />;
+  if (availableLessons.length === 0) throw new Error('No verified lesson is available');
+  const resumePath = resumeEntry
+    ? `/learn/${resumeEntry.lessonId}/${resumeEntry.stepIndex}`
+    : '/explore';
+  if (!params.lessonId) return <Navigate to={resumePath} replace />;
+  if (lesson && compiled && (params.stepIndex === undefined || !valid)) {
+    return <Navigate to={`/learn/${lesson.id}/0`} replace />;
+  }
+  if (!valid || !lesson || !compiled) return <Navigate to={resumePath} replace />;
   const authoredStep = lesson.steps[stepIndex];
   const step = compiled.steps[stepIndex];
   if (!authoredStep || !step) return null;
@@ -316,6 +335,10 @@ export function LearnPage() {
     return source ? [source] : [];
   });
   const titles = lesson.steps.map((lessonStep) => lessonStep.title[locale]);
+  const lessonCompleted = completedLessonIds.includes(lesson.id);
+  const nextLesson = availableLessons.find(
+    (candidate) => candidate.id !== lesson.id && !completedLessonIds.includes(candidate.id),
+  );
   const safeInsets = isMobile
     ? { top: 38, right: 16, bottom: sheetExpanded ? 28 : 16, left: 16 }
     : {
@@ -407,25 +430,27 @@ export function LearnPage() {
       <p id="scene-accessible-summary" className="sr-only">
         {sceneSummary}
       </p>
-      <div
-        className={`scene-canvas ${step.view.comparison ? 'is-visually-suspended' : ''}`}
-        role="img"
-        aria-label={t.scene}
-        aria-describedby="scene-accessible-summary"
-      >
-        <SceneViewport
-          key={`lesson-${lesson.id}`}
-          step={step}
-          playback={playback}
-          selectedEntityId={selected}
-          locale={locale}
-          reducedMotion={reducedMotion}
-          cameraResetId={cameraResetId}
-          safeInsets={safeInsets}
-          onSelectEntity={handleSelectEntity}
-        />
-      </div>
-      {!step.view.comparison && <SceneLegend locale={locale} />}
+      {!step.view.comparison && (
+        <>
+          <div className="scene-canvas">
+            <SceneViewport
+              key={`lesson-${lesson.id}`}
+              role="img"
+              aria-label={t.scene}
+              aria-describedby="scene-accessible-summary"
+              step={step}
+              playback={playback}
+              selectedEntityId={selected}
+              locale={locale}
+              reducedMotion={reducedMotion}
+              cameraResetId={cameraResetId}
+              safeInsets={safeInsets}
+              onSelectEntity={handleSelectEntity}
+            />
+          </div>
+          <SceneLegend locale={locale} />
+        </>
+      )}
       {step.view.comparison && <CompareView model={step.view.comparison} locale={locale} />}
     </>
   );
@@ -438,6 +463,18 @@ export function LearnPage() {
       expanded={sheetExpanded}
       onExpandedChange={setSheetExpanded}
     >
+      {isFinalStep && (
+        <LessonCompletionCard
+          locale={locale}
+          lessonTitle={lesson.title[locale]}
+          completed={lessonCompleted}
+          nextLesson={
+            nextLesson ? { id: nextLesson.id, title: nextLesson.title[locale] } : undefined
+          }
+          onComplete={() => completeLesson(lesson.id)}
+          onRestart={restartLesson}
+        />
+      )}
       <TeachingPanel
         locale={locale}
         stepIndex={stepIndex}
@@ -467,8 +504,9 @@ export function LearnPage() {
           stepCount={lesson.steps.length}
           locale={locale}
           courseOpen={courseOpen}
+          canResetCamera={!step.view.comparison}
           onOpenCourse={() => setCourseOpen(true)}
-          onReplay={() => setPlaybackId((value) => value + 1)}
+          onReplay={isFinalStep ? restartLesson : () => setPlaybackId((value) => value + 1)}
           onResetCamera={() => setCameraResetId((value) => value + 1)}
           onLocaleChange={setLocale}
         />
@@ -476,7 +514,13 @@ export function LearnPage() {
       stage={stage}
       teaching={teaching}
       timeline={
-        <StepTimeline locale={locale} titles={titles} currentStep={stepIndex} onStepChange={go} />
+        <StepTimeline
+          lessonId={lesson.id}
+          locale={locale}
+          titles={titles}
+          currentStep={stepIndex}
+          onStepChange={go}
+        />
       }
       drawers={
         <>

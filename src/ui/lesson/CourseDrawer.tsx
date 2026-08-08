@@ -24,7 +24,7 @@ export function CourseDrawer({
 }: CourseDrawerProps) {
   const t = lessonUi(locale);
   const verified = lessons.filter((lesson) => lesson.status === 'available');
-  const drawerRef = useDrawerFocus(open, onClose);
+  const drawerRef = useDrawerFocus(open, onClose, true);
 
   return (
     <div className="drawer-layer course-drawer-layer" hidden={!open}>

@@ -23,6 +23,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/learn" element={<LearnPage />} />
+          <Route path="/learn/:lessonId" element={<LearnPage />} />
           <Route path="/learn/:lessonId/:stepIndex" element={<LearnPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/about" element={<AboutPage />} />

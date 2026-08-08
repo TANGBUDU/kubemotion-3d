@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { loadPreferences, loadProgress, localeFromNavigator } from '../../src/state/persistence';
+import {
+  loadPreferences,
+  loadProgress,
+  localeFromNavigator,
+  saveProgress,
+} from '../../src/state/persistence';
 
 describe('persistence helpers', () => {
   it('selects a locale from the browser language', () => {
@@ -39,5 +44,36 @@ describe('persistence helpers', () => {
         }),
     };
     expect(loadPreferences(seenPreferences).orientationSeen).toBe(true);
+  });
+
+  it('deduplicates completed lessons when progress is loaded and saved', () => {
+    const duplicateProgress = {
+      getItem: () =>
+        JSON.stringify({
+          completedLessonIds: ['service-routes-to-pods', 'service-routes-to-pods'],
+          lessonId: 'service-routes-to-pods',
+          stepIndex: 2,
+        }),
+    };
+    expect(loadProgress(duplicateProgress).completedLessonIds).toEqual(['service-routes-to-pods']);
+
+    let saved = '';
+    saveProgress(
+      {
+        completedLessonIds: [
+          'service-routes-to-pods',
+          'container-restart-vs-pod-replacement',
+          'service-routes-to-pods',
+        ],
+        lessonId: 'container-restart-vs-pod-replacement',
+        stepIndex: 9,
+      },
+      { setItem: (_key, value) => (saved = value) },
+    );
+    expect(JSON.parse(saved)).toEqual({
+      completedLessonIds: ['service-routes-to-pods', 'container-restart-vs-pod-replacement'],
+      lessonId: 'container-restart-vs-pod-replacement',
+      stepIndex: 9,
+    });
   });
 });

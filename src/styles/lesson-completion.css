@@ -1,0 +1,117 @@
+.lesson-completion-card {
+  display: grid;
+  gap: 10px;
+  margin: 14px 16px 0;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--success) 42%, var(--border));
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 10% 0%, rgb(69 196 134 / 16%), transparent 45%), rgb(13 32 50 / 92%);
+  box-shadow: inset 0 1px rgb(255 255 255 / 5%);
+}
+
+.lesson-completion-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.lesson-completion-heading > span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(69 196 134 / 16%);
+  color: var(--success);
+  font-weight: 850;
+}
+
+.lesson-completion-heading p,
+.lesson-completion-heading h2,
+.lesson-completion-message {
+  margin: 0;
+}
+
+.lesson-completion-heading p {
+  color: var(--success);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.lesson-completion-heading h2 {
+  overflow: hidden;
+  margin-top: 3px;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lesson-completion-message {
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.lesson-completion-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(2, auto);
+  gap: 7px;
+}
+
+.lesson-completion-actions a,
+.lesson-completion-actions button {
+  display: inline-flex;
+  min-width: 0;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: rgb(19 39 62 / 78%);
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.lesson-completion-actions a:hover,
+.lesson-completion-actions button:hover {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  color: var(--text-primary);
+}
+
+.lesson-completion-actions .lesson-completion-primary {
+  justify-content: flex-start;
+  border-color: color-mix(in srgb, var(--success) 48%, var(--border));
+  background: rgb(69 196 134 / 12%);
+  color: #dff8e9;
+}
+
+.lesson-completion-actions span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .lesson-completion-card {
+    margin: 10px 12px 0;
+    padding: 12px;
+  }
+
+  .lesson-completion-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lesson-completion-actions .lesson-completion-primary {
+    grid-column: 1 / -1;
+  }
+}

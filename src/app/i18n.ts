@@ -2,6 +2,8 @@ import type { Locale } from './types';
 
 const text = {
   en: {
+    home: 'Home',
+    primaryNavigation: 'Primary navigation',
     learn: 'Learn',
     explore: 'Explore',
     beta: 'Beta',
@@ -26,6 +28,12 @@ const text = {
     allNamespaces: 'All namespaces',
     allStatuses: 'All statuses',
     reset: 'Reset',
+    resetProgress: 'Reset learning progress',
+    resetProgressConfirm:
+      'Reset all lesson progress and completion history stored in this browser?',
+    resetProgressDone: 'Learning progress reset.',
+    reducedMotion: 'Reduced motion',
+    language: 'Language',
     roadmap: 'Roadmap',
     collapseLessons: 'Collapse lesson rail',
     expandLessons: 'Expand lesson rail',
@@ -36,6 +44,8 @@ const text = {
     step: 'Step',
   },
   ja: {
+    home: 'ホーム',
+    primaryNavigation: 'メインナビゲーション',
     learn: '学ぶ',
     explore: '探索',
     beta: 'ベータ',
@@ -60,6 +70,11 @@ const text = {
     allNamespaces: 'すべての Namespace',
     allStatuses: 'すべての状態',
     reset: 'リセット',
+    resetProgress: '学習進捗をリセット',
+    resetProgressConfirm: 'このブラウザーに保存された進捗と完了履歴をすべてリセットしますか？',
+    resetProgressDone: '学習進捗をリセットしました。',
+    reducedMotion: '動きを抑える',
+    language: '言語',
     roadmap: 'ロードマップ',
     collapseLessons: 'レッスン一覧を閉じる',
     expandLessons: 'レッスン一覧を開く',
@@ -70,6 +85,8 @@ const text = {
     step: 'ステップ',
   },
   'zh-CN': {
+    home: '首页',
+    primaryNavigation: '主导航',
     learn: '学习',
     explore: '探索',
     beta: '测试版',
@@ -94,6 +111,11 @@ const text = {
     allNamespaces: '全部 Namespace',
     allStatuses: '全部状态',
     reset: '重置',
+    resetProgress: '重置学习进度',
+    resetProgressConfirm: '要重置此浏览器中保存的全部学习进度和完成记录吗？',
+    resetProgressDone: '学习进度已重置。',
+    reducedMotion: '减少动态效果',
+    language: '语言',
     roadmap: '路线图',
     collapseLessons: '收起课程栏',
     expandLessons: '展开课程栏',

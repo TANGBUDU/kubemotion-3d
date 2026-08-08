@@ -48,6 +48,10 @@ export async function gotoGoldenStep(page: Page, stepIndex: number): Promise<voi
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(`/#/learn/${GOLDEN_LESSON}/${stepIndex}`);
   await expect(page.getByTestId('teaching-step-heading')).toContainText(title);
+  if (stepIndex === STEP_TITLES.length - 1) {
+    await expect(page.getByTestId('comparison-panel')).toBeVisible();
+    return;
+  }
   await waitForSceneIdle(page);
 }
 

@@ -1,4 +1,5 @@
 import { RotateCcw } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import type { Locale } from '../app/types';
 import { ui } from '../app/i18n';
@@ -10,14 +11,32 @@ export function AppHeader() {
   const reducedMotion = useAppStore((state) => state.reducedMotion);
   const setReducedMotion = useAppStore((state) => state.setReducedMotion);
   const reset = useAppStore((state) => state.resetExperience);
+  const [resetNotice, setResetNotice] = useState('');
   const t = ui(locale);
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
+  useEffect(() => {
+    if (!resetNotice) return;
+    const timeout = window.setTimeout(() => setResetNotice(''), 4_000);
+    return () => window.clearTimeout(timeout);
+  }, [resetNotice]);
+
+  const confirmReset = (): void => {
+    if (!window.confirm(t.resetProgressConfirm)) return;
+    reset();
+    setResetNotice(t.resetProgressDone);
+  };
+
   return (
-    <header className="app-header">
-      <NavLink className="brand" to="/" aria-label="KubeMotion home">
+    <header className="app-header" data-testid="app-header">
+      <NavLink className="brand" to="/" aria-label={`KubeMotion ${t.home}`}>
         <span className="brand-mark">K</span>
         <span>KubeMotion</span>
       </NavLink>
-      <nav aria-label="Primary navigation">
+      <nav className="app-primary-nav" aria-label={t.primaryNavigation}>
         <NavLink to="/learn">{t.learn}</NavLink>
         <NavLink to="/explore">
           {t.explore}
@@ -32,10 +51,10 @@ export function AppHeader() {
             checked={reducedMotion}
             onChange={(event) => setReducedMotion(event.target.checked)}
           />
-          <span>Reduced motion</span>
+          <span>{t.reducedMotion}</span>
         </label>
         <label className="sr-only" htmlFor="locale">
-          Language
+          {t.language}
         </label>
         <select
           id="locale"
@@ -46,10 +65,21 @@ export function AppHeader() {
           <option value="ja">日本語</option>
           <option value="zh-CN">中文</option>
         </select>
-        <button className="icon-button" onClick={reset} aria-label={t.reset}>
-          <RotateCcw size={17} />
+        <button
+          className="icon-button"
+          type="button"
+          onClick={confirmReset}
+          aria-label={t.resetProgress}
+          title={t.resetProgress}
+        >
+          <RotateCcw size={17} aria-hidden="true" />
         </button>
       </div>
+      {resetNotice ? (
+        <p className="header-reset-status" role="status">
+          {resetNotice}
+        </p>
+      ) : null}
     </header>
   );
 }

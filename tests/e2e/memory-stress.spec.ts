@@ -1,5 +1,6 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import type { SceneDiagnostics } from '../../src/renderer/SceneController';
+import type { SceneControllerLifecycleDiagnostics } from '../../src/test-support/debugBridge';
 import {
   GOLDEN_LESSON,
   SERVICE_LESSON,
@@ -10,6 +11,14 @@ import {
   waitForSceneIdle,
 } from './helpers';
 
+async function sceneControllerLifecycle(page: Page): Promise<SceneControllerLifecycleDiagnostics> {
+  const lifecycle = await page.evaluate(() =>
+    window.__KUBEMOTION_TEST__?.getSceneControllerLifecycle(),
+  );
+  if (!lifecycle) throw new Error('Scene controller lifecycle diagnostics are unavailable.');
+  return lifecycle;
+}
+
 test('20 navigation/replay/locale/selection/reset cycles keep resources bounded', async ({
   page,
 }, testInfo) => {
@@ -18,12 +27,18 @@ test('20 navigation/replay/locale/selection/reset cycles keep resources bounded'
 
   for (let stepIndex = 0; stepIndex < STEP_TITLES.length; stepIndex += 1) {
     await gotoGoldenStep(page, stepIndex);
-    await page.getByRole('button', { name: /Replay/i }).click();
+    await page
+      .locator('.lesson-header')
+      .getByRole('button', { name: /Replay|Restart lesson/i })
+      .click();
     await waitForSceneIdle(page);
   }
   for (let stepIndex = 0; stepIndex < SERVICE_STEP_TITLES.length; stepIndex += 1) {
     await gotoServiceStep(page, stepIndex);
-    await page.getByRole('button', { name: /Replay/i }).click();
+    await page
+      .locator('.lesson-header')
+      .getByRole('button', { name: /Replay|Restart lesson/i })
+      .click();
     await waitForSceneIdle(page);
   }
   const baselineStepIndex = 7;
@@ -40,6 +55,10 @@ test('20 navigation/replay/locale/selection/reset cycles keep resources bounded'
   expect(baseline?.routeHandles).toBeGreaterThan(0);
   expect(baseline?.arrowheads).toBeGreaterThan(0);
   expect(baseline?.routeMarkers).toBeGreaterThan(0);
+  const baselineLifecycle = await sceneControllerLifecycle(page);
+  expect(baselineLifecycle.active).toBe(1);
+  expect(baselineLifecycle.created).toBe(baselineLifecycle.destroyed + baselineLifecycle.active);
+  expect(baselineLifecycle.destroyedWithActiveListeners).toBe(0);
 
   for (let cycle = 0; cycle < 20; cycle += 1) {
     await page.locator('.lesson-language select').selectOption('en');
@@ -64,7 +83,10 @@ test('20 navigation/replay/locale/selection/reset cycles keep resources bounded'
     await page
       .locator('.lesson-language select')
       .selectOption(cycle % 3 === 0 ? 'ja' : cycle % 3 === 1 ? 'zh-CN' : 'en');
-    await page.getByRole('button', { name: /Replay|再生|重播/i }).click();
+    await page
+      .locator('.lesson-header')
+      .getByRole('button', { name: /Replay|Restart lesson|再生|最初から|重播|重新开始/i })
+      .click();
     await page.getByRole('button', { name: /Reset camera|カメラをリセット|重置相机/i }).click();
   }
 
@@ -102,4 +124,19 @@ test('20 navigation/replay/locale/selection/reset cycles keep resources bounded'
   expect.soft(after?.routeMarkers).toBeLessThanOrEqual((baseline?.routeMarkers ?? 0) + 2);
   expect(after?.renderTargets).toBe(baseline?.renderTargets);
   expect(after?.eventListeners).toBe(baseline?.eventListeners);
+
+  const activeLifecycle = await sceneControllerLifecycle(page);
+  expect(activeLifecycle.created).toBeGreaterThan(baselineLifecycle.created);
+  expect(activeLifecycle.active).toBe(1);
+  expect(activeLifecycle.created).toBe(activeLifecycle.destroyed + activeLifecycle.active);
+  expect(activeLifecycle.destroyedWithActiveListeners).toBe(0);
+
+  await page.evaluate(() => {
+    location.hash = '#/about';
+  });
+  await expect(page.locator('main.about-page')).toBeVisible();
+  await expect.poll(async () => (await sceneControllerLifecycle(page)).active).toBe(0);
+  const destroyedLifecycle = await sceneControllerLifecycle(page);
+  expect(destroyedLifecycle.created).toBe(destroyedLifecycle.destroyed);
+  expect(destroyedLifecycle.destroyedWithActiveListeners).toBe(0);
 });

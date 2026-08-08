@@ -13,7 +13,8 @@ function renderHome() {
     <MemoryRouter initialEntries={['/']}>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/learn/container-restart-vs-pod-replacement/0" element={<p>Lesson</p>} />
+        <Route path="/explore" element={<p>Explore</p>} />
+        <Route path="/learn/:lessonId/:stepIndex" element={<p>Lesson</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -22,7 +23,13 @@ function renderHome() {
 describe('HomePage orientation', () => {
   beforeEach(() => {
     localStorage.clear();
-    useAppStore.setState({ locale: 'en', orientationSeen: false });
+    useAppStore.setState({
+      locale: 'en',
+      orientationSeen: false,
+      lessonId: undefined,
+      stepIndex: 0,
+      completedLessonIds: [],
+    });
   });
 
   it('orients a first-time learner before offering one lesson action', () => {
@@ -33,6 +40,10 @@ describe('HomePage orientation', () => {
     expect(screen.getByText('Worker Nodes run Pods.')).toBeVisible();
     expect(screen.getByText('A Pod contains one or more Containers.')).toBeVisible();
     expect(screen.getAllByRole('link', { name: 'Start lesson' })).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Start lesson' })).toHaveAttribute(
+      'href',
+      '/learn/service-routes-to-pods/0',
+    );
     expect(screen.queryByRole('link', { name: /explore/i })).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'View orientation again' }),
@@ -67,6 +78,61 @@ describe('HomePage orientation', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'View orientation again' })).toHaveFocus(),
     );
+  });
+
+  it('continues a valid saved lesson position and safely ignores invalid progress', () => {
+    useAppStore.setState({
+      orientationSeen: true,
+      lessonId: 'container-restart-vs-pod-replacement',
+      stepIndex: 3,
+    });
+    const view = renderHome();
+
+    expect(screen.getByRole('link', { name: 'Continue learning' })).toHaveAttribute(
+      'href',
+      '/learn/container-restart-vs-pod-replacement/3',
+    );
+
+    view.unmount();
+    useAppStore.setState({ lessonId: 'planned-or-missing', stepIndex: 99 });
+    renderHome();
+    expect(screen.getByRole('link', { name: 'Start lesson' })).toHaveAttribute(
+      'href',
+      '/learn/service-routes-to-pods/0',
+    );
+  });
+
+  it('starts the Pod lesson after the Service lesson is complete', () => {
+    useAppStore.setState({
+      orientationSeen: true,
+      lessonId: 'service-routes-to-pods',
+      stepIndex: 5,
+      completedLessonIds: ['service-routes-to-pods'],
+    });
+
+    renderHome();
+
+    expect(screen.getByRole('link', { name: 'Start lesson' })).toHaveAttribute(
+      'href',
+      '/learn/container-restart-vs-pod-replacement/0',
+    );
+  });
+
+  it('changes the Home primary action to Explore after every available lesson is complete', () => {
+    useAppStore.setState({
+      orientationSeen: true,
+      lessonId: 'container-restart-vs-pod-replacement',
+      stepIndex: 9,
+      completedLessonIds: ['service-routes-to-pods', 'container-restart-vs-pod-replacement'],
+    });
+
+    renderHome();
+
+    expect(screen.getByRole('link', { name: 'Explore completed lessons' })).toHaveAttribute(
+      'href',
+      '/explore',
+    );
+    expect(screen.queryByRole('link', { name: 'Continue learning' })).not.toBeInTheDocument();
   });
 
   it('localizes the three orientation concepts', () => {

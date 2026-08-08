@@ -9,7 +9,11 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-export function useDrawerFocus(open: boolean, onClose: () => void): RefObject<HTMLElement | null> {
+export function useDrawerFocus(
+  open: boolean,
+  onClose: () => void,
+  modal: boolean,
+): RefObject<HTMLElement | null> {
   const containerRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
 
@@ -24,37 +28,47 @@ export function useDrawerFocus(open: boolean, onClose: () => void): RefObject<HT
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const focusable = () =>
       Array.from(container.querySelectorAll<HTMLElement>(focusableSelector)).filter(
-        (element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true',
+        (element) =>
+          !element.hidden &&
+          element.tabIndex >= 0 &&
+          element.getAttribute('aria-hidden') !== 'true',
       );
     focusable()[0]?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopPropagation();
         onCloseRef.current();
         return;
       }
-      if (event.key !== 'Tab') return;
+      if (!modal || event.key !== 'Tab') return;
       const items = focusable();
       if (items.length === 0) return;
       const first = items[0];
       const last = items.at(-1);
       if (!first || !last) return;
-      if (event.shiftKey && document.activeElement === first) {
+      if (!container.contains(document.activeElement)) {
         event.preventDefault();
+        event.stopPropagation();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        event.stopPropagation();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
         event.preventDefault();
+        event.stopPropagation();
         first.focus();
       }
     };
 
-    container.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      container.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keydown', onKeyDown);
       previous?.focus();
     };
-  }, [open]);
+  }, [modal, open]);
 
   return containerRef;
 }

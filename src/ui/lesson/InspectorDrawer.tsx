@@ -1,4 +1,5 @@
 import { BookOpen, ExternalLink, ScanSearch, X } from 'lucide-react';
+import type { KeyboardEvent } from 'react';
 import type { Locale } from '../../app/types';
 import type { GlossaryTerm, SourceEntry } from '../../course/types';
 import { lessonUi } from './copy';
@@ -35,12 +36,43 @@ export function InspectorDrawer({
   onClose,
 }: InspectorDrawerProps) {
   const t = lessonUi(locale);
-  const drawerRef = useDrawerFocus(open, onClose);
+  const drawerRef = useDrawerFocus(open, onClose, false);
   const tabs = [
     ['inspector', t.inspector, ScanSearch],
     ['terms', t.terms, BookOpen],
     ['sources', t.sources, ExternalLink],
   ] as const;
+  const enabledTabs = tabs.filter(([id]) => id !== 'inspector' || facts.length > 0);
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, current: DetailSection) => {
+    const currentIndex = enabledTabs.findIndex(([id]) => id === current);
+    if (currentIndex < 0) return;
+    let nextIndex: number;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIndex = (currentIndex + 1) % enabledTabs.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIndex = (currentIndex - 1 + enabledTabs.length) % enabledTabs.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = enabledTabs.length - 1;
+        break;
+      default:
+        return;
+    }
+    const next = enabledTabs[nextIndex];
+    if (!next) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onSectionChange(next[0]);
+    document.getElementById(`details-tab-${next[0]}`)?.focus();
+  };
 
   return (
     <aside
@@ -69,8 +101,10 @@ export function InspectorDrawer({
             role="tab"
             aria-selected={activeSection === id}
             aria-controls={`details-panel-${id}`}
+            tabIndex={activeSection === id ? 0 : -1}
             disabled={id === 'inspector' && facts.length === 0}
             onClick={() => onSectionChange(id)}
+            onKeyDown={(event) => handleTabKeyDown(event, id)}
           >
             <Icon size={15} aria-hidden="true" />
             {label}

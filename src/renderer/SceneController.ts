@@ -57,6 +57,30 @@ export interface SceneControllerOptions {
   readonly safeInsets?: Partial<ViewportInsets>;
 }
 
+export class SceneRendererInitializationError extends Error {
+  public constructor(cause: unknown) {
+    super('KubeMotion could not initialize its WebGL renderer.', { cause });
+    this.name = 'SceneRendererInitializationError';
+  }
+}
+
+const createWebGLRenderer = (): THREE.WebGLRenderer => {
+  const parameters = { antialias: false, alpha: true } as const;
+  const canvas = document.createElement('canvas');
+  // three r185 requires WebGL2 at runtime, while its current type declaration still names the
+  // constructor parameter WebGLRenderingContext.
+  const context = canvas.getContext('webgl2', parameters) as WebGLRenderingContext | null;
+  if (context === null) {
+    throw new SceneRendererInitializationError(
+      new Error('The canvas returned null while creating a WebGL2 context.'),
+    );
+  }
+
+  // Pass the probed context through so Three.js does not request a second context. Any exception
+  // after a non-null context is an unexpected renderer defect and must retain its original type.
+  return new THREE.WebGLRenderer({ ...parameters, canvas, context });
+};
+
 const cameraDirection = (presetId: string): THREE.Vector3 => {
   switch (presetId) {
     case 'logical':
@@ -105,7 +129,7 @@ export class SceneController {
   private readonly scene = new THREE.Scene();
   private readonly lessonCamera = new OrthographicLessonCamera();
   private readonly camera = this.lessonCamera.camera;
-  private readonly renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+  private readonly renderer: THREE.WebGLRenderer;
   private readonly layers = new SceneLayers(this.scene);
   private readonly registry = new SceneRegistry(this.layers.entities, new VisualFactoryRegistry(), {
     allowGeneric: false,
@@ -150,6 +174,10 @@ export class SceneController {
     private readonly host: HTMLElement,
     options: SceneControllerOptions = {},
   ) {
+    // WebGL context creation can fail because of browser policy, a blocked GPU, or an exhausted
+    // context budget. Keep it inside the constructor so SceneViewport can contain that failure and
+    // offer an explicit retry without taking down the surrounding lesson UI.
+    this.renderer = createWebGLRenderer();
     this.safeInsets = options.safeInsets ?? {};
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.domElement.setAttribute('aria-label', 'Interactive Kubernetes 3D scene');
