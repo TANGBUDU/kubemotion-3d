@@ -861,9 +861,9 @@ steps:
           visible: true
           emphasis: focused
       activeRoutes:
-        - id: route-scheduler-bind-worker-c
-          semantic: scheduling
-          label: { en: bind to worker-c, ja: worker-c に bind, zh-CN: 绑定到 worker-c }
+        - id: route-scheduler-record-worker-c
+          semantic: control
+          label: { en: record selected Node, ja: 選択した Node を記録, zh-CN: 记录所选 Node }
           persistAfterAnimation: true
           numbered: true
           hops:
@@ -877,18 +877,34 @@ steps:
               toEntityId: api-object:namespaced:shop:Pod:api-d-new
               toAnchor: api-in
               label: { en: record binding, ja: binding を記録, zh-CN: 记录绑定 }
+        - id: route-scheduler-bind-worker-c
+          semantic: scheduling
+          label:
+            {
+              en: place Pending Pod on worker-c,
+              ja: Pending Pod を worker-c に配置,
+              zh-CN: 将 Pending Pod 放置到 worker-c,
+            }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
             - fromEntityId: api-object:namespaced:shop:Pod:api-d-new
               fromAnchor: placement
               toEntityId: infrastructure:cluster:global:Node:worker-c
               toAnchor: placement
-              label: { en: place, ja: 配置, zh-CN: 放置 }
+              label: { en: place on worker-c, ja: worker-c に配置, zh-CN: 放置到 worker-c }
     transition:
       cues:
+        - type: api-request
+          routeId: route-scheduler-record-worker-c
+          label: { en: record selected Node, ja: 選択した Node を記録, zh-CN: 记录所选 Node }
+          durationMs: 620
         - type: scheduler-assignment
           schedulerId: runtime-component:cluster:global:Scheduler:kube-scheduler
           podId: api-object:namespaced:shop:Pod:api-d-new
           nodeId: infrastructure:cluster:global:Node:worker-c
           routeId: route-scheduler-bind-worker-c
+          delayMs: 260
           durationMs: 760
         - type: layout-transition
           entityIds: [api-object:namespaced:shop:Pod:api-d-new]

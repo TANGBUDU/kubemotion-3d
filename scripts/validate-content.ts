@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { parse } from 'yaml';
 import {
   courseSchema,
+  flowStoriesSchema,
   glossarySchema,
   legacyLessonMarkerSchema,
   lessonV2Schema,
@@ -11,7 +12,8 @@ import {
 } from '../src/content/schemas';
 import { assertRawLessonRouteContract } from '../src/content/rawRouteContract';
 import { courseEngine } from '../src/course/CourseEngine';
-import type { LessonV2 } from '../src/course/types';
+import { flowStoryEngine } from '../src/course/FlowStoryEngine';
+import type { FlowStory, LessonV2, SourceEntry } from '../src/course/types';
 import {
   getContainerData,
   getPodData,
@@ -161,18 +163,38 @@ const expectedAvailableLessonIds = [
   'service-routes-to-pods',
   'dns-and-service-discovery',
   'probes-and-rolling-update',
+  'full-external-request',
+  'hpa',
 ] as const;
 check(
   JSON.stringify(available.map((entry) => entry.id)) === JSON.stringify(expectedAvailableLessonIds),
-  'course.yaml: M8 must publish exactly twelve interactive lessons in foundation-first order',
+  'course.yaml: M9 must publish fourteen interactive lessons while retaining the M8 core prefix',
 );
 check(course.lessons.length === 22, 'course.yaml: the catalog must retain exactly 22 lessons');
 check(
-  course.lessons.length - available.length === 10,
-  'course.yaml: M8 must retain exactly ten explicitly planned lessons',
+  course.lessons.length - available.length === 8,
+  'course.yaml: M9 must retain exactly eight explicitly planned lessons',
 );
 for (const entry of available)
   check(v2Lessons.has(entry.id), `${entry.id}: available lessons must use schemaVersion 2`);
+
+const parsedFlowStories = flowStoriesSchema.parse(
+  yaml('content/courses/kubernetes-foundations/flow-stories.yaml'),
+);
+const flowStories = parsedFlowStories.stories as FlowStory[];
+check(flowStories.length === 8, 'flow-stories.yaml: M9 requires exactly eight flow stories');
+const sourceCatalog = new Map<string, SourceEntry>(
+  Object.entries(sourcesData.sources).map(([id, entry]) => [id, { id, ...entry }]),
+);
+const compiledFlowStories = flowStoryEngine.compileStories(flowStories, {
+  lessons: v2Lessons,
+  scenarios,
+  sources: sourceCatalog,
+});
+check(
+  compiledFlowStories.length === flowStories.length,
+  'flow-stories.yaml: every authored story must compile against its complete lesson history',
+);
 
 const terms = new Set<string>();
 for (const file of readdirSync(resolve(root, 'content/glossary'))
@@ -398,12 +420,26 @@ for (const step of golden.steps) {
     }
   }
   for (const route of step.view.activeRoutes) {
-    if (route.semantic === 'control' || route.semantic === 'scheduling') {
+    if (route.semantic === 'control') {
       check(
         route.hops.some(
           (hop) => hop.fromEntityId === apiServerId || hop.toEntityId === apiServerId,
         ),
         `${step.stepId}/${route.id}: golden control routes must expose API mediation`,
+      );
+    }
+    if (route.semantic === 'scheduling') {
+      check(
+        route.hops.length === 1,
+        `${step.stepId}/${route.id}: scheduling must be one Pending Pod -> selected Node hop`,
+      );
+      const hop = route.hops[0]!;
+      check(
+        step.world.entities[hop.fromEntityId]?.kind === 'Pod' &&
+          step.world.entities[hop.toEntityId]?.kind === 'Node' &&
+          hop.fromEntityId !== apiServerId &&
+          hop.toEntityId !== apiServerId,
+        `${step.stepId}/${route.id}: scheduling must not mix API control with placement`,
       );
     }
   }
@@ -412,6 +448,7 @@ for (const step of golden.steps) {
 
 const contentPaths = [
   'content/sources.yaml',
+  'content/courses/kubernetes-foundations/flow-stories.yaml',
   ...v2ScenarioFiles.map((file) => `${scenarioDirectory}/${file}`),
   ...lessonFiles.map((file) => `${lessonDirectory}/${file}`),
   ...readdirSync(resolve(root, 'content/glossary')).map((file) => `content/glossary/${file}`),

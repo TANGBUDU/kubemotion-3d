@@ -21,7 +21,7 @@
 | 6 — Persistent route engine           | COMPLETE    | `feat: replace free-flying tokens with persistent semantic routes`      | Canonical anchors, persistent wide routes, sparse obstacle planning, 9-case / 36-screenshot browser acceptance      |
 | 7 — Migrate existing authored lessons | COMPLETE    | `feat: migrate the original lessons to the foundation-first system`     | Five schema-v2 lessons, 10-objective / 45-screenshot multilingual browser acceptance                                |
 | 8 — Twelve complete lessons           | COMPLETE    | `feat: expand the interactive foundations curriculum to twelve lessons` | Twelve schema-v2 lessons, 13-objective / 51-screenshot multilingual browser acceptance                              |
-| 9 — Eight flow stories                | NOT STARTED | `feat: deliver readable control and application flow stories`           | —                                                                                                                   |
+| 9 — Eight flow stories                | COMPLETE    | `feat: add verified end-to-end flow stories`                            | Eight compiled stories, two new lessons, focused unit and Playwright coverage                                       |
 | 10 — Final gates and deployment       | NOT STARTED | `test: lock visual teaching and flow acceptance gates`                  | —                                                                                                                   |
 
 ## Milestone 0 checklist
@@ -509,9 +509,15 @@ preserve distinct Overview, Logical, Placement, Control Flow, and Traffic compos
 routes statically traceable; and retain both a useful scene and expanded teaching explanation at
 390×844. The comparison step remains a readable non-WebGL world-history view on desktop and mobile.
 
+## Milestone 9 result
+
+Eight first-class Flow Stories now compile ordered beats from complete lesson history. The catalog
+contains 14 available lessons and 8 honest planned entries. External traffic separates public DNS
+from Browser → Gateway data plane → Service → Ready Pod application traffic, while HPA scale-out
+keeps metric evaluation, desired-count mutation, Pod creation, scheduling, runtime start,
+readiness, EndpointSlice publication, and later traffic as separate causal facts.
+
 ## Next coherent task
 
-Milestone 9 must deliver and acceptance-lock all eight required flow stories, with Manifest →
-Running Pod, Internal Service Request, DNS and Service Discovery, and Container Restart vs Pod
-Replacement treated as P0 before the remaining readiness, rolling-update, external-request, and
-HPA stories.
+Milestone 10 is limited to publishing this branch to the review PR and VPS preview. Merging remains
+an explicit repository-owner decision.

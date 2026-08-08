@@ -53,17 +53,33 @@ function step(id: (typeof EXPECTED_STEPS)[number]): CompiledStep {
 
 const SCHEDULER_STEP_ID = 'scheduler-binds-worker-c';
 const authoredSchedulerStep = lesson.steps.find((candidate) => candidate.id === SCHEDULER_STEP_ID);
-const authoredSchedulerRoute = authoredSchedulerStep?.viewPatch.activeRoutes?.[0];
-if (!authoredSchedulerStep || !authoredSchedulerRoute) {
+const authoredSchedulerRoutes = authoredSchedulerStep?.viewPatch.activeRoutes ?? [];
+if (!authoredSchedulerStep) {
   throw new Error('Golden scheduler teaching route is missing');
 }
+const authoredSchedulerRoute = (() => {
+  const route = authoredSchedulerRoutes.find((candidate) => candidate.semantic === 'scheduling');
+  if (!route) throw new Error('Golden scheduler teaching route is missing');
+  return route;
+})();
 
 function lessonWithSchedulerRoutes(routes: readonly ActiveTeachingRoute[]): LessonV2 {
   return {
     ...lesson,
     steps: lesson.steps.map((candidate) =>
       candidate.id === SCHEDULER_STEP_ID
-        ? { ...candidate, viewPatch: { ...candidate.viewPatch, activeRoutes: routes } }
+        ? {
+            ...candidate,
+            viewPatch: {
+              ...candidate.viewPatch,
+              activeRoutes: [
+                ...authoredSchedulerRoutes.filter(
+                  (route) => route.id !== authoredSchedulerRoute.id,
+                ),
+                ...routes,
+              ],
+            },
+          }
         : candidate,
     ),
   };
@@ -576,6 +592,16 @@ describe('CourseEngine v2 factual timeline', () => {
           expect(route?.hops.flatMap((hop) => [hop.fromEntityId, hop.toEntityId])).not.toContain(
             API_SERVER,
           );
+        } else if (cue.type === 'scheduler-assignment') {
+          expect(route?.hops).toHaveLength(1);
+          expect(route?.hops[0]?.fromEntityId).toBe(cue.podId);
+          expect(route?.hops[0]?.toEntityId).toBe(cue.nodeId);
+          expect(route?.hops.flatMap((hop) => [hop.fromEntityId, hop.toEntityId])).not.toContain(
+            API_SERVER,
+          );
+          expect(route?.hops.flatMap((hop) => [hop.fromEntityId, hop.toEntityId])).not.toContain(
+            cue.schedulerId,
+          );
         } else {
           expect(
             route?.hops.some(
@@ -673,16 +699,17 @@ describe('CourseEngine v2 factual timeline', () => {
   });
 
   it('rejects route endpoint and semantic contradictions', () => {
-    const [firstHop, ...remainingHops] = authoredSchedulerRoute.hops;
+    const [firstHop] = authoredSchedulerRoute.hops;
     if (!firstHop) throw new Error('Scheduler route has no first hop');
-    const secondHop = remainingHops[0];
-    if (!secondHop) throw new Error('Scheduler route has no second hop');
     expect(() =>
       courseEngine.compileLesson(
         lessonWithSchedulerRoutes([
           {
             ...authoredSchedulerRoute,
-            hops: [firstHop, { ...secondHop, fromEntityId: firstHop.fromEntityId }],
+            hops: [
+              { ...firstHop, toEntityId: API_SERVER },
+              { ...firstHop, fromEntityId: firstHop.fromEntityId },
+            ],
           },
         ]),
         scenario,
@@ -699,8 +726,6 @@ describe('CourseEngine v2 factual timeline', () => {
                 ...firstHop,
                 toEntityId: missingEntity,
               },
-              { ...secondHop, fromEntityId: missingEntity },
-              ...remainingHops.slice(1),
             ],
           },
         ]),
@@ -725,7 +750,6 @@ describe('CourseEngine v2 factual timeline', () => {
                 toEntityId: firstHop.fromEntityId,
                 toAnchor: firstHop.fromAnchor,
               },
-              ...remainingHops,
             ],
           },
         ]),

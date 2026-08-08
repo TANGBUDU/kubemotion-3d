@@ -15,21 +15,24 @@ a Pod.
 
 ## Verified release scope
 
-- **12 fully verified lessons:** from `why-kubernetes-exists` through
-  `probes-and-rolling-update`, including cluster structure, Pod/Container composition,
+- **14 fully verified lessons:** from `why-kubernetes-exists` through `hpa`, including cluster
+  structure, Pod/Container composition,
   Namespace/Node separation, Deployment ownership, manifest flow, Pending scheduling,
-  restart-versus-replacement, labels/selectors, Service/EndpointSlice, and DNS
+  restart-versus-replacement, labels/selectors, Service/EndpointSlice, DNS, external Gateway
+  traffic, and HPA scale-out
 - **Manifest order:** `why-kubernetes-exists` → `cluster-overview` → `pod-and-container` →
   `pod-and-placement` → `deployment-replicaset-and-pods` → `manifest-to-running-pod` →
   `pending-and-scheduling` → `container-restart-vs-pod-replacement` →
   `labels-and-selectors` → `service-routes-to-pods` → `dns-and-service-discovery` →
-  `probes-and-rolling-update`
+  `probes-and-rolling-update` → `full-external-request` → `hpa`
 - **Foundation-first sequence:** desired-state motivation → cluster foundation → Pod/Container →
   logical scope and placement → workload ownership → API/scheduling flow → self-healing →
-  selection → Service traffic → DNS → probes and rolling updates
+  selection → Service traffic → DNS → probes and rolling updates → external traffic → scaling
 - **10-step Pod lifecycle:** orientation → healthy baseline → Container exit → in-place restart → intentional Pod deletion → controller replacement → unscheduled Pending → scheduler binding → kubelet start/readiness → snapshot-derived comparison
 - **6-step Service traffic path:** identify objects → stable Service entry → EndpointSlice readiness → Request A to a Ready backend → readiness change → later Request B to another Ready backend
-- **10 planned lessons:** visible as roadmap entries, not represented as complete
+- **8 verified Flow Stories:** four P0 stories and four P1 stories compile ordered lesson history
+  into persistent, evidence-backed causal routes
+- **8 planned lessons:** visible as roadmap entries, not represented as complete
 - **Explore (Beta):** filters a compiled snapshot while keeping one-hop ownership and placement context
 - **Synthetic only:** no cluster credentials, telemetry, backend, or resource mutation
 
@@ -38,7 +41,7 @@ unscheduled tray, Node racks with embedded kubelets and Pod bays, Pods as shells
 Container status slots, and in-place ReplicaSet counters. A runtime restart is evidenced by
 `containerID`, `restartCount`, `state`, and `lastState`; ReplicaSet counters are presented as
 `SPEC / OBSERVED / READY`. The traffic lesson separates the stable Service address, EndpointSlice
-API state, and the selected Ready backend. All twelve lessons use a fixed teaching panel with
+API state, and the selected Ready backend. All fourteen lessons use a fixed teaching panel with
 evidence and takeaways, collision-aware labels, explicit replay, and meaningful reduced-motion
 fallbacks; route-bearing causal and traffic steps retain persistent wide teaching routes.
 
@@ -97,9 +100,9 @@ pnpm visual:capture
 ```
 
 The suite covers typed patch transactions, deterministic diffs, snapshot immutability, cue
-contracts, specialized visuals, stable and traffic-specific layouts, both factual timelines,
+contracts, specialized visuals, stable and traffic-specific layouts, eight compiled Flow Stories,
 desktop/mobile navigation and language persistence, camera/route/label gates, required visual
-captures at 1440×900, 1280×720, and 390×844, and 20-cycle renderer memory stress across all twelve
+captures at 1440×900, 1280×720, and 390×844, and 20-cycle renderer memory stress across all fourteen
 verified lessons. Human screenshot acceptance remains mandatory; see the
 [review checklist](docs/review/VISUAL_ACCEPTANCE_CHECKLIST.md) and
 [before/after evidence](docs/review/BEFORE_AFTER.md).

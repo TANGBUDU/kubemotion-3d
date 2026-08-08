@@ -49,9 +49,7 @@ function collectTextFiles(relativePath: string): string[] {
 }
 
 const forbiddenPatterns: readonly { readonly pattern: RegExp; readonly label: string }[] = [
-  { pattern: /currentReplicas/, label: 'nonexistent ReplicaSet currentReplicas field' },
   { pattern: /ReplicaSet Current/i, label: 'ReplicaSet Current UI label' },
-  { pattern: /data\.currentReplicas/, label: 'ReplicaSet current counter path' },
   { pattern: /counters\.current/, label: 'ReplicaSet current counter key' },
   { pattern: /instanceGeneration/, label: 'synthetic Container generation field' },
   { pattern: /instance generation/i, label: 'obsolete Container generation wording' },
@@ -130,6 +128,8 @@ const requiredReadmeFacts = [
   'service-routes-to-pods',
   'dns-and-service-discovery',
   'probes-and-rolling-update',
+  'full-external-request',
+  'hpa',
   'containerID',
   'restartCount',
   'lastState',
@@ -158,27 +158,28 @@ for (const [locale, source] of Object.entries(publicReadmes)) {
   for (const command of requiredValidationCommands) {
     check(source.includes(command), `README ${locale}: missing validation command ${command}`);
   }
+  check(/Flow Stor(?:y|ies)/.test(source), `README ${locale}: missing current Flow Story scope`);
 }
 check(
-  publicReadmes.en.includes('12 fully verified lessons') &&
+  publicReadmes.en.includes('14 fully verified lessons') &&
     publicReadmes.en.includes('10-step Pod lifecycle') &&
     publicReadmes.en.includes('6-step Service traffic path') &&
-    publicReadmes.en.includes('10 planned lessons'),
-  'English README: release scope must state 12 verified, 10-step Pod, 6-step Service, and 10 planned',
+    publicReadmes.en.includes('8 planned lessons'),
+  'English README: release scope must state 14 verified, 10-step Pod, 6-step Service, and 8 planned',
 );
 check(
-  publicReadmes.ja.includes('完全に検証済みのレッスンは12本') &&
+  publicReadmes.ja.includes('完全に検証済みのレッスンは14本') &&
     publicReadmes.ja.includes('Pod ライフサイクルは10ステップ') &&
     publicReadmes.ja.includes('Service トラフィックは6ステップ') &&
-    /計画中(?:のレッスン)?は10本/.test(publicReadmes.ja),
-  'Japanese README: release scope must state 12 verified, 10-step Pod, 6-step Service, and 10 planned',
+    /計画中(?:のレッスン)?は8本/.test(publicReadmes.ja),
+  'Japanese README: release scope must state 14 verified, 10-step Pod, 6-step Service, and 8 planned',
 );
 check(
-  publicReadmes.zh.includes('12 节完整验证课程') &&
+  publicReadmes.zh.includes('14 节完整验证课程') &&
     publicReadmes.zh.includes('10 步 Pod 生命周期') &&
     publicReadmes.zh.includes('6 步 Service 流量路径') &&
-    publicReadmes.zh.includes('10 节规划中课程'),
-  'Chinese README: release scope must state 12 verified, 10-step Pod, 6-step Service, and 10 planned',
+    publicReadmes.zh.includes('8 节规划中课程'),
+  'Chinese README: release scope must state 14 verified, 10-step Pod, 6-step Service, and 8 planned',
 );
 check(
   !/(?:one verified lesson|1 fully verified lesson)/i.test(publicReadmes.en),
@@ -266,7 +267,7 @@ check(checkedLocalLinks >= 18, 'public documentation: expected at least 18 local
 const finalPrDescription = read('docs/review/PR_FINAL_DESCRIPTION.md');
 check(!/PENDING_/.test(finalPrDescription), 'final PR description: validation placeholders remain');
 for (const requiredClaim of [
-  'twelve verified foundation-first lessons',
+  'fourteen verified foundation-first lessons',
   'distinguish container packaging from Kubernetes orchestration',
   'manifest-driven `/learn` continuation',
   'normalized lesson deep links',
@@ -277,12 +278,12 @@ for (const requiredClaim of [
   'visible saving/saved/failed states',
   'local WebGL fallback and Retry',
   'SPEC / OBSERVED / READY',
-  '54 entities, 64 relations',
+  '81 entities, 98 relations',
   '`containerID`',
   '`restartCount`',
   '`lastState`',
-  `${scannedFiles.length} current-public text files`,
-  '45 files, 326 tests',
+  'current-public text scan',
+  '48 files, 345 tests',
   '`pnpm visual:m5`',
   '`pnpm visual:m6`',
   '`pnpm visual:m7`',
@@ -290,12 +291,12 @@ for (const requiredClaim of [
   '9 cases / 36 screenshots',
   '10 objectives / 45 screenshots',
   '13 objectives / 51 screenshots',
-  '136 passed, 53 skipped, 0 failed',
+  '`pnpm test:e2e` — PASS',
   'forced-lock contention tests reconcile both writer tabs',
   'pending completion → later Reset',
   'injected `localStorage.setItem` failure',
   'Home preview / CTA coherence',
-  '20-cycle twelve-lesson renderer resource pressure gate',
+  '20-cycle fourteen-lesson renderer resource pressure gate',
   '38 full-page + 5 focused = 43 screenshots',
 ]) {
   check(
@@ -435,6 +436,19 @@ function compileLesson(id: string): CompiledLesson {
   const scenario = scenarios.get(lesson.scenarioId);
   check(scenario !== undefined, `accuracy: missing scenario ${lesson.scenarioId}`);
   return courseEngine.compileLesson(lesson, scenario);
+}
+
+for (const lessonId of lessons.keys()) {
+  const compiled = compileLesson(lessonId);
+  for (const compiledStep of compiled.steps) {
+    for (const candidate of Object.values(compiledStep.world.entities)) {
+      if (candidate.kind !== 'ReplicaSet') continue;
+      check(
+        !Object.hasOwn(candidate.data, 'currentReplicas'),
+        `${lessonId}/${compiledStep.stepId}: ReplicaSet must use specReplicas/statusReplicas, not currentReplicas`,
+      );
+    }
+  }
 }
 
 function step(compiled: CompiledLesson, id: string): CompiledStep {

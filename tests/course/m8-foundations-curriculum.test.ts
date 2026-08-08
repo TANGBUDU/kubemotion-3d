@@ -31,6 +31,8 @@ const AVAILABLE_IDS = [
   'service-routes-to-pods',
   'dns-and-service-discovery',
   'probes-and-rolling-update',
+  'full-external-request',
+  'hpa',
 ] as const;
 
 const AVAILABLE_CHAPTER_IDS = [
@@ -46,18 +48,18 @@ const AVAILABLE_CHAPTER_IDS = [
   'networking-resilience',
   'networking-resilience',
   'resources-scaling',
+  'external-traffic',
+  'resources-scaling',
 ] as const;
 
 const PLANNED_IDS = [
   'pod-network-and-cni',
   'service-types',
   'ingress-and-gateway',
-  'full-external-request',
   'configmap-and-secret',
   'pvc-pv-storageclass',
   'statefulset',
   'requests-and-limits',
-  'hpa',
   'final-503-challenge',
 ] as const;
 
@@ -206,8 +208,8 @@ function assertWorldDataAndSources(world: WorldSnapshot, context: string): void 
   }
 }
 
-describe('M8 twelve-lesson foundations curriculum', () => {
-  it('publishes exactly twelve available and ten planned lessons in one prerequisite chain', () => {
+describe('M8 foundations curriculum with M9 flow-story expansion', () => {
+  it('retains the twelve-lesson core and publishes two additional flow-story lessons', () => {
     const availableEntries = course.lessons.filter((entry) => entry.status === 'available');
     const available = availableEntries.map((entry) => entry.id);
     const planned = course.lessons
@@ -231,7 +233,8 @@ describe('M8 twelve-lesson foundations curriculum', () => {
       foundations: 4,
       'workloads-self-healing': 4,
       'networking-resilience': 3,
-      'resources-scaling': 1,
+      'resources-scaling': 2,
+      'external-traffic': 1,
     });
 
     for (const entry of availableEntries) {

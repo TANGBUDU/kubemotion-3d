@@ -1,0 +1,374 @@
+schemaVersion: 1
+stories:
+  - schemaVersion: 1
+    id: manifest-to-running-pod
+    priority: P0
+    lessonId: manifest-to-running-pod
+    scenarioId: container-restart-golden
+    title:
+      en: Manifest to running Pod
+      ja: マニフェストから実行中の Pod まで
+      zh-CN: 从清单到运行中的 Pod
+    summary:
+      en: Follow desired state through the API, reconciliation, scheduling, Node observation, and runtime startup.
+      ja: 期待状態が API、調整、スケジューリング、Node の監視、ランタイム起動を通る流れを追います。
+      zh-CN: 跟随期望状态依次经过 API、协调、调度、Node 观察和运行时启动。
+    outcome:
+      en: Explain why object creation, scheduling, and Container startup are distinct API-mediated events.
+      ja: オブジェクト作成、スケジューリング、Container 起動が API を介した別々の事象である理由を説明できます。
+      zh-CN: 解释对象创建、调度和容器启动为何是由 API 串联的不同事件。
+    sourceIds: [k8s-objects, k8s-api, k8s-components, k8s-deployments, k8s-pods, k8s-nodes, k8s-cri]
+    verifiedAt: '2026-08-08'
+    beats:
+      - id: submit-manifest
+        stepId: submit-deployment-manifest
+        routeIds: [route-apply-manifest]
+        selectedRouteId: route-apply-manifest
+      - id: persist-state
+        stepId: persist-api-state
+        routeIds: [route-api-storage]
+        selectedRouteId: route-api-storage
+      - id: reconcile-pod
+        stepId: controller-creates-pending-pod
+        routeIds: [route-controller-create-pod]
+        selectedRouteId: route-controller-create-pod
+      - id: pending-before-scheduling
+        stepId: pending-before-scheduling
+        routeIds: []
+      - id: record-binding
+        stepId: scheduler-records-worker-c
+        routeIds: [route-scheduler-bind-manifest-pod]
+        selectedRouteId: route-scheduler-bind-manifest-pod
+      - id: observe-assignment
+        stepId: kubelet-observes-assignment
+        routeIds: [route-kubelet-observe-assignment]
+        selectedRouteId: route-kubelet-observe-assignment
+      - id: start-container
+        stepId: runtime-starts-container
+        routeIds: [route-worker-c-container-start]
+        selectedRouteId: route-worker-c-container-start
+      - id: become-ready
+        stepId: pod-becomes-ready
+        routeIds: []
+
+  - schemaVersion: 1
+    id: internal-service-request
+    priority: P0
+    lessonId: service-routes-to-pods
+    scenarioId: service-routes-to-pods
+    title:
+      en: Internal Service request
+      ja: クラスタ内部の Service リクエスト
+      zh-CN: 集群内部 Service 请求
+    summary:
+      en: Trace a client request through one stable Service entry to the ready backend selected from EndpointSlice evidence.
+      ja: クライアント要求が安定した Service 入口を通り、EndpointSlice の根拠から選ばれた Ready バックエンドへ届く流れを追います。
+      zh-CN: 跟踪客户端请求通过稳定的 Service 入口，到达 EndpointSlice 证据所选的 Ready 后端。
+    outcome:
+      en: Distinguish the persistent application route from selector and EndpointSlice configuration evidence.
+      ja: 永続的なアプリケーション経路と、selector／EndpointSlice の構成根拠を区別できます。
+      zh-CN: 区分持久应用流量路线与 selector、EndpointSlice 配置证据。
+    sourceIds: [k8s-services, k8s-endpoint-slices, k8s-endpoint-slice-api, k8s-networking-overview]
+    verifiedAt: '2026-08-08'
+    beats:
+      - id: identify-objects
+        stepId: identify-traffic-objects
+        routeIds: []
+      - id: stable-entry
+        stepId: stable-service-entry
+        routeIds: []
+      - id: inspect-backends
+        stepId: endpoint-slice-backends
+        routeIds: []
+      - id: request-ready-backend
+        stepId: request-ready-backend
+        routeIds: [client-service-api-a]
+        selectedRouteId: client-service-api-a
+
+  - schemaVersion: 1
+    id: dns-and-service-discovery
+    priority: P0
+    lessonId: dns-and-service-discovery
+    scenarioId: internal-request-and-dns
+    title:
+      en: DNS and Service discovery
+      ja: DNS と Service ディスカバリ
+      zh-CN: DNS 与 Service 发现
+    summary:
+      en: Resolve the Service name through CoreDNS, then follow a separate application request to a ready backend.
+      ja: CoreDNS で Service 名を解決し、その後の別個のアプリケーション要求を Ready バックエンドまで追います。
+      zh-CN: 先通过 CoreDNS 解析 Service 名称，再跟踪独立的应用请求到 Ready 后端。
+    outcome:
+      en: Explain DNS resolution and application traffic as two routes with different semantics and visual styles.
+      ja: DNS 解決とアプリケーション通信を、意味と表示形式が異なる二つの経路として説明できます。
+      zh-CN: 将 DNS 解析和应用流量解释为语义与视觉样式不同的两条路线。
+    sourceIds: [k8s-dns-services-pods, k8s-services, k8s-endpoint-slices, k8s-networking-overview]
+    verifiedAt: '2026-08-08'
+    beats:
+      - id: service-dns-identity
+        stepId: service-dns-identity
+        routeIds: []
+      - id: dns-query-and-response
+        stepId: dns-query-and-response
+        routeIds: [dns-client-kube-dns-coredns]
+        selectedRouteId: dns-client-kube-dns-coredns
+      - id: dns-answer
+        stepId: dns-answer-is-service-cluster-ip
+        routeIds: []
+      - id: endpoint-selection
+        stepId: endpoint-slice-selection-evidence
+        routeIds: []
+      - id: application-request
+        stepId: application-request-after-dns
+        routeIds: [application-client-api-service-api-a]
+        selectedRouteId: application-client-api-service-api-a
+      - id: phase-summary
+        stepId: dns-before-application-summary
+        routeIds: [application-summary-client-service-api-a]
+        selectedRouteId: application-summary-client-service-api-a
+
+  - schemaVersion: 1
+    id: container-restart-vs-pod-replacement
+    priority: P0
+    lessonId: container-restart-vs-pod-replacement
+    scenarioId: container-restart-golden
+    title:
+      en: Container restart versus Pod replacement
+      ja: Container 再起動と Pod 置換
+      zh-CN: 容器重启与 Pod 替换
+    summary:
+      en: Compare kubelet's local same-Pod restart with an API-mediated Pod deletion and replacement sequence.
+      ja: kubelet による同一 Pod 内のローカル再起動と、API を介した Pod の削除・置換を比較します。
+      zh-CN: 对比 kubelet 在同一 Pod 内的本地重启，与经 API 完成的 Pod 删除和替换流程。
+    outcome:
+      en: Use UID, Node assignment, Container ID, and restart count to prove that a Container crash does not replace its Pod.
+      ja: UID、Node 割り当て、Container ID、再起動回数を使い、Container 障害が Pod 置換ではないことを証明できます。
+      zh-CN: 使用 UID、Node 分配、容器 ID 和重启次数证明容器崩溃不会替换 Pod。
+    sourceIds:
+      [
+        k8s-pods,
+        k8s-pod-lifecycle,
+        k8s-container-status-api,
+        k8s-replicasets,
+        k8s-components,
+        k8s-api,
+      ]
+    verifiedAt: '2026-08-08'
+    beats:
+      - id: orient-scene
+        stepId: scene-orientation
+        routeIds: []
+      - id: healthy-baseline
+        stepId: healthy-baseline
+        routeIds: []
+      - id: container-exits
+        stepId: container-exits
+        routeIds: []
+      - id: local-container-restart
+        stepId: container-restarted
+        routeIds: [route-kubelet-a-restart]
+        selectedRouteId: route-kubelet-a-restart
+      - id: delete-pod
+        stepId: kubectl-delete-pod
+        routeIds: [route-kubectl-delete]
+        selectedRouteId: route-kubectl-delete
+      - id: create-replacement
+        stepId: controller-creates-replacement
+        routeIds: [route-controller-create]
+        selectedRouteId: route-controller-create
+      - id: replacement-pending
+        stepId: replacement-pending
+        routeIds: []
+      - id: schedule-replacement
+        stepId: scheduler-binds-worker-c
+        routeIds: [route-scheduler-bind-worker-c]
+        selectedRouteId: route-scheduler-bind-worker-c
+      - id: start-replacement
+        stepId: kubelet-starts-container
+        routeIds: [route-kubelet-c-start]
+        selectedRouteId: route-kubelet-c-start
+      - id: compare-identities
+        stepId: compare-identities
+        routeIds: []
+
+  - schemaVersion: 1
+    id: readiness-failure-and-traffic-shift
+    priority: P1
+    lessonId: service-routes-to-pods
+    scenarioId: service-routes-to-pods
+    title:
+      en: Readiness failure and traffic shift
+      ja: Readiness 失敗とトラフィック移行
+      zh-CN: 就绪失败与流量迁移
+    summary:
+      en: Keep the Service stable while one running Pod becomes ineligible and the next request selects another ready endpoint.
+      ja: Service を安定させたまま、実行中 Pod が対象外となり、次の要求が別の Ready endpoint を選ぶ流れを追います。
+      zh-CN: 在 Service 保持稳定时，观察一个运行中 Pod 失去资格，下一次请求转向另一个 Ready Endpoint。
+    outcome:
+      en: Explain why readiness changes endpoint eligibility without changing the Service address or terminating the Pod.
+      ja: Readiness が Service アドレスや Pod の実行状態を変えずに endpoint の適格性だけを変える理由を説明できます。
+      zh-CN: 解释 readiness 为何只改变 Endpoint 流量资格，而不改变 Service 地址或终止 Pod。
+    sourceIds: [k8s-probes, k8s-services, k8s-endpoint-slices, k8s-pod-conditions]
+    verifiedAt: '2026-08-08'
+    beats:
+      - id: initial-request
+        stepId: request-ready-backend
+        routeIds: [client-service-api-a]
+        selectedRouteId: client-service-api-a
+      - id: readiness-fails
+        stepId: endpoint-becomes-not-ready
+        routeIds: [client-service-api-c]
+        selectedRouteId: client-service-api-c
+      - id: shifted-request
+        stepId: later-request-ready-backend
+        routeIds: [client-service-api-c]
+        selectedRouteId: client-service-api-c
+
+  - schemaVersion: 1
+    id: rolling-update-traffic-shift
+    priority: P1
+    lessonId: probes-and-rolling-update
+    scenarioId: probes-and-rolling-update
+    title:
+      en: Rolling update with traffic shift
+      ja: トラフィック移行を伴うローリング更新
+      zh-CN: 带流量迁移的滚动更新
+    summary:
+      en: Follow a new ReplicaSet and Pod from startup gating to readiness, endpoint membership, traffic, and old-replica removal.
+      ja: 新しい ReplicaSet と Pod を、起動ゲートから Readiness、endpoint 参加、通信、旧 replica の削除まで追います。
+      zh-CN: 跟踪新 ReplicaSet 和 Pod 从启动门控、就绪、加入 Endpoint、承接流量到旧副本移除。
+    outcome:
+      en: Explain why a rolling update waits for a new ready backend before removing the old replica.
+      ja: ローリング更新が新しい Ready バックエンドを待ってから旧 replica を削除する理由を説明できます。
+      zh-CN: 解释滚动更新为何等待新后端 Ready 后才移除旧副本。
+    sourceIds: [k8s-deployments, k8s-probes, k8s-services, k8s-endpoint-slices, k8s-pods]
+    verifiedAt: '2026-08-08'
+    beats:
+      - id: new-replicaset
+        stepId: new-replicaset-starts
+        routeIds: []
+      - id: startup-passes
+        stepId: startup-probe-passes
+        routeIds: []
+      - id: readiness-gates-traffic
+        stepId: readiness-keeps-v2-out
+        routeIds: []
+      - id: readiness-adds-endpoint
+        stepId: readiness-adds-v2-endpoint
+        routeIds: [ready-v2-request]
+        selectedRouteId: ready-v2-request
+      - id: old-replicaset-scales-down
+        stepId: old-replicaset-scales-down
+        routeIds: [ready-v2-request]
+        selectedRouteId: ready-v2-request
+
+  - schemaVersion: 1
+    id: external-browser-request
+    priority: P1
+    lessonId: full-external-request
+    scenarioId: external-browser-request
+    title:
+      en: External browser request
+      ja: 外部ブラウザからのリクエスト
+      zh-CN: 外部浏览器请求
+    summary:
+      en: Separate public DNS from the Browser-to-Gateway-to-Service data path while keeping Gateway API configuration beside the route.
+      ja: Public DNS と Browser→Gateway→Service のデータ経路を分け、Gateway API 構成は経路の横に根拠として表示します。
+      zh-CN: 区分公共 DNS 与 Browser→Gateway→Service 数据路径，并将 Gateway API 配置作为路线旁证据展示。
+    outcome:
+      en: Trace the physical request and response without treating HTTPRoute, Gateway, or EndpointSlice API objects as packet hops.
+      ja: HTTPRoute、Gateway、EndpointSlice の API オブジェクトを packet hop とせず、物理的な要求・応答経路を追跡できます。
+      zh-CN: 跟踪真实请求与响应，同时不把 HTTPRoute、Gateway 或 EndpointSlice API 对象画成数据包跳点。
+    sourceIds:
+      [
+        k8s-dns-services-pods,
+        k8s-services,
+        k8s-endpoint-slices,
+        gateway-api-kubernetes,
+        gateway-api-overview,
+      ]
+    verifiedAt: '2026-08-08'
+    beats:
+      - id: open-public-name
+        stepId: browser-opens-public-name
+        routeIds: []
+      - id: resolve-public-name
+        stepId: public-dns-query-and-response
+        routeIds: [external-browser-public-dns]
+        selectedRouteId: external-browser-public-dns
+      - id: configure-entry
+        stepId: gateway-and-httproute-configure-entry
+        routeIds: []
+      - id: select-ready-endpoint
+        stepId: ready-endpoint-is-selected
+        routeIds: []
+      - id: send-request
+        stepId: browser-request-reaches-selected-pod
+        routeIds: [external-browser-to-web-a]
+        selectedRouteId: external-browser-to-web-a
+      - id: return-response
+        stepId: application-response-returns
+        routeIds: [external-browser-to-web-a]
+        selectedRouteId: external-browser-to-web-a
+
+  - schemaVersion: 1
+    id: hpa-scale-out
+    priority: P1
+    lessonId: hpa
+    scenarioId: hpa-scale-out
+    title:
+      en: HPA scale-out
+      ja: HPA のスケールアウト
+      zh-CN: HPA 横向扩容
+    summary:
+      en: Follow a rising metric through desired-replica change, Pod creation, scheduling, runtime startup, readiness, and expanded traffic capacity.
+      ja: メトリクス上昇から、期待 replica 数の変更、Pod 作成、配置、起動、Readiness、通信容量の拡大まで追います。
+      zh-CN: 跟踪指标升高后，期望副本数变化、Pod 创建、调度、运行时启动、就绪和流量容量扩展。
+    outcome:
+      en: Explain that HPA changes desired replicas while controllers, Scheduler, kubelet, and runtime perform the actual scale-out.
+      ja: HPA は期待 replica 数を変え、実際の拡張は controller、Scheduler、kubelet、runtime が担うと説明できます。
+      zh-CN: 解释 HPA 只改变期望副本数，实际扩容由控制器、Scheduler、kubelet 和运行时完成。
+    sourceIds:
+      [
+        k8s-hpa,
+        k8s-resources,
+        k8s-deployments,
+        k8s-replicasets,
+        k8s-components,
+        k8s-services,
+        k8s-endpoint-slices,
+      ]
+    verifiedAt: '2026-08-08'
+    beats:
+      - id: metric-rises
+        stepId: metric-rises
+        routeIds: [route-metrics-to-hpa]
+        selectedRouteId: route-metrics-to-hpa
+      - id: desired-replicas-rise
+        stepId: hpa-raises-desired-replicas
+        routeIds: [route-hpa-api-scale-target]
+        selectedRouteId: route-hpa-api-scale-target
+      - id: create-pending-pod
+        stepId: replicaset-creates-pending-pod
+        routeIds: [route-controller-api-create-pod]
+        selectedRouteId: route-controller-api-create-pod
+      - id: bind-pod
+        stepId: scheduler-binds-pod
+        routeIds: [route-hpa-scheduler-control, route-hpa-scheduling-decision]
+        selectedRouteId: route-hpa-scheduling-decision
+      - id: start-container
+        stepId: kubelet-starts-container
+        routeIds: [route-api-kubelet-watch, route-kubelet-runtime-start]
+        selectedRouteId: route-kubelet-runtime-start
+      - id: pod-ready
+        stepId: pod-becomes-ready
+        routeIds: [route-kubelet-api-ready]
+        selectedRouteId: route-kubelet-api-ready
+      - id: add-backend
+        stepId: endpointslice-adds-backend
+        routeIds: [route-controller-api-endpoints]
+        selectedRouteId: route-controller-api-endpoints
+      - id: expand-traffic
+        stepId: traffic-fan-out-expands
+        routeIds: [route-client-service-api-c]
+        selectedRouteId: route-client-service-api-c

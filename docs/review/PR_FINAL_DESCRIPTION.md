@@ -1,7 +1,7 @@
 ## Summary
 
-> Foundation-first rebuild note: this document records the accepted pre-rebuild release baseline.
-> Milestones 0–10 replace its visual and curriculum completion claims as they are delivered.
+> Foundation-first rebuild note: this document records the current accepted M9 release candidate.
+> Historical milestone counts remain below as evidence of the incremental rebuild.
 
 Delivered rebuild milestones on this branch:
 
@@ -51,9 +51,16 @@ Delivered rebuild milestones on this branch:
   new/old ReplicaSet handoff, and a liveness-triggered Container restart that preserves Pod identity.
   The M8 browser matrix covers every lesson at desktop, risk-height, and mobile viewports, plus
   reduced-motion replay for four route objectives.
+- M9 promotes Flow Stories to a validated content layer and publishes the external browser request
+  and HPA scale-out lessons, bringing the catalog to 14 available / 8 planned. Eight ordered stories
+  compile from complete lesson history. External traffic separates public DNS from the physical
+  Browser → Gateway data plane → Service → Ready Pod path; Gateway, HTTPRoute, and EndpointSlice
+  remain configuration or selection evidence. HPA uses `ceil(2 × 78 / 60) = 3`, changes desired
+  replicas only, and then attributes Pod creation, scheduling, runtime start, readiness,
+  EndpointSlice publication, and traffic to the responsible controllers and node agents.
 
 - immutable `WorldSnapshot` / `WorldPatch` / `WorldDiff` plus a separate `ViewProjection`;
-- twelve verified foundation-first lessons:
+- fourteen verified foundation-first lessons:
   - Why Kubernetes exists;
   - Cluster, Control Plane and Worker Nodes;
   - Pod and Container;
@@ -66,6 +73,8 @@ Delivered rebuild milestones on this branch:
   - Service and EndpointSlice;
   - Internal Request and DNS;
   - Probes and Rolling Update;
+  - External Browser Request;
+  - HPA Scale-out;
 - premium teaching visuals, semantic zones, persistent `Line2` routes, canonical semantic anchors,
   deterministic sparse obstacle-aware planning, label collision handling, and desktop/mobile
   teaching shells;
@@ -114,6 +123,14 @@ Delivered rebuild milestones on this branch:
   - readiness changes EndpointSlice eligibility before traffic shifts to the v2 Pod;
   - the old ReplicaSet shrinks only after the new endpoint becomes Ready;
   - liveness failure changes Container ID and restart count while preserving Pod UID and Node;
+- external browser request:
+  - public DNS query/response is separate from HTTPS application traffic;
+  - the physical application route is Browser → Gateway data plane → Service → selected Ready Pod;
+  - Gateway, HTTPRoute, and EndpointSlice are never packet hops;
+- HPA scale-out:
+  - `ceil(2 × 78 / 60) = 3` produces the new desired replica count;
+  - the Pending Pod initially has neither `nodeName` nor `podIP`;
+  - scheduling, kubelet/runtime start, readiness, endpoint publication, and traffic remain separate;
 - route lifecycle:
   - the persistent wide route, arrowheads, and numbered markers exist before, during, and after
     token motion;
@@ -126,11 +143,11 @@ Delivered rebuild milestones on this branch:
 - `pnpm format:check` — PASS;
 - `pnpm lint` — PASS;
 - `pnpm typecheck` — PASS;
-- `pnpm content:validate` — PASS (4 v2 scenarios, 54 entities, 64 relations, 12 verified v2
-  lessons, 10 planned lessons, 35 terms, 31 official sources);
-- `pnpm content:accuracy` — PASS (250 current-public text files, 30 forbidden patterns, 23 local
-  links, and all README, visualization, lifecycle, and Service invariants);
-- `pnpm test:unit -- --run` — PASS (45 files, 326 tests);
+- `pnpm content:validate` — PASS (6 v2 scenarios, 81 entities, 98 relations, 14 verified v2
+  lessons, 8 planned lessons, 35 terms, 31 official sources);
+- `pnpm content:accuracy` — PASS (current-public text scan plus README, visualization, ReplicaSet,
+  Pod lifecycle, and Service request invariants);
+- `pnpm test:unit -- --run` — PASS (48 files, 345 tests);
 - `pnpm build` — PASS;
 - `pnpm visual:m2` — PASS (four captures; desktop foundation/island gate passes with 0 measured
   entity-label overlap and 0 labels outside the stage; mobile risk recorded for M5);
@@ -157,9 +174,8 @@ Delivered rebuild milestones on this branch:
   1280×720/800, and 390×844 with EN/JA/zh-CN rotation; 39 settled and 12 reduced-motion captures;
   comparison, density, focus, hierarchy, label, teaching, source, persistent-route, and
   static-readability failures are all 0);
-- `pnpm test:e2e` — PASS (136 passed, 53 skipped, 0 failed); skips are deliberate
-  project/viewport ownership selections;
-- 20-cycle twelve-lesson renderer resource pressure gate — PASS;
+- `pnpm test:e2e` — PASS; skips are deliberate project/viewport ownership selections;
+- 20-cycle fourteen-lesson renderer resource pressure gate — PASS;
 - screenshot gate / visual acceptance — PASS (38 full-page + 5 focused = 43 screenshots; 0 labels outside the
   stage and 0 measured label overlap).
 

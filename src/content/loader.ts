@@ -1,9 +1,12 @@
 import { parse } from 'yaml';
+import flowStoriesRaw from '../../content/courses/kubernetes-foundations/flow-stories.yaml?raw';
 import clusterOverviewLessonRaw from '../../content/courses/kubernetes-foundations/lessons/cluster-overview.yaml?raw';
 import courseRaw from '../../content/courses/kubernetes-foundations/course.yaml?raw';
 import goldenLessonRaw from '../../content/courses/kubernetes-foundations/lessons/container-restart-vs-pod-replacement.yaml?raw';
 import deploymentLessonRaw from '../../content/courses/kubernetes-foundations/lessons/deployment-replicaset-and-pods.yaml?raw';
 import dnsLessonRaw from '../../content/courses/kubernetes-foundations/lessons/dns-and-service-discovery.yaml?raw';
+import externalRequestLessonRaw from '../../content/courses/kubernetes-foundations/lessons/full-external-request.yaml?raw';
+import hpaLessonRaw from '../../content/courses/kubernetes-foundations/lessons/hpa.yaml?raw';
 import labelsLessonRaw from '../../content/courses/kubernetes-foundations/lessons/labels-and-selectors.yaml?raw';
 import manifestLessonRaw from '../../content/courses/kubernetes-foundations/lessons/manifest-to-running-pod.yaml?raw';
 import pendingLessonRaw from '../../content/courses/kubernetes-foundations/lessons/pending-and-scheduling.yaml?raw';
@@ -15,16 +18,27 @@ import whyLessonRaw from '../../content/courses/kubernetes-foundations/lessons/w
 import foundationsRaw from '../../content/glossary/foundations.yaml?raw';
 import lifecycleRaw from '../../content/glossary/lifecycle.yaml?raw';
 import networkingRaw from '../../content/glossary/networking.yaml?raw';
+import externalRequestScenarioRaw from '../../content/scenarios/external-browser-request.yaml?raw';
 import goldenScenarioRaw from '../../content/scenarios/container-restart-golden.yaml?raw';
 import dnsScenarioRaw from '../../content/scenarios/internal-request-and-dns.yaml?raw';
+import hpaScenarioRaw from '../../content/scenarios/hpa-scale-out.yaml?raw';
 import probesRolloutScenarioRaw from '../../content/scenarios/probes-and-rolling-update.yaml?raw';
 import serviceScenarioRaw from '../../content/scenarios/service-routes-to-pods.yaml?raw';
 import sourcesRaw from '../../content/sources.yaml?raw';
-import type { CourseManifest, GlossaryTerm, LessonV2, SourceEntry } from '../course/types';
+import { flowStoryEngine } from '../course/FlowStoryEngine';
+import type {
+  CompiledFlowStory,
+  CourseManifest,
+  FlowStory,
+  GlossaryTerm,
+  LessonV2,
+  SourceEntry,
+} from '../course/types';
 import { validateWorldSnapshot } from '../world/validation';
 import type { WorldSnapshot } from '../world/types';
 import {
   courseSchema,
+  flowStoriesSchema,
   glossarySchema,
   lessonV2Schema,
   scenarioV2AuthorSchema,
@@ -59,6 +73,8 @@ export const scenarios: readonly WorldSnapshot[] = [
   authoringScenarioToWorld(serviceScenarioRaw),
   authoringScenarioToWorld(dnsScenarioRaw),
   authoringScenarioToWorld(probesRolloutScenarioRaw),
+  authoringScenarioToWorld(externalRequestScenarioRaw),
+  authoringScenarioToWorld(hpaScenarioRaw),
 ];
 export const scenarioById = new Map(scenarios.map((item) => [item.scenarioId, item]));
 if (scenarioById.size !== scenarios.length) throw new Error('Duplicate scenario ID');
@@ -81,6 +97,8 @@ export const lessons: readonly LessonV2[] = [
   lessonV2Schema.parse(parseYaml(serviceLessonRaw)) as unknown as LessonV2,
   lessonV2Schema.parse(parseYaml(dnsLessonRaw)) as unknown as LessonV2,
   lessonV2Schema.parse(parseYaml(probesRolloutLessonRaw)) as unknown as LessonV2,
+  lessonV2Schema.parse(parseYaml(externalRequestLessonRaw)) as unknown as LessonV2,
+  lessonV2Schema.parse(parseYaml(hpaLessonRaw)) as unknown as LessonV2,
 ];
 export const lessonById = new Map(lessons.map((lesson) => [lesson.id, lesson]));
 if (lessonById.size !== lessons.length) throw new Error('Duplicate lesson ID');
@@ -95,4 +113,17 @@ export const glossaryById = new Map(glossary.map((term) => [term.id, term]));
 const parsedSources = sourcesSchema.parse(parseYaml(sourcesRaw));
 export const sources = new Map<string, SourceEntry>(
   Object.entries(parsedSources.sources).map(([id, entry]) => [id, { id, ...entry }]),
+);
+
+const parsedFlowStories = flowStoriesSchema.parse(parseYaml(flowStoriesRaw));
+export const flowStories: readonly FlowStory[] = parsedFlowStories.stories as FlowStory[];
+export const flowStoryById = new Map(flowStories.map((story) => [story.id, story]));
+if (flowStoryById.size !== flowStories.length) throw new Error('Duplicate flow story ID');
+
+export const compiledFlowStories: readonly CompiledFlowStory[] = flowStoryEngine.compileStories(
+  flowStories,
+  { lessons: lessonById, scenarios: scenarioById, sources },
+);
+export const compiledFlowStoryById = new Map(
+  compiledFlowStories.map((compiled) => [compiled.story.id, compiled]),
 );

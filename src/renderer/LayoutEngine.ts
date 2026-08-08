@@ -420,6 +420,8 @@ export class PlacementLayout implements LayoutModule {
       'ControllerManager',
       'KubeControllerManager',
       'Scheduler',
+      'MetricSource',
+      'HorizontalPodAutoscaler',
     ]);
     const controlEntities = visibleEntities
       .filter((entity) => controlKinds.has(entity.kind))
@@ -434,7 +436,10 @@ export class PlacementLayout implements LayoutModule {
           if (entity.kind === 'Etcd') return 1;
           if (entity.kind === 'ControllerManager' || entity.kind === 'KubeControllerManager')
             return 2;
-          return 3;
+          if (entity.kind === 'Scheduler') return 3;
+          if (entity.kind === 'MetricSource') return 4;
+          if (entity.kind === 'HorizontalPodAutoscaler') return 5;
+          return 6;
         };
         return order(left) - order(right) || left.id.localeCompare(right.id);
       });
@@ -1118,6 +1123,12 @@ export class TrafficLayout implements LayoutModule {
     const endpointSlice = visible.find((entity) => entity.kind === 'EndpointSlice');
     const clients = visible.filter((entity) => entity.data.trafficRole === 'client');
     const backends = visible.filter((entity) => entity.data.trafficRole === 'backend');
+    const publicDns = visible.find((entity) => entity.kind === 'PublicDNS');
+    const gatewayDataPlane = visible.find((entity) => entity.kind === 'GatewayDataPlane');
+    const gatewayConfiguration = visible.filter(
+      (entity) => entity.kind === 'Gateway' || entity.kind === 'HTTPRoute',
+    );
+    const externalTraffic = Boolean(publicDns || gatewayDataPlane);
 
     // Other traffic views retain the golden teaching-stage geometry. The dedicated lanes only
     // activate for the verified Service/EndpointSlice scenario.
@@ -1135,16 +1146,20 @@ export class TrafficLayout implements LayoutModule {
         slotIndex: index,
       });
     });
+    const servicePosition: Position = externalTraffic ? [-0.65, 0.18, 0.7] : [-2.4, 0.18, 0.75];
+    const endpointSlicePosition: Position = externalTraffic
+      ? [0.15, 0.18, -2.35]
+      : [-1.1, 0.18, -2.25];
     layouts.set(service.id, {
       entityId: service.id,
-      position: [-2.4, 0.18, 0.75],
+      position: servicePosition,
       lane: 'semantic',
       containerId: 'traffic-service-context',
       slotIndex: 0,
     });
     layouts.set(endpointSlice.id, {
       entityId: endpointSlice.id,
-      position: [-1.1, 0.18, -2.25],
+      position: endpointSlicePosition,
       lane: 'semantic',
       containerId: 'traffic-service-context',
       slotIndex: 1,
@@ -1155,6 +1170,33 @@ export class TrafficLayout implements LayoutModule {
         position: [4.8, 0.18, (index - (backends.length - 1) / 2) * 2.75],
         lane: 'semantic',
         containerId: 'traffic-backend-lane',
+        slotIndex: index,
+      });
+    });
+    if (publicDns) {
+      layouts.set(publicDns.id, {
+        entityId: publicDns.id,
+        position: [-4.65, 0.18, -2.5],
+        lane: 'semantic',
+        containerId: 'external-dns-support',
+        slotIndex: 0,
+      });
+    }
+    if (gatewayDataPlane) {
+      layouts.set(gatewayDataPlane.id, {
+        entityId: gatewayDataPlane.id,
+        position: [-4.55, 0.18, 0.9],
+        lane: 'semantic',
+        containerId: 'external-ingress-data-plane',
+        slotIndex: 0,
+      });
+    }
+    gatewayConfiguration.forEach((entity, index) => {
+      layouts.set(entity.id, {
+        entityId: entity.id,
+        position: [-1.65 + index * 3.3, 0.18, 3.75],
+        lane: 'semantic',
+        containerId: 'external-routing-configuration',
         slotIndex: index,
       });
     });
@@ -1195,13 +1237,13 @@ export class TrafficLayout implements LayoutModule {
           {
             id: 'traffic-service-context:slot:0',
             index: 0,
-            position: [-2.4, 0.18, 0.75],
+            position: servicePosition,
             occupiedBy: service.id,
           },
           {
             id: 'traffic-service-context:slot:1',
             index: 1,
-            position: [-1.1, 0.18, -2.25],
+            position: endpointSlicePosition,
             occupiedBy: endpointSlice.id,
           },
         ],
@@ -1220,6 +1262,55 @@ export class TrafficLayout implements LayoutModule {
         })),
       },
     ];
+    if (publicDns) {
+      containers.push({
+        id: 'external-dns-support',
+        kind: 'semantic-lane',
+        label: 'PUBLIC DNS SUPPORT',
+        labelAnchor: [-6.25, 0.1, -3.8],
+        bounds: { center: [-4.65, 0.025, -2.5], size: [3.65, 0.05, 2.7] },
+        slots: [
+          {
+            id: 'external-dns-support:slot:0',
+            index: 0,
+            position: [-4.65, 0.18, -2.5],
+            occupiedBy: publicDns.id,
+          },
+        ],
+      });
+    }
+    if (gatewayDataPlane) {
+      containers.push({
+        id: 'external-ingress-data-plane',
+        kind: 'semantic-lane',
+        label: 'INGRESS DATA PLANE',
+        labelAnchor: [-6.35, 0.1, -0.75],
+        bounds: { center: [-4.55, 0.025, 0.9], size: [4.1, 0.05, 2.8] },
+        slots: [
+          {
+            id: 'external-ingress-data-plane:slot:0',
+            index: 0,
+            position: [-4.55, 0.18, 0.9],
+            occupiedBy: gatewayDataPlane.id,
+          },
+        ],
+      });
+    }
+    if (gatewayConfiguration.length > 0) {
+      containers.push({
+        id: 'external-routing-configuration',
+        kind: 'semantic-lane',
+        label: 'GATEWAY API CONFIGURATION (SUPPORT)',
+        labelAnchor: [-3.2, 0.1, 2.45],
+        bounds: { center: [0, 0.025, 3.75], size: [7.2, 0.05, 2.7] },
+        slots: gatewayConfiguration.map((entity, index) => ({
+          id: `external-routing-configuration:slot:${index}`,
+          index,
+          position: [-1.65 + index * 3.3, 0.18, 3.75],
+          occupiedBy: entity.id,
+        })),
+      });
+    }
     return completeResult(input.world, input.view, layouts, containers);
   }
 }

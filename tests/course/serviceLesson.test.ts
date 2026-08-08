@@ -66,7 +66,7 @@ function lessonWithRequestStep(
 }
 
 describe('service-routes-to-pods verified lesson', () => {
-  it('publishes all twelve verified lessons in foundation order and the six-step Service sequence', () => {
+  it('publishes all fourteen verified lessons in foundation order and the six-step Service sequence', () => {
     expect(
       course.lessons.filter((entry) => entry.status === 'available').map((entry) => entry.id),
     ).toEqual([
@@ -82,8 +82,10 @@ describe('service-routes-to-pods verified lesson', () => {
       LESSON_ID,
       'dns-and-service-discovery',
       'probes-and-rolling-update',
+      'full-external-request',
+      'hpa',
     ]);
-    expect(course.lessons.filter((entry) => entry.status === 'available')).toHaveLength(12);
+    expect(course.lessons.filter((entry) => entry.status === 'available')).toHaveLength(14);
     expect(compiled.steps.map((item) => item.stepId)).toEqual([
       'identify-traffic-objects',
       'stable-service-entry',
@@ -172,7 +174,27 @@ describe('service-routes-to-pods verified lesson', () => {
     });
     expect(readinessChange.world.entities[SERVICE]?.data.publishNotReadyAddresses).toBe(false);
     expect(readinessChange.world.entities[API_A]?.status).toBe('not-ready');
-    expect(readinessChange.view.activeRoutes).toEqual([]);
+    expect(readinessChange.view.activeRoutes).toEqual([
+      expect.objectContaining({
+        id: 'client-service-api-c',
+        persistAfterAnimation: true,
+        support: {
+          endpointSliceId: SLICE,
+          serviceId: SERVICE,
+          selectedEndpointTargetId: API_C,
+        },
+      }),
+    ]);
+    expect(readinessChange.view.activeRoutes[0]?.hops.map((hop) => hop.toEntityId)).toEqual([
+      SERVICE,
+      API_C,
+    ]);
+    expect(
+      readinessChange.view.activeRoutes[0]?.hops.flatMap((hop) => [
+        hop.fromEntityId,
+        hop.toEntityId,
+      ]),
+    ).not.toContain(API_A);
     expect(readinessChange.transition.cues).toEqual([]);
 
     const requestB = step('later-request-ready-backend');

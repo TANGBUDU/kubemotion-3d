@@ -328,7 +328,11 @@ const packetHopDenylist = new Set([
   'ReplicaSet',
   'Namespace',
   'EndpointSlice',
+  'DNS',
+  'Gateway',
   'HTTPRoute',
+  'GatewayClass',
+  'HorizontalPodAutoscaler',
   'ConfigMap',
   'Secret',
 ]);
@@ -625,9 +629,23 @@ function validateTransitionCue(
       requireEntity(world, cue.schedulerId, cue);
       requireEntity(world, cue.podId, cue);
       requireEntity(world, cue.nodeId, cue);
-      for (const id of [cue.schedulerId, cue.podId, cue.nodeId]) {
-        if (!routeContainsEntity(routeForCue(cue, routes), id))
-          throw new Error(`${cue.routeId} does not include scheduler assignment entity ${id}`);
+      {
+        const route = routeForCue(cue, routes);
+        if (route.hops.length !== 1) {
+          throw new Error(
+            `${cue.routeId} must be one placement hop from Pending Pod to selected Node`,
+          );
+        }
+        const hop = route.hops[0];
+        if (!hop) {
+          throw new Error(`${cue.routeId} must contain its Pod-to-Node placement hop`);
+        }
+        if (hop.fromEntityId !== cue.podId || hop.toEntityId !== cue.nodeId) {
+          throw new Error(`${cue.routeId} must place ${cue.podId} on ${cue.nodeId}`);
+        }
+        if (routeContainsEntity(route, cue.schedulerId)) {
+          throw new Error(`${cue.routeId} must not mix Scheduler API control with Pod placement`);
+        }
       }
       return;
     case 'counter-change': {
@@ -681,6 +699,37 @@ function validateTransitionCue(
     case 'container-restart':
     case 'callout':
       requireEntity(world, cue.entityId, cue);
+  }
+}
+
+function validateSchedulerRouteFamilies(
+  transition: TransitionPlan,
+  routes: ReadonlyMap<string, ActiveTeachingRoute>,
+  world: WorldSnapshot,
+): void {
+  const apiCues = transition.cues.filter(
+    (cue): cue is Extract<TransitionCue, { readonly type: 'api-request' }> =>
+      cue.type === 'api-request',
+  );
+
+  for (const cue of transition.cues) {
+    if (cue.type !== 'scheduler-assignment') continue;
+    const companionRoutes = apiCues
+      .map((apiCue) => routeForCue(apiCue, routes))
+      .filter((route) => {
+        const sequence = routeEntitySequence(route);
+        return (
+          route.hops.length === 2 &&
+          sequence[0] === cue.schedulerId &&
+          sequence.at(-1) === cue.podId &&
+          sequence.some((entityId) => world.entities[entityId]?.kind === 'KubeAPIServer')
+        );
+      });
+    if (companionRoutes.length !== 1) {
+      throw new Error(
+        `scheduler-assignment for ${cue.podId} needs exactly one Scheduler -> API Server -> Pod control route`,
+      );
+    }
   }
 }
 
@@ -869,6 +918,7 @@ function validateTransition(
       }
     }
   }
+  validateSchedulerRouteFamilies(transition, routes, world);
   validateRequestResponse(transition, routes);
   validateCausalTiming(transition);
   validateReplicaSetCounterCoverage(transition, beforeWorld, world);

@@ -32,6 +32,8 @@ const verifiedLessonCycle = [
   { lessonId: SERVICE_LESSON, stepIndex: 3 },
   { lessonId: 'dns-and-service-discovery', stepIndex: 1 },
   { lessonId: 'probes-and-rolling-update', stepIndex: 4 },
+  { lessonId: 'full-external-request', stepIndex: 3 },
+  { lessonId: 'hpa', stepIndex: 2 },
 ] as const;
 
 test('20 navigation/replay/locale/selection/reset cycles keep resources bounded', async ({

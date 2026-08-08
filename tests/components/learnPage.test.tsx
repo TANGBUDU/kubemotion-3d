@@ -19,6 +19,8 @@ const verifiedLessonHrefs = [
   '/learn/service-routes-to-pods/0',
   '/learn/dns-and-service-discovery/0',
   '/learn/probes-and-rolling-update/0',
+  '/learn/full-external-request/0',
+  '/learn/hpa/0',
 ] as const;
 
 vi.mock('../../src/components/SceneViewport', () => ({
@@ -92,12 +94,12 @@ describe('LearnPage lesson information architecture', () => {
     ).toHaveLength(10);
   });
 
-  it('lists all twelve verified lessons in foundation order after the drawer is opened', () => {
+  it('lists all fourteen verified lessons in foundation order after the drawer is opened', () => {
     renderLesson();
     fireEvent.click(screen.getByRole('button', { name: /open course contents/i }));
     const drawer = screen.getByRole('dialog', { name: /Kubernetes Foundations/i });
     expect(drawer).toBeVisible();
-    expect(within(drawer).getByText('12 verified lessons')).toBeVisible();
+    expect(within(drawer).getByText('14 verified lessons')).toBeVisible();
     expect(
       within(drawer)
         .getAllByRole('link')

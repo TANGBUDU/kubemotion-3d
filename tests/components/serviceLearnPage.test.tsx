@@ -70,7 +70,7 @@ describe('LearnPage Service lesson routing summary', () => {
     expect(summary).toHaveTextContent(
       'api-a endpoint ready=false, serving=false, terminating=false',
     );
-    expect(summary).not.toHaveTextContent('target api-c at network-in');
+    expect(summary).toHaveTextContent('target api-c at network-in');
 
     act(() => useAppStore.getState().selectEntity(SLICE));
     const inspector = screen.getByTestId('world-inspector');

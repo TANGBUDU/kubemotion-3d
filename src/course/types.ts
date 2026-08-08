@@ -283,6 +283,48 @@ export interface CompiledLesson {
   readonly steps: readonly CompiledStep[];
 }
 
+export type FlowStoryPriority = 'P0' | 'P1';
+
+/**
+ * One authored story beat reuses a real lesson step instead of maintaining a
+ * second, divergent copy of its world mutation and teaching explanation.
+ */
+export interface FlowStoryBeat {
+  readonly id: string;
+  readonly stepId: string;
+  readonly routeIds: readonly string[];
+  readonly selectedRouteId?: string;
+}
+
+export interface FlowStory {
+  readonly schemaVersion: 1;
+  readonly id: string;
+  readonly priority: FlowStoryPriority;
+  readonly lessonId: string;
+  readonly scenarioId: string;
+  readonly title: LocalizedText;
+  readonly summary: LocalizedText;
+  readonly outcome: LocalizedText;
+  readonly sourceIds: readonly SourceId[];
+  readonly verifiedAt: string;
+  readonly beats: readonly FlowStoryBeat[];
+}
+
+export interface CompiledFlowStoryBeat {
+  readonly beat: FlowStoryBeat;
+  readonly lessonStep: LessonStepV2;
+  readonly compiledStep: CompiledStep;
+  readonly routes: readonly ActiveTeachingRoute[];
+  readonly selectedRoute?: ActiveTeachingRoute;
+}
+
+export interface CompiledFlowStory {
+  readonly story: FlowStory;
+  /** The entire lesson is compiled first so every selected beat keeps its causal history. */
+  readonly compiledLesson: CompiledLesson;
+  readonly beats: readonly CompiledFlowStoryBeat[];
+}
+
 export interface LessonManifestEntry {
   readonly id: string;
   readonly chapterId: string;

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HomePage } from '../../src/pages/HomePage';
+import { AboutPage } from '../../src/pages/AboutPage';
 import { useAppStore } from '../../src/state/appStore';
 
 vi.mock('../../src/components/SceneViewport', () => ({
@@ -35,6 +36,8 @@ const availableLessonIds = [
   'service-routes-to-pods',
   'dns-and-service-discovery',
   'probes-and-rolling-update',
+  'full-external-request',
+  'hpa',
 ] as const;
 
 function renderHome() {
@@ -86,6 +89,22 @@ describe('HomePage orientation', () => {
     expect(
       screen.queryByRole('button', { name: 'View orientation again' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('publishes eight first-class flow stories that deep-link to their first causal beat', () => {
+    renderHome();
+
+    expect(
+      screen.getByRole('heading', { name: /Trace complete Kubernetes causes/i }),
+    ).toBeVisible();
+    expect(screen.getAllByRole('link', { name: 'Open story' })).toHaveLength(8);
+    const externalStory = document.querySelector('[data-flow-story-id="external-browser-request"]');
+    const hpaStory = document.querySelector('[data-flow-story-id="hpa-scale-out"]');
+    expect(externalStory?.querySelector('a')).toHaveAttribute(
+      'href',
+      '/learn/full-external-request/0',
+    );
+    expect(hpaStory?.querySelector('a')).toHaveAttribute('href', '/learn/hpa/0');
   });
 
   it('remembers orientation when the learner starts the lesson', () => {
@@ -226,5 +245,19 @@ describe('HomePage orientation', () => {
     expect(screen.getByText('工作节点运行 Pod。')).toBeVisible();
     expect(screen.getByText('一个 Pod 包含一个或多个容器。')).toBeVisible();
     expect(screen.getByRole('link', { name: '开始课程' })).toBeVisible();
+  });
+});
+
+describe('AboutPage roadmap', () => {
+  it('follows manifest order and keeps available lessons before planned work', () => {
+    useAppStore.setState({ locale: 'en' });
+    const { container } = render(<AboutPage />);
+    const rows = [...container.querySelectorAll('.roadmap-list > div')];
+
+    expect(rows).toHaveLength(22);
+    expect(rows.slice(0, 14).every((row) => row.classList.contains('available'))).toBe(true);
+    expect(rows.slice(14).every((row) => row.classList.contains('planned'))).toBe(true);
+    expect(rows[12]).toHaveTextContent('Complete external browser request');
+    expect(rows[13]).toHaveTextContent('Horizontal Pod Autoscaling');
   });
 });

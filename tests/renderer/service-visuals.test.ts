@@ -207,7 +207,12 @@ describe('Service lesson specialized visuals', () => {
     expect(requestA.view.activeRoutes[0]?.hops.some((hop) => hop.toEntityId === SLICE)).toBe(false);
 
     registry.sync(notReady.world, notReady.view);
-    expect(registry.get(SLICE)?.root.userData.selectedEndpointTarget).toBeNull();
+    expect(registry.get(SLICE)?.root.userData.selectedEndpointTarget).toBe(API_C);
+    expect(
+      notReady.view.activeRoutes
+        .flatMap((route) => route.hops)
+        .some((hop) => hop.toEntityId === SLICE),
+    ).toBe(false);
 
     registry.sync(requestC.world, requestC.view);
     expect(registry.get(SLICE)?.root.userData.selectedEndpointTarget).toBe(API_C);

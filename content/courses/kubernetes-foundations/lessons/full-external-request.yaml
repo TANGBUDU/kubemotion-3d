@@ -1,0 +1,781 @@
+schemaVersion: 2
+id: full-external-request
+scenarioId: external-browser-request
+chapterId: external-traffic
+title:
+  en: Complete external browser request
+  ja: 完全な外部 Browser request
+  zh-CN: 完整的外部浏览器请求
+summary:
+  en: Resolve a public name, inspect Gateway and HTTPRoute support configuration, then trace a separate HTTPS request through the Gateway data plane and Service to one selected Ready Pod.
+  ja: public name を解決し、Gateway と HTTPRoute の support configuration を確認してから、別の HTTPS request を Gateway data plane と Service を通して選択された Ready Pod まで追跡します。
+  zh-CN: 解析公共名称，检查 Gateway 与 HTTPRoute 支撑配置，再沿一条独立的 HTTPS 请求路线，经 Gateway 数据面和 Service 到达一个被选中的 Ready Pod。
+learningOutcome:
+  en: Separate DNS request and response from the later application path, and distinguish Gateway, HTTPRoute, and EndpointSlice configuration evidence from physical packet hops.
+  ja: DNS request/response と後続の application path を分け、Gateway、HTTPRoute、EndpointSlice の configuration evidence と物理 packet hop を区別します。
+  zh-CN: 将 DNS 查询与应答同后续应用路径分开，并区分 Gateway、HTTPRoute、EndpointSlice 配置证据与物理数据包 Hop。
+prerequisites: [probes-and-rolling-update]
+sourceIds:
+  - gateway-api-kubernetes
+  - gateway-api-overview
+  - k8s-services
+  - k8s-endpoint-slices
+  - k8s-pods
+verifiedAt: '2026-08-08'
+
+baseView:
+  view: traffic
+  cameraPresetId: traffic
+  resetEntities: true
+  entityRules: []
+  relationRules: []
+  activeRoutes: []
+
+steps:
+  - id: browser-opens-public-name
+    title:
+      en: The browser starts with a public name
+      ja: Browser は public name から始める
+      zh-CN: 浏览器从公共名称开始
+    learningOutcome:
+      en: Identify the external browser, the reserved teaching hostname, and the fact that no application request route exists yet.
+      ja: 外部 Browser、予約済み教材 hostname、そして application request route がまだ存在しないことを確認します。
+      zh-CN: 识别外部浏览器、保留的教学主机名，以及此时尚不存在应用请求路线这一事实。
+    narration:
+      en: The synthetic browser opens https://shop.example/. The .example hostname and 192.0.2.10 client address are documentation-only values. Before HTTPS can start, the browser needs an address.
+      ja: 合成 Browser は https://shop.example/ を開きます。.example hostname と client address 192.0.2.10 は教材専用です。HTTPS を開始する前に、Browser は address を必要とします。
+      zh-CN: 合成浏览器打开 https://shop.example/。.example 主机名和客户端地址 192.0.2.10 仅用于文档教学；开始 HTTPS 之前，浏览器需要先获得地址。
+    teaching:
+      whatChanged:
+        en: The external browser is focused beside Public DNS and the subdued Gateway entry, with no active route or moving token.
+        ja: 外部 Browser が Public DNS と控えめな Gateway entry の横で focus され、active route も moving token もまだありません。
+        zh-CN: 外部浏览器成为焦点，旁边显示公共 DNS 和弱化的 Gateway 入口；此时没有活动路线或移动 Token。
+      whyItHappened:
+        en: A URL begins with a hostname, while the network connection needs a destination address. Name resolution therefore comes before the illustrated HTTPS request.
+        ja: URL は hostname から始まりますが、network connection には destination address が必要です。そのため図示する HTTPS request より先に name resolution が行われます。
+        zh-CN: URL 以主机名开始，而网络连接需要目标地址；因此名称解析先于示例 HTTPS 请求发生。
+      takeaway:
+        en: Opening the URL establishes intent only; DNS and application delivery are still separate future actions.
+        ja: URL を開く操作は意図を示すだけで、DNS と application delivery はまだ別々の後続 action です。
+        zh-CN: 打开 URL 只建立访问意图；DNS 与应用交付仍是两个独立的后续动作。
+    evidence:
+      entityIds:
+        - external:internet:global:Browser:shopper
+        - external:internet:global:PublicDNS:shop-example
+      mode: snapshot
+    introducesTerms: [dns]
+    usesTerms: []
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview]
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [external:internet:global:Browser:shopper] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [external:internet:global:PublicDNS:shop-example] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [infrastructure:cluster:global:GatewayDataPlane:edge-gateway] }
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Gateway:public-gateway
+              - api-object:namespaced:shop:HTTPRoute:shop-route
+              - api-object:namespaced:shop:Service:web
+              - api-object:namespaced:shop:EndpointSlice:web-slice
+              - api-object:namespaced:shop:Pod:web-a
+              - api-object:namespaced:shop:Pod:web-b
+          visible: false
+          emphasis: hidden
+          labelMode: none
+          inspectorMode: none
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-web] }
+          visible: false
+          emphasis: hidden
+          labelMode: none
+          inspectorMode: none
+      relationRules: []
+      callouts:
+        - id: synthetic-browser-url
+          entityId: external:internet:global:Browser:shopper
+          text:
+            en: Synthetic URL · https://shop.example/
+            ja: 合成 URL · https://shop.example/
+            zh-CN: 合成 URL · https://shop.example/
+      activeRoutes: []
+
+  - id: public-dns-query-and-response
+    title:
+      en: Resolve the public name first
+      ja: まず public name を解決する
+      zh-CN: 先解析公共名称
+    learningOutcome:
+      en: Trace the DNS query to Public DNS and its answer back to the browser without starting the application route.
+      ja: application route を開始せず、Public DNS への DNS query と Browser に戻る answer を追跡します。
+      zh-CN: 跟踪 DNS 查询到达公共 DNS 并将应答返回浏览器，同时不启动应用路线。
+    narration:
+      en: The browser asks Public DNS for shop.example. The synthetic answer 203.0.113.80 returns over the same dashed teaching route. The HTTPS request has not started.
+      ja: Browser は Public DNS に shop.example を query します。合成 answer 203.0.113.80 が同じ破線 teaching route を逆向きに戻ります。HTTPS request はまだ始まりません。
+      zh-CN: 浏览器向公共 DNS 查询 shop.example；合成应答 203.0.113.80 沿同一条虚线教学路线反向返回。HTTPS 请求尚未开始。
+    teaching:
+      whatChanged:
+        en: A persistent dashed DNS route appears only between Browser and Public DNS; a query token moves forward and an answer token returns in reverse.
+        ja: Browser と Public DNS の間だけに persistent な破線 DNS route が現れ、query token が forward、answer token が reverse に移動します。
+        zh-CN: 只在浏览器与公共 DNS 之间出现一条持久虚线 DNS 路线；查询 Token 向前，应答 Token 反向返回。
+      whyItHappened:
+        en: DNS resolves the hostname to the synthetic listener address before the browser can create the later HTTPS connection.
+        ja: DNS が hostname を合成 listener address に解決してから、Browser は後続の HTTPS connection を作成できます。
+        zh-CN: DNS 先把主机名解析为合成 Listener 地址，随后浏览器才能建立 HTTPS 连接。
+      takeaway:
+        en: The DNS flow ends at the DNS system and returns an address; no DNS token visits Gateway, HTTPRoute, Service, EndpointSlice, or Pod.
+        ja: DNS flow は DNS system で終わり address を返します。DNS token は Gateway、HTTPRoute、Service、EndpointSlice、Pod を訪れません。
+        zh-CN: DNS Flow 在 DNS 系统处结束并返回地址；DNS Token 不会经过 Gateway、HTTPRoute、Service、EndpointSlice 或 Pod。
+    evidence:
+      entityIds:
+        - external:internet:global:Browser:shopper
+        - external:internet:global:PublicDNS:shop-example
+      mode: snapshot
+    introducesTerms: []
+    usesTerms: [dns]
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview]
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [external:internet:global:Browser:shopper] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [external:internet:global:PublicDNS:shop-example] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [infrastructure:cluster:global:GatewayDataPlane:edge-gateway] }
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Gateway:public-gateway
+              - api-object:namespaced:shop:HTTPRoute:shop-route
+              - api-object:namespaced:shop:Service:web
+              - api-object:namespaced:shop:EndpointSlice:web-slice
+              - api-object:namespaced:shop:Pod:web-a
+              - api-object:namespaced:shop:Pod:web-b
+              - infrastructure:cluster:global:Node:worker-web
+          visible: false
+          emphasis: hidden
+          labelMode: none
+          inspectorMode: none
+      relationRules:
+        - byIds: [browser-queries-public-dns]
+          visible: true
+          emphasis: focused
+        - byIds: [public-dns-resolves-shop-address]
+          visible: true
+          emphasis: dimmed
+      callouts:
+        - id: public-dns-answer
+          entityId: external:internet:global:PublicDNS:shop-example
+          text:
+            en: shop.example · A · 203.0.113.80 (synthetic)
+            ja: shop.example · A · 203.0.113.80（合成）
+            zh-CN: shop.example · A · 203.0.113.80（合成）
+      activeRoutes:
+        - id: external-browser-public-dns
+          semantic: dns
+          requestId: external-shop-dns
+          label:
+            en: Public DNS query / response · shop.example
+            ja: Public DNS query / response · shop.example
+            zh-CN: 公共 DNS 查询 / 应答 · shop.example
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: external:internet:global:Browser:shopper
+              fromAnchor: network-out
+              toEntityId: external:internet:global:PublicDNS:shop-example
+              toAnchor: network-in
+              label:
+                en: Resolve shop.example
+                ja: shop.example を解決
+                zh-CN: 解析 shop.example
+    transition:
+      cues:
+        - type: dns-query
+          routeId: external-browser-public-dns
+          label:
+            en: Query shop.example
+            ja: shop.example を query
+            zh-CN: 查询 shop.example
+          flowPhase: request
+          direction: forward
+          durationMs: 760
+        - type: dns-query
+          routeId: external-browser-public-dns
+          label:
+            en: Answer 203.0.113.80
+            ja: answer 203.0.113.80
+            zh-CN: 应答 203.0.113.80
+          flowPhase: response
+          direction: reverse
+          delayMs: 920
+          durationMs: 760
+
+  - id: gateway-and-httproute-configure-entry
+    title:
+      en: Configuration programs the entry
+      ja: configuration が entry をプログラムする
+      zh-CN: 配置对入口进行编程
+    learningOutcome:
+      en: Read Gateway and HTTPRoute as declarative support beside the Gateway data plane, never as packet-processing hops.
+      ja: Gateway と HTTPRoute を Gateway data plane の横にある宣言的 support として読み、packet-processing hop としないことを理解します。
+      zh-CN: 将 Gateway 与 HTTPRoute 理解为 Gateway 数据面旁边的声明式支撑配置，而不是数据包处理 Hop。
+    narration:
+      en: public-gateway declares the synthetic HTTPS listener. shop-route attaches to it and references web Service. The controller programs separate Gateway data-plane infrastructure from that API state.
+      ja: public-gateway は合成 HTTPS listener を宣言します。shop-route はそこに接続し、web Service を参照します。controller はその API state から別の Gateway data-plane infrastructure をプログラムします。
+      zh-CN: public-gateway 声明合成 HTTPS Listener；shop-route 挂接到它并引用 web Service。控制器依据这些 API 状态，对独立的 Gateway 数据面基础设施进行编程。
+    teaching:
+      whatChanged:
+        en: The Gateway configuration card is focused, HTTPRoute appears beside it, and both point by subdued configuration relations to the separate data plane and Service.
+        ja: Gateway configuration card が focus され、HTTPRoute が横に現れ、両者は控えめな configuration relation で別の data plane と Service を示します。
+        zh-CN: Gateway 配置卡成为焦点，HTTPRoute 显示在旁边；两者通过弱化的配置关系指向独立数据面与 Service。
+      whyItHappened:
+        en: Gateway API separates declarative routing resources from the implementation that accepts and forwards packets.
+        ja: Gateway API は宣言的 routing resource と、packet を受け付けて転送する implementation を分離します。
+        zh-CN: Gateway API 将声明式路由资源与实际接收、转发数据包的实现分离开来。
+      takeaway:
+        en: Gateway and HTTPRoute explain configuration; the application token will enter GatewayDataPlane directly and will never fly through either card.
+        ja: Gateway と HTTPRoute は configuration を説明します。application token は GatewayDataPlane に直接入り、どちらの card も通過しません。
+        zh-CN: Gateway 与 HTTPRoute 用来解释配置；应用 Token 会直接进入 GatewayDataPlane，绝不会飞过这两张卡片。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Gateway:public-gateway
+        - api-object:namespaced:shop:HTTPRoute:shop-route
+        - infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+        - api-object:namespaced:shop:Service:web
+      mode: snapshot
+    introducesTerms: [service, service-data-plane]
+    usesTerms: []
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview, k8s-services]
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [external:internet:global:Browser:shopper] }
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector: { byIds: [external:internet:global:PublicDNS:shop-example] }
+          visible: false
+          emphasis: hidden
+          labelMode: none
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:Gateway:public-gateway] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [api-object:namespaced:shop:HTTPRoute:shop-route] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: compact
+        - selector: { byIds: [infrastructure:cluster:global:GatewayDataPlane:edge-gateway] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:Service:web] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:EndpointSlice:web-slice
+              - api-object:namespaced:shop:Pod:web-a
+              - api-object:namespaced:shop:Pod:web-b
+              - infrastructure:cluster:global:Node:worker-web
+          visible: false
+          emphasis: hidden
+          labelMode: none
+          inspectorMode: none
+      relationRules:
+        - byIds:
+            - gateway-config-implemented-by-data-plane
+            - http-route-attaches-to-gateway
+            - http-route-references-web-service
+          visible: true
+          emphasis: focused
+      callouts:
+        - id: configuration-not-hop
+          entityId: api-object:namespaced:shop:HTTPRoute:shop-route
+          text:
+            en: Configuration support · not a packet hop
+            ja: configuration support · packet hop ではない
+            zh-CN: 配置支撑 · 不是数据包 Hop
+      activeRoutes: []
+
+  - id: ready-endpoint-is-selected
+    title:
+      en: EndpointSlice proves which backends are eligible
+      ja: EndpointSlice が eligible backend を示す
+      zh-CN: EndpointSlice 证明哪些后端可选
+    learningOutcome:
+      en: Use EndpointSlice readiness to justify selecting web-a without inserting EndpointSlice into the physical request path.
+      ja: EndpointSlice readiness から web-a の選択理由を読み取り、EndpointSlice を物理 request path に挿入しないことを理解します。
+      zh-CN: 使用 EndpointSlice 就绪状态说明为什么选择 web-a，同时不把 EndpointSlice 插入物理请求路径。
+    narration:
+      en: web EndpointSlice records web-a and web-b as Ready, serving, non-terminating endpoints. This teaching request chooses web-a. The inventory supports the decision; it does not process the request.
+      ja: web EndpointSlice は web-a と web-b を Ready、serving、non-terminating endpoint として記録します。この教材 request は web-a を選びます。inventory は判断を支えますが、request を処理しません。
+      zh-CN: web EndpointSlice 将 web-a 与 web-b 记录为 Ready、Serving、非 Terminating 的 Endpoint；本次教学请求选择 web-a。该清单支撑选择，但不处理请求。
+    teaching:
+      whatChanged:
+        en: Focus moves to the EndpointSlice rows, while web Service and both Ready Pods remain visible as the selection context.
+        ja: focus が EndpointSlice row に移り、web Service と 2 つの Ready Pod は selection context として表示されたままです。
+        zh-CN: 焦点移到 EndpointSlice 条目；web Service 与两个 Ready Pod 继续作为选择上下文显示。
+      whyItHappened:
+        en: EndpointSlice API state represents Service backend addresses and readiness, allowing the selected endpoint to be explained before traffic begins.
+        ja: EndpointSlice API state は Service backend address と readiness を表すため、traffic 開始前に selected endpoint を説明できます。
+        zh-CN: EndpointSlice API 状态表示 Service 后端地址与就绪性，因此可在流量开始前解释被选中的 Endpoint。
+      takeaway:
+        en: EndpointSlice is evidence for web-a selection; the persistent application route will connect Service directly to web-a.
+        ja: EndpointSlice は web-a selection の evidence です。persistent application route は Service から web-a に直接接続します。
+        zh-CN: EndpointSlice 是选择 web-a 的证据；持久应用路线会让 Service 直接连接 web-a。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Service:web
+        - api-object:namespaced:shop:EndpointSlice:web-slice
+        - api-object:namespaced:shop:Pod:web-a
+        - api-object:namespaced:shop:Pod:web-b
+      mode: snapshot
+    introducesTerms: [endpoint-slice, endpoint, pod]
+    usesTerms: [service, service-data-plane]
+    sourceIds: [k8s-services, k8s-endpoint-slices, k8s-endpoint-slice-api, k8s-pods]
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [external:internet:global:Browser:shopper] }
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Gateway:public-gateway
+              - api-object:namespaced:shop:HTTPRoute:shop-route
+              - infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:Service:web] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:EndpointSlice:web-slice] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:web-a
+              - api-object:namespaced:shop:Pod:web-b
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector:
+            byIds:
+              - external:internet:global:PublicDNS:shop-example
+              - infrastructure:cluster:global:Node:worker-web
+          visible: false
+          emphasis: hidden
+          labelMode: none
+          inspectorMode: none
+      relationRules:
+        - byIds: [web-slice-for-web-service]
+          visible: true
+          emphasis: focused
+        - byIds: [web-slice-references-web-a, web-slice-references-web-b]
+          visible: true
+          emphasis: focused
+        - byIds: [web-service-selects-web-a, web-service-selects-web-b]
+          visible: true
+          emphasis: dimmed
+      callouts:
+        - id: selected-ready-endpoint
+          entityId: api-object:namespaced:shop:EndpointSlice:web-slice
+          text:
+            en: Selected · web-a · 192.0.2.81 · Ready
+            ja: selected · web-a · 192.0.2.81 · Ready
+            zh-CN: 已选择 · web-a · 192.0.2.81 · Ready
+      activeRoutes: []
+
+  - id: browser-request-reaches-selected-pod
+    title:
+      en: Send the separate HTTPS request
+      ja: 別の HTTPS request を送る
+      zh-CN: 发送独立的 HTTPS 请求
+    learningOutcome:
+      en: Trace the complete physical application path Browser → Gateway data plane → Service → selected Ready Pod.
+      ja: Browser → Gateway data plane → Service → selected Ready Pod という完全な物理 application path を追跡します。
+      zh-CN: 跟踪完整物理应用路径：浏览器 → Gateway 数据面 → Service → 被选中的 Ready Pod。
+    narration:
+      en: After DNS has finished, the browser starts a new HTTPS request to 203.0.113.80. The Gateway data plane accepts it, forwards it to web Service, and the Service path reaches selected Ready endpoint web-a.
+      ja: DNS 完了後、Browser は 203.0.113.80 への新しい HTTPS request を開始します。Gateway data plane が受け付け、web Service に転送し、Service path は選択された Ready endpoint web-a に到達します。
+      zh-CN: DNS 完成后，浏览器向 203.0.113.80 发起一条新的 HTTPS 请求；Gateway 数据面接收并转发到 web Service，Service 路径最终到达已选中的 Ready Endpoint web-a。
+    teaching:
+      whatChanged:
+        en: The DNS route is gone. A persistent solid application route now connects Browser → GatewayDataPlane → Service → web-a, with arrows visible before the packet moves.
+        ja: DNS route は消えました。persistent な実線 application route が Browser → GatewayDataPlane → Service → web-a を接続し、packet が動く前から arrow が見えます。
+        zh-CN: DNS 路线已消失；一条持久实线应用路线连接 浏览器 → GatewayDataPlane → Service → web-a，数据包移动前箭头已经可见。
+      whyItHappened:
+        en: The resolved listener address reaches the programmed Gateway data plane; HTTPRoute configuration selects the Service backend, and EndpointSlice readiness supports selecting web-a.
+        ja: 解決済み listener address はプログラムされた Gateway data plane に到達します。HTTPRoute configuration が Service backend を指定し、EndpointSlice readiness が web-a selection を支えます。
+        zh-CN: 已解析的 Listener 地址到达编程后的 Gateway 数据面；HTTPRoute 配置指定 Service 后端，EndpointSlice 就绪性支撑选择 web-a。
+      takeaway:
+        en: The only physical application hops are Browser, GatewayDataPlane, Service, and Pod; Gateway, HTTPRoute, PublicDNS, and EndpointSlice remain support evidence.
+        ja: 物理 application hop は Browser、GatewayDataPlane、Service、Pod だけです。Gateway、HTTPRoute、PublicDNS、EndpointSlice は support evidence のままです。
+        zh-CN: 物理应用 Hop 只有浏览器、GatewayDataPlane、Service 与 Pod；Gateway、HTTPRoute、PublicDNS、EndpointSlice 始终只是支撑证据。
+    evidence:
+      entityIds:
+        - infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+        - api-object:namespaced:shop:Service:web
+        - api-object:namespaced:shop:EndpointSlice:web-slice
+        - api-object:namespaced:shop:Pod:web-a
+      mode: snapshot
+    introducesTerms: []
+    usesTerms: [dns, service, endpoint-slice, endpoint, pod, service-data-plane]
+    sourceIds:
+      - gateway-api-kubernetes
+      - gateway-api-overview
+      - k8s-services
+      - k8s-endpoint-slices
+      - k8s-pods
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [external:internet:global:Browser:shopper] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [external:internet:global:PublicDNS:shop-example] }
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Gateway:public-gateway
+              - api-object:namespaced:shop:HTTPRoute:shop-route
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector: { byIds: [infrastructure:cluster:global:GatewayDataPlane:edge-gateway] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [api-object:namespaced:shop:Service:web] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:EndpointSlice:web-slice] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: compact
+        - selector: { byIds: [api-object:namespaced:shop:Pod:web-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:Pod:web-b] }
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-web] }
+          visible: false
+          emphasis: hidden
+          labelMode: none
+          inspectorMode: none
+      relationRules:
+        - byIds:
+            - browser-enters-gateway-data-plane
+            - gateway-data-plane-routes-to-web-service
+            - web-service-routes-to-web-a
+          visible: true
+          emphasis: focused
+        - byIds:
+            - gateway-config-implemented-by-data-plane
+            - http-route-attaches-to-gateway
+            - http-route-references-web-service
+            - web-slice-for-web-service
+            - web-slice-references-web-a
+            - web-slice-references-web-b
+          visible: true
+          emphasis: dimmed
+      callouts:
+        - id: physical-application-hops
+          entityId: infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+          text:
+            en: Data plane hop · HTTPS 203.0.113.80:443
+            ja: data plane hop · HTTPS 203.0.113.80:443
+            zh-CN: 数据面 Hop · HTTPS 203.0.113.80:443
+      activeRoutes:
+        - id: external-browser-to-web-a
+          semantic: data-flow
+          requestId: external-shop-https
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:web-slice
+            serviceId: api-object:namespaced:shop:Service:web
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:web-a
+          label:
+            en: HTTPS request · selected Ready web-a
+            ja: HTTPS request · selected Ready web-a
+            zh-CN: HTTPS 请求 · 已选择 Ready web-a
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: external:internet:global:Browser:shopper
+              fromAnchor: network-out
+              toEntityId: infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+              toAnchor: network-in
+              label:
+                en: Resolved listener address
+                ja: 解決済み listener address
+                zh-CN: 已解析的 Listener 地址
+            - fromEntityId: infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Service:web
+              toAnchor: network-in
+              label:
+                en: Programmed backend Service
+                ja: プログラム済み backend Service
+                zh-CN: 已编程的后端 Service
+            - fromEntityId: api-object:namespaced:shop:Service:web
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Pod:web-a
+              toAnchor: network-in
+              label:
+                en: Selected Ready web-a
+                ja: selected Ready web-a
+                zh-CN: 已选择 Ready web-a
+    transition:
+      cues:
+        - type: data-packet
+          routeId: external-browser-to-web-a
+          label:
+            en: GET https://shop.example/
+            ja: GET https://shop.example/
+            zh-CN: GET https://shop.example/
+          flowPhase: request
+          direction: forward
+          durationMs: 1700
+
+  - id: application-response-returns
+    title:
+      en: Return the application response
+      ja: application response を返す
+      zh-CN: 返回应用应答
+    learningOutcome:
+      en: Follow the response back over the same application route while keeping the configuration/support boundary visible.
+      ja: configuration/support boundary を表示したまま、同じ application route を response が戻る様子を追跡します。
+      zh-CN: 在持续显示配置/支撑边界的同时，跟踪应答沿同一应用路线返回。
+    narration:
+      en: The step briefly replays the established request, pauses, and then web-a returns the synthetic response in reverse. The route remains visible after animation, so the complete path can still be read statically.
+      ja: この step は確立済み request を短く再生して pause し、その後 web-a が合成 response を逆向きに返します。animation 後も route が残るため、完全な path を静止状態で読み取れます。
+      zh-CN: 本步骤先短暂重放已建立的请求，停顿后再由 web-a 反向返回合成应答；动画结束后路线继续保留，因此静态画面仍能读懂完整路径。
+    teaching:
+      whatChanged:
+        en: After a short request replay and pause, a response token travels Pod → Service → GatewayDataPlane → Browser while the persistent arrows and selected Endpoint support remain visible.
+        ja: 短い request replay と pause の後、response token が Pod → Service → GatewayDataPlane → Browser と移動し、persistent arrow と selected Endpoint support は表示されたままです。
+        zh-CN: 短暂重放请求并停顿后，应答 Token 按 Pod → Service → GatewayDataPlane → 浏览器 返回；持久箭头与已选 Endpoint 支撑信息继续可见。
+      whyItHappened:
+        en: This teaching model reuses the established connection path in reverse for the response, without creating a second DNS lookup or treating API configuration as runtime infrastructure.
+        ja: この教材 model は response のために確立済み connection path を逆向きに使い、2 回目の DNS lookup を作らず、API configuration を runtime infrastructure として扱いません。
+        zh-CN: 本教学模型让应答沿已建立连接路径反向返回，不会再次执行 DNS 查询，也不会把 API 配置当作运行时基础设施。
+      takeaway:
+        en: Resolve first, then request and respond over the data plane; configuration and endpoint inventories explain the route without becoming route hops.
+        ja: まず resolve し、その後 data plane 上で request/response を行います。configuration と endpoint inventory は route を説明しますが hop にはなりません。
+        zh-CN: 先解析，再经数据面请求和应答；配置与 Endpoint 清单负责解释路线，但不会成为路线 Hop。
+    evidence:
+      entityIds:
+        - external:internet:global:Browser:shopper
+        - infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+        - api-object:namespaced:shop:Service:web
+        - api-object:namespaced:shop:EndpointSlice:web-slice
+        - api-object:namespaced:shop:Pod:web-a
+      mode: snapshot
+    introducesTerms: []
+    usesTerms: [dns, service, endpoint-slice, endpoint, pod, service-data-plane]
+    sourceIds:
+      - gateway-api-kubernetes
+      - gateway-api-overview
+      - k8s-services
+      - k8s-endpoint-slices
+      - k8s-pods
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [external:internet:global:Browser:shopper] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [external:internet:global:PublicDNS:shop-example] }
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Gateway:public-gateway
+              - api-object:namespaced:shop:HTTPRoute:shop-route
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector: { byIds: [infrastructure:cluster:global:GatewayDataPlane:edge-gateway] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:Service:web] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:EndpointSlice:web-slice] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: compact
+        - selector: { byIds: [api-object:namespaced:shop:Pod:web-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:Pod:web-b] }
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-web] }
+          visible: false
+          emphasis: hidden
+          labelMode: none
+          inspectorMode: none
+      relationRules:
+        - byIds:
+            - browser-enters-gateway-data-plane
+            - gateway-data-plane-routes-to-web-service
+            - web-service-routes-to-web-a
+          visible: true
+          emphasis: focused
+        - byIds:
+            - gateway-config-implemented-by-data-plane
+            - http-route-attaches-to-gateway
+            - http-route-references-web-service
+            - web-slice-for-web-service
+            - web-slice-references-web-a
+            - web-slice-references-web-b
+          visible: true
+          emphasis: dimmed
+      callouts:
+        - id: external-flow-order
+          entityId: external:internet:global:Browser:shopper
+          text:
+            en: 1 · DNS resolution   2 · HTTPS request   3 · HTTPS response
+            ja: 1 · DNS resolution   2 · HTTPS request   3 · HTTPS response
+            zh-CN: 1 · DNS 解析   2 · HTTPS 请求   3 · HTTPS 应答
+      activeRoutes:
+        - id: external-browser-to-web-a
+          semantic: data-flow
+          requestId: external-shop-https
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:web-slice
+            serviceId: api-object:namespaced:shop:Service:web
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:web-a
+          label:
+            en: HTTPS response · web-a to Browser
+            ja: HTTPS response · web-a から Browser
+            zh-CN: HTTPS 应答 · web-a 返回浏览器
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: external:internet:global:Browser:shopper
+              fromAnchor: network-out
+              toEntityId: infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+              toAnchor: network-in
+              label:
+                en: Resolved listener address
+                ja: 解決済み listener address
+                zh-CN: 已解析的 Listener 地址
+            - fromEntityId: infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Service:web
+              toAnchor: network-in
+              label:
+                en: Programmed backend Service
+                ja: プログラム済み backend Service
+                zh-CN: 已编程的后端 Service
+            - fromEntityId: api-object:namespaced:shop:Service:web
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Pod:web-a
+              toAnchor: network-in
+              label:
+                en: Selected Ready web-a
+                ja: selected Ready web-a
+                zh-CN: 已选择 Ready web-a
+    transition:
+      cues:
+        - type: data-packet
+          routeId: external-browser-to-web-a
+          label:
+            en: Re-establish GET /
+            ja: GET / を再確認
+            zh-CN: 重放 GET /
+          flowPhase: request
+          direction: forward
+          durationMs: 560
+        - type: data-packet
+          routeId: external-browser-to-web-a
+          label:
+            en: 200 OK
+            ja: 200 OK
+            zh-CN: 200 OK
+          flowPhase: response
+          direction: reverse
+          delayMs: 720
+          durationMs: 1300

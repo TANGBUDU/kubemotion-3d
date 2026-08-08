@@ -12,12 +12,17 @@ import { DeveloperVisualHandle } from './visuals/DeveloperVisual';
 import { EndpointSliceVisualHandle } from './visuals/EndpointSliceVisual';
 import { EtcdVisualHandle } from './visuals/EtcdVisual';
 import { ExternalClientVisualHandle } from './visuals/ExternalClientVisual';
+import { GatewayConfigurationVisualHandle } from './visuals/GatewayConfigurationVisual';
+import { GatewayDataPlaneVisualHandle } from './visuals/GatewayDataPlaneVisual';
 import { GenericUnsupportedVisual } from './visuals/GenericUnsupportedVisual';
+import { HorizontalPodAutoscalerVisualHandle } from './visuals/HorizontalPodAutoscalerVisual';
 import { KubeletVisualHandle } from './visuals/KubeletVisual';
 import { KubectlVisualHandle } from './visuals/KubectlVisual';
+import { MetricSourceVisualHandle } from './visuals/MetricSourceVisual';
 import { NamespaceVisualHandle } from './visuals/NamespaceVisual';
 import { NodeVisualHandle } from './visuals/NodeVisual';
 import { PodVisualHandle } from './visuals/PodVisual';
+import { PublicDNSVisualHandle } from './visuals/PublicDNSVisual';
 import { ReplicaSetVisualHandle } from './visuals/ReplicaSetVisual';
 import { SchedulerVisualHandle } from './visuals/SchedulerVisual';
 import { ServiceVisualHandle } from './visuals/ServiceVisual';
@@ -61,6 +66,12 @@ export const GOLDEN_LESSON_VISUAL_KINDS = Object.freeze([
   'ReplicaSet',
   'Service',
   'EndpointSlice',
+  'PublicDNS',
+  'GatewayDataPlane',
+  'Gateway',
+  'HTTPRoute',
+  'MetricSource',
+  'HorizontalPodAutoscaler',
   'Browser',
   'ExternalClient',
   'Developer',
@@ -123,6 +134,27 @@ const builtInFactories = (): readonly EntityVisualFactory[] => [
     'endpoint-slice-table',
     (entity) => entity.kind === 'EndpointSlice',
     EndpointSliceVisualHandle,
+  ),
+  factory('public-dns-resolver', (entity) => entity.kind === 'PublicDNS', PublicDNSVisualHandle),
+  factory(
+    'gateway-data-plane',
+    (entity) => entity.kind === 'GatewayDataPlane',
+    GatewayDataPlaneVisualHandle,
+  ),
+  factory(
+    'gateway-api-configuration-card',
+    (entity) => entity.kind === 'Gateway' || entity.kind === 'HTTPRoute',
+    GatewayConfigurationVisualHandle,
+  ),
+  factory(
+    'metric-source-instrument',
+    (entity) => entity.kind === 'MetricSource',
+    MetricSourceVisualHandle,
+  ),
+  factory(
+    'horizontal-pod-autoscaler-console',
+    (entity) => entity.kind === 'HorizontalPodAutoscaler',
+    HorizontalPodAutoscalerVisualHandle,
   ),
   factory(
     'external-client-browser-terminal',

@@ -34,7 +34,7 @@ const aboutCopy: Record<
       {
         title: 'Source-backed content',
         description:
-          'Core facts are traced to Kubernetes or Gateway API official documentation and record a verification date of 2026-08-07.',
+          'Core facts are traced to Kubernetes or Gateway API official documentation and record a verification date of 2026-08-08.',
       },
       {
         title: 'Privacy boundary',
@@ -48,7 +48,7 @@ const aboutCopy: Record<
       },
     ],
     roadmapDescription:
-      'The world-state rebuild includes two fully verified lessons: one Pod lifecycle and one Service traffic story. The remaining curriculum stays a non-interactive roadmap until each lesson passes the same factual, accessibility, and visual validation gates.',
+      'The world-state rebuild now includes fourteen interactive lessons and eight verified end-to-end flow stories. The remaining eight lessons stay a non-interactive roadmap until they pass the same factual, accessibility, and visual validation gates.',
     available: 'available',
     planned: 'planned',
     openSource: 'Open source',
@@ -70,7 +70,7 @@ const aboutCopy: Record<
       {
         title: '公式情報源に基づく内容',
         description:
-          '中核となる事実は Kubernetes または Gateway API の公式ドキュメントに結び付け、検証日 2026-08-07 を記録しています。',
+          '中核となる事実は Kubernetes または Gateway API の公式ドキュメントに結び付け、検証日 2026-08-08 を記録しています。',
       },
       {
         title: 'プライバシー境界',
@@ -84,7 +84,7 @@ const aboutCopy: Record<
       },
     ],
     roadmapDescription:
-      'world-state 再構築版には、Pod lifecycle と Service traffic の 2 つの完全検証済みレッスンがあります。残りは同じ事実・アクセシビリティ・視覚検証を通過するまで非インタラクティブなロードマップとして表示します。',
+      'world-state 再構築版には、14 のインタラクティブなレッスンと 8 本の検証済み end-to-end flow story があります。残り 8 レッスンは同じ事実・アクセシビリティ・視覚検証を通過するまで非インタラクティブなロードマップとして表示します。',
     available: '利用可能',
     planned: '予定',
     openSource: 'オープンソース',
@@ -106,7 +106,7 @@ const aboutCopy: Record<
       {
         title: '基于官方来源',
         description:
-          '核心事实均追溯到 Kubernetes 或 Gateway API 官方文档，并记录验证日期 2026-08-07。',
+          '核心事实均追溯到 Kubernetes 或 Gateway API 官方文档，并记录验证日期 2026-08-08。',
       },
       {
         title: '隐私边界',
@@ -120,7 +120,7 @@ const aboutCopy: Record<
       },
     ],
     roadmapDescription:
-      '世界状态重构版包含两门完整验证的课程：一门 Pod 生命周期课程和一门 Service 流量课程。其余内容在通过同等事实、无障碍和视觉验证前，仅作为不可交互的路线图展示。',
+      '世界状态重构版现包含 14 门交互式课程和 8 条已验证的端到端 Flow Story。剩余 8 门课程在通过同等事实、无障碍和视觉验证前，仍作为不可交互的路线图展示。',
     available: '可学习',
     planned: '计划中',
     openSource: '开源',
@@ -133,6 +133,12 @@ export function AboutPage() {
   const locale = useAppStore((state) => state.locale);
   const t = ui(locale);
   const copy = aboutCopy[locale];
+  const lessonsById = new Map(course.lessons.map((lesson) => [lesson.id, lesson]));
+  const orderedLessons = course.lessonOrder.map((lessonId) => {
+    const lesson = lessonsById.get(lessonId);
+    if (!lesson) throw new Error(`Course lessonOrder references missing lesson ${lessonId}`);
+    return lesson;
+  });
   const [visualSemantics, sourceBacked, privacyBoundary, simplification] = copy.cards;
   if (!visualSemantics || !sourceBacked || !privacyBoundary || !simplification) return null;
   return (
@@ -168,7 +174,7 @@ export function AboutPage() {
         <h2>{t.roadmap}</h2>
         <p>{copy.roadmapDescription}</p>
         <div className="roadmap-list">
-          {course.lessons.map((lesson, index) => (
+          {orderedLessons.map((lesson, index) => (
             <div key={lesson.id} className={lesson.status}>
               <span>{String(index + 1).padStart(2, '0')}</span>
               <strong>{lesson.title[locale]}</strong>

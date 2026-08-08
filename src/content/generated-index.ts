@@ -4,6 +4,8 @@ export const lessonFiles = [
   'container-restart-vs-pod-replacement.yaml',
   'deployment-replicaset-and-pods.yaml',
   'dns-and-service-discovery.yaml',
+  'full-external-request.yaml',
+  'hpa.yaml',
   'labels-and-selectors.yaml',
   'manifest-to-running-pod.yaml',
   'pending-and-scheduling.yaml',
@@ -16,6 +18,8 @@ export const lessonFiles = [
 export const scenarioFiles = [
   'container-restart-golden.yaml',
   'demo-shop.yaml',
+  'external-browser-request.yaml',
+  'hpa-scale-out.yaml',
   'internal-request-and-dns.yaml',
   'probes-and-rolling-update.yaml',
   'service-routes-to-pods.yaml',

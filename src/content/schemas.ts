@@ -417,6 +417,42 @@ export const lessonV2Schema = z
   })
   .strict();
 
+export const flowStoryBeatSchema = z
+  .object({
+    id: z.string().min(1),
+    stepId: z.string().min(1),
+    routeIds: z.array(z.string().min(1)),
+    selectedRouteId: z.string().min(1).optional(),
+  })
+  .strict()
+  .refine(
+    (beat) => !beat.selectedRouteId || beat.routeIds.includes(beat.selectedRouteId),
+    'A selected flow-story route must also appear in routeIds',
+  );
+
+export const flowStorySchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    id: z.string().min(1),
+    priority: z.enum(['P0', 'P1']),
+    lessonId: z.string().min(1),
+    scenarioId: z.string().min(1),
+    title: localizedTextSchema,
+    summary: localizedTextSchema,
+    outcome: localizedTextSchema,
+    sourceIds: z.array(sourceIdSchema).min(1),
+    verifiedAt: z.iso.date(),
+    beats: z.array(flowStoryBeatSchema).min(1),
+  })
+  .strict();
+
+export const flowStoriesSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    stories: z.array(flowStorySchema).min(1),
+  })
+  .strict();
+
 /** Identifies retained v1 lesson files without reinterpreting them as v2. */
 export const legacyLessonMarkerSchema = z
   .object({ schemaVersion: z.literal(1), id: z.string().min(1), scenarioId: z.string().min(1) })

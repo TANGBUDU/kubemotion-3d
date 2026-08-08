@@ -77,7 +77,7 @@ test('all ten steps expose the correct causal and factual timeline', async ({ pa
     window.__KUBEMOTION_TEST__?.getSceneDiagnostics(),
   );
   expect(schedulingDiagnostics).toMatchObject({
-    routeHandles: 1,
+    routeHandles: 2,
     routeObstacleIntersections: 0,
     routeEndpointDriftCount: 0,
     activeRouteWidthsBelowMinimum: 0,
@@ -201,7 +201,7 @@ test('normal-motion scheduling keeps every token on the live replanned route', a
   expect(
     await page.evaluate(() => window.__KUBEMOTION_TEST__?.getSceneDiagnostics()),
   ).toMatchObject({
-    routeHandles: 1,
+    routeHandles: 2,
     flowTokens: 0,
     routeEndpointDriftCount: 0,
     routeObstacleIntersections: 0,

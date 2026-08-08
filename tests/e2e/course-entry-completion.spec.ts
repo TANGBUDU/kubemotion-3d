@@ -12,6 +12,8 @@ const RESTART_LESSON = 'container-restart-vs-pod-replacement';
 const LABELS_LESSON = 'labels-and-selectors';
 const DNS_LESSON = 'dns-and-service-discovery';
 const PROBES_LESSON = 'probes-and-rolling-update';
+const EXTERNAL_REQUEST_LESSON = 'full-external-request';
+const HPA_LESSON = 'hpa';
 const progressKey = 'kubemotion:v1:progress';
 
 const availableLessons = [
@@ -27,6 +29,8 @@ const availableLessons = [
   { id: SERVICE_LESSON, finalStep: 5 },
   { id: DNS_LESSON, finalStep: 5 },
   { id: PROBES_LESSON, finalStep: 7 },
+  { id: EXTERNAL_REQUEST_LESSON, finalStep: 5 },
+  { id: HPA_LESSON, finalStep: 7 },
 ] as const;
 
 async function seedCompletedLessons(page: Page, completedLessonIds: readonly string[]) {

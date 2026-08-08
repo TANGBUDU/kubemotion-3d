@@ -4,6 +4,7 @@ test('deep link and back navigation restore projection', async ({ page }) => {
   await page.goto('/#/learn/container-restart-vs-pod-replacement/6');
   await expect(page.getByTestId('teaching-step-heading')).toContainText(
     'The new Pod is Pending and unscheduled',
+    { timeout: 20_000 },
   );
   await expect(page.locator('.view-badge')).toHaveText('CONTROL FLOW');
   await page.getByRole('button', { name: /Next/i }).click();

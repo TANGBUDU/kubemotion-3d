@@ -18,15 +18,15 @@ lessonOrder:
   - service-routes-to-pods
   - dns-and-service-discovery
   - probes-and-rolling-update
+  - full-external-request
+  - hpa
   - pod-network-and-cni
   - service-types
   - ingress-and-gateway
-  - full-external-request
   - configmap-and-secret
   - pvc-pv-storageclass
   - statefulset
   - requests-and-limits
-  - hpa
   - final-503-challenge
 lessons:
   - id: why-kubernetes-exists
@@ -203,7 +203,7 @@ lessons:
   - id: pod-network-and-cni
     chapterId: networking-resilience
     status: planned
-    prerequisites: [probes-and-rolling-update]
+    prerequisites: [hpa]
     title: { en: Pod network and CNI, ja: Pod ネットワークと CNI, zh-CN: Pod 网络与 CNI }
     learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
     estimatedMinutes: 8
@@ -224,15 +224,25 @@ lessons:
     estimatedMinutes: 8
   - id: full-external-request
     chapterId: external-traffic
-    status: planned
-    prerequisites: [ingress-and-gateway]
-    title: { en: Full external request, ja: 外部リクエスト全体, zh-CN: 完整外部请求 }
-    learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
+    status: available
+    prerequisites: [probes-and-rolling-update]
+    title:
+      {
+        en: Complete external browser request,
+        ja: 完全な外部 Browser request,
+        zh-CN: 完整的外部浏览器请求,
+      }
+    learningOutcome:
+      {
+        en: Separate public DNS from the application data path and distinguish Gateway API configuration from packet-processing infrastructure.,
+        ja: Public DNS と application data path を分け、Gateway API 設定と packet-processing infrastructure を区別する。,
+        zh-CN: 区分公共 DNS 与应用数据路径，并区分 Gateway API 配置和数据包处理基础设施。,
+      }
     estimatedMinutes: 8
   - id: configmap-and-secret
     chapterId: configuration-storage
     status: planned
-    prerequisites: [full-external-request]
+    prerequisites: [ingress-and-gateway]
     title: { en: ConfigMap and Secret, ja: ConfigMap と Secret, zh-CN: ConfigMap 与 Secret }
     learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
     estimatedMinutes: 7
@@ -264,16 +274,21 @@ lessons:
     estimatedMinutes: 8
   - id: hpa
     chapterId: resources-scaling
-    status: planned
-    prerequisites: [requests-and-limits]
+    status: available
+    prerequisites: [full-external-request]
     title:
       { en: Horizontal Pod Autoscaling, ja: Horizontal Pod Autoscaling, zh-CN: 水平 Pod 自动扩缩 }
-    learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
+    learningOutcome:
+      {
+        en: Explain that HPA changes desired replicas and trace the independent controllers and Node runtime that create a new Ready backend.,
+        ja: HPA が desired replicas を変更し、独立した controller と Node runtime が新しい Ready backend を作る流れを説明する。,
+        zh-CN: 解释 HPA 修改期望副本数，并追踪独立控制器与 Node 运行时如何创建新的 Ready 后端。,
+      }
     estimatedMinutes: 8
   - id: final-503-challenge
     chapterId: resources-scaling
     status: planned
-    prerequisites: [hpa]
+    prerequisites: [requests-and-limits]
     title:
       {
         en: Common failures and the final 503 challenge,

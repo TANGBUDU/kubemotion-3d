@@ -773,36 +773,73 @@ steps:
                   targetRef: api-object:namespaced:shop:Pod:api-v2-a
                   conditions: { ready: true, serving: true, terminating: false }
     viewPatch:
-      view: logical
-      cameraPresetId: logical
+      view: traffic
+      cameraPresetId: traffic
       resetEntities: true
       entityRules:
         - selector:
             byIds:
-              - api-object:namespaced:shop:Deployment:api
-              - api-object:namespaced:shop:ReplicaSet:api-v1
-              - api-object:namespaced:shop:ReplicaSet:api-v2
+              - api-object:namespaced:shop:Pod:rollout-client
+              - api-object:namespaced:shop:Service:api
               - api-object:namespaced:shop:Pod:api-v1-b
               - api-object:namespaced:shop:Pod:api-v2-a
               - api-object:namespaced:shop:EndpointSlice:api-slice
           visible: true
           emphasis: normal
           labelMode: full
-        - selector: { byIds: [api-object:namespaced:shop:ReplicaSet:api-v1] }
+        - selector: { byIds: [api-object:namespaced:shop:Service:api] }
           emphasis: focused
           inspectorMode: expanded
       relationRules:
-        - byType: owns
-          visible: true
-          emphasis: focused
         - byType: references
+          visible: true
+          emphasis: dimmed
+        - byType: contains-endpoint-for
           visible: true
           emphasis: dimmed
       callouts:
         - id: old-count-shrinks
-          entityId: api-object:namespaced:shop:ReplicaSet:api-v1
-          text: { en: 'old Ready: 2 → 1', ja: 'old Ready: 2 → 1', zh-CN: '旧 Ready：2 → 1' }
-      activeRoutes: []
+          entityId: api-object:namespaced:shop:Service:api
+          text:
+            {
+              en: 'old Ready: 2 → 1 · route stays on Ready v2',
+              ja: 'old Ready: 2 → 1 · Ready v2 への経路は維持',
+              zh-CN: '旧 Ready：2 → 1 · Ready v2 路线保持',
+            }
+      activeRoutes:
+        - id: ready-v2-request
+          semantic: data-flow
+          requestId: rollout-request-a
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice
+            serviceId: api-object:namespaced:shop:Service:api
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-v2-a
+          label:
+            {
+              en: Ready v2 remains in service,
+              ja: Ready v2 は引き続きサービス対象,
+              zh-CN: Ready v2 继续接收流量,
+            }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:rollout-client
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: network-in
+              label:
+                { en: enter stable Service, ja: 安定した Service に入る, zh-CN: 进入稳定 Service }
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Pod:api-v2-a
+              toAnchor: network-in
+              label:
+                {
+                  en: keep Ready v2 selected,
+                  ja: Ready v2 を選択し続ける,
+                  zh-CN: 继续选择 Ready v2,
+                }
     transition:
       cues:
         - type: entity-exit

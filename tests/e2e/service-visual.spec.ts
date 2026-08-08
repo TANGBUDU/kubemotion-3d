@@ -37,8 +37,11 @@ for (let stepIndex = 0; stepIndex < SERVICE_STEP_TITLES.length; stepIndex += 1) 
       await expect(page.locator('.scene-callout:not([hidden])')).toContainText(
         'ready=false · serving=false · terminating=false',
       );
-      await expect(page.locator('.scene-route-label:not([hidden])')).toHaveCount(0);
-      await expect(page.locator('#scene-accessible-summary')).not.toContainText(
+      await expect(page.locator('.scene-route-label:not([hidden])')).toContainText([
+        'Same stable Service',
+        'select Ready api-c',
+      ]);
+      await expect(page.locator('#scene-accessible-summary')).toContainText(
         'target api-c at network-in',
       );
     }
@@ -106,8 +109,11 @@ test('Service identity stays stable while a later request selects another Ready 
   await expect(page.locator('.scene-callout:not([hidden])')).toContainText(
     'ready=false · serving=false · terminating=false',
   );
-  await expect(page.locator('.scene-route-label:not([hidden])')).toHaveCount(0);
-  await expect(page.locator('#scene-accessible-summary')).not.toContainText(
+  await expect(page.locator('.scene-route-label:not([hidden])')).toContainText([
+    'Same stable Service',
+    'select Ready api-c',
+  ]);
+  await expect(page.locator('#scene-accessible-summary')).toContainText(
     'target api-c at network-in',
   );
 

@@ -125,6 +125,111 @@
   margin-top: 30px;
 }
 
+.flow-story-catalog {
+  margin-top: 82px;
+  padding-top: 34px;
+  border-top: 1px solid var(--border);
+}
+
+.flow-story-catalog > header {
+  max-width: 760px;
+}
+
+.flow-story-catalog > header > span {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.flow-story-catalog > header h2 {
+  margin: 12px 0 10px;
+  font-size: clamp(28px, 3vw, 44px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.flow-story-catalog > header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.flow-story-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.flow-story-grid article {
+  display: flex;
+  min-height: 228px;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid rgb(104 153 196 / 22%);
+  border-radius: 13px;
+  background: linear-gradient(145deg, rgb(17 39 63 / 78%), rgb(8 22 38 / 92%));
+}
+
+.flow-story-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #8fa9c0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.flow-story-meta [data-priority] {
+  padding: 3px 7px;
+  border: 1px solid rgb(139 211 255 / 30%);
+  border-radius: 999px;
+  color: #aadaff;
+}
+
+.flow-story-meta [data-priority='P0'] {
+  border-color: rgb(98 201 152 / 38%);
+  color: #79dfac;
+}
+
+.flow-story-grid h3 {
+  margin: 18px 0 8px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.flow-story-grid p {
+  margin: 0 0 18px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.flow-story-grid a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: auto;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.flow-story-grid a:hover {
+  color: #dff3ff;
+}
+
+@media (max-width: 1100px) {
+  .flow-story-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 720px) {
   .orientation-card {
     margin-top: 22px;
@@ -167,5 +272,18 @@
   .orientation-continue,
   .orientation-revisit {
     min-height: var(--touch-target);
+  }
+
+  .flow-story-catalog {
+    margin-top: 54px;
+    padding-top: 26px;
+  }
+
+  .flow-story-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-story-grid article {
+    min-height: 200px;
   }
 }

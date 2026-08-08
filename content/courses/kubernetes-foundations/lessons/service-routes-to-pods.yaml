@@ -354,12 +354,12 @@ steps:
       ja: Request A の完了後も api-a が ready=false、serving=false、terminating=false で一覧に残ることを確認する。
       zh-CN: 观察请求 A 完成后，api-a 仍以 ready=false、serving=false、terminating=false 保留在列表中。
     narration:
-      en: The endpoint row remains present, but ready=false and serving=false, so this lesson’s normal Service path does not select it. Request A has already completed; no request is animated in this step.
+      en: The endpoint row remains present, but ready=false and serving=false, so ordinary Service traffic no longer selects it. Request A has completed; the persistent route now makes the next eligible path to Ready api-c readable before any new token moves.
       ja: endpoint の行は残りますが、ready=false かつ serving=false のため、このレッスンの通常の Service 経路では選択されません。Request A はすでに完了しており、このステップではリクエストをアニメーションしません。
       zh-CN: Endpoint 行仍然存在，但 ready=false 且 serving=false，因此本课程的普通 Service 路径不会选择它。请求 A 已经完成；此步骤不播放任何请求动画。
     teaching:
       whatChanged:
-        en: api-a changes from Ready to NotReady; its endpoint conditions change from ready=true and serving=true to ready=false and serving=false. The Service address stays unchanged.
+        en: api-a changes from Ready to NotReady; its endpoint conditions change to ready=false and serving=false, the prior api-a route disappears, and the alternative route to Ready api-c becomes visible. The Service address stays unchanged.
         ja: api-a は Ready から NotReady になり、endpoint 条件は ready=true・serving=true から ready=false・serving=false に変わります。Service アドレスは変わりません。
         zh-CN: api-a 从 Ready 变为 NotReady；其 Endpoint 条件从 ready=true、serving=true 变为 ready=false、serving=false。Service 地址保持不变。
       whyItHappened:
@@ -446,7 +446,36 @@ steps:
               ja: 'endpoint は残る · ready=false · serving=false · terminating=false',
               zh-CN: 'Endpoint 仍保留 · ready=false · serving=false · terminating=false',
             }
-      activeRoutes: []
+      activeRoutes:
+        - id: client-service-api-c
+          semantic: data-flow
+          requestId: request-b
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice
+            serviceId: api-object:namespaced:shop:Service:api
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-c
+          label:
+            {
+              en: Next request shifts to Ready api-c,
+              ja: 次のリクエストは Ready な api-c へ移行,
+              zh-CN: 下一请求转向 Ready api-c,
+            }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:traffic-client
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: network-in
+              label:
+                { en: Same stable Service, ja: 同じ安定した Service, zh-CN: 同一个稳定 Service }
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Pod:api-c
+              toAnchor: network-in
+              label:
+                { en: select Ready api-c, ja: Ready な api-c を選択, zh-CN: 选择 Ready 的 api-c }
 
   - id: later-request-ready-backend
     title:

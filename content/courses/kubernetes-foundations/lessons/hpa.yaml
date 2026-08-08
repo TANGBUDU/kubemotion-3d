@@ -1,0 +1,1044 @@
+schemaVersion: 2
+id: hpa
+scenarioId: hpa-scale-out
+chapterId: resources-scaling
+title:
+  en: Horizontal Pod Autoscaling
+  ja: Horizontal Pod Autoscaling
+  zh-CN: 水平 Pod 自动扩缩
+summary:
+  en: Follow one synthetic CPU signal through the HPA scale decision, ordinary workload reconciliation, scheduling, node runtime startup, readiness, endpoint membership, and expanded Service capacity.
+  ja: 1 つの合成 CPU シグナルを、HPA の scale 判断、通常の workload 調整、scheduling、node runtime の起動、readiness、endpoint 参加、Service 容量拡大まで追跡します。
+  zh-CN: 跟踪一个虚构 CPU 信号，依次观察 HPA 扩缩决策、常规工作负载协调、调度、节点运行时启动、就绪、Endpoint 成员更新和 Service 容量扩展。
+learningOutcome:
+  en: Explain that HPA changes a desired replica count rather than starting containers, then trace the independent controllers and runtime actions that turn that desired count into one additional Ready backend.
+  ja: HPA はコンテナを起動せず desired replica 数を変更することを説明し、その desired 数を 1 つの追加 Ready backend に変える独立した controller と runtime の処理を追跡する。
+  zh-CN: 说明 HPA 修改的是期望副本数而非直接启动容器，并追踪各独立控制器与运行时如何把该期望值变成一个新增 Ready 后端。
+prerequisites: [full-external-request]
+sourceIds:
+  [
+    k8s-hpa,
+    k8s-resources,
+    k8s-deployments,
+    k8s-replicasets,
+    k8s-components,
+    k8s-pods,
+    k8s-cri,
+    k8s-services,
+    k8s-endpoint-slices,
+  ]
+verifiedAt: '2026-08-08'
+
+baseView:
+  view: control-flow
+  cameraPresetId: control-flow
+  resetEntities: true
+  entityRules:
+    - selector:
+        byIds:
+          - runtime-component:cluster:global:MetricSource:resource-metrics
+          - api-object:namespaced:shop:HorizontalPodAutoscaler:api
+          - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+          - api-object:namespaced:shop:Deployment:api
+          - api-object:namespaced:shop:ReplicaSet:api-rs
+      visible: true
+      emphasis: normal
+      labelMode: full
+  relationRules:
+    - byType: watches
+      visible: true
+      emphasis: dimmed
+    - byType: reports-to
+      visible: true
+      emphasis: dimmed
+    - byType: owns
+      visible: true
+      emphasis: dimmed
+  activeRoutes: []
+
+steps:
+  - id: metric-rises
+    title: { en: CPU rises above the target, ja: CPU が target を超える, zh-CN: CPU 升至目标值之上 }
+    learningOutcome:
+      en: Read the observed and target values before interpreting any scale decision.
+      ja: scale 判断を解釈する前に、observed 値と target 値を読み取る。
+      zh-CN: 在解释扩缩决策前先读取观测值与目标值。
+    narration:
+      en: The synthetic CPU sample rises from 45% to 78%, above the HPA target of 60%. The persistent control route shows the observation reaching the HPA; no replica count changes yet.
+      ja: 合成 CPU サンプルが 45% から 78% に上がり、HPA target の 60% を超えます。持続表示される control route は観測値が HPA に届くことを示しますが、まだレプリカ数は変わりません。
+      zh-CN: 虚构 CPU 样本从 45% 升至 78%，超过 HPA 的 60% 目标值。持久控制路线表示观测值到达 HPA；此时副本数尚未变化。
+    teaching:
+      whatChanged:
+        en: resource-metrics.observedUtilization and the HPA current metric changed from 45 to 78.
+        ja: resource-metrics.observedUtilization と HPA の current metric が 45 から 78 に変わりました。
+        zh-CN: resource-metrics.observedUtilization 与 HPA 当前指标由 45 变为 78。
+      whyItHappened:
+        en: This synthetic snapshot represents a sustained workload increase sampled through the resource metrics pipeline.
+        ja: この合成 snapshot は、resource metrics 経路でサンプリングされた継続的な負荷上昇を表します。
+        zh-CN: 该虚构快照表示资源指标链路采样到的持续负载上升。
+      takeaway:
+        en: A high metric is input evidence, not proof that another Pod or container already exists.
+        ja: 高い metric は入力の証拠であり、追加 Pod やコンテナがすでに存在する証拠ではありません。
+        zh-CN: 高指标只是输入证据，并不证明额外 Pod 或容器已经存在。
+    evidence:
+      entityIds:
+        - runtime-component:cluster:global:MetricSource:resource-metrics
+        - api-object:namespaced:shop:HorizontalPodAutoscaler:api
+      mode: diff-with-context
+    introducesTerms: [desired-state]
+    usesTerms: []
+    sourceIds: [k8s-hpa, k8s-resources]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: runtime-component:cluster:global:MetricSource:resource-metrics
+          patch: { data: { observedUtilization: 78 } }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:HorizontalPodAutoscaler:api
+          patch:
+            data:
+              metric:
+                { type: Resource, resource: cpu, targetType: Utilization, target: 60, current: 78 }
+    viewPatch:
+      view: control-flow
+      cameraPresetId: control-flow
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:MetricSource:resource-metrics
+              - api-object:namespaced:shop:HorizontalPodAutoscaler:api
+              - api-object:namespaced:shop:Deployment:api
+              - api-object:namespaced:shop:ReplicaSet:api-rs
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [runtime-component:cluster:global:MetricSource:resource-metrics] }
+          emphasis: focused
+          inspectorMode: expanded
+      activeRoutes:
+        - id: route-metrics-to-hpa
+          semantic: control
+          label: { en: CPU sample 78%, ja: CPU sample 78%, zh-CN: CPU 样本 78% }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:cluster:global:MetricSource:resource-metrics
+              fromAnchor: control
+              toEntityId: api-object:namespaced:shop:HorizontalPodAutoscaler:api
+              toAnchor: control
+              label:
+                {
+                  en: observed 78 / target 60,
+                  ja: observed 78 / target 60,
+                  zh-CN: 观测 78 / 目标 60,
+                }
+    transition:
+      cues:
+        - type: counter-change
+          entityId: runtime-component:cluster:global:MetricSource:resource-metrics
+          field: data.observedUtilization
+          from: 45
+          to: 78
+          durationMs: 650
+        - type: counter-change
+          entityId: api-object:namespaced:shop:HorizontalPodAutoscaler:api
+          field: data.metric.current
+          from: 45
+          to: 78
+          durationMs: 650
+        - type: reconcile-pulse
+          fromEntityId: runtime-component:cluster:global:MetricSource:resource-metrics
+          toEntityId: api-object:namespaced:shop:HorizontalPodAutoscaler:api
+          routeId: route-metrics-to-hpa
+          durationMs: 950
+
+  - id: hpa-raises-desired-replicas
+    title:
+      en: HPA writes a new desired count
+      ja: HPA が新しい desired 数を書き込む
+      zh-CN: HPA 写入新的期望副本数
+    learningOutcome:
+      en: Separate the HPA scale write from later Pod and container creation.
+      ja: HPA の scale 書き込みを、後で行われる Pod とコンテナの作成から分離する。
+      zh-CN: 区分 HPA 扩缩写入与后续 Pod、容器创建。
+    narration:
+      en: From the observed-to-target ratio and its bounds, the HPA chooses three replicas and writes the Deployment scale target through the API Server. The ReplicaSet still reports two desired replicas, and no third Pod or container exists.
+      ja: HPA は observed/target の比率と境界から 3 レプリカを選び、API Server 経由で Deployment の scale target を書き込みます。ReplicaSet の desired はまだ 2 で、3 つ目の Pod やコンテナは存在しません。
+      zh-CN: HPA 根据观测值与目标值之比及边界计算出三个副本，并通过 API Server 写入 Deployment 扩缩目标。ReplicaSet 的期望值仍为两个，第三个 Pod 和容器尚不存在。
+    teaching:
+      whatChanged:
+        en: HPA desiredReplicas and Deployment desiredReplicas changed from 2 to 3; ReplicaSet counters and runtime objects did not change.
+        ja: HPA desiredReplicas と Deployment desiredReplicas が 2 から 3 に変わりました。ReplicaSet の counter と runtime object は変わっていません。
+        zh-CN: HPA 与 Deployment 的 desiredReplicas 由 2 变为 3；ReplicaSet 计数和运行时对象没有变化。
+      whyItHappened:
+        en: HPA updates the scale subresource of its target; ordinary workload controllers react to that desired state afterward.
+        ja: HPA は target の scale subresource を更新し、その後に通常の workload controller が desired state に反応します。
+        zh-CN: HPA 更新目标的 scale 子资源；普通工作负载控制器随后才对该期望状态作出反应。
+      takeaway:
+        en: HPA changes desired replicas. It does not schedule a Pod, call a container runtime, or start a container directly.
+        ja: HPA が変更するのは desired replica です。Pod の scheduling、container runtime の呼び出し、コンテナ起動を直接行いません。
+        zh-CN: HPA 修改的是期望副本数；它不直接调度 Pod、调用容器运行时或启动容器。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:HorizontalPodAutoscaler:api
+        - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+        - api-object:namespaced:shop:Deployment:api
+        - api-object:namespaced:shop:ReplicaSet:api-rs
+      mode: diff-with-context
+    introducesTerms: [kubernetes-api, deployment]
+    usesTerms: [desired-state]
+    sourceIds: [k8s-hpa, k8s-api, k8s-deployments]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:HorizontalPodAutoscaler:api
+          patch: { data: { desiredReplicas: 3 } }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Deployment:api
+          patch: { status: not-ready, data: { desiredReplicas: 3 } }
+    viewPatch:
+      view: control-flow
+      cameraPresetId: control-flow
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:MetricSource:resource-metrics
+              - api-object:namespaced:shop:HorizontalPodAutoscaler:api
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - api-object:namespaced:shop:Deployment:api
+              - api-object:namespaced:shop:ReplicaSet:api-rs
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:HorizontalPodAutoscaler:api] }
+          emphasis: focused
+          inspectorMode: expanded
+      activeRoutes:
+        - id: route-hpa-api-scale-target
+          semantic: control
+          label:
+            { en: write scale target = 3, ja: scale target = 3 を書き込む, zh-CN: 写入扩缩目标 = 3 }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:HorizontalPodAutoscaler:api
+              fromAnchor: api-out
+              toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              toAnchor: api-in
+              label: { en: update scale, ja: scale を更新, zh-CN: 更新 scale }
+            - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              fromAnchor: api-out
+              toEntityId: api-object:namespaced:shop:Deployment:api
+              toAnchor: control
+              label: { en: desired replicas 3, ja: desired replicas 3, zh-CN: 期望副本 3 }
+    transition:
+      cues:
+        - type: api-request
+          routeId: route-hpa-api-scale-target
+          label: { en: PATCH scale, ja: PATCH scale, zh-CN: PATCH scale }
+          durationMs: 1300
+        - type: counter-change
+          entityId: api-object:namespaced:shop:HorizontalPodAutoscaler:api
+          field: data.desiredReplicas
+          from: 2
+          to: 3
+          durationMs: 550
+        - type: counter-change
+          entityId: api-object:namespaced:shop:Deployment:api
+          field: data.desiredReplicas
+          from: 2
+          to: 3
+          durationMs: 550
+
+  - id: replicaset-creates-pending-pod
+    title:
+      en: Workload controllers create a Pending Pod
+      ja: workload controller が Pending Pod を作る
+      zh-CN: 工作负载控制器创建 Pending Pod
+    learningOutcome:
+      en: Identify the ReplicaSet deficit as the cause of a new unscheduled Pod object.
+      ja: ReplicaSet の不足を、新しい未スケジュール Pod object の原因として識別する。
+      zh-CN: 将 ReplicaSet 副本缺口识别为新建未调度 Pod 对象的原因。
+    narration:
+      en: The Deployment and ReplicaSet controllers reconcile the target. ReplicaSet spec, observed count, and ownership grow to three, creating api-c as Pending; HPA status can now observe three current replicas. Its container status is waiting and has no container ID; HPA did not start it.
+      ja: Deployment と ReplicaSet controller が target を調整します。ReplicaSet の spec、observed 数、ownership が 3 になって api-c が Pending として作られ、HPA status も current replicas=3 を観測できます。その container status は waiting で container ID はなく、HPA が起動したわけではありません。
+      zh-CN: Deployment 与 ReplicaSet 控制器协调目标。ReplicaSet 的 spec、观测数量和所有权增至 3，并创建 Pending 的 api-c；HPA 状态此时可观察到三个当前副本。其容器状态为 waiting，尚无容器 ID；它不是由 HPA 直接启动的。
+    teaching:
+      whatChanged:
+        en: ReplicaSet counters became spec=3, observed=3, ready=2 and HPA status currentReplicas became 3; api-c and a waiting container status were added without a Node assignment.
+        ja: ReplicaSet counter は spec=3、observed=3、ready=2、HPA status currentReplicas は 3 になり、Node 割り当てなしの api-c と waiting container status が追加されました。
+        zh-CN: ReplicaSet 计数变为 spec=3、observed=3、ready=2，HPA 状态 currentReplicas 变为 3；新增 api-c 及 waiting 容器状态，但没有 Node 分配。
+      whyItHappened:
+        en: The ReplicaSet controller closes the one-replica desired-state deficit by creating a Pod API object.
+        ja: ReplicaSet controller は 1 レプリカの desired-state 不足を埋めるため、Pod API object を作成します。
+        zh-CN: ReplicaSet 控制器通过创建 Pod API 对象来填补一个副本的期望状态缺口。
+      takeaway:
+        en: Pod creation is controller reconciliation; Pending means the Pod exists before scheduling and runtime startup.
+        ja: Pod 作成は controller reconciliation です。Pending は scheduling と runtime 起動より先に Pod が存在することを示します。
+        zh-CN: Pod 创建属于控制器协调；Pending 表示 Pod 已存在，但调度和运行时启动尚未发生。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:HorizontalPodAutoscaler:api
+        - api-object:namespaced:shop:Deployment:api
+        - api-object:namespaced:shop:ReplicaSet:api-rs
+        - api-object:namespaced:shop:Pod:api-c
+        - container-status:shop:Pod:api-c:Container:api
+      mode: diff-with-context
+    introducesTerms: [replicaset, pod, pending]
+    usesTerms: [desired-state, deployment, kubernetes-api]
+    sourceIds: [k8s-hpa, k8s-deployments, k8s-replicasets, k8s-pods]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          patch:
+            {
+              status: not-ready,
+              data: { specReplicas: 3, statusReplicas: 3, readyReplicas: 2, version: v1 },
+            }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:HorizontalPodAutoscaler:api
+          patch: { data: { currentReplicas: 3 } }
+        - op: add-entity
+          entity:
+            id: api-object:namespaced:shop:Pod:api-c
+            category: api-object
+            kind: Pod
+            name: api-c
+            namespace: shop
+            labels: { app.kubernetes.io/name: api, pod-template-hash: synthetic-v1 }
+            status: pending
+            data:
+              uid: synthetic-api-scale-c-01
+              phase: Pending
+              restartPolicy: Always
+              conditions:
+                { podScheduled: false, initialized: false, containersReady: false, ready: false }
+            title: { en: api-c Pending Pod, ja: api-c Pending Pod, zh-CN: api-c Pending Pod }
+            summary:
+              en: Newly created Pod with no Node assignment and no running container.
+              ja: Node 割り当てがなく、実行中コンテナもない新規 Pod です。
+              zh-CN: 新创建、尚未分配 Node 且没有运行中容器的 Pod。
+            sourceIds: [k8s-pods, k8s-replicasets]
+            visual: { archetype: pod, size: md, group: unscheduled }
+        - op: add-entity
+          entity:
+            id: container-status:shop:Pod:api-c:Container:api
+            category: runtime-status
+            kind: Container
+            name: api
+            namespace: shop
+            status: waiting
+            data:
+              podId: api-object:namespaced:shop:Pod:api-c
+              name: api
+              image: registry.example.invalid/shop/api:v1
+              restartCount: 0
+              ready: false
+              started: false
+              state: { kind: waiting, reason: Pending }
+            title: { en: api-c container status, ja: api-c container status, zh-CN: api-c 容器状态 }
+            summary:
+              en: Desired container status with no runtime identity yet.
+              ja: まだ runtime ID を持たない desired container status です。
+              zh-CN: 尚无运行时身份的期望容器状态。
+            sourceIds: [k8s-pods, k8s-container-status-api]
+            visual: { archetype: container, size: sm, group: api-c }
+        - op: add-relation
+          relation:
+            id: api-rs-owns-api-c
+            type: owns
+            from: api-object:namespaced:shop:ReplicaSet:api-rs
+            to: api-object:namespaced:shop:Pod:api-c
+            directed: true
+            semantic: ownership
+            title: { en: owns api-c, ja: api-c を所有, zh-CN: 拥有 api-c }
+            sourceIds: [k8s-replicasets]
+        - op: add-relation
+          relation:
+            id: api-c-contains-container
+            type: contains-runtime
+            from: api-object:namespaced:shop:Pod:api-c
+            to: container-status:shop:Pod:api-c:Container:api
+            directed: true
+            semantic: composition
+            title: { en: declares api container, ja: api container を宣言, zh-CN: 声明 api 容器 }
+            sourceIds: [k8s-pods]
+    viewPatch:
+      view: control-flow
+      cameraPresetId: control-flow
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - api-object:namespaced:shop:Deployment:api
+              - api-object:namespaced:shop:ReplicaSet:api-rs
+              - api-object:namespaced:shop:Pod:api-c
+              - container-status:shop:Pod:api-c:Container:api
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-c] }
+          emphasis: focused
+          inspectorMode: expanded
+      relationRules:
+        - byType: owns
+          visible: true
+          emphasis: normal
+        - byType: contains-runtime
+          visible: true
+          emphasis: dimmed
+      activeRoutes:
+        - id: route-controller-api-create-pod
+          semantic: control
+          label:
+            { en: reconcile one missing Pod, ja: 不足 Pod を 1 つ調整, zh-CN: 协调一个缺失 Pod }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:cluster:global:ControllerManager:kube-controller-manager
+              fromAnchor: api-out
+              toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              toAnchor: api-in
+            - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              fromAnchor: api-out
+              toEntityId: api-object:namespaced:shop:Pod:api-c
+              toAnchor: api-in
+              label: { en: create Pending Pod, ja: Pending Pod を作成, zh-CN: 创建 Pending Pod }
+    transition:
+      cues:
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          field: data.specReplicas
+          from: 2
+          to: 3
+          durationMs: 550
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          field: data.statusReplicas
+          from: 2
+          to: 3
+          durationMs: 550
+        - type: entity-enter
+          entityId: api-object:namespaced:shop:Pod:api-c
+          durationMs: 800
+          delayMs: 1050
+        - type: entity-enter
+          entityId: container-status:shop:Pod:api-c:Container:api
+          durationMs: 800
+          delayMs: 1300
+        - type: reconcile-pulse
+          fromEntityId: runtime-component:cluster:global:ControllerManager:kube-controller-manager
+          toEntityId: api-object:namespaced:shop:Pod:api-c
+          routeId: route-controller-api-create-pod
+          durationMs: 1200
+
+  - id: scheduler-binds-pod
+    title:
+      {
+        en: Scheduler records a binding,
+        ja: Scheduler が binding を記録する,
+        zh-CN: Scheduler 记录绑定,
+      }
+    learningOutcome:
+      en: Distinguish a recorded Node assignment from container startup.
+      ja: 記録された Node 割り当てとコンテナ起動を区別する。
+      zh-CN: 区分已记录的 Node 分配与容器启动。
+    narration:
+      en: Scheduler selects worker-scale and records the binding through the API Server. api-c remains Pending and its container remains waiting; a binding is placement evidence, not runtime evidence.
+      ja: Scheduler は worker-scale を選び、API Server 経由で binding を記録します。api-c は Pending、コンテナは waiting のままです。binding は配置の証拠であり runtime の証拠ではありません。
+      zh-CN: Scheduler 选择 worker-scale 并通过 API Server 记录绑定。api-c 仍为 Pending，容器仍为 waiting；绑定是放置证据，不是运行时证据。
+    teaching:
+      whatChanged:
+        en: api-c gained nodeName=worker-scale, PodScheduled=true, and one scheduled-on relation; no container ID appeared.
+        ja: api-c に nodeName=worker-scale、PodScheduled=true、scheduled-on relation が追加されましたが、container ID はまだありません。
+        zh-CN: api-c 新增 nodeName=worker-scale、PodScheduled=true 及 scheduled-on 关系；仍未出现容器 ID。
+      whyItHappened:
+        en: Scheduler chose a feasible Node and persisted that decision as a binding through the Kubernetes API.
+        ja: Scheduler が実行可能な Node を選び、その判断を Kubernetes API 経由の binding として永続化したためです。
+        zh-CN: Scheduler 选择可行 Node，并通过 Kubernetes API 将该决策持久化为绑定。
+      takeaway:
+        en: Scheduling chooses and records placement. It does not itself start the container.
+        ja: scheduling は配置を選択して記録しますが、コンテナ自体を起動しません。
+        zh-CN: 调度负责选择并记录放置位置，并不直接启动容器。
+    evidence:
+      entityIds:
+        - runtime-component:cluster:global:Scheduler:kube-scheduler
+        - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+        - api-object:namespaced:shop:Pod:api-c
+        - infrastructure:cluster:global:Node:worker-scale
+        - container-status:shop:Pod:api-c:Container:api
+      mode: diff-with-context
+    introducesTerms: [scheduler, binding, scheduling]
+    usesTerms: [pod, pending, kubernetes-api]
+    sourceIds: [k8s-components, k8s-pods, k8s-nodes]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-c
+          patch:
+            data:
+              nodeName: worker-scale
+              conditions:
+                { podScheduled: true, initialized: false, containersReady: false, ready: false }
+        - op: add-relation
+          relation:
+            id: api-c-on-worker-scale
+            type: scheduled-on
+            from: api-object:namespaced:shop:Pod:api-c
+            to: infrastructure:cluster:global:Node:worker-scale
+            directed: true
+            semantic: placement
+            title:
+              {
+                en: api-c on worker-scale,
+                ja: api-c は worker-scale 上,
+                zh-CN: api-c 位于 worker-scale,
+              }
+            sourceIds: [k8s-pods, k8s-nodes]
+    viewPatch:
+      view: control-flow
+      cameraPresetId: control-flow
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:Scheduler:kube-scheduler
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - infrastructure:cluster:global:Node:worker-scale
+              - api-object:namespaced:shop:Pod:api-c
+              - container-status:shop:Pod:api-c:Container:api
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-c] }
+          emphasis: focused
+          inspectorMode: expanded
+      relationRules:
+        - byType: scheduled-on
+          visible: true
+          emphasis: focused
+        - byType: contains-runtime
+          visible: true
+          emphasis: dimmed
+      activeRoutes:
+        - id: route-hpa-scheduler-control
+          semantic: control
+          label: { en: persist the binding, ja: binding を永続化, zh-CN: 持久化绑定 }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:cluster:global:Scheduler:kube-scheduler
+              fromAnchor: api-out
+              toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              toAnchor: api-in
+              label: { en: write binding, ja: binding を書き込む, zh-CN: 写入绑定 }
+            - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              fromAnchor: api-out
+              toEntityId: api-object:namespaced:shop:Pod:api-c
+              toAnchor: api-in
+              label: { en: record nodeName, ja: nodeName を記録, zh-CN: 记录 nodeName }
+        - id: route-hpa-scheduling-decision
+          semantic: scheduling
+          label:
+            {
+              en: place api-c on worker-scale,
+              ja: api-c を worker-scale に配置,
+              zh-CN: 将 api-c 放置到 worker-scale,
+            }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:api-c
+              fromAnchor: placement
+              toEntityId: infrastructure:cluster:global:Node:worker-scale
+              toAnchor: placement
+              label: { en: selected Node, ja: 選択した Node, zh-CN: 选定 Node }
+    transition:
+      cues:
+        - type: scheduler-assignment
+          schedulerId: runtime-component:cluster:global:Scheduler:kube-scheduler
+          podId: api-object:namespaced:shop:Pod:api-c
+          nodeId: infrastructure:cluster:global:Node:worker-scale
+          routeId: route-hpa-scheduling-decision
+          durationMs: 850
+        - type: api-request
+          routeId: route-hpa-scheduler-control
+          label: { en: create binding, ja: binding を作成, zh-CN: 创建绑定 }
+          durationMs: 1050
+          delayMs: 950
+
+  - id: kubelet-starts-container
+    title:
+      en: kubelet and the runtime start the container
+      ja: kubelet と runtime がコンテナを起動する
+      zh-CN: kubelet 与运行时启动容器
+    learningOutcome:
+      en: Locate container startup on the selected Node rather than in the HPA control loop.
+      ja: コンテナ起動が HPA control loop ではなく選択された Node 上で行われることを確認する。
+      zh-CN: 确认容器启动发生在选定 Node 上，而非 HPA 控制循环中。
+    narration:
+      en: kubelet observes the assignment through the API and asks the local container runtime to start api-c's container. A new container ID appears, but readiness is still false.
+      ja: kubelet は API 経由で割り当てを確認し、local container runtime に api-c のコンテナ起動を依頼します。新しい container ID が現れますが、readiness はまだ false です。
+      zh-CN: kubelet 通过 API 观察到分配，并要求本地容器运行时启动 api-c 的容器。新的容器 ID 出现，但就绪仍为 false。
+    teaching:
+      whatChanged:
+        en: The container moved from waiting to running with a first container ID; the Pod phase became Running but Ready stayed false.
+        ja: コンテナは waiting から running になり最初の container ID を得ました。Pod phase は Running ですが Ready は false のままです。
+        zh-CN: 容器由 waiting 变为 running 并获得首个容器 ID；Pod 阶段变为 Running，但 Ready 仍为 false。
+      whyItHappened:
+        en: kubelet owns Node-local Pod execution and uses the CRI-backed runtime after the binding is visible.
+        ja: kubelet は Node-local な Pod 実行を担当し、binding を確認した後に CRI 対応 runtime を使います。
+        zh-CN: kubelet 负责节点本地的 Pod 执行，并在绑定可见后调用支持 CRI 的运行时。
+      takeaway:
+        en: The node-runtime route is separate from the earlier HPA, controller, and scheduling routes.
+        ja: node-runtime route は、それ以前の HPA、controller、scheduling route とは別です。
+        zh-CN: 节点运行时路线独立于此前的 HPA、控制器和调度路线。
+    evidence:
+      entityIds:
+        - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+        - runtime-component:node:worker-scale:Kubelet:kubelet
+        - runtime-component:node:worker-scale:ContainerRuntime:containerd
+        - api-object:namespaced:shop:Pod:api-c
+        - container-status:shop:Pod:api-c:Container:api
+      mode: diff-with-context
+    introducesTerms: [container, cri]
+    usesTerms: [pod, binding]
+    sourceIds: [k8s-components, k8s-cri, k8s-pod-lifecycle, k8s-container-status-api]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-c
+          patch:
+            status: not-ready
+            data:
+              phase: Running
+              podIP: 192.0.2.43
+              syntheticAddress: true
+              conditions:
+                { podScheduled: true, initialized: true, containersReady: false, ready: false }
+        - op: patch-entity
+          entityId: container-status:shop:Pod:api-c:Container:api
+          patch:
+            status: running
+            data:
+              containerID: containerd://synthetic-api-scale-c-01
+              ready: false
+              started: true
+              state: { kind: running, startedAt: '2026-08-08T00:04:00Z' }
+    viewPatch:
+      view: control-flow
+      cameraPresetId: control-flow
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - infrastructure:cluster:global:Node:worker-scale
+              - runtime-component:node:worker-scale:Kubelet:kubelet
+              - runtime-component:node:worker-scale:ContainerRuntime:containerd
+              - api-object:namespaced:shop:Pod:api-c
+              - container-status:shop:Pod:api-c:Container:api
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [container-status:shop:Pod:api-c:Container:api] }
+          emphasis: focused
+          inspectorMode: expanded
+      relationRules:
+        - byType: scheduled-on
+          visible: true
+          emphasis: dimmed
+        - byType: contains-runtime
+          visible: true
+          emphasis: normal
+        - byType: implemented-by
+          visible: true
+          emphasis: dimmed
+      activeRoutes:
+        - id: route-api-kubelet-watch
+          semantic: control
+          label: { en: observe assigned Pod, ja: assigned Pod を監視, zh-CN: 观察已分配 Pod }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              fromAnchor: api-out
+              toEntityId: runtime-component:node:worker-scale:Kubelet:kubelet
+              toAnchor: api-in
+        - id: route-kubelet-runtime-start
+          semantic: node-runtime
+          label:
+            { en: start through local runtime, ja: local runtime で起動, zh-CN: 通过本地运行时启动 }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:node:worker-scale:Kubelet:kubelet
+              fromAnchor: local-runtime
+              toEntityId: runtime-component:node:worker-scale:ContainerRuntime:containerd
+              toAnchor: local-runtime
+              label: { en: CRI request, ja: CRI request, zh-CN: CRI 请求 }
+            - fromEntityId: runtime-component:node:worker-scale:ContainerRuntime:containerd
+              fromAnchor: local-runtime
+              toEntityId: container-status:shop:Pod:api-c:Container:api
+              toAnchor: local-runtime
+              label: { en: create runtime identity, ja: runtime ID を作成, zh-CN: 创建运行时身份 }
+    transition:
+      cues:
+        - type: api-request
+          routeId: route-api-kubelet-watch
+          label: { en: watch assignment, ja: assignment を watch, zh-CN: 观察分配 }
+          durationMs: 1000
+        - type: container-start
+          entityId: container-status:shop:Pod:api-c:Container:api
+          durationMs: 1200
+
+  - id: pod-becomes-ready
+    title:
+      { en: The new Pod becomes Ready, ja: 新しい Pod が Ready になる, zh-CN: 新 Pod 变为 Ready }
+    learningOutcome:
+      en: Use Pod conditions and controller counters to distinguish running from traffic readiness.
+      ja: Pod condition と controller counter を使い、running と traffic readiness を区別する。
+      zh-CN: 使用 Pod 条件和控制器计数区分运行中与可接收流量。
+    narration:
+      en: The container reports ready, the Pod Ready condition turns true, and kubelet reports status through the API Server. ReplicaSet and Deployment ready counts reach three, but EndpointSlice still lists only two backends until its controller reconciles.
+      ja: コンテナが ready を報告し、Pod Ready condition が true になり、kubelet が API Server 経由で status を報告します。ReplicaSet と Deployment の ready 数は 3 になりますが、EndpointSlice controller の調整までは backend は 2 つのままです。
+      zh-CN: 容器上报 ready，Pod Ready 条件变为 true，kubelet 通过 API Server 上报状态。ReplicaSet 与 Deployment 的 ready 数达到 3，但在 EndpointSlice 控制器协调前，后端列表仍只有两个。
+    teaching:
+      whatChanged:
+        en: api-c and its container became Ready; ReplicaSet readyReplicas and Deployment ready/available replicas changed from 2 to 3.
+        ja: api-c とそのコンテナが Ready になり、ReplicaSet readyReplicas と Deployment ready/available replicas が 2 から 3 に変わりました。
+        zh-CN: api-c 及其容器变为 Ready；ReplicaSet readyReplicas 与 Deployment ready/available 副本由 2 变为 3。
+      whyItHappened:
+        en: Successful readiness evidence is reported as Pod status and then reflected by workload controller status.
+        ja: 成功した readiness の証拠が Pod status として報告され、workload controller status に反映されるためです。
+        zh-CN: 成功的就绪证据作为 Pod 状态上报，随后反映到工作负载控制器状态中。
+      takeaway:
+        en: A running container is not automatically a Ready Service backend; readiness and endpoint membership are distinct facts.
+        ja: running コンテナが自動的に Ready Service backend になるわけではなく、readiness と endpoint membership は別の事実です。
+        zh-CN: 运行中的容器不会自动成为 Ready Service 后端；就绪与 Endpoint 成员关系是不同事实。
+    evidence:
+      entityIds:
+        - runtime-component:node:worker-scale:Kubelet:kubelet
+        - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+        - api-object:namespaced:shop:Pod:api-c
+        - container-status:shop:Pod:api-c:Container:api
+        - api-object:namespaced:shop:ReplicaSet:api-rs
+        - api-object:namespaced:shop:Deployment:api
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+      mode: diff-with-context
+    introducesTerms: []
+    usesTerms: [pod, container, replicaset, deployment]
+    sourceIds: [k8s-pod-conditions, k8s-pods, k8s-replicasets, k8s-deployments]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: container-status:shop:Pod:api-c:Container:api
+          patch: { data: { ready: true } }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-c
+          patch:
+            status: ready
+            data:
+              conditions:
+                { podScheduled: true, initialized: true, containersReady: true, ready: true }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          patch: { status: ready, data: { readyReplicas: 3 } }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Deployment:api
+          patch:
+            { status: ready, data: { readyReplicas: 3, availableReplicas: 3, updatedReplicas: 3 } }
+    viewPatch:
+      view: control-flow
+      cameraPresetId: control-flow
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - infrastructure:cluster:global:Node:worker-scale
+              - runtime-component:node:worker-scale:Kubelet:kubelet
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - api-object:namespaced:shop:Pod:api-c
+              - container-status:shop:Pod:api-c:Container:api
+              - api-object:namespaced:shop:ReplicaSet:api-rs
+              - api-object:namespaced:shop:Deployment:api
+              - api-object:namespaced:shop:EndpointSlice:api-slice
+          visible: true
+          emphasis: normal
+          labelMode: short
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-c] }
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules:
+        - byType: owns
+          visible: true
+          emphasis: dimmed
+        - byType: contains-runtime
+          visible: true
+          emphasis: dimmed
+      activeRoutes:
+        - id: route-kubelet-api-ready
+          semantic: control
+          label: { en: report Ready=true, ja: Ready=true を報告, zh-CN: 上报 Ready=true }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:node:worker-scale:Kubelet:kubelet
+              fromAnchor: api-out
+              toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              toAnchor: api-in
+    transition:
+      cues:
+        - type: api-request
+          routeId: route-kubelet-api-ready
+          label: { en: Pod status update, ja: Pod status update, zh-CN: Pod 状态更新 }
+          durationMs: 1100
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          field: data.readyReplicas
+          from: 2
+          to: 3
+          durationMs: 550
+        - type: counter-change
+          entityId: api-object:namespaced:shop:Deployment:api
+          field: data.readyReplicas
+          from: 2
+          to: 3
+          durationMs: 550
+
+  - id: endpointslice-adds-backend
+    title:
+      en: EndpointSlice gains the Ready backend
+      ja: EndpointSlice に Ready backend が加わる
+      zh-CN: EndpointSlice 加入 Ready 后端
+    learningOutcome:
+      en: Connect readiness to endpoint membership without treating EndpointSlice as a packet hop.
+      ja: EndpointSlice を packet hop とせず、readiness と endpoint membership を結び付ける。
+      zh-CN: 将就绪与 Endpoint 成员关系关联起来，同时不把 EndpointSlice 当作数据包 Hop。
+    narration:
+      en: The EndpointSlice controller observes api-c as Ready and adds address 192.0.2.43. The Service selector now matches three Ready Pods. This is control-plane configuration evidence; no application packet travels through the EndpointSlice object.
+      ja: EndpointSlice controller が api-c の Ready を確認し、address 192.0.2.43 を追加します。Service selector は 3 つの Ready Pod に一致します。これは control-plane の設定証拠であり、application packet が EndpointSlice object を通過するわけではありません。
+      zh-CN: EndpointSlice 控制器观察到 api-c Ready，并添加地址 192.0.2.43。Service Selector 现匹配三个 Ready Pod。这是控制面配置证据；应用数据包不会经过 EndpointSlice 对象。
+    teaching:
+      whatChanged:
+        en: api-c was added to the Service selection relations and EndpointSlice endpoint rows with ready=true and serving=true.
+        ja: api-c が Service selection relation と EndpointSlice endpoint row に ready=true、serving=true で追加されました。
+        zh-CN: api-c 以 ready=true、serving=true 加入 Service 选择关系与 EndpointSlice Endpoint 行。
+      whyItHappened:
+        en: The EndpointSlice controller reconciles matching Ready Pods into the Service backend inventory.
+        ja: EndpointSlice controller が selector に一致する Ready Pod を Service backend inventory に反映するためです。
+        zh-CN: EndpointSlice 控制器把匹配且 Ready 的 Pod 协调进 Service 后端清单。
+      takeaway:
+        en: EndpointSlice records eligible backends; it supports route selection but is not on the physical application route.
+        ja: EndpointSlice は利用可能 backend を記録し route 選択を支えますが、物理 application route 上にはありません。
+        zh-CN: EndpointSlice 记录可用后端并支持路线选择，但不位于实际应用流量路径上。
+    evidence:
+      entityIds:
+        - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+        - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+        - api-object:namespaced:shop:Service:api
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+        - api-object:namespaced:shop:Pod:api-c
+      mode: diff-with-context
+    introducesTerms: [service, endpoint-slice, endpoint]
+    usesTerms: [pod]
+    sourceIds: [k8s-services, k8s-endpoint-slices, k8s-labels, k8s-pod-conditions]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:EndpointSlice:api-slice
+          patch:
+            data:
+              endpoints:
+                - address: 192.0.2.41
+                  targetRef: api-object:namespaced:shop:Pod:api-a
+                  conditions: { ready: true, serving: true, terminating: false }
+                - address: 192.0.2.42
+                  targetRef: api-object:namespaced:shop:Pod:api-b
+                  conditions: { ready: true, serving: true, terminating: false }
+                - address: 192.0.2.43
+                  targetRef: api-object:namespaced:shop:Pod:api-c
+                  conditions: { ready: true, serving: true, terminating: false }
+        - op: add-relation
+          relation:
+            id: service-selects-api-c
+            type: selects
+            from: api-object:namespaced:shop:Service:api
+            to: api-object:namespaced:shop:Pod:api-c
+            directed: true
+            semantic: selection
+            title:
+              {
+                en: selector matches api-c,
+                ja: selector が api-c に一致,
+                zh-CN: Selector 匹配 api-c,
+              }
+            sourceIds: [k8s-services, k8s-labels]
+        - op: add-relation
+          relation:
+            id: api-slice-references-api-c
+            type: references
+            from: api-object:namespaced:shop:EndpointSlice:api-slice
+            to: api-object:namespaced:shop:Pod:api-c
+            directed: true
+            semantic: endpoint-membership
+            title:
+              { en: Ready api-c endpoint, ja: Ready api-c endpoint, zh-CN: Ready api-c Endpoint }
+            sourceIds: [k8s-endpoint-slices]
+            data: { address: 192.0.2.43, ready: true, serving: true, terminating: false }
+    viewPatch:
+      view: control-flow
+      cameraPresetId: control-flow
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - api-object:namespaced:shop:EndpointSlice:api-slice
+              - infrastructure:cluster:global:Node:worker-scale
+              - api-object:namespaced:shop:Pod:api-c
+          visible: true
+          emphasis: normal
+          labelMode: short
+        - selector: { byIds: [api-object:namespaced:shop:EndpointSlice:api-slice] }
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules:
+        - byType: references
+          visible: true
+          emphasis: normal
+      activeRoutes:
+        - id: route-controller-api-endpoints
+          semantic: control
+          label:
+            { en: publish Ready endpoint, ja: Ready endpoint を公開, zh-CN: 发布 Ready Endpoint }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:cluster:global:ControllerManager:kube-controller-manager
+              fromAnchor: api-out
+              toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              toAnchor: api-in
+            - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              fromAnchor: api-out
+              toEntityId: api-object:namespaced:shop:EndpointSlice:api-slice
+              toAnchor: api-in
+              label: { en: add 192.0.2.43, ja: 192.0.2.43 を追加, zh-CN: 添加 192.0.2.43 }
+    transition:
+      cues:
+        - type: reconcile-pulse
+          fromEntityId: runtime-component:cluster:global:ControllerManager:kube-controller-manager
+          toEntityId: api-object:namespaced:shop:EndpointSlice:api-slice
+          routeId: route-controller-api-endpoints
+          durationMs: 1200
+        - type: relation-reveal
+          relationId: api-slice-references-api-c
+          durationMs: 650
+
+  - id: traffic-fan-out-expands
+    title:
+      en: Capacity expands, one request chooses one backend
+      ja: 容量は増えるが 1 request は 1 backend を選ぶ
+      zh-CN: 容量扩展，但单个请求只选一个后端
+    learningOutcome:
+      en: Distinguish a larger eligible backend set from broadcasting one request to every Pod.
+      ja: 利用可能 backend 集合の拡大と、1 request を全 Pod に broadcast することを区別する。
+      zh-CN: 区分可用后端集合扩大与把单个请求广播给所有 Pod。
+    narration:
+      en: EndpointSlice now exposes three Ready candidates, so future requests can be distributed across more capacity. This synthetic request enters the stable Service and selects api-c only. The route remains visible after the token stops and never passes through the EndpointSlice object.
+      ja: EndpointSlice は 3 つの Ready candidate を公開し、今後の request をより大きな容量へ分散できます。この合成 request は安定した Service に入り api-c だけを選びます。token 停止後も route は残り、EndpointSlice object を通過しません。
+      zh-CN: EndpointSlice 现公开三个 Ready 候选，后续请求可分布到更大的容量。这个虚构请求进入稳定 Service 后仅选择 api-c。令牌停止后路线仍保留，且绝不经过 EndpointSlice 对象。
+    teaching:
+      whatChanged:
+        en: No world fact changed; the traffic view exposes the three-entry backend inventory and one persistent client → Service → api-c request route.
+        ja: world fact は変わりません。traffic view は 3 entry の backend inventory と、client → Service → api-c の 1 本の持続 request route を表示します。
+        zh-CN: 世界事实未变化；流量视图展示三个后端条目的清单，以及一条持久的客户端 → Service → api-c 请求路线。
+      whyItHappened:
+        en: Adding a Ready endpoint increases the set from which each new request may select; it does not duplicate a single request to all endpoints.
+        ja: Ready endpoint の追加は各新規 request が選べる集合を増やしますが、1 request を全 endpoint に複製しません。
+        zh-CN: 新增 Ready Endpoint 扩大每个新请求可选择的集合，但不会把一个请求复制给全部 Endpoint。
+      takeaway:
+        en: HPA expands potential fan-out capacity through reconciliation; ordinary Service routing still selects one backend for this request.
+        ja: HPA は reconciliation を通じて潜在的な fan-out 容量を増やしますが、通常の Service routing はこの request に 1 backend を選びます。
+        zh-CN: HPA 通过协调扩展潜在分流容量；普通 Service 路由对本次请求仍只选择一个后端。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Pod:load-client
+        - api-object:namespaced:shop:Service:api
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+        - api-object:namespaced:shop:Pod:api-a
+        - api-object:namespaced:shop:Pod:api-b
+        - api-object:namespaced:shop:Pod:api-c
+      mode: snapshot
+    introducesTerms: []
+    usesTerms: [service, endpoint-slice, endpoint, pod]
+    sourceIds: [k8s-hpa, k8s-services, k8s-endpoint-slices]
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:load-client
+              - api-object:namespaced:shop:Service:api
+              - api-object:namespaced:shop:EndpointSlice:api-slice
+              - api-object:namespaced:shop:Pod:api-a
+              - api-object:namespaced:shop:Pod:api-b
+              - api-object:namespaced:shop:Pod:api-c
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Service:api] }
+          emphasis: focused
+          inspectorMode: expanded
+      relationRules:
+        - byType: selects
+          visible: true
+          emphasis: normal
+        - byType: references
+          visible: true
+          emphasis: dimmed
+        - byType: contains-endpoint-for
+          visible: true
+          emphasis: dimmed
+      activeRoutes:
+        - id: route-client-service-api-c
+          semantic: data-flow
+          requestId: hpa-request-001
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice
+            serviceId: api-object:namespaced:shop:Service:api
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-c
+          label: { en: one request → api-c, ja: 1 request → api-c, zh-CN: 单个请求 → api-c }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:load-client
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: network-in
+              label:
+                { en: stable Service entry, ja: 安定した Service entry, zh-CN: 稳定 Service 入口 }
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Pod:api-c
+              toAnchor: network-in
+              label: { en: select one of three, ja: 3 つから 1 つを選択, zh-CN: 三选一 }
+    transition:
+      cues:
+        - type: data-packet
+          routeId: route-client-service-api-c
+          label: { en: request hpa-001, ja: request hpa-001, zh-CN: 请求 hpa-001 }
+          flowPhase: request
+          direction: forward
+          durationMs: 1500

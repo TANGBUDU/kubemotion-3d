@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ui } from '../app/i18n';
 import type { Locale } from '../app/types';
 import { SceneViewport } from '../components/SceneViewport';
-import { course, lessonById, scenarioById } from '../content/loader';
+import { compiledFlowStories, course, lessonById, scenarioById } from '../content/loader';
 import { courseEngine } from '../course/CourseEngine';
 import { orderedAvailableLessons, resolveLessonEntry, useAppStore } from '../state/appStore';
 import '../styles/home.css';
@@ -34,6 +34,11 @@ const homeCopy: Record<
     showcaseSceneCaption: string;
     benefitsLabel: string;
     benefitDescriptions: readonly [string, string, string];
+    flowEyebrow: string;
+    flowTitle: string;
+    flowDescription: string;
+    openFlow: string;
+    beatCount: (count: number) => string;
   }
 > = {
   en: {
@@ -66,6 +71,12 @@ const homeCopy: Record<
       'Trace object relationships, workload placement, and Service traffic paths across lessons.',
       'Conceptual animations cite official Kubernetes documentation and use synthetic data.',
     ],
+    flowEyebrow: '8 VERIFIED FLOW STORIES',
+    flowTitle: 'Trace complete Kubernetes causes, not isolated animations',
+    flowDescription:
+      'Each story reuses ordered lesson state and keeps its evidence routes visible before and after tokens move.',
+    openFlow: 'Open story',
+    beatCount: (count) => `${count} beats`,
   },
   ja: {
     eyebrow: 'WORLD STATE · 検証済みタイムライン · インタラクティブ 3D',
@@ -97,6 +108,12 @@ const homeCopy: Record<
       'レッスンを通して、オブジェクトの関係、ワークロード配置、Service のトラフィック経路を追えます。',
       '概念アニメーションは Kubernetes 公式ドキュメントを参照し、合成データを使用します。',
     ],
+    flowEyebrow: '検証済み FLOW STORY 8 本',
+    flowTitle: '孤立したアニメーションではなく、Kubernetes の因果を追う',
+    flowDescription:
+      '各 story は順序付き lesson state を再利用し、token の移動前後も証拠 route を表示し続けます。',
+    openFlow: 'Story を開く',
+    beatCount: (count) => `${count} ステップ`,
   },
   'zh-CN': {
     eyebrow: 'WORLD STATE · 已验证时间线 · 交互式 3D',
@@ -128,6 +145,11 @@ const homeCopy: Record<
       '跨课程跟踪对象关系、工作负载放置位置和 Service 流量路径。',
       '概念动画引用 Kubernetes 官方文档，并且只使用合成数据。',
     ],
+    flowEyebrow: '8 条已验证 FLOW STORY',
+    flowTitle: '追踪完整因果，而不是观看孤立动画',
+    flowDescription: '每条故事都复用按顺序编译的课程状态，并让证据路线在动画前后持续可见。',
+    openFlow: '打开故事',
+    beatCount: (count) => `${count} 个步骤`,
   },
 };
 
@@ -319,6 +341,33 @@ export function HomePage() {
           <h2>{t.sources}</h2>
           <p>{copy.benefitDescriptions[2]}</p>
         </article>
+      </section>
+      <section className="flow-story-catalog" id="flow-stories" aria-labelledby="flow-story-title">
+        <header>
+          <span>{copy.flowEyebrow}</span>
+          <h2 id="flow-story-title">{copy.flowTitle}</h2>
+          <p>{copy.flowDescription}</p>
+        </header>
+        <div className="flow-story-grid">
+          {compiledFlowStories.map(({ story, beats }) => {
+            const firstBeat = beats[0];
+            if (!firstBeat) throw new Error(`Flow story ${story.id} has no compiled beat`);
+            return (
+              <article key={story.id} data-flow-story-id={story.id}>
+                <div className="flow-story-meta">
+                  <span data-priority={story.priority}>{story.priority}</span>
+                  <span>{copy.beatCount(beats.length)}</span>
+                </div>
+                <h3>{story.title[locale]}</h3>
+                <p>{story.summary[locale]}</p>
+                <Link to={`/learn/${story.lessonId}/${firstBeat.compiledStep.index}`}>
+                  {copy.openFlow}
+                  <ArrowRight size={15} aria-hidden="true" />
+                </Link>
+              </article>
+            );
+          })}
+        </div>
       </section>
     </main>
   );

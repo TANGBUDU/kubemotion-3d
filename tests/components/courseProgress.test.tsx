@@ -18,6 +18,8 @@ const availableLessonIds = [
   'service-routes-to-pods',
   'dns-and-service-discovery',
   'probes-and-rolling-update',
+  'full-external-request',
+  'hpa',
 ] as const;
 const lessonsBeforeService = availableLessonIds.slice(0, 9);
 
@@ -244,6 +246,8 @@ describe('course entry and completion flow', () => {
         'labels-and-selectors',
         'dns-and-service-discovery',
         'probes-and-rolling-update',
+        'full-external-request',
+        'hpa',
         'service-routes-to-pods',
       ]),
     );
