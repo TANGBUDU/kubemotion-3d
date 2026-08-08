@@ -768,7 +768,7 @@ describe('CourseEngine v2 factual timeline', () => {
   });
 
   it('generates evidence from snapshots and diffs instead of authored prose', () => {
-    expect(step('scene-orientation').evidence).toEqual([]);
+    expect(step('scene-orientation').evidence.length).toBeGreaterThan(0);
     expect(step('healthy-baseline').evidence.length).toBeGreaterThan(0);
     expect(step('container-restarted').evidence).toEqual(
       expect.arrayContaining([

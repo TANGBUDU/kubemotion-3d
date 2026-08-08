@@ -1,191 +1,425 @@
-schemaVersion: 1
+schemaVersion: 2
 id: cluster-overview
-scenarioId: demo-shop
+scenarioId: container-restart-golden
 chapterId: foundations
 title:
-  {
-    en: What a Kubernetes cluster contains,
-    ja: Kubernetes クラスターの構成,
-    zh-CN: Kubernetes 集群包含什么,
-  }
+  en: What a Kubernetes cluster contains
+  ja: Kubernetes クラスターの構成
+  zh-CN: Kubernetes 集群包含什么
 summary:
-  {
-    en: 'Separate the cluster boundary, control plane, and worker Nodes.',
-    ja: クラスター境界・コントロールプレーン・worker Node を区別します。,
-    zh-CN: 区分集群边界、控制面与工作 Node。,
-  }
+  en: Build the cluster from a clear foundation, separating control-plane responsibilities from worker execution.
+  ja: 明確な基盤からクラスターを組み立て、コントロールプレーンの責務と worker での実行を区別します。
+  zh-CN: 从清晰底盘开始理解集群，区分控制面的职责与工作节点上的执行。
 learningOutcome:
-  {
-    en: Identify the control plane and worker Nodes without treating them as one machine.,
-    ja: コントロールプレーンと worker Node を一台の機械と誤解せず識別する。,
-    zh-CN: 识别控制面与工作 Node，不把它们误解为一台机器。,
-  }
+  en: Identify the cluster boundary, four core control-plane components, and worker Nodes without treating them as one machine.
+  ja: クラスター境界、主要な四つのコントロールプレーンコンポーネント、worker Node を、一台の機械と混同せず識別する。
+  zh-CN: 识别集群边界、四个核心控制面组件与工作 Node，不把它们误认为一台机器。
 prerequisites: []
-sourceIds: [k8s-cluster-architecture, k8s-components, k8s-objects]
-verifiedAt: '2026-08-07'
-baseProjection:
+sourceIds:
+  - k8s-cluster-architecture
+  - k8s-components
+  - k8s-api
+  - k8s-nodes
+  - k8s-pods
+  - k8s-cri
+verifiedAt: '2026-08-08'
+baseView:
   view: overview
   cameraPresetId: overview
   resetEntities: true
-  entityRules:
-    - { selector: { byKind: Cluster }, visible: true, emphasis: normal, labelMode: full }
+  entityRules: []
+  relationRules: []
+  activeRoutes: []
+
 steps:
-  - id: one-machine-problem
+  - id: cluster-foundation
     title:
-      {
-        en: 'One system, not one machine',
-        ja: 一つのシステム、ただし一台ではない,
-        zh-CN: 一个系统，但不是一台机器,
-      }
+      en: One cluster, two areas of responsibility
+      ja: 一つのクラスター、二つの責務領域
+      zh-CN: 一个集群，两类职责区域
     learningOutcome:
-      {
-        en: Recognize the cluster as a system boundary.,
-        ja: クラスターをシステム境界として捉える。,
-        zh-CN: 把集群理解为系统边界。,
-      }
+      en: Locate the cluster boundary, control-plane island, and worker-node island.
+      ja: クラスター境界、コントロールプレーン領域、worker Node 領域を見つける。
+      zh-CN: 找到集群边界、控制面区域与工作节点区域。
     narration:
-      {
-        en: A Kubernetes cluster is a control plane plus one or more worker Nodes. The boundary is conceptual; it is not a giant nested machine.,
-        ja: Kubernetes クラスターはコントロールプレーンと一つ以上の worker Node からなります。境界は概念であり、巨大な入れ子の機械ではありません。,
-        zh-CN: Kubernetes 集群由控制面和一个或多个工作 Node 组成。这个边界是概念边界，不是层层嵌套的巨型机器。,
-      }
-    introducesTerms: [cluster]
+      en: A Kubernetes cluster combines a control plane with one or more worker Nodes. The foundation marks one system boundary, while the two islands keep decision-making separate from workload execution.
+      ja: Kubernetes クラスターは、コントロールプレーンと一つ以上の worker Node から成ります。基盤は一つのシステム境界を示し、二つの領域は判断とワークロード実行を分けて示します。
+      zh-CN: Kubernetes 集群由控制面和一个或多个工作 Node 组成。底盘表示同一个系统边界，两个区域则把决策职责与工作负载执行清楚分开。
+    teaching:
+      whatChanged:
+        en: No Kubernetes state changed; the scene now exposes one cluster foundation with distinct control-plane and worker-node islands.
+        ja: Kubernetes の状態は変化せず、一つのクラスター基盤上にコントロールプレーンと worker Node の領域を分けて表示しました。
+        zh-CN: Kubernetes 状态没有变化；场景现在以同一集群底盘展示彼此分开的控制面与工作节点区域。
+      whyItHappened:
+        en: The cluster is one distributed system, but control responsibilities and execution locations are not the same thing.
+        ja: クラスターは一つの分散システムですが、制御の責務と実行場所は同じものではないためです。
+        zh-CN: 因为集群是一个分布式系统，但控制职责与执行位置并不是同一概念。
+      takeaway:
+        en: A cluster is a system boundary, not a single giant machine.
+        ja: クラスターはシステム境界であり、一台の巨大な機械ではありません。
+        zh-CN: 集群是系统边界，不是一台巨型机器。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - infrastructure:cluster:global:Cluster:demo-shop
+        - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+        - infrastructure:cluster:global:Node:worker-a
+    introducesTerms: [cluster, control-plane, node]
     usesTerms: []
-    sourceIds: [k8s-cluster-architecture]
-    projectionPatch: {}
+    sourceIds: [k8s-cluster-architecture, k8s-components, k8s-nodes]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: overview
+      cameraPresetId: overview
+      resetEntities: true
+      entityRules:
+        - selector: { byKind: Cluster }
+          visible: true
+          emphasis: focused
+          labelMode: full
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:Etcd:etcd
+              - runtime-component:cluster:global:Scheduler:kube-scheduler
+              - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+          visible: true
+          emphasis: normal
+          labelMode: none
+        - selector: { byKind: Node }
+          visible: true
+          emphasis: normal
+          labelMode: short
+      activeRoutes: []
     transition:
-      [
-        {
-          type: callout,
-          entityId: infrastructure:cluster:global:Cluster:demo-shop,
-          label: { en: System boundary, ja: システム境界, zh-CN: 系统边界 },
-          durationMs: 700,
-        },
-      ]
-  - id: desired-state
-    title: { en: Declare the state you want, ja: 望ましい状態を宣言する, zh-CN: 声明你希望的状态 }
-    learningOutcome:
-      {
-        en: Understand desired state as an API declaration.,
-        ja: 望ましい状態を API 宣言として理解する。,
-        zh-CN: 理解期望状态是 API 声明。,
-      }
-    narration:
-      {
-        en: You declare API objects such as Deployments. Controllers continuously work to move current state toward that desired state.,
-        ja: Deployment などの API オブジェクトを宣言し、コントローラーが現在状態を望ましい状態へ継続的に近づけます。,
-        zh-CN: 你声明 Deployment 等 API 对象，控制器持续推动当前状态趋近期望状态。,
-      }
-    introducesTerms: [desired-state]
-    usesTerms: [cluster]
-    sourceIds: [k8s-objects, k8s-components]
-    projectionPatch:
-      entityRules:
-        - {
-            selector: { byKind: Deployment, namespace: shop },
-            visible: true,
-            emphasis: focused,
-            labelMode: short,
-          }
-        - {
-            selector: { byKind: ControllerManager },
-            visible: true,
-            emphasis: normal,
-            labelMode: short,
-          }
-  - id: control-plane
+      cues:
+        - type: layout-transition
+          entityIds:
+            - infrastructure:cluster:global:Cluster:demo-shop
+            - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+            - runtime-component:cluster:global:Etcd:etcd
+            - runtime-component:cluster:global:Scheduler:kube-scheduler
+            - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+            - infrastructure:cluster:global:Node:worker-a
+            - infrastructure:cluster:global:Node:worker-b
+            - infrastructure:cluster:global:Node:worker-c
+          durationMs: 700
+
+  - id: api-and-state-store
     title:
-      {
-        en: The control plane makes cluster decisions,
-        ja: コントロールプレーンが判断する,
-        zh-CN: 控制面做出集群决策,
-      }
+      en: The API Server is the cluster's API hub
+      ja: API Server はクラスター API のハブ
+      zh-CN: API Server 是集群 API 枢纽
     learningOutcome:
-      {
-        en: Identify the core control-plane runtime components.,
-        ja: 主要なコントロールプレーン実行コンポーネントを識別する。,
-        zh-CN: 识别核心控制面运行组件。,
-      }
+      en: Distinguish the API Server interface from etcd storage.
+      ja: API Server のインターフェース責務と etcd の保存責務を区別する。
+      zh-CN: 区分 API Server 的接口职责与 etcd 的存储职责。
     narration:
-      {
-        en: 'The API server exposes the API, etcd stores API data, the scheduler selects Nodes, and controllers reconcile state. These responsibilities are related but distinct.',
-        ja: API サーバーは API を公開し、etcd は API データを保存し、scheduler は Node を選び、controller は状態を調整します。責務は関連しますが別々です。,
-        zh-CN: API Server 提供 API，etcd 保存 API 数据，Scheduler 选择 Node，Controller 协调状态；这些职责相关但不同。,
-      }
-    introducesTerms: [control-plane]
-    usesTerms: [cluster, desired-state]
-    sourceIds: [k8s-components]
-    projectionPatch:
+      en: The API Server exposes the Kubernetes API. etcd stores Kubernetes API data for the control plane; ordinary clients and components use the API Server instead of treating etcd as a public cluster endpoint.
+      ja: API Server は Kubernetes API を公開します。etcd はコントロールプレーンのために Kubernetes API データを保存し、通常のクライアントやコンポーネントは etcd を公開入口として扱わず API Server を使います。
+      zh-CN: API Server 对外提供 Kubernetes API。etcd 为控制面保存 Kubernetes API 数据；普通客户端和组件使用 API Server，而不会把 etcd 当成公开入口。
+    teaching:
+      whatChanged:
+        en: No API object changed; visual focus moved to the API Server and etcd while worker Nodes were dimmed.
+        ja: API オブジェクトは変化せず、worker Node を弱めて API Server と etcd に焦点を移しました。
+        zh-CN: API 对象没有变化；视觉焦点转向 API Server 与 etcd，工作 Node 被弱化。
+      whyItHappened:
+        en: Separating API access from state storage prevents the false idea that every component talks directly to etcd.
+        ja: API アクセスと状態保存を分けることで、すべてのコンポーネントが etcd に直接接続するという誤解を防げるためです。
+        zh-CN: 把 API 访问与状态存储分开，可以避免“所有组件都直接连接 etcd”的误解。
+      takeaway:
+        en: Use the API Server as the Kubernetes API entry; understand etcd as the backing API-data store.
+        ja: Kubernetes API の入口は API Server、API データの保存先は etcd と理解します。
+        zh-CN: Kubernetes API 的入口是 API Server，etcd 是其后端数据存储。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+        - runtime-component:cluster:global:Etcd:etcd
+    introducesTerms: [kubernetes-api]
+    usesTerms: [cluster, control-plane]
+    sourceIds: [k8s-api, k8s-components, k8s-objects]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: overview
+      cameraPresetId: overview
+      resetEntities: true
       entityRules:
-        - { selector: { byKind: KubeAPIServer }, visible: true, emphasis: focused, labelMode: full }
-        - { selector: { byKind: Etcd }, visible: true, emphasis: normal, labelMode: full }
-        - { selector: { byKind: Scheduler }, visible: true, emphasis: normal, labelMode: full }
-        - {
-            selector: { byKind: ControllerManager },
-            visible: true,
-            emphasis: normal,
-            labelMode: full,
-          }
+        - selector: { byKind: Cluster }
+          visible: true
+          emphasis: dimmed
+          labelMode: full
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: compact
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:Etcd:etcd
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: compact
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:Scheduler:kube-scheduler
+              - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+          visible: true
+          emphasis: normal
+          labelMode: short
+        - selector: { byKind: Node }
+          visible: true
+          emphasis: dimmed
+          labelMode: none
+      activeRoutes: []
     transition:
-      [
-        {
-          type: focus-camera,
-          entityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver,
-          durationMs: 800,
-        },
-      ]
-  - id: worker-nodes
+      cues:
+        - type: focus-camera
+          entityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+          durationMs: 600
+
+  - id: decisions-and-reconciliation
     title:
-      { en: Worker Nodes run Pods, ja: worker Node が Pod を実行する, zh-CN: 工作 Node 运行 Pod }
+      en: Scheduler selects; controllers reconcile
+      ja: Scheduler は選択し、controller は調整する
+      zh-CN: Scheduler 负责选择，Controller 负责协调
     learningOutcome:
-      {
-        en: Recognize Nodes as Pod execution locations.,
-        ja: Node を Pod の実行場所として理解する。,
-        zh-CN: 把 Node 理解为 Pod 的运行位置。,
-      }
+      en: Separate placement decisions from continuous reconciliation.
+      ja: 配置先の判断と継続的な調整を区別する。
+      zh-CN: 区分放置决策与持续协调。
     narration:
-      {
-        en: 'Nodes are worker machines. kubelet manages assigned Pods on each Node, while the container runtime starts containers.',
-        ja: Node は worker マシンです。各 Node の kubelet が割り当て済み Pod を管理し、コンテナランタイムがコンテナを起動します。,
-        zh-CN: Node 是工作机器。每个 Node 上的 kubelet 管理已分配 Pod，容器运行时实际启动容器。,
-      }
-    introducesTerms: [node]
-    usesTerms: [cluster]
-    sourceIds: [k8s-nodes, k8s-components]
-    projectionPatch:
+      en: The Scheduler selects a Node for an unassigned workload. Controllers compare current API state with desired state and act to close differences. Neither component is an application-traffic hop.
+      ja: Scheduler は未割り当てのワークロードに対して Node を選びます。controller は現在の API 状態と望ましい状態を比較し、差を縮めるよう動きます。どちらもアプリ通信の中継点ではありません。
+      zh-CN: Scheduler 为尚未分配的工作负载选择 Node。Controller 比较当前 API 状态与期望状态，并持续缩小差异；两者都不是业务流量的转发节点。
+    teaching:
+      whatChanged:
+        en: No cluster fact changed; focus moved from API storage to the Scheduler and Controller Manager decision roles.
+        ja: クラスターの事実は変化せず、API 保存から Scheduler と Controller Manager の判断責務へ焦点を移しました。
+        zh-CN: 集群事实没有变化；焦点从 API 存储转向 Scheduler 与 Controller Manager 的决策职责。
+      whyItHappened:
+        en: Kubernetes divides selection and reconciliation into distinct control loops with different responsibilities.
+        ja: Kubernetes は選択と調整を、責務の異なる制御ループに分けているためです。
+        zh-CN: 因为 Kubernetes 把节点选择和状态协调划分为职责不同的控制循环。
+      takeaway:
+        en: The Scheduler chooses placement; controllers work toward desired state.
+        ja: Scheduler は配置先を選び、controller は望ましい状態へ近づけます。
+        zh-CN: Scheduler 选择放置位置，Controller 推动系统趋近期望状态。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - runtime-component:cluster:global:Scheduler:kube-scheduler
+        - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+    introducesTerms: [desired-state, controller, scheduler]
+    usesTerms: [cluster, control-plane, node, kubernetes-api]
+    sourceIds: [k8s-components, k8s-objects, k8s-pods, k8s-nodes]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: overview
+      cameraPresetId: overview
+      resetEntities: true
       entityRules:
-        - { selector: { byKind: Node }, visible: true, emphasis: focused, labelMode: full }
-        - { selector: { byKind: Kubelet }, visible: true, emphasis: normal, labelMode: short }
-        - {
-            selector: { byKind: ContainerRuntime },
-            visible: true,
-            emphasis: normal,
-            labelMode: short,
-          }
-    transition: [{ type: layout-transition, durationMs: 900 }]
-  - id: cluster-summary
-    title: { en: Control and work stay distinct, ja: 制御と実行を区別する, zh-CN: 区分控制与工作 }
+        - selector: { byKind: Cluster }
+          visible: true
+          emphasis: dimmed
+          labelMode: full
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - runtime-component:cluster:global:Etcd:etcd
+          visible: true
+          emphasis: normal
+          labelMode: short
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: compact
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:Scheduler:kube-scheduler
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: compact
+        - selector: { byKind: Node }
+          visible: true
+          emphasis: dimmed
+          labelMode: none
+      activeRoutes: []
+    transition:
+      cues:
+        - type: layout-transition
+          entityIds:
+            - runtime-component:cluster:global:Scheduler:kube-scheduler
+            - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+          durationMs: 600
+
+  - id: worker-execution
+    title:
+      en: Worker Nodes provide the execution chassis
+      ja: worker Node が実行用シャーシを提供する
+      zh-CN: 工作 Node 提供执行底盘
     learningOutcome:
-      {
-        en: Summarize the cluster's two broad areas.,
-        ja: クラスターの二つの大きな領域をまとめる。,
-        zh-CN: 总结集群的两个主要区域。,
-      }
+      en: Recognize a Node, its kubelet and runtime, and a representative assigned Pod as one execution context.
+      ja: Node、その kubelet と runtime、代表的な割り当て済み Pod を一つの実行文脈として識別する。
+      zh-CN: 把 Node、其 kubelet 与运行时，以及一个已分配 Pod 识别为同一执行上下文。
     narration:
-      {
-        en: The control plane manages API state and decisions. Worker Nodes provide locations where Pods run. The components cooperate through continuously observed state.,
-        ja: コントロールプレーンは API 状態と判断を管理し、worker Node は Pod の実行場所を提供します。コンポーネントは継続的に観測される状態を通して協調します。,
-        zh-CN: 控制面管理 API 状态和决策，工作 Node 提供 Pod 运行位置；组件围绕持续观察的状态协作。,
-      }
-    introducesTerms: []
+      en: A worker Node hosts assigned Pods. Its kubelet observes the Node's assignments, and the container runtime starts and manages Containers through a standard runtime interface. The focused Pod is workload state on worker-a, not part of the control plane.
+      ja: worker Node は割り当て済み Pod をホストします。kubelet はその Node への割り当てを監視し、コンテナランタイムは標準のランタイムインターフェースを通じて Container を起動・管理します。注目 Pod は worker-a 上のワークロードであり、コントロールプレーンの一部ではありません。
+      zh-CN: 工作 Node 承载已分配的 Pod。kubelet 观察本 Node 的分配，容器运行时通过标准运行时接口启动和管理 Container。焦点 Pod 是 worker-a 上的工作负载，并不属于控制面。
+    teaching:
+      whatChanged:
+        en: No workload state changed; worker-a expanded to expose its kubelet, container runtime, and one assigned Pod.
+        ja: ワークロード状態は変化せず、worker-a を展開して kubelet、コンテナランタイム、割り当て済み Pod を表示しました。
+        zh-CN: 工作负载状态没有变化；worker-a 被展开，显示其 kubelet、容器运行时与一个已分配 Pod。
+      whyItHappened:
+        en: 'A Node is more than a label: it is the execution chassis whose local agents maintain assigned Pods.'
+        ja: Node は単なるラベルではなく、ローカルエージェントが割り当て済み Pod を維持する実行用シャーシだからです。
+        zh-CN: 因为 Node 不只是一个标签，而是由本地组件维护已分配 Pod 的执行底盘。
+      takeaway:
+        en: Control-plane components decide through API state; Node-local components run assigned Pods.
+        ja: コントロールプレーンは API 状態を通じて判断し、Node ローカルのコンポーネントが割り当て済み Pod を実行します。
+        zh-CN: 控制面组件通过 API 状态作出决策，Node 本地组件运行已分配的 Pod。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - infrastructure:cluster:global:Node:worker-a
+        - runtime-component:node:worker-a:Kubelet:kubelet
+        - runtime-component:node:worker-a:ContainerRuntime:runtime
+        - api-object:namespaced:shop:Pod:api-a-old
+    introducesTerms: [pod]
     usesTerms: [cluster, control-plane, node]
-    sourceIds: [k8s-cluster-architecture, k8s-components]
-    projectionPatch:
+    sourceIds: [k8s-components, k8s-nodes, k8s-pods, k8s-cri]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: overview
+      cameraPresetId: overview
+      resetEntities: true
       entityRules:
-        - {
-            selector: { byKind: Pod, namespace: shop },
-            visible: true,
-            emphasis: normal,
-            labelMode: short,
-          }
-    transition: [{ type: layout-transition, durationMs: 700 }]
+        - selector: { byKind: Cluster }
+          visible: true
+          emphasis: dimmed
+          labelMode: full
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - runtime-component:cluster:global:Etcd:etcd
+              - runtime-component:cluster:global:Scheduler:kube-scheduler
+              - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+          visible: true
+          emphasis: dimmed
+          labelMode: none
+        - selector: { byKind: Node }
+          visible: true
+          emphasis: normal
+          labelMode: short
+        - selector:
+            byIds:
+              - runtime-component:node:worker-a:Kubelet:kubelet
+          visible: true
+          emphasis: focused
+          labelMode: full
+        - selector:
+            byIds:
+              - runtime-component:node:worker-a:ContainerRuntime:runtime
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: compact
+      relationRules:
+        - byIds: [scheduled-api-a-old]
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: infrastructure:cluster:global:Node:worker-a
+          durationMs: 650
+
+  - id: cluster-summary
+    title:
+      en: Read the cluster from foundation to workload
+      ja: 基盤からワークロードまでクラスターを読む
+      zh-CN: 从底盘到工作负载阅读集群
+    learningOutcome:
+      en: Summarize where cluster decisions are made and where Pods run.
+      ja: クラスターの判断がどこで行われ、Pod がどこで実行されるかをまとめる。
+      zh-CN: 总结集群决策在哪里作出、Pod 在哪里运行。
+    narration:
+      en: The control-plane island contains the API Server, etcd, Scheduler, and Controller Manager. Worker Nodes provide execution locations. They cooperate as one cluster without collapsing their distinct responsibilities into one machine.
+      ja: コントロールプレーン領域には API Server、etcd、Scheduler、Controller Manager があります。worker Node は実行場所を提供します。別々の責務を一台の機械にまとめず、一つのクラスターとして協調します。
+      zh-CN: 控制面区域包含 API Server、etcd、Scheduler 与 Controller Manager，工作 Node 提供执行位置。它们作为同一集群协作，但职责并不会合并成一台机器。
+    teaching:
+      whatChanged:
+        en: No Kubernetes fact changed; the camera returned to the complete foundation-first overview.
+        ja: Kubernetes の事実は変化せず、カメラが基盤優先の全体図へ戻りました。
+        zh-CN: Kubernetes 事实没有变化；镜头回到完整的底盘优先总览。
+      whyItHappened:
+        en: Reassembling the separated responsibilities checks that the learner can read the whole cluster without losing the boundaries.
+        ja: 分けて学んだ責務を再び組み合わせ、境界を失わずクラスター全体を読めるか確認するためです。
+        zh-CN: 这是为了重新组合前面拆开的职责，并确认学习者仍能看清整体边界。
+      takeaway:
+        en: One cluster contains distinct control-plane and worker responsibilities.
+        ja: 一つのクラスターには、別々のコントロールプレーン責務と worker 責務があります。
+        zh-CN: 一个集群中包含彼此不同的控制面职责与工作节点职责。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - infrastructure:cluster:global:Cluster:demo-shop
+        - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+        - runtime-component:cluster:global:Scheduler:kube-scheduler
+        - infrastructure:cluster:global:Node:worker-a
+    introducesTerms: []
+    usesTerms:
+      - cluster
+      - control-plane
+      - node
+      - kubernetes-api
+      - desired-state
+      - controller
+      - scheduler
+      - pod
+    sourceIds: [k8s-cluster-architecture, k8s-components, k8s-api, k8s-nodes]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: overview
+      cameraPresetId: overview
+      resetEntities: true
+      entityRules:
+        - selector: { byKind: Cluster }
+          visible: true
+          emphasis: focused
+          labelMode: full
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - runtime-component:cluster:global:Etcd:etcd
+              - runtime-component:cluster:global:Scheduler:kube-scheduler
+              - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+          visible: true
+          emphasis: normal
+          labelMode: short
+        - selector: { byKind: Node }
+          visible: true
+          emphasis: normal
+          labelMode: short
+      activeRoutes: []
+    transition:
+      cues:
+        - type: layout-transition
+          durationMs: 650

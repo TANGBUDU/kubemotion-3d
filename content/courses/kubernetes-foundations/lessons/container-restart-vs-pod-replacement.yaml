@@ -14,7 +14,7 @@ learningOutcome:
   en: Explain Container restart, Pod deletion, replacement creation, scheduling, and startup as separate factual events.
   ja: Container 再起動、Pod 削除、置換作成、スケジューリング、起動を別々の事実イベントとして説明する。
   zh-CN: 将容器重启、Pod 删除、替换创建、调度和启动解释为彼此独立的事实事件。
-prerequisites: []
+prerequisites: [service-routes-to-pods]
 sourceIds:
   - k8s-pods
   - k8s-pod-lifecycle
@@ -94,8 +94,13 @@ steps:
         en: Control-plane components decide through the API, while worker Nodes run Pods and their Containers.
         ja: コントロールプレーンは API を通じて判断し、worker Node は Pod とその Container を実行します。
         zh-CN: 控制面组件通过 API 作出决策，工作 Node 运行 Pod 及其容器。
-    evidence: { entityIds: [], mode: none }
-    introducesTerms: [control-plane, kubernetes-api, node, pod, replicaset, controller, scheduler]
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-a-old
+        - container-status:shop:Pod:api-a-old:Container:api
+        - infrastructure:cluster:global:Node:worker-a
+    introducesTerms: [control-plane, node, pod]
     usesTerms: []
     sourceIds: [k8s-components, k8s-api, k8s-pods, k8s-nodes, k8s-replicasets]
     worldPatch: { operations: [] }
@@ -159,7 +164,7 @@ steps:
         - container-status:shop:Pod:api-a-old:Container:api
         - api-object:namespaced:shop:Pod:api-a-old
         - api-object:namespaced:shop:ReplicaSet:api-rs
-    introducesTerms: [pod-uid, restart-count]
+    introducesTerms: [kubernetes-api, replicaset, pod-uid]
     usesTerms: [pod, node, replicaset]
     sourceIds: [k8s-pods, k8s-pod-lifecycle, k8s-replicasets, k8s-nodes]
     worldPatch: { operations: [] }
@@ -220,7 +225,7 @@ steps:
         - api-object:namespaced:shop:Pod:api-a-old
         - container-status:shop:Pod:api-a-old:Container:api
         - api-object:namespaced:shop:ReplicaSet:api-rs
-    introducesTerms: []
+    introducesTerms: [restart-count]
     usesTerms: [pod, pod-uid, restart-count]
     sourceIds: [k8s-pods, k8s-pod-lifecycle]
     worldPatch:
@@ -544,7 +549,7 @@ steps:
         - api-object:namespaced:shop:ReplicaSet:api-rs
         - api-object:namespaced:shop:Pod:api-d-new
         - container-status:shop:Pod:api-d-new:Container:api
-    introducesTerms: []
+    introducesTerms: [controller]
     usesTerms: [controller, replicaset, desired-state, pod, pod-uid, kubernetes-api]
     sourceIds: [k8s-components, k8s-api, k8s-replicasets, k8s-pods, k8s-pod-lifecycle]
     worldPatch:
@@ -805,7 +810,7 @@ steps:
         - api-object:namespaced:shop:Pod:api-d-new
         - container-status:shop:Pod:api-d-new:Container:api
         - api-object:namespaced:shop:ReplicaSet:api-rs
-    introducesTerms: [scheduling, binding]
+    introducesTerms: [scheduler, scheduling, binding]
     usesTerms: [scheduler, pod, node, kubernetes-api, replicaset]
     sourceIds: [k8s-components, k8s-api, k8s-pods, k8s-nodes, k8s-pod-lifecycle]
     worldPatch:

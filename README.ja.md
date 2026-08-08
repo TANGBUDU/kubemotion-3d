@@ -12,16 +12,17 @@ KubeMotion は、オープンソースで静的配信を優先する 3D 学習�
 
 ## 検証済みリリース範囲
 
-- **完全に検証済みのレッスンは2本:** `container-restart-vs-pod-replacement` と `service-routes-to-pods`
+- **完全に検証済みのレッスンは5本:** `cluster-overview`、`pod-and-placement`、`manifest-to-running-pod`、`service-routes-to-pods`、`container-restart-vs-pod-replacement`
+- **基礎から積み上げる順序:** クラスター境界 → Node・Pod・Container の配置 → API を介する manifest フロー → 安定した Service トラフィック → 再起動と置換の比較
 - **Pod ライフサイクルは10ステップ:** オリエンテーション → 正常状態 → Container 終了 → 同一 Pod 内でのローカル再起動 → 意図的な Pod 削除 → Controller による置換 → 未スケジュールの Pending → Scheduler による binding → kubelet による起動と Ready 復帰 → snapshot 由来の比較
 - **Service トラフィックは6ステップ:** オブジェクト確認 → 安定した Service 入口 → EndpointSlice の Ready 状態 → Ready backend へ到達する Request A → readiness の変化 → 別の Ready backend を選ぶ後続の Request B
-- **計画中のレッスンは20本:** ロードマップ項目として表示しますが、完成済みとしては扱いません
+- **計画中のレッスンは17本:** ロードマップ項目として表示しますが、完成済みとしては扱いません
 - **Explore（Beta）:** コンパイル済み snapshot を絞り込みながら、1 hop の所有関係と配置コンテキストを保持します
 - **合成データのみ:** 実クラスター、認証情報、telemetry、backend API、resource mutation は扱いません
 
 Pod ライフサイクルレッスンでは、3 つの意味領域、API を介する制御ルート、実際の未スケジュール用トレイ、kubelet と Pod bay を備えた Node rack、子 Container を含む Pod shell を表示します。Container status slot は `containerID`、`restartCount`、`state`、`lastState` を示し、ReplicaSet は `SPEC / OBSERVED / READY` を表示します。Pod phase と Pod conditions は別々の事実として扱います。
 
-Service トラフィックレッスンでは、安定した Service アドレス、EndpointSlice の API 状態、選択された Ready backend を分離します。完了済みの Request A と後続の Request B は別のリクエストです。両レッスンは、固定された EvidencePanel、衝突を避けるラベル、永続表示できる太い teaching route、明示的な replay、reduced-motion fallback を備えます。
+Service トラフィックレッスンでは、安定した Service アドレス、EndpointSlice の API 状態、選択された Ready backend を分離します。完了済みの Request A と後続の Request B は別のリクエストです。5 本すべてが Evidence と takeaway を備えた固定 teaching panel、衝突を避けるラベル、明示的な replay、意味を失わない reduced-motion fallback を使い、因果・通信ステップでは太い teaching route を永続表示します。
 
 ## アーキテクチャ
 
@@ -78,7 +79,7 @@ pnpm test:e2e
 pnpm visual:capture
 ```
 
-検証 suite は、型付き patch transaction、決定的な diff、snapshot の不変性、cue contract、専用 visual、安定レイアウトと traffic 専用レイアウト、両方の事実 timeline、desktop/mobile の navigation と言語永続化、camera/route/label gate、1440×900・1280×720・390×844 の必須 visual capture、完全に検証済みの両レッスンを対象とする 20 cycle の renderer memory stress を含みます。人手による screenshot acceptance も必須です。[review checklist](docs/review/VISUAL_ACCEPTANCE_CHECKLIST.md)と[before/after evidence](docs/review/BEFORE_AFTER.md)を参照してください。
+検証 suite は、型付き patch transaction、決定的な diff、snapshot の不変性、cue contract、専用 visual、view 別レイアウト、5 本の事実 timeline、desktop/mobile の navigation と言語永続化、camera/route/label gate、1440×900・1280×720・390×844 の必須 visual capture、完全に検証済みの 5 レッスンを対象とする 20 cycle の renderer memory stress を含みます。人手による screenshot acceptance も必須です。[review checklist](docs/review/VISUAL_ACCEPTANCE_CHECKLIST.md)と[before/after evidence](docs/review/BEFORE_AFTER.md)を参照してください。
 
 ## デプロイ
 

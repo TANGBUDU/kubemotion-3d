@@ -61,6 +61,10 @@ const DESKTOP_LABEL_LIMIT = 7;
 const MOBILE_LABEL_LIMIT = 3;
 const DESKTOP_ROUTE_LABEL_LIMIT = 3;
 const MOBILE_ROUTE_LABEL_LIMIT = 1;
+// Browser font metrics can resolve a fraction wider than offsetWidth after a locale/text update.
+// Reserve a few CSS pixels so a label accepted at the safe-rect edge remains inside it when
+// getBoundingClientRect() observes the final rendered glyphs.
+const LABEL_MEASUREMENT_SAFETY_PX = 4;
 
 const labelPriority = (kind: string, emphasis: string, selected: boolean): number => {
   // These authored classes deliberately outrank every kind-specific context score.
@@ -508,7 +512,10 @@ export class LabelManager {
       const measuredWidth =
         record.element.offsetWidth || (record.element.textContent?.length ?? 8) * 6.5;
       const measuredHeight = record.element.offsetHeight || 24;
-      const labelWidth = Math.min(Math.max(1, measuredWidth), safe.width);
+      const labelWidth = Math.min(
+        Math.max(1, measuredWidth + LABEL_MEASUREMENT_SAFETY_PX),
+        safe.width,
+      );
       const labelHeight = Math.min(Math.max(1, measuredHeight), safe.height);
       record.element.style.maxWidth = `${Math.max(1, safe.width)}px`;
       record.element.style.boxSizing = 'border-box';

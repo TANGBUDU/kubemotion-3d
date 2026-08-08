@@ -19,7 +19,7 @@
 | 4 — Logical object models             | COMPLETE    | `feat: establish distinct logical Kubernetes object visuals`            | Namespace workspace, Deployment blueprint, dynamic EndpointSlice rows, external actors, six reviewed captures       |
 | 5 — Camera, labels, responsive layout | COMPLETE    | `feat: make teaching scenes readable across viewport sizes`             | Responsive grammar runtime, safe viewport, two camera modes, unified mobile label budget, fifteen reviewed captures |
 | 6 — Persistent route engine           | COMPLETE    | `feat: replace free-flying tokens with persistent semantic routes`      | Canonical anchors, persistent wide routes, sparse obstacle planning, 9-case / 36-screenshot browser acceptance      |
-| 7 — Migrate existing authored lessons | NOT STARTED | `feat: migrate the original lessons to the foundation-first system`     | —                                                                                                                   |
+| 7 — Migrate existing authored lessons | COMPLETE    | `feat: migrate the original lessons to the foundation-first system`     | Five schema-v2 lessons, 10-objective / 45-screenshot multilingual browser acceptance                                |
 | 8 — Twelve complete lessons           | NOT STARTED | `feat: expand the interactive foundations curriculum to twelve lessons` | —                                                                                                                   |
 | 9 — Eight flow stories                | NOT STARTED | `feat: deliver readable control and application flow stories`           | —                                                                                                                   |
 | 10 — Final gates and deployment       | NOT STARTED | `test: lock visual teaching and flow acceptance gates`                  | —                                                                                                                   |
@@ -419,7 +419,49 @@ Human M6 result: PASS. The static screenshots remain traceable without animation
 adds moving tokens without replacing the route, and reduced motion removes those tokens without
 removing the route or EndpointSlice selection evidence.
 
+## Milestone 7 checklist
+
+- [x] Migrated `cluster-overview`, `pod-and-placement`, and `manifest-to-running-pod` from the
+      legacy authored format to schema v2.
+- [x] Kept `service-routes-to-pods` and `container-restart-vs-pod-replacement` on the same v2
+      foundation-first contracts, making all five original lessons genuinely available.
+- [x] Reordered the public course as Cluster overview, Pod/Namespace/Node, manifest-to-running,
+      Service/EndpointSlice, then restart-versus-replacement, with prerequisite-aware continuation.
+- [x] Gave every normal step exactly one primary focus, localized What changed / Why / Takeaway,
+      inspectable Evidence, glossary ordering, and official Kubernetes sources.
+- [x] Kept logical ownership, physical placement, API/control communication, and application
+      traffic in their independent scene grammars.
+- [x] Made the manifest story an eight-step API-mediated flow from kubectl submission through
+      persistence, reconciliation, scheduling, kubelet/runtime startup, and Ready state.
+- [x] Kept all route-bearing steps on persistent semantic routes, including reduced motion; no
+      packet path traverses Deployment, ReplicaSet, Namespace, or EndpointSlice.
+- [x] Updated Home, completion, direct-navigation, cross-tab, memory-pressure, and all-complete
+      behavior for the five-lesson manifest order.
+- [x] Added a dedicated M7 browser matrix and manually reviewed representative desktop/mobile
+      captures in English, Japanese, and Simplified Chinese.
+
+## Milestone 7 automated checks
+
+| Check                                     | Result                                                                                                             |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `pnpm content:validate`                   | PASS — 2 v2 scenarios, 32 entities, 34 relations, 5 verified v2 lessons, 17 planned, 26 terms, 29 official sources |
+| `pnpm visual:m7`                          | PASS — 10 objectives, 30 settled + 15 reduced-motion captures, 45 screenshots total                                |
+| Grammar, focus, hierarchy, and route gate | PASS — all observable density/containment/route diagnostics are zero-failure                                       |
+| Teaching and source gate                  | PASS — all representative steps expose localized teaching, Evidence, Takeaway, and verified official sources       |
+| `pnpm test:unit -- --run`                 | PASS — 44 files, 318 tests                                                                                         |
+| `pnpm test:e2e`                           | PASS — 136 passed, 53 intentional project/viewport skips, 0 failed                                                 |
+| `pnpm format:check` / lint / type / build | PASS                                                                                                               |
+
+Manifest: [`evidence/m7/m7-lesson-visual-manifest.json`](./evidence/m7/m7-lesson-visual-manifest.json)
+
+Human M7 result: PASS. The five lessons now teach distinct facts through distinct projections:
+the Overview starts from a bounded cluster foundation; Logical shows Namespace and ownership
+without pretending Nodes are children; Placement makes Node → Pod → Container containment
+structural; Control Flow keeps API and scheduling routes visible; Traffic keeps EndpointSlice as
+selection evidence rather than a packet hop. The reviewed mobile captures retain both a useful 3D
+scene and an expanded teaching sheet.
+
 ## Next coherent task
 
-Milestone 7 must migrate every remaining authored lesson interaction onto the foundation-first
-world, grammar, model, and persistent-route contracts before curriculum expansion begins.
+Milestone 8 must add the seven missing source-verified core lessons without double-counting the
+five migrated lessons, reaching exactly 12 available interactive lessons and 10 planned lessons.

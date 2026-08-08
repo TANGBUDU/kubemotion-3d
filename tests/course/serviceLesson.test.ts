@@ -66,11 +66,17 @@ function lessonWithRequestStep(
 }
 
 describe('service-routes-to-pods verified lesson', () => {
-  it('publishes exactly two verified lessons and the required six-step sequence', () => {
+  it('publishes all five migrated lessons and the required six-step Service sequence', () => {
     expect(
       course.lessons.filter((entry) => entry.status === 'available').map((entry) => entry.id),
-    ).toEqual(expect.arrayContaining(['container-restart-vs-pod-replacement', LESSON_ID]));
-    expect(course.lessons.filter((entry) => entry.status === 'available')).toHaveLength(2);
+    ).toEqual([
+      'cluster-overview',
+      'pod-and-placement',
+      'manifest-to-running-pod',
+      LESSON_ID,
+      'container-restart-vs-pod-replacement',
+    ]);
+    expect(course.lessons.filter((entry) => entry.status === 'available')).toHaveLength(5);
     expect(compiled.steps.map((item) => item.stepId)).toEqual([
       'identify-traffic-objects',
       'stable-service-entry',

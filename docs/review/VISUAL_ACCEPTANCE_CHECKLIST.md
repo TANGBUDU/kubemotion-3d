@@ -65,7 +65,7 @@ Baseline result: **PARTIAL**. Target milestone: M5.
 
 ## Route gate
 
-- [x] The two verified stories already expose persistent wide-line routes.
+- [x] Every route-bearing verified lesson exposes persistent wide-line routes.
 - [x] Static route screenshots show direction and selected destinations.
 - [x] Routed tokens follow the persistent authored path.
 - [x] Reduced motion retains route meaning in existing tests.

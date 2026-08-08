@@ -49,7 +49,7 @@ describe('course entry and completion flow', () => {
   it('starts the first available lesson from the manifest order', async () => {
     renderCourse('/learn');
     expect(await screen.findByTestId('teaching-step-heading')).toHaveTextContent(
-      'Identify the traffic objects',
+      'One cluster, two areas of responsibility',
     );
   });
 
@@ -94,21 +94,21 @@ describe('course entry and completion flow', () => {
     });
   });
 
-  it('sends bare Learn to the Pod lesson after Service completion', async () => {
+  it('sends bare Learn to the Pod lesson after the cluster overview is complete', async () => {
     seedProgress({
-      lessonId: 'service-routes-to-pods',
-      stepIndex: 5,
-      completedLessonIds: ['service-routes-to-pods'],
+      lessonId: 'cluster-overview',
+      stepIndex: 4,
+      completedLessonIds: ['cluster-overview'],
     });
 
     renderCourse('/learn');
 
     expect(await screen.findByTestId('teaching-step-heading')).toHaveTextContent(
-      'What you are looking at',
+      'A Container runs inside a Pod boundary',
     );
     await waitFor(() => {
       expect(useAppStore.getState()).toMatchObject({
-        lessonId: 'container-restart-vs-pod-replacement',
+        lessonId: 'pod-and-placement',
         stepIndex: 0,
       });
     });
@@ -118,7 +118,13 @@ describe('course entry and completion flow', () => {
     seedProgress({
       lessonId: 'container-restart-vs-pod-replacement',
       stepIndex: 9,
-      completedLessonIds: ['service-routes-to-pods', 'container-restart-vs-pod-replacement'],
+      completedLessonIds: [
+        'cluster-overview',
+        'pod-and-placement',
+        'manifest-to-running-pod',
+        'service-routes-to-pods',
+        'container-restart-vs-pod-replacement',
+      ],
     });
 
     renderCourse('/learn');
@@ -127,11 +133,20 @@ describe('course entry and completion flow', () => {
   });
 
   it('completes the Service lesson and offers the next verified lesson', async () => {
+    seedProgress({
+      lessonId: 'service-routes-to-pods',
+      stepIndex: 5,
+      completedLessonIds: ['cluster-overview', 'pod-and-placement', 'manifest-to-running-pod'],
+    });
     renderCourse('/learn/service-routes-to-pods/5');
     const completion = await screen.findByTestId('lesson-completion-card');
 
     expect(within(completion).getByText('Final step ready')).toBeVisible();
-    expect(useAppStore.getState().completedLessonIds).toEqual([]);
+    expect(useAppStore.getState().completedLessonIds).toEqual([
+      'cluster-overview',
+      'pod-and-placement',
+      'manifest-to-running-pod',
+    ]);
     expect(
       within(completion).queryByRole('link', { name: /Next lesson:/i }),
     ).not.toBeInTheDocument();
@@ -145,7 +160,12 @@ describe('course entry and completion flow', () => {
       }),
     ).toHaveAttribute('href', '/learn/container-restart-vs-pod-replacement/0');
     await waitFor(() =>
-      expect(useAppStore.getState().completedLessonIds).toEqual(['service-routes-to-pods']),
+      expect(useAppStore.getState().completedLessonIds).toEqual([
+        'cluster-overview',
+        'pod-and-placement',
+        'manifest-to-running-pod',
+        'service-routes-to-pods',
+      ]),
     );
 
     fireEvent.click(within(completion).getByRole('button', { name: 'Restart lesson' }));
@@ -175,8 +195,8 @@ describe('course entry and completion flow', () => {
 
     expect(await within(completion).findByText('课程已完成')).toBeVisible();
     expect(
-      within(completion).getByRole('link', { name: /下一课：Service 如何将流量路由到 Ready Pod/ }),
-    ).toHaveAttribute('href', '/learn/service-routes-to-pods/0');
+      within(completion).getByRole('link', { name: /下一课：Kubernetes 集群包含什么/ }),
+    ).toHaveAttribute('href', '/learn/cluster-overview/0');
     expect(within(completion).getByRole('link', { name: '返回首页' })).toHaveAttribute('href', '/');
     expect(screen.getAllByRole('button', { name: '重新开始课程' })).toHaveLength(2);
 
@@ -192,7 +212,12 @@ describe('course entry and completion flow', () => {
     seedProgress({
       lessonId: 'container-restart-vs-pod-replacement',
       stepIndex: 0,
-      completedLessonIds: ['container-restart-vs-pod-replacement'],
+      completedLessonIds: [
+        'cluster-overview',
+        'pod-and-placement',
+        'manifest-to-running-pod',
+        'container-restart-vs-pod-replacement',
+      ],
     });
 
     renderCourse('/learn/service-routes-to-pods/5');
@@ -208,6 +233,9 @@ describe('course entry and completion flow', () => {
     ).toHaveAttribute('href', '/explore');
     await waitFor(() =>
       expect(useAppStore.getState().completedLessonIds).toEqual([
+        'cluster-overview',
+        'pod-and-placement',
+        'manifest-to-running-pod',
         'container-restart-vs-pod-replacement',
         'service-routes-to-pods',
       ]),

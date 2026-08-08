@@ -5,19 +5,21 @@ test('home to first lesson', async ({ page }) => {
   await expect(page.getByText('Control Plane decides.')).toBeVisible();
   await expect(
     page.getByRole('img', {
-      name: 'Interactive lesson preview: How a Service routes to ready Pods',
+      name: 'Interactive lesson preview: What a Kubernetes cluster contains',
     }),
   ).toBeVisible();
   await expect(page.locator('.scene-caption')).toContainText(
-    'CURRENT LESSON · How a Service routes to ready Pods',
+    'CURRENT LESSON · What a Kubernetes cluster contains',
   );
   await page.getByRole('link', { name: /^Start lesson$/i }).click();
   await expect(page.getByTestId('teaching-step-heading')).toContainText(
-    'Identify the traffic objects',
+    'One cluster, two areas of responsibility',
   );
   await page.getByRole('button', { name: /Next/i }).click();
-  await expect(page).toHaveURL(/service-routes-to-pods\/1$/);
-  await expect(page.getByTestId('teaching-step-heading')).toContainText('The Service stays stable');
+  await expect(page).toHaveURL(/cluster-overview\/1$/);
+  await expect(page.getByTestId('teaching-step-heading')).toContainText(
+    "The API Server is the cluster's API hub",
+  );
 });
 
 test('localized home preview and entry stay on the same lesson', async ({ page }) => {
@@ -26,18 +28,16 @@ test('localized home preview and entry stay on the same lesson', async ({ page }
 
   await expect(
     page.getByRole('img', {
-      name: '交互式课程预览: Service 如何将流量路由到 Ready Pod',
+      name: '交互式课程预览: Kubernetes 集群包含什么',
     }),
   ).toBeVisible();
-  await expect(page.locator('.scene-caption')).toContainText(
-    '当前课程 · Service 如何将流量路由到 Ready Pod',
-  );
+  await expect(page.locator('.scene-caption')).toContainText('当前课程 · Kubernetes 集群包含什么');
 
   const startLesson = page.getByRole('link', { name: '开始课程' });
-  await expect(startLesson).toHaveAttribute('href', '#/learn/service-routes-to-pods/0');
+  await expect(startLesson).toHaveAttribute('href', '#/learn/cluster-overview/0');
   await startLesson.click();
-  await expect(page).toHaveURL(/service-routes-to-pods\/0$/);
-  await expect(page.getByTestId('teaching-step-heading')).toContainText('识别流量相关对象');
+  await expect(page).toHaveURL(/cluster-overview\/0$/);
+  await expect(page.getByTestId('teaching-step-heading')).toContainText('一个集群，两类职责区域');
 });
 
 test('saved Pod progress previews step zero while the action resumes step three', async ({

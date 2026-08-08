@@ -19,6 +19,18 @@ async function sceneControllerLifecycle(page: Page): Promise<SceneControllerLife
   return lifecycle;
 }
 
+const foundationLessonIds = [
+  'cluster-overview',
+  'pod-and-placement',
+  'manifest-to-running-pod',
+] as const;
+
+const verifiedLessonCycle = [
+  ...foundationLessonIds.map((lessonId) => ({ lessonId, stepIndex: 0 })),
+  { lessonId: SERVICE_LESSON, stepIndex: 3 },
+  { lessonId: GOLDEN_LESSON, stepIndex: 7 },
+] as const;
+
 test('20 navigation/replay/locale/selection/reset cycles keep resources bounded', async ({
   page,
 }, testInfo) => {
@@ -35,6 +47,15 @@ test('20 navigation/replay/locale/selection/reset cycles keep resources bounded'
   }
   for (let stepIndex = 0; stepIndex < SERVICE_STEP_TITLES.length; stepIndex += 1) {
     await gotoServiceStep(page, stepIndex);
+    await page
+      .locator('.lesson-header')
+      .getByRole('button', { name: /Replay|Restart lesson/i })
+      .click();
+    await waitForSceneIdle(page);
+  }
+  for (const lessonId of foundationLessonIds) {
+    await page.goto(`/#/learn/${lessonId}/0`);
+    await expect(page.getByTestId('teaching-step-heading')).toBeVisible();
     await page
       .locator('.lesson-header')
       .getByRole('button', { name: /Replay|Restart lesson/i })
@@ -62,20 +83,17 @@ test('20 navigation/replay/locale/selection/reset cycles keep resources bounded'
 
   for (let cycle = 0; cycle < 20; cycle += 1) {
     await page.locator('.lesson-language select').selectOption('en');
-    const serviceCycle = cycle % 2 === 1;
-    const lessonId = serviceCycle ? SERVICE_LESSON : GOLDEN_LESSON;
-    const titles = serviceCycle ? SERVICE_STEP_TITLES : STEP_TITLES;
-    const stepIndex = cycle % titles.length;
-    const title = titles[stepIndex];
-    if (!title) throw new Error(`Unknown ${lessonId} lesson step ${stepIndex}`);
+    const target = verifiedLessonCycle[cycle % verifiedLessonCycle.length];
+    if (!target) throw new Error(`Missing verified lesson target for cycle ${cycle}`);
+    const { lessonId, stepIndex } = target;
     await page.evaluate(
       ({ lessonId, index }) => {
         location.hash = `#/learn/${lessonId}/${index}`;
       },
       { lessonId, index: stepIndex },
     );
-    await expect(page.getByRole('heading', { name: title })).toBeVisible();
-    if (!serviceCycle) {
+    await expect(page.getByTestId('teaching-step-heading')).toBeVisible();
+    if (lessonId === GOLDEN_LESSON) {
       await page.evaluate(() =>
         window.__KUBEMOTION_TEST__?.selectEntity('api-object:namespaced:shop:ReplicaSet:api-rs'),
       );

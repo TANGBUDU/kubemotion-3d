@@ -148,6 +148,17 @@ for (const file of lessonFiles) {
 }
 
 const available = course.lessons.filter((entry) => entry.status === 'available');
+const expectedMigratedLessonIds = [
+  'cluster-overview',
+  'pod-and-placement',
+  'manifest-to-running-pod',
+  'service-routes-to-pods',
+  'container-restart-vs-pod-replacement',
+] as const;
+check(
+  JSON.stringify(available.map((entry) => entry.id)) === JSON.stringify(expectedMigratedLessonIds),
+  'course.yaml: M7 must publish exactly the five migrated lessons in foundation-first order',
+);
 for (const entry of available)
   check(v2Lessons.has(entry.id), `${entry.id}: available lessons must use schemaVersion 2`);
 
@@ -167,11 +178,38 @@ const compiledLessons = [];
 for (const entry of available) {
   const lesson = v2Lessons.get(entry.id);
   check(lesson !== undefined, `${entry.id}: missing v2 lesson`);
+  check(
+    lesson.steps.length >= 4 && lesson.steps.length <= 10,
+    `${lesson.id}: verified lessons require 4–10 meaningful steps`,
+  );
+  check(lesson.sourceIds.length > 0, `${lesson.id}: lesson sourceIds cannot be empty`);
+  check(
+    JSON.stringify(lesson.prerequisites) === JSON.stringify(entry.prerequisites),
+    `${lesson.id}: lesson prerequisites must match course.yaml`,
+  );
   const lessonScenario = scenarios.get(lesson.scenarioId);
   check(lessonScenario !== undefined, `${lesson.id}: unknown scenario ${lesson.scenarioId}`);
   checkSources(lesson.sourceIds, lesson.id);
   const introduced = new Set<string>();
   for (const step of lesson.steps) {
+    check(
+      step.introducesTerms.length <= 3,
+      `${lesson.id}/${step.id}: a step may introduce at most three terms`,
+    );
+    check(step.sourceIds.length > 0, `${lesson.id}/${step.id}: sourceIds cannot be empty`);
+    check(
+      step.evidence.mode !== 'none' && step.evidence.entityIds.length > 0,
+      `${lesson.id}/${step.id}: every verified step requires inspectable factual evidence`,
+    );
+    check(
+      (step.viewPatch.entityRules?.length ?? 0) > 0 ||
+        (step.viewPatch.relationRules?.length ?? 0) > 0 ||
+        (step.viewPatch.callouts?.length ?? 0) > 0 ||
+        (step.viewPatch.activeRoutes?.length ?? 0) > 0 ||
+        (step.worldPatch?.operations.length ?? 0) > 0 ||
+        Boolean(step.viewPatch.comparison),
+      `${lesson.id}/${step.id}: verified steps need a scene, route, evidence, or world-state change`,
+    );
     for (const id of step.introducesTerms) {
       check(terms.has(id), `${lesson.id}/${step.id}: introduces unknown term ${id}`);
       check(!introduced.has(id), `${lesson.id}/${step.id}: introduces ${id} more than once`);
@@ -183,13 +221,39 @@ for (const entry of available) {
     }
     checkSources(step.sourceIds, `${lesson.id}/${step.id}`);
   }
+  if (lesson.steps.length <= 6) {
+    check(
+      introduced.size <= 8,
+      `${lesson.id}: a short lesson introduces ${String(introduced.size)} terms; expected at most 8`,
+    );
+  }
   const compiled = courseEngine.compileLesson(lesson, lessonScenario);
   for (const [index, sequential] of compiled.steps.entries()) {
+    const authored = lesson.steps[index];
+    check(authored !== undefined, `${lesson.id}/${index}: missing authored step`);
     check(
       JSON.stringify(courseEngine.compileDirect(lesson, lessonScenario, index)) ===
         JSON.stringify(sequential),
       `${lesson.id}/${index}: direct compilation is not deterministic`,
     );
+    for (const evidenceEntityId of authored.evidence.entityIds) {
+      check(
+        Boolean(
+          sequential.world.entities[evidenceEntityId] ??
+          sequential.beforeWorld.entities[evidenceEntityId],
+        ),
+        `${lesson.id}/${authored.id}: evidence references missing entity ${evidenceEntityId}`,
+      );
+    }
+    if (!sequential.view.comparison) {
+      const focused = Object.values(sequential.view.entityStates).filter(
+        (state) => state.visible && state.emphasis === 'focused',
+      );
+      check(
+        focused.length === 1,
+        `${lesson.id}/${authored.id}: normal guided steps require exactly one primary focus`,
+      );
+    }
   }
   compiledLessons.push(compiled);
 }
@@ -331,10 +395,7 @@ for (const step of golden.steps) {
       );
     }
   }
-  check(
-    step.stepId === 'scene-orientation' ? step.evidence.length === 0 : step.evidence.length > 0,
-    `${step.stepId}: compiled evidence must match the authored teaching mode`,
-  );
+  check(step.evidence.length > 0, `${step.stepId}: compiled evidence must not be empty`);
 }
 
 const contentPaths = [

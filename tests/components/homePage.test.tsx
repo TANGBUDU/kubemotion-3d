@@ -56,17 +56,17 @@ describe('HomePage orientation', () => {
     expect(screen.getAllByRole('link', { name: 'Start lesson' })).toHaveLength(1);
     expect(screen.getByRole('link', { name: 'Start lesson' })).toHaveAttribute(
       'href',
-      '/learn/service-routes-to-pods/0',
+      '/learn/cluster-overview/0',
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute(
       'data-lesson-id',
-      'service-routes-to-pods',
+      'cluster-overview',
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
     expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
-      'Interactive lesson preview: How a Service routes to ready Pods',
+      'Interactive lesson preview: What a Kubernetes cluster contains',
     );
-    expect(screen.getByText('CURRENT LESSON · How a Service routes to ready Pods')).toBeVisible();
+    expect(screen.getByText('CURRENT LESSON · What a Kubernetes cluster contains')).toBeVisible();
     expect(screen.queryByRole('link', { name: /explore/i })).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'View orientation again' }),
@@ -129,31 +129,31 @@ describe('HomePage orientation', () => {
     renderHome();
     expect(screen.getByRole('link', { name: 'Start lesson' })).toHaveAttribute(
       'href',
-      '/learn/service-routes-to-pods/0',
+      '/learn/cluster-overview/0',
     );
   });
 
-  it('starts the Pod lesson after the Service lesson is complete', () => {
+  it('starts the Pod lesson after the cluster overview is complete', () => {
     useAppStore.setState({
       orientationSeen: true,
-      lessonId: 'service-routes-to-pods',
-      stepIndex: 5,
-      completedLessonIds: ['service-routes-to-pods'],
+      lessonId: 'cluster-overview',
+      stepIndex: 4,
+      completedLessonIds: ['cluster-overview'],
     });
 
     renderHome();
 
     expect(screen.getByRole('link', { name: 'Start lesson' })).toHaveAttribute(
       'href',
-      '/learn/container-restart-vs-pod-replacement/0',
+      '/learn/pod-and-placement/0',
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute(
       'data-lesson-id',
-      'container-restart-vs-pod-replacement',
+      'pod-and-placement',
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
     expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
-      'Interactive lesson preview: Container restart is not Pod replacement',
+      'Interactive lesson preview: Pods, Namespaces, and Nodes',
     );
   });
 
@@ -162,7 +162,13 @@ describe('HomePage orientation', () => {
       orientationSeen: true,
       lessonId: 'container-restart-vs-pod-replacement',
       stepIndex: 9,
-      completedLessonIds: ['service-routes-to-pods', 'container-restart-vs-pod-replacement'],
+      completedLessonIds: [
+        'cluster-overview',
+        'pod-and-placement',
+        'manifest-to-running-pod',
+        'service-routes-to-pods',
+        'container-restart-vs-pod-replacement',
+      ],
     });
 
     renderHome();
@@ -186,19 +192,15 @@ describe('HomePage orientation', () => {
   it.each([
     [
       'en',
-      'Interactive lesson preview: How a Service routes to ready Pods',
-      'CURRENT LESSON · How a Service routes to ready Pods',
+      'Interactive lesson preview: What a Kubernetes cluster contains',
+      'CURRENT LESSON · What a Kubernetes cluster contains',
     ],
     [
       'ja',
-      'インタラクティブなレッスンプレビュー: Service が ready な Pod へルーティングする仕組み',
-      '現在のレッスン · Service が ready な Pod へルーティングする仕組み',
+      'インタラクティブなレッスンプレビュー: Kubernetes クラスターの構成',
+      '現在のレッスン · Kubernetes クラスターの構成',
     ],
-    [
-      'zh-CN',
-      '交互式课程预览: Service 如何将流量路由到 Ready Pod',
-      '当前课程 · Service 如何将流量路由到 Ready Pod',
-    ],
+    ['zh-CN', '交互式课程预览: Kubernetes 集群包含什么', '当前课程 · Kubernetes 集群包含什么'],
   ] as const)('localizes the %s hero preview title', (locale, ariaLabel, caption) => {
     useAppStore.setState({ locale });
     renderHome();

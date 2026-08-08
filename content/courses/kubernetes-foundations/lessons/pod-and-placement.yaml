@@ -1,176 +1,563 @@
-schemaVersion: 1
+schemaVersion: 2
 id: pod-and-placement
-scenarioId: demo-shop
+scenarioId: container-restart-golden
 chapterId: foundations
 title:
-  { en: 'Pods, Namespaces, and Nodes', ja: Pod・Namespace・Node, zh-CN: Pod、Namespace 与 Node }
+  en: Pods, Namespaces, and Nodes
+  ja: Pod・Namespace・Node
+  zh-CN: Pod、Namespace 与 Node
 summary:
-  {
-    en: Compare logical ownership with physical Pod placement.,
-    ja: 論理的な所属と Pod の物理配置を比較します。,
-    zh-CN: 比较逻辑归属与 Pod 的物理放置。,
-  }
+  en: Separate Pod composition, logical Namespace scope, physical Node placement, and the unscheduled state.
+  ja: Pod の構成、Namespace の論理スコープ、Node への物理配置、未スケジュール状態を分けて学びます。
+  zh-CN: 区分 Pod 组成、Namespace 逻辑作用域、Node 物理放置与未调度状态。
 learningOutcome:
-  {
-    en: Explain that a Pod belongs to a Namespace and is scheduled to a Node.,
-    ja: Pod が Namespace に属し Node に配置されることを説明する。,
-    zh-CN: 解释 Pod 属于 Namespace，同时被调度到 Node。,
-  }
+  en: Explain that a Pod belongs to a Namespace, may be assigned to a Node, and contains its runtime Containers without placing Nodes inside Namespaces.
+  ja: Pod が Namespace に属し、Node に割り当てられ、その内部にランタイム Container を持つことを、Node を Namespace 内に置かず説明する。
+  zh-CN: 解释 Pod 属于 Namespace、可以被分配到 Node，并在内部包含运行时容器，同时不把 Node 放进 Namespace。
 prerequisites: [cluster-overview]
-sourceIds: [k8s-pods, k8s-namespaces, k8s-nodes]
-verifiedAt: '2026-08-07'
-baseProjection:
+sourceIds:
+  - k8s-pods
+  - k8s-pod-lifecycle
+  - k8s-namespaces
+  - k8s-nodes
+  - k8s-deployments
+  - k8s-replicasets
+  - k8s-components
+  - k8s-cri
+verifiedAt: '2026-08-08'
+baseView:
   view: logical
   cameraPresetId: logical
   resetEntities: true
-  entityRules:
-    - { selector: { byKind: Namespace }, visible: true, emphasis: normal, labelMode: full }
-    - {
-        selector: { byKind: Pod, namespace: shop },
-        visible: true,
-        emphasis: normal,
-        labelMode: short,
-      }
+  entityRules: []
+  relationRules: []
+  activeRoutes: []
+
 steps:
-  - id: pod-shell
-    title: { en: A Pod groups containers, ja: Pod はコンテナをまとめる, zh-CN: Pod 组合容器 }
+  - id: pod-anatomy
+    title:
+      en: A Container runs inside a Pod boundary
+      ja: Container は Pod 境界の内側で動く
+      zh-CN: 容器运行在 Pod 边界内部
     learningOutcome:
-      { en: Describe the Pod boundary., ja: Pod の境界を説明する。, zh-CN: 描述 Pod 边界。 }
+      en: Read the visible Node-to-Pod-to-Container hierarchy.
+      ja: Node から Pod、Container へ続く見える階層を読み取る。
+      zh-CN: 读懂可见的 Node→Pod→Container 层级。
     narration:
-      {
-        en: A Pod contains one or more containers that share network and storage context and are scheduled together.,
-        ja: Pod はネットワークとストレージの文脈を共有し一緒に配置される一つ以上のコンテナを含みます。,
-        zh-CN: Pod 包含一个或多个共享网络和存储上下文、并被共同调度的容器。,
-      }
-    introducesTerms: [pod]
+      en: api-7f8d9-a is assigned to worker-a. The translucent Pod shell is seated in the Node chassis, and its api Container appears inside that shell. Kubernetes schedules the Pod as a unit rather than placing this Container independently.
+      ja: api-7f8d9-a は worker-a に割り当てられています。半透明の Pod シェルは Node シャーシの bay に収まり、api Container はそのシェル内部にあります。Kubernetes は Container を個別配置せず、Pod を単位としてスケジュールします。
+      zh-CN: api-7f8d9-a 已分配到 worker-a。半透明 Pod 外壳位于 Node 底盘的槽位中，api 容器则位于该外壳内部。Kubernetes 以 Pod 为单位调度，而不是单独放置这个容器。
+    teaching:
+      whatChanged:
+        en: No workload state changed; the placement scene isolated worker-a, one assigned Pod, and its contained Container.
+        ja: ワークロード状態は変化せず、配置シーンで worker-a、割り当て済み Pod、その内部 Container だけを分離表示しました。
+        zh-CN: 工作负载状态没有变化；放置场景单独展示了 worker-a、一个已分配 Pod 与其内部容器。
+      whyItHappened:
+        en: The physical model must make containment visible before logical scope is introduced.
+        ja: 論理スコープを導入する前に、物理モデル自体で包含関係を見えるようにするためです。
+        zh-CN: 这是为了在引入逻辑作用域前，先让物理模型本身清楚表达包含关系。
+      takeaway:
+        en: A Node hosts an assigned Pod, and the Pod contains its runtime Container.
+        ja: Node は割り当て済み Pod をホストし、Pod はランタイム Container を内包します。
+        zh-CN: Node 承载已分配的 Pod，Pod 在内部包含运行时容器。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - infrastructure:cluster:global:Node:worker-a
+        - api-object:namespaced:shop:Pod:api-a-old
+        - container-status:shop:Pod:api-a-old:Container:api
+    introducesTerms: [pod, node]
     usesTerms: []
-    sourceIds: [k8s-pods]
-    projectionPatch:
-      {
-        entityRules:
-          [
-            {
-              selector: { byIds: [api-object:namespaced:shop:Pod:api-a] },
-              emphasis: focused,
-              labelMode: full,
-            },
-          ],
-      }
-    transition:
-      [{ type: focus-camera, entityId: api-object:namespaced:shop:Pod:api-a, durationMs: 700 }]
-  - id: pod-ip
-    title:
-      { en: One Pod network identity, ja: Pod ごとのネットワーク ID, zh-CN: 每个 Pod 的网络身份 }
-    learningOutcome:
-      {
-        en: Treat the Pod as the primary network identity.,
-        ja: Pod を主なネットワーク ID として捉える。,
-        zh-CN: 把 Pod 视为主要网络身份。,
-      }
-    narration:
-      {
-        en: Containers in one Pod share its network namespace and IP. Replacement Pods may receive a different identity and address.,
-        ja: 一つの Pod のコンテナはネットワーク名前空間と IP を共有します。置換 Pod は別の ID とアドレスを持つ場合があります。,
-        zh-CN: 同一 Pod 中的容器共享其网络命名空间和 IP；替换 Pod 可能获得不同身份与地址。,
-      }
-    introducesTerms: []
-    usesTerms: [pod]
-    sourceIds: [k8s-pods]
-    projectionPatch: {}
-    transition:
-      [
-        {
-          type: callout,
-          entityId: api-object:namespaced:shop:Pod:api-a,
-          label: { en: Shared Pod network, ja: 共有 Pod ネットワーク, zh-CN: 共享的 Pod 网络 },
-          durationMs: 700,
-        },
-      ]
-  - id: logical-namespace
-    title:
-      {
-        en: Namespace is a logical scope,
-        ja: Namespace は論理スコープ,
-        zh-CN: Namespace 是逻辑作用域,
-      }
-    learningOutcome:
-      {
-        en: Organize namespaced objects without nesting Nodes.,
-        ja: Node を入れ子にせず名前空間付きオブジェクトを整理する。,
-        zh-CN: 组织 namespaced 对象而不把 Node 嵌套其中。,
-      }
-    narration:
-      {
-        en: Namespace groups namespaced API objects. Nodes remain cluster-scoped and do not sit inside a Namespace.,
-        ja: Namespace は名前空間付き API オブジェクトをまとめます。Node はクラスター範囲であり Namespace の中にはありません。,
-        zh-CN: Namespace 组织 namespaced API 对象；Node 是集群级对象，不位于 Namespace 内。,
-      }
-    introducesTerms: [namespace]
-    usesTerms: [pod]
-    sourceIds: [k8s-namespaces, k8s-nodes]
-    projectionPatch: { entityRules: [{ selector: { byKind: Namespace }, emphasis: focused }] }
-    transition: [{ type: layout-transition, durationMs: 700 }]
-  - id: physical-placement
-    title:
-      {
-        en: Placement answers where Pods run,
-        ja: Placement は Pod の実行場所を示す,
-        zh-CN: Placement 回答 Pod 在哪里运行,
-      }
-    learningOutcome:
-      {
-        en: Read Pod-to-Node scheduling relationships.,
-        ja: Pod と Node の配置関係を読む。,
-        zh-CN: 读取 Pod 到 Node 的调度关系。,
-      }
-    narration:
-      {
-        en: The same Pods now move to Node slots. A Pod still belongs to its Namespace while its nodeName records physical placement. Deployments and Services do not run inside Nodes.,
-        ja: 同じ Pod が Node スロットへ移動します。Pod は Namespace に属したまま nodeName が物理配置を記録します。Deployment と Service は Node 内で実行されません。,
-        zh-CN: 同一批 Pod 移到 Node 槽位；Pod 仍属于 Namespace，同时由 nodeName 记录物理放置。Deployment 和 Service 不运行在 Node 内。,
-      }
-    introducesTerms: [scheduling]
-    usesTerms: [pod, namespace, node]
     sourceIds: [k8s-pods, k8s-nodes]
-    projectionPatch:
+    worldPatch: { operations: [] }
+    viewPatch:
       view: placement
       cameraPresetId: placement
+      resetEntities: true
       entityRules:
-        - { selector: { byKind: Node }, visible: true, emphasis: normal, labelMode: full }
-      relationRules: [{ byType: scheduled-on, visible: true, emphasis: normal }]
-    transition: [{ type: layout-transition, durationMs: 1100 }]
-  - id: same-object-two-views
-    title:
-      {
-        en: 'One object, two useful views',
-        ja: 同じオブジェクト、二つの視点,
-        zh-CN: 同一对象，两种视图,
-      }
-    learningOutcome:
-      {
-        en: Preserve Pod identity across views.,
-        ja: view をまたいで Pod の同一性を保つ。,
-        zh-CN: 在视图之间保持 Pod 身份。,
-      }
-    narration:
-      {
-        en: Logical view answers what belongs together. Placement view answers where Pods run. The highlighted Pod keeps the same stable ID in both views.,
-        ja: Logical view は所属を、Placement view は実行場所を示します。強調された Pod の安定 ID は両方で同じです。,
-        zh-CN: Logical 回答哪些对象属于一起，Placement 回答 Pod 在哪里运行；高亮 Pod 在两种视图中保持同一稳定 ID。,
-      }
-    introducesTerms: []
-    usesTerms: [pod, namespace, scheduling]
-    sourceIds: [k8s-pods, k8s-namespaces, k8s-nodes]
-    projectionPatch:
-      {
-        entityRules:
-          [
-            {
-              selector: { byIds: [api-object:namespaced:shop:Pod:api-a] },
-              emphasis: focused,
-              labelMode: full,
-            },
-          ],
-      }
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: compact
+        - selector: { byIds: [container-status:shop:Pod:api-a-old:Container:api] }
+          visible: true
+          emphasis: normal
+          labelMode: short
+      relationRules:
+        - byIds: [scheduled-api-a-old]
+          visible: true
+          emphasis: normal
+        - byIds: [contains-api-a-old-container-api]
+          visible: true
+          emphasis: focused
+      activeRoutes: []
     transition:
-      [{ type: focus-camera, entityId: api-object:namespaced:shop:Pod:api-a, durationMs: 700 }]
+      cues:
+        - type: focus-camera
+          entityId: api-object:namespaced:shop:Pod:api-a-old
+          durationMs: 600
+
+  - id: logical-ownership
+    title:
+      en: Namespace is a logical workspace
+      ja: Namespace は論理ワークスペース
+      zh-CN: Namespace 是逻辑工作空间
+    learningOutcome:
+      en: Read Namespace scope separately from physical placement.
+      ja: Namespace スコープを物理配置から分けて読み取る。
+      zh-CN: 将 Namespace 作用域与物理放置分开理解。
+    narration:
+      en: The shop Namespace organizes namespaced API objects. The Deployment owns a ReplicaSet, and that ReplicaSet owns replaceable Pods. This logical ownership view intentionally hides Nodes because a Namespace is not a machine or a physical rack.
+      ja: shop Namespace は名前空間付き API オブジェクトを整理します。Deployment は ReplicaSet を所有し、その ReplicaSet が交換可能な Pod を所有します。この論理所有ビューでは Node を意図的に隠します。Namespace は機械でも物理ラックでもないからです。
+      zh-CN: shop Namespace 组织 namespaced API 对象。Deployment 拥有 ReplicaSet，ReplicaSet 再拥有可替换的 Pod。这个逻辑所有权视图有意隐藏 Node，因为 Namespace 不是机器或物理机架。
+    teaching:
+      whatChanged:
+        en: No API object changed; the scene switched from physical placement to Namespace scope and ownership, with every Node hidden.
+        ja: API オブジェクトは変化せず、シーンを物理配置から Namespace スコープと所有関係へ切り替え、すべての Node を隠しました。
+        zh-CN: API 对象没有变化；场景从物理放置切换到 Namespace 作用域与所有权，并隐藏了所有 Node。
+      whyItHappened:
+        en: Scope and ownership answer which API objects belong together, not where their Pods execute.
+        ja: スコープと所有関係が答えるのは API オブジェクトのまとまりであり、Pod の実行場所ではないためです。
+        zh-CN: 因为作用域与所有权回答哪些 API 对象属于同一逻辑集合，而不是 Pod 在哪里执行。
+      takeaway:
+        en: Namespace is logical scope; it never physically contains a Node.
+        ja: Namespace は論理スコープであり、Node を物理的に内包しません。
+        zh-CN: Namespace 是逻辑作用域，绝不会在物理上包含 Node。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:cluster:global:Namespace:shop
+        - api-object:namespaced:shop:Deployment:api
+        - api-object:namespaced:shop:ReplicaSet:api-rs
+        - api-object:namespaced:shop:Pod:api-a-old
+    introducesTerms: [namespace, deployment, replicaset]
+    usesTerms: [pod]
+    sourceIds: [k8s-namespaces, k8s-deployments, k8s-replicasets, k8s-pods]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector: { byKind: Namespace }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: compact
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Deployment:api
+              - api-object:namespaced:shop:ReplicaSet:api-rs
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byKind: Pod, namespace: shop }
+          visible: true
+          emphasis: normal
+          labelMode: short
+      relationRules:
+        - byIds: [api-deployment-scoped-by-shop]
+          visible: true
+          emphasis: focused
+        - byIds:
+            - api-deployment-owns-api-replicaset
+            - owns-api-a-old
+            - owns-api-b
+            - owns-api-c
+          visible: true
+          emphasis: normal
+      activeRoutes: []
+    transition:
+      cues:
+        - type: layout-transition
+          entityIds:
+            - api-object:cluster:global:Namespace:shop
+            - api-object:namespaced:shop:Deployment:api
+            - api-object:namespaced:shop:ReplicaSet:api-rs
+            - api-object:namespaced:shop:Pod:api-a-old
+            - api-object:namespaced:shop:Pod:api-b
+            - api-object:namespaced:shop:Pod:api-c
+          durationMs: 700
+
+  - id: scope-is-not-placement
+    title:
+      en: One Pod has a logical scope and a physical assignment
+      ja: 一つの Pod に論理スコープと物理割り当てがある
+      zh-CN: 同一个 Pod 同时具有逻辑作用域与物理分配
+    learningOutcome:
+      en: Explain why Namespace membership does not nest the selected Node.
+      ja: Namespace 所属が選択済み Node を内包しない理由を説明する。
+      zh-CN: 解释为什么 Namespace 归属不会嵌套所选 Node。
+    narration:
+      en: 'api-7f8d9-a has namespace shop and nodeName worker-a. Those fields describe two independent dimensions: logical API scope and execution placement. worker-a stays in a separate cluster-scoped lane rather than inside the shop Namespace.'
+      ja: api-7f8d9-a には namespace shop と nodeName worker-a があります。二つのフィールドは、論理 API スコープと実行配置という独立した次元を示します。worker-a は shop Namespace 内ではなく、別のクラスター範囲レーンに残ります。
+      zh-CN: api-7f8d9-a 的 namespace 是 shop，nodeName 是 worker-a。两个字段分别描述逻辑 API 作用域与执行放置；worker-a 位于独立的集群级区域，而不是 shop Namespace 内部。
+    teaching:
+      whatChanged:
+        en: No Pod field changed; the logical view exposed worker-a in a separate placement-context lane beside the Namespace workspace.
+        ja: Pod のフィールドは変化せず、論理ビューで worker-a を Namespace ワークスペースとは別の配置コンテキストレーンに表示しました。
+        zh-CN: Pod 字段没有变化；逻辑视图把 worker-a 放在 Namespace 工作区之外的独立放置上下文区域。
+      whyItHappened:
+        en: Pods are namespaced, while Nodes are cluster-scoped resources; placement links a Pod to a Node without changing either scope.
+        ja: Pod は名前空間付き、Node はクラスター範囲のリソースであり、配置はスコープを変えず両者を結ぶためです。
+        zh-CN: 因为 Pod 是 namespaced 资源，Node 是集群级资源；放置关系连接二者，但不会改变各自作用域。
+      takeaway:
+        en: Namespace membership and Node assignment are simultaneous facts, not parent-child nesting.
+        ja: Namespace 所属と Node 割り当ては同時に成り立つ事実であり、親子の入れ子ではありません。
+        zh-CN: Namespace 归属与 Node 分配可以同时成立，但不是父子嵌套关系。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:cluster:global:Namespace:shop
+        - api-object:namespaced:shop:Pod:api-a-old
+        - infrastructure:cluster:global:Node:worker-a
+    introducesTerms: []
+    usesTerms: [namespace, pod, node]
+    sourceIds: [k8s-namespaces, k8s-pods, k8s-nodes]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector: { byKind: Namespace }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+      relationRules:
+        - byIds: [scheduled-api-a-old]
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: api-object:namespaced:shop:Pod:api-a-old
+          durationMs: 600
+
+  - id: pending-outside-nodes
+    title:
+      en: A Pending Pod starts outside every Node
+      ja: Pending Pod はすべての Node の外側から始まる
+      zh-CN: Pending Pod 最初位于所有 Node 之外
+    learningOutcome:
+      en: Verify that a newly created unscheduled Pod has no Node assignment.
+      ja: 新しく作成された未スケジュール Pod に Node 割り当てがないことを確認する。
+      zh-CN: 验证新创建的未调度 Pod 尚无 Node 分配。
+    narration:
+      en: The synthetic pending-demo Pod now exists in the shop Namespace with phase Pending and no nodeName. Its waiting Container status belongs inside the Pod shell, but the entire Pod remains in the UNSCHEDULED area instead of leaning toward any Node.
+      ja: 合成の pending-demo Pod が shop Namespace に作成され、phase は Pending、nodeName はありません。waiting Container 状態は Pod シェル内にありますが、Pod 全体はどの Node にも寄らず UNSCHEDULED 領域に残ります。
+      zh-CN: 虚构的 pending-demo Pod 现在已创建于 shop Namespace，阶段为 Pending，且没有 nodeName。waiting 容器状态位于 Pod 外壳内部，但整个 Pod 留在 UNSCHEDULED 区域，不会靠近任何 Node。
+    teaching:
+      whatChanged:
+        en: A new Pending Pod and waiting Container status were added without a nodeName or scheduled-on relation.
+        ja: nodeName も scheduled-on 関係も持たない、新しい Pending Pod と waiting Container 状態が追加されました。
+        zh-CN: 新增了一个 Pending Pod 与 waiting 容器状态，但没有 nodeName，也没有 scheduled-on 关系。
+      whyItHappened:
+        en: Creating a Pod API object happens before the Scheduler records a Node assignment.
+        ja: Pod API オブジェクトの作成は、Scheduler が Node 割り当てを記録するより前に起こるためです。
+        zh-CN: 因为 Pod API 对象的创建发生在 Scheduler 记录 Node 分配之前。
+      takeaway:
+        en: A Pod without nodeName is unscheduled and must remain outside every Node chassis.
+        ja: nodeName のない Pod は未スケジュールであり、すべての Node シャーシの外側に置かれます。
+        zh-CN: 没有 nodeName 的 Pod 尚未调度，必须位于所有 Node 底盘之外。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - api-object:namespaced:shop:Pod:placement-pending
+        - container-status:shop:Pod:placement-pending:Container:demo
+    introducesTerms: [scheduling, scheduler]
+    usesTerms: [namespace, pod, node]
+    sourceIds: [k8s-pods, k8s-pod-lifecycle, k8s-components, k8s-nodes]
+    worldPatch:
+      operations:
+        - op: add-entity
+          entity:
+            id: api-object:namespaced:shop:Pod:placement-pending
+            category: api-object
+            kind: Pod
+            name: pending-demo
+            namespace: shop
+            labels: { app.kubernetes.io/name: pending-demo }
+            status: pending
+            data:
+              uid: synthetic-placement-pending-01
+              phase: Pending
+              restartPolicy: Always
+              conditions:
+                podScheduled: false
+                initialized: true
+                containersReady: false
+                ready: false
+            title:
+              en: pending-demo Pod
+              ja: pending-demo Pod
+              zh-CN: pending-demo Pod
+            summary:
+              en: Synthetic Pod waiting for a Node assignment.
+              ja: Node への割り当てを待つ合成 Pod です。
+              zh-CN: 等待 Node 分配的虚构 Pod。
+            sourceIds: [k8s-pods, k8s-pod-lifecycle]
+            visual: { archetype: pod, size: md, group: placement-pending }
+        - op: add-entity
+          entity:
+            id: container-status:shop:Pod:placement-pending:Container:demo
+            category: runtime-status
+            kind: Container
+            name: demo
+            namespace: shop
+            status: waiting
+            data:
+              podId: api-object:namespaced:shop:Pod:placement-pending
+              name: demo
+              image: registry.example.invalid/shop/demo:v1
+              restartCount: 0
+              ready: false
+              started: false
+              state:
+                kind: waiting
+                reason: Pending
+            title:
+              en: demo Container · pending-demo
+              ja: demo Container · pending-demo
+              zh-CN: demo 容器 · pending-demo
+            summary:
+              en: Container status waiting for the Pod to receive a Node assignment.
+              ja: Pod が Node 割り当てを受けるのを待つ Container 状態です。
+              zh-CN: 等待 Pod 获得 Node 分配的容器状态。
+            sourceIds: [k8s-pods, k8s-pod-lifecycle]
+            visual: { archetype: container, size: sm, group: placement-pending }
+        - op: add-relation
+          relation:
+            id: contains-placement-pending-container
+            type: contains-runtime
+            from: api-object:namespaced:shop:Pod:placement-pending
+            to: container-status:shop:Pod:placement-pending:Container:demo
+            directed: true
+            semantic: composition
+            title:
+              en: contains Container status
+              ja: Container 状態を含む
+              zh-CN: 包含容器状态
+            sourceIds: [k8s-pods]
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byKind: Node }
+          visible: true
+          emphasis: normal
+          labelMode: short
+        - selector: { byIds: [api-object:namespaced:shop:Pod:placement-pending] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [container-status:shop:Pod:placement-pending:Container:demo] }
+          visible: true
+          emphasis: normal
+          labelMode: short
+      relationRules:
+        - byIds: [contains-placement-pending-container]
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: entity-enter
+          entityId: api-object:namespaced:shop:Pod:placement-pending
+          durationMs: 600
+        - type: entity-enter
+          entityId: container-status:shop:Pod:placement-pending:Container:demo
+          delayMs: 180
+          durationMs: 520
+
+  - id: node-runtime-chassis
+    title:
+      en: The Node bay preserves Pod and Container containment
+      ja: Node bay が Pod と Container の包含を保つ
+      zh-CN: Node 槽位保持 Pod 与容器的包含关系
+    learningOutcome:
+      en: Locate kubelet, the container runtime, the assigned Pod, and the Container inside one Node chassis.
+      ja: 一つの Node シャーシ内で kubelet、コンテナランタイム、割り当て済み Pod、その Container を見つける。
+      zh-CN: 在同一 Node 底盘内找到 kubelet、容器运行时、已分配 Pod 与其内部容器。
+    narration:
+      en: On worker-a, kubelet maintains assigned Pods and works with the container runtime through CRI. api-7f8d9-a occupies a Pod bay, while its api Container remains inside the Pod shell. Deployment and Namespace objects are absent because they do not run in a Node bay.
+      ja: worker-a では kubelet が割り当て済み Pod を維持し、CRI を通じてコンテナランタイムと連携します。api-7f8d9-a は Pod bay に収まり、api Container は Pod シェル内に残ります。Deployment と Namespace は Node bay で動かないため表示しません。
+      zh-CN: 在 worker-a 上，kubelet 维护已分配 Pod，并通过 CRI 与容器运行时协作。api-7f8d9-a 占据一个 Pod 槽位，其 api 容器仍位于 Pod 外壳内部。Deployment 与 Namespace 不会运行在 Node 槽位中，因此没有出现。
+    teaching:
+      whatChanged:
+        en: No runtime fact changed; worker-a expanded to expose its local kubelet and runtime beside the unchanged Pod-to-Container hierarchy.
+        ja: ランタイムの事実は変化せず、worker-a を展開して、変わらない Pod・Container 階層の横にローカル kubelet と runtime を表示しました。
+        zh-CN: 运行时事实没有变化；worker-a 被展开，在不变的 Pod→容器层级旁显示本地 kubelet 与运行时。
+      whyItHappened:
+        en: Placement includes both the assigned workload hierarchy and the Node-local components that execute it.
+        ja: 配置には、割り当て済みワークロードの階層と、それを実行する Node ローカルコンポーネントの両方が含まれるためです。
+        zh-CN: 因为放置视图既要表达已分配的工作负载层级，也要表达执行它的 Node 本地组件。
+      takeaway:
+        en: The visible execution hierarchy is Node chassis → Pod bay → Container, with kubelet and runtime as Node-local modules.
+        ja: 見える実行階層は Node シャーシ → Pod bay → Container で、kubelet と runtime は Node ローカルモジュールです。
+        zh-CN: 可见执行层级是 Node 底盘→Pod 槽位→容器，kubelet 与运行时是 Node 本地模块。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - infrastructure:cluster:global:Node:worker-a
+        - runtime-component:node:worker-a:Kubelet:kubelet
+        - runtime-component:node:worker-a:ContainerRuntime:runtime
+        - api-object:namespaced:shop:Pod:api-a-old
+        - container-status:shop:Pod:api-a-old:Container:api
+    introducesTerms: [cri]
+    usesTerms: [pod, node, scheduling]
+    sourceIds: [k8s-components, k8s-cri, k8s-nodes, k8s-pods]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector:
+            byIds:
+              - runtime-component:node:worker-a:Kubelet:kubelet
+              - runtime-component:node:worker-a:ContainerRuntime:runtime
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: compact
+        - selector: { byIds: [container-status:shop:Pod:api-a-old:Container:api] }
+          visible: true
+          emphasis: normal
+          labelMode: short
+      relationRules:
+        - byIds: [scheduled-api-a-old]
+          visible: true
+          emphasis: focused
+        - byIds: [contains-api-a-old-container-api]
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: layout-transition
+          entityIds:
+            - infrastructure:cluster:global:Node:worker-a
+            - runtime-component:node:worker-a:Kubelet:kubelet
+            - runtime-component:node:worker-a:ContainerRuntime:runtime
+            - api-object:namespaced:shop:Pod:api-a-old
+            - container-status:shop:Pod:api-a-old:Container:api
+          durationMs: 650
+
+  - id: placement-summary
+    title:
+      en: Assigned and unscheduled Pods occupy different places
+      ja: 割り当て済み Pod と未スケジュール Pod は別の場所にある
+      zh-CN: 已分配 Pod 与未调度 Pod 位于不同区域
+    learningOutcome:
+      en: Compare an assigned Pod hierarchy with a Pending Pod outside every Node.
+      ja: 割り当て済み Pod の階層と、すべての Node 外にある Pending Pod を比較する。
+      zh-CN: 比较已分配 Pod 层级与位于所有 Node 外的 Pending Pod。
+    narration:
+      en: api-7f8d9-a has nodeName worker-a, so its Pod shell and Container occupy a worker-a bay. pending-demo has no nodeName, so its complete Pod shell and waiting Container remain in the unscheduled tray. Both Pods still belong to the shop Namespace, which is a logical fact rather than a physical chassis.
+      ja: api-7f8d9-a には nodeName worker-a があるため、Pod シェルと Container は worker-a の bay にあります。pending-demo には nodeName がないため、Pod シェル全体と waiting Container は未スケジュールトレイに残ります。どちらの Pod も shop Namespace に属しますが、それは物理シャーシではなく論理的な事実です。
+      zh-CN: api-7f8d9-a 的 nodeName 是 worker-a，因此其 Pod 外壳与容器位于 worker-a 槽位。pending-demo 没有 nodeName，所以完整 Pod 外壳与 waiting 容器留在未调度托盘。两个 Pod 都属于 shop Namespace，但这是逻辑事实，不是物理底盘。
+    teaching:
+      whatChanged:
+        en: No API or runtime state changed; the final placement view put the assigned and unscheduled Pod hierarchies side by side.
+        ja: API やランタイム状態は変化せず、最終配置ビューで割り当て済みと未スケジュールの Pod 階層を並べました。
+        zh-CN: API 与运行时状态没有变化；最终放置视图并列展示已分配与未调度的 Pod 层级。
+      whyItHappened:
+        en: nodeName determines physical placement, while namespace remains an independent logical property.
+        ja: nodeName が物理配置を決め、namespace は独立した論理プロパティとして残るためです。
+        zh-CN: 因为 nodeName 决定物理放置，而 namespace 始终是独立的逻辑属性。
+      takeaway:
+        en: Read Namespace for logical scope, nodeName for placement, and Pod containment for the Container boundary.
+        ja: 論理スコープは Namespace、配置は nodeName、Container 境界は Pod の包含から読み取ります。
+        zh-CN: 用 Namespace 判断逻辑作用域，用 nodeName 判断放置，用 Pod 包含关系判断容器边界。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - infrastructure:cluster:global:Node:worker-a
+        - api-object:namespaced:shop:Pod:api-a-old
+        - container-status:shop:Pod:api-a-old:Container:api
+        - api-object:namespaced:shop:Pod:placement-pending
+        - container-status:shop:Pod:placement-pending:Container:demo
+    introducesTerms: []
+    usesTerms:
+      - pod
+      - node
+      - namespace
+      - deployment
+      - replicaset
+      - scheduling
+      - scheduler
+      - cri
+    sourceIds: [k8s-pods, k8s-pod-lifecycle, k8s-namespaces, k8s-nodes]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: compact
+        - selector: { byIds: [api-object:namespaced:shop:Pod:placement-pending] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: compact
+        - selector:
+            byIds:
+              - container-status:shop:Pod:api-a-old:Container:api
+              - container-status:shop:Pod:placement-pending:Container:demo
+          visible: true
+          emphasis: normal
+          labelMode: none
+      relationRules:
+        - byIds: [scheduled-api-a-old]
+          visible: true
+          emphasis: focused
+        - byIds:
+            - contains-api-a-old-container-api
+            - contains-placement-pending-container
+          visible: true
+          emphasis: normal
+      activeRoutes: []
+    transition:
+      cues:
+        - type: layout-transition
+          entityIds:
+            - infrastructure:cluster:global:Node:worker-a
+            - api-object:namespaced:shop:Pod:api-a-old
+            - container-status:shop:Pod:api-a-old:Container:api
+            - api-object:namespaced:shop:Pod:placement-pending
+            - container-status:shop:Pod:placement-pending:Container:demo
+          durationMs: 700

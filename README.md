@@ -15,10 +15,14 @@ a Pod.
 
 ## Verified release scope
 
-- **2 fully verified lessons:** `container-restart-vs-pod-replacement` and `service-routes-to-pods`
+- **5 fully verified lessons:** `cluster-overview`, `pod-and-placement`,
+  `manifest-to-running-pod`, `service-routes-to-pods`, and
+  `container-restart-vs-pod-replacement`
+- **Foundation-first sequence:** cluster boundary → Node/Pod/Container placement → API-mediated
+  manifest flow → stable Service traffic → restart-versus-replacement comparison
 - **10-step Pod lifecycle:** orientation → healthy baseline → Container exit → in-place restart → intentional Pod deletion → controller replacement → unscheduled Pending → scheduler binding → kubelet start/readiness → snapshot-derived comparison
 - **6-step Service traffic path:** identify objects → stable Service entry → EndpointSlice readiness → Request A to a Ready backend → readiness change → later Request B to another Ready backend
-- **20 planned lessons:** visible as roadmap entries, not represented as complete
+- **17 planned lessons:** visible as roadmap entries, not represented as complete
 - **Explore (Beta):** filters a compiled snapshot while keeping one-hop ownership and placement context
 - **Synthetic only:** no cluster credentials, telemetry, backend, or resource mutation
 
@@ -27,8 +31,9 @@ unscheduled tray, Node racks with embedded kubelets and Pod bays, Pods as shells
 Container status slots, and in-place ReplicaSet counters. A runtime restart is evidenced by
 `containerID`, `restartCount`, `state`, and `lastState`; ReplicaSet counters are presented as
 `SPEC / OBSERVED / READY`. The traffic lesson separates the stable Service address, EndpointSlice
-API state, and the selected Ready backend. Both use fixed EvidencePanels, collision-aware labels,
-persistent wide teaching routes, explicit replay, and reduced-motion fallbacks.
+API state, and the selected Ready backend. All five lessons use a fixed teaching panel with
+evidence and takeaways, collision-aware labels, explicit replay, and meaningful reduced-motion
+fallbacks; causal and traffic steps retain persistent wide teaching routes.
 
 ## Architecture
 
@@ -87,7 +92,7 @@ pnpm visual:capture
 The suite covers typed patch transactions, deterministic diffs, snapshot immutability, cue
 contracts, specialized visuals, stable and traffic-specific layouts, both factual timelines,
 desktop/mobile navigation and language persistence, camera/route/label gates, required visual
-captures at 1440×900, 1280×720, and 390×844, and 20-cycle renderer memory stress across both
+captures at 1440×900, 1280×720, and 390×844, and 20-cycle renderer memory stress across all five
 verified lessons. Human screenshot acceptance remains mandatory; see the
 [review checklist](docs/review/VISUAL_ACCEPTANCE_CHECKLIST.md) and
 [before/after evidence](docs/review/BEFORE_AFTER.md).

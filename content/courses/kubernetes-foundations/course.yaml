@@ -33,7 +33,7 @@ lessonOrder:
 lessons:
   - id: cluster-overview
     chapterId: foundations
-    status: planned
+    status: available
     prerequisites: []
     title:
       {
@@ -50,7 +50,7 @@ lessons:
     estimatedMinutes: 5
   - id: pod-and-placement
     chapterId: foundations
-    status: planned
+    status: available
     prerequisites: [cluster-overview]
     title:
       { en: 'Pods, Namespaces, and Nodes', ja: Pod・Namespace・Node, zh-CN: Pod、Namespace 与 Node }
@@ -63,7 +63,7 @@ lessons:
     estimatedMinutes: 6
   - id: manifest-to-running-pod
     chapterId: foundations
-    status: planned
+    status: available
     prerequisites: [pod-and-placement]
     title:
       {
@@ -81,7 +81,7 @@ lessons:
   - id: service-routes-to-pods
     chapterId: networking-resilience
     status: available
-    prerequisites: []
+    prerequisites: [manifest-to-running-pod]
     title:
       {
         en: How a Service routes to ready Pods,
@@ -98,7 +98,7 @@ lessons:
   - id: container-restart-vs-pod-replacement
     chapterId: workloads-self-healing
     status: available
-    prerequisites: []
+    prerequisites: [service-routes-to-pods]
     title:
       {
         en: Container restart is not Pod replacement,

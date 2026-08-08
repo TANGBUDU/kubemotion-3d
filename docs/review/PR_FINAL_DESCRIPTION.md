@@ -35,11 +35,20 @@ Delivered rebuild milestones on this branch:
   selected Ready endpoint must match the final physical backend. A deterministic sparse obstacle
   planner routes around model and label AABBs and replans moving endpoints without allowing token
   drift.
+- M7 migrates all five original lessons to schema v2 and the foundation-first system. Cluster,
+  logical ownership, physical placement, control flow, and traffic now use distinct projections;
+  every normal step has one primary focus plus localized What changed / Why / Evidence / Takeaway
+  teaching. The eight-step manifest story keeps API, reconciliation, scheduling, kubelet, runtime,
+  and readiness responsibilities separate. A 10-objective multilingual browser matrix covers 30
+  settled and 15 reduced-motion captures.
 
 - immutable `WorldSnapshot` / `WorldPatch` / `WorldDiff` plus a separate `ViewProjection`;
-- two verified lessons:
-  - Container restart vs Pod replacement;
+- five verified foundation-first lessons:
+  - Cluster overview;
+  - Pod, Namespace, and Node;
+  - Manifest to running Pod;
   - Service routes to Ready Pods;
+  - Container restart vs Pod replacement;
 - premium teaching visuals, semantic zones, persistent `Line2` routes, canonical semantic anchors,
   deterministic sparse obstacle-aware planning, label collision handling, and desktop/mobile
   teaching shells;
@@ -91,11 +100,11 @@ Delivered rebuild milestones on this branch:
 - `pnpm format:check` — PASS;
 - `pnpm lint` — PASS;
 - `pnpm typecheck` — PASS;
-- `pnpm content:validate` — PASS (2 v2 scenarios, 32 entities, 34 relations, 2 verified v2
-  lessons, 20 planned lessons, 26 terms, 29 official sources);
-- `pnpm content:accuracy` — PASS (235 current-public text files, 30 forbidden patterns, 23 local
+- `pnpm content:validate` — PASS (2 v2 scenarios, 32 entities, 34 relations, 5 verified v2
+  lessons, 17 planned lessons, 26 terms, 29 official sources);
+- `pnpm content:accuracy` — PASS (238 current-public text files, 30 forbidden patterns, 23 local
   links, and all README, visualization, lifecycle, and Service invariants);
-- `pnpm test:unit -- --run` — PASS (43 files, 314 tests);
+- `pnpm test:unit -- --run` — PASS (44 files, 318 tests);
 - `pnpm build` — PASS;
 - `pnpm visual:m2` — PASS (four captures; desktop foundation/island gate passes with 0 measured
   entity-label overlap and 0 labels outside the stage; mobile risk recorded for M5);
@@ -114,9 +123,13 @@ Delivered rebuild milestones on this branch:
   temporal phases; reduced-motion active tokens, obstacle intersections, endpoint drift, off-route
   tokens, route-replan failures, undersized routes, missing arrows, and clipped routes/arrows/markers
   are all 0; maximum measured token-to-route distance is `4.44e-16`);
+- `pnpm visual:m7` — PASS (10 objectives / 45 screenshots; all five lessons at 1440×900,
+  1280×720/800, and 390×844 with EN/JA/zh-CN rotation; 30 settled and 15 reduced-motion captures;
+  scene density, focus, hierarchy, label, teaching, source, persistent-route, and static-readability
+  failures are all 0);
 - `pnpm test:e2e` — PASS (136 passed, 53 skipped, 0 failed); skips are deliberate
   project/viewport ownership selections;
-- 20-cycle dual-lesson renderer resource pressure gate — PASS;
+- 20-cycle five-lesson renderer resource pressure gate — PASS;
 - screenshot gate / visual acceptance — PASS (38 full-page + 5 focused = 43 screenshots; 0 labels outside the
   stage and 0 measured label overlap).
 

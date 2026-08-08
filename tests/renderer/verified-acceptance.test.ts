@@ -15,7 +15,13 @@ import { SceneRegistry } from '../../src/renderer/SceneRegistry';
 import { createEffectiveScenePlan } from '../../src/renderer/scene-grammar';
 import { VisualFactoryRegistry } from '../../src/renderer/VisualFactoryRegistry';
 
-const lessonIds = ['container-restart-vs-pod-replacement', 'service-routes-to-pods'] as const;
+const lessonIds = [
+  'cluster-overview',
+  'pod-and-placement',
+  'manifest-to-running-pod',
+  'service-routes-to-pods',
+  'container-restart-vs-pod-replacement',
+] as const;
 
 function compiledLesson(lessonId: (typeof lessonIds)[number]) {
   const lesson = lessonById.get(lessonId);
@@ -198,7 +204,7 @@ describe('verified visual-acceptance metadata', () => {
         previous = sequential;
       }
     }
-  });
+  }, 20_000);
 
   it('fits real entity and route bounds inside the 6% safe frame at every required viewport', () => {
     for (const lessonId of lessonIds) {

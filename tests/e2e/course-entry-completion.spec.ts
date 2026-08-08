@@ -1,8 +1,28 @@
 import { expect, test, type Page } from '@playwright/test';
 
+const CLUSTER_LESSON = 'cluster-overview';
+const POD_PLACEMENT_LESSON = 'pod-and-placement';
+const MANIFEST_LESSON = 'manifest-to-running-pod';
 const SERVICE_LESSON = 'service-routes-to-pods';
-const POD_LESSON = 'container-restart-vs-pod-replacement';
+const RESTART_LESSON = 'container-restart-vs-pod-replacement';
 const progressKey = 'kubemotion:v1:progress';
+
+const availableLessons = [
+  { id: CLUSTER_LESSON, finalStep: 4 },
+  { id: POD_PLACEMENT_LESSON, finalStep: 5 },
+  { id: MANIFEST_LESSON, finalStep: 7 },
+  { id: SERVICE_LESSON, finalStep: 5 },
+  { id: RESTART_LESSON, finalStep: 9 },
+] as const;
+
+async function seedCompletedLessons(page: Page, completedLessonIds: readonly string[]) {
+  await page.addInitScript(
+    ({ key, lessonIds }) => {
+      localStorage.setItem(key, JSON.stringify({ completedLessonIds: lessonIds, stepIndex: 0 }));
+    },
+    { key: progressKey, lessonIds: [...completedLessonIds] },
+  );
+}
 
 async function completedLessonIds(page: Page): Promise<string[]> {
   return page.evaluate((key) => {
@@ -104,9 +124,9 @@ async function failProgressWritesUntilReleased(page: Page): Promise<() => Promis
 
 test('bare Learn follows manifest order and valid progress resumes', async ({ page }) => {
   await page.goto('/#/learn');
-  await expect(page).toHaveURL(/service-routes-to-pods\/0$/);
+  await expect(page).toHaveURL(/cluster-overview\/0$/);
   await expect(page.getByTestId('teaching-step-heading')).toContainText(
-    'Identify the traffic objects',
+    'One cluster, two areas of responsibility',
   );
 
   await page.goto('/#/learn/container-restart-vs-pod-replacement/3');
@@ -133,21 +153,23 @@ test('valid lesson deep links normalize missing or invalid steps to that lesson 
 }) => {
   await page.goto(`/#/learn/${SERVICE_LESSON}/4`);
 
-  await page.goto(`/#/learn/${POD_LESSON}/999`);
-  await expect(page).toHaveURL(new RegExp(`${POD_LESSON}/0$`));
+  await page.goto(`/#/learn/${RESTART_LESSON}/999`);
+  await expect(page).toHaveURL(new RegExp(`${RESTART_LESSON}/0$`));
   await expect(page.getByTestId('teaching-step-heading')).toContainText('What you are looking at');
 
   await page.goto(`/#/learn/${SERVICE_LESSON}/4`);
-  await page.goto(`/#/learn/${POD_LESSON}`);
-  await expect(page).toHaveURL(new RegExp(`${POD_LESSON}/0$`));
+  await page.goto(`/#/learn/${RESTART_LESSON}`);
+  await expect(page).toHaveURL(new RegExp(`${RESTART_LESSON}/0$`));
   await expect(page.getByTestId('teaching-step-heading')).toContainText('What you are looking at');
 });
 
 test('final steps persist completion and expose a usable next action', async ({ page }) => {
+  const completedBeforeService = [CLUSTER_LESSON, POD_PLACEMENT_LESSON, MANIFEST_LESSON];
+  await seedCompletedLessons(page, completedBeforeService);
   await page.goto(`/#/learn/${SERVICE_LESSON}/5`);
   const completion = page.getByTestId('lesson-completion-card');
   await expect(completion).toContainText('Final step ready');
-  await expect.poll(() => completedLessonIds(page)).toEqual([]);
+  await expect.poll(() => completedLessonIds(page)).toEqual(completedBeforeService);
   await expect(completion.getByRole('link', { name: /Next lesson:/i })).toHaveCount(0);
 
   await completion.getByRole('button', { name: 'Complete lesson', exact: true }).click();
@@ -155,29 +177,31 @@ test('final steps persist completion and expose a usable next action', async ({ 
   await expect(completion).toContainText('Lesson complete');
   await expect(
     completion.getByRole('link', { name: /Next lesson: Container restart/i }),
-  ).toHaveAttribute('href', `#/learn/${POD_LESSON}/0`);
+  ).toHaveAttribute('href', `#/learn/${RESTART_LESSON}/0`);
 
-  await expect.poll(() => completedLessonIds(page)).toEqual([SERVICE_LESSON]);
+  await expect
+    .poll(() => completedLessonIds(page))
+    .toEqual([...completedBeforeService, SERVICE_LESSON]);
 
   await page.goto('/#/');
   await expect(page.getByRole('link', { name: 'Start lesson', exact: true })).toHaveAttribute(
     'href',
-    `#/learn/${POD_LESSON}/0`,
+    `#/learn/${RESTART_LESSON}/0`,
   );
 
   await page.goto('/#/learn');
-  await expect(page).toHaveURL(new RegExp(`${POD_LESSON}/0$`));
+  await expect(page).toHaveURL(new RegExp(`${RESTART_LESSON}/0$`));
   await expect(page.getByTestId('teaching-step-heading')).toContainText('What you are looking at');
 });
 
 test('all completed lessons route Home and bare Learn to Explore until Reset', async ({ page }) => {
-  await page.goto(`/#/learn/${SERVICE_LESSON}/5`);
-  await page.getByRole('button', { name: 'Complete lesson', exact: true }).click();
-  await expect.poll(() => completedLessonIds(page)).toEqual([SERVICE_LESSON]);
-
-  await page.goto(`/#/learn/${POD_LESSON}/9`);
-  await page.getByRole('button', { name: 'Complete lesson', exact: true }).click();
-  await expect.poll(() => completedLessonIds(page)).toEqual([SERVICE_LESSON, POD_LESSON]);
+  const completedInOrder: string[] = [];
+  for (const lesson of availableLessons) {
+    await page.goto(`/#/learn/${lesson.id}/${lesson.finalStep}`);
+    await page.getByRole('button', { name: 'Complete lesson', exact: true }).click();
+    completedInOrder.push(lesson.id);
+    await expect.poll(() => completedLessonIds(page)).toEqual(completedInOrder);
+  }
 
   await page.goto('/#/');
   const explore = page.getByRole('link', { name: 'Explore completed lessons', exact: true });
@@ -199,20 +223,18 @@ test('all completed lessons route Home and bare Learn to Explore until Reset', a
   await page.goto('/#/');
   await expect(page.getByRole('link', { name: 'Start lesson', exact: true })).toHaveAttribute(
     'href',
-    `#/learn/${SERVICE_LESSON}/0`,
+    `#/learn/${CLUSTER_LESSON}/0`,
   );
 });
 
 test('completion skips a next lesson that is already complete', async ({ page }) => {
-  await page.addInitScript(
-    ({ key, completedLessonId }) => {
-      localStorage.setItem(
-        key,
-        JSON.stringify({ completedLessonIds: [completedLessonId], stepIndex: 0 }),
-      );
-    },
-    { key: progressKey, completedLessonId: POD_LESSON },
-  );
+  const completedExceptService = [
+    CLUSTER_LESSON,
+    POD_PLACEMENT_LESSON,
+    MANIFEST_LESSON,
+    RESTART_LESSON,
+  ];
+  await seedCompletedLessons(page, completedExceptService);
 
   await page.goto(`/#/learn/${SERVICE_LESSON}/5`);
   const completion = page.getByTestId('lesson-completion-card');
@@ -222,22 +244,24 @@ test('completion skips a next lesson that is already complete', async ({ page })
   ).toHaveAttribute('href', '#/explore');
   await expect(completion.getByRole('link', { name: /Next lesson:/i })).toHaveCount(0);
 
-  await expect.poll(() => completedLessonIds(page)).toEqual([POD_LESSON, SERVICE_LESSON]);
+  await expect
+    .poll(() => completedLessonIds(page))
+    .toEqual([...completedExceptService, SERVICE_LESSON]);
 });
 
 test('an out-of-order final lesson points to the first unfinished manifest lesson', async ({
   page,
 }) => {
-  await page.goto(`/#/learn/${POD_LESSON}/9`);
+  await page.goto(`/#/learn/${RESTART_LESSON}/9`);
   const completion = page.getByTestId('lesson-completion-card');
   await expect.poll(() => completedLessonIds(page)).toEqual([]);
 
   await completion.getByRole('button', { name: 'Complete lesson', exact: true }).click();
 
   await expect(
-    completion.getByRole('link', { name: /Next lesson: How a Service routes/i }),
-  ).toHaveAttribute('href', `#/learn/${SERVICE_LESSON}/0`);
-  await expect.poll(() => completedLessonIds(page)).toEqual([POD_LESSON]);
+    completion.getByRole('link', { name: /Next lesson: What a Kubernetes cluster contains/i }),
+  ).toHaveAttribute('href', `#/learn/${CLUSTER_LESSON}/0`);
+  await expect.poll(() => completedLessonIds(page)).toEqual([RESTART_LESSON]);
 });
 
 test('cross-tab navigation preserves external completion and Reset updates', async ({
@@ -246,7 +270,7 @@ test('cross-tab navigation preserves external completion and Reset updates', asy
 }) => {
   const otherPage = await context.newPage();
   await page.goto(`/#/learn/${SERVICE_LESSON}/0`);
-  await otherPage.goto(`/#/learn/${POD_LESSON}/0`);
+  await otherPage.goto(`/#/learn/${RESTART_LESSON}/0`);
 
   await page.goto(`/#/learn/${SERVICE_LESSON}/5`);
   await page.getByRole('button', { name: 'Complete lesson', exact: true }).click();
@@ -259,7 +283,7 @@ test('cross-tab navigation preserves external completion and Reset updates', asy
     .getByTestId('step-timeline')
     .getByRole('button', { name: 'Next', exact: true })
     .click();
-  await expect(otherPage).toHaveURL(new RegExp(`${POD_LESSON}/1$`));
+  await expect(otherPage).toHaveURL(new RegExp(`${RESTART_LESSON}/1$`));
   await expect.poll(() => completedLessonIds(otherPage)).toEqual([SERVICE_LESSON]);
 
   await page.goto('/#/about');
@@ -278,7 +302,7 @@ test('cross-tab navigation preserves external completion and Reset updates', asy
   expect((await appProgress(otherPage)).lessonId).toBeUndefined();
 
   await otherPage.goto('/#/learn');
-  await expect(otherPage).toHaveURL(new RegExp(`${SERVICE_LESSON}/0$`));
+  await expect(otherPage).toHaveURL(new RegExp(`${CLUSTER_LESSON}/0$`));
   await otherPage.close();
 });
 
@@ -286,13 +310,13 @@ test('simultaneous cross-tab completions preserve both lessons', async ({ contex
   const otherPage = await context.newPage();
   await Promise.all([
     page.goto(`/#/learn/${SERVICE_LESSON}/5`),
-    otherPage.goto(`/#/learn/${POD_LESSON}/9`),
+    otherPage.goto(`/#/learn/${RESTART_LESSON}/9`),
   ]);
   const serviceCompletion = page.getByRole('button', { name: 'Complete lesson', exact: true });
   const podCompletion = otherPage.getByRole('button', { name: 'Complete lesson', exact: true });
   await Promise.all([serviceCompletion.click(), podCompletion.click()]);
 
-  const expected = [POD_LESSON, SERVICE_LESSON].sort();
+  const expected = [RESTART_LESSON, SERVICE_LESSON].sort();
   await expect.poll(async () => (await completedLessonIds(page)).sort()).toEqual(expected);
   await expect
     .poll(async () => (await appProgress(otherPage)).completedLessonIds.sort())
@@ -309,7 +333,7 @@ for (const completionOrder of ['service-first', 'pod-first'] as const) {
     const holderPage = await context.newPage();
     await Promise.all([
       page.goto(`/#/learn/${SERVICE_LESSON}/5`),
-      otherPage.goto(`/#/learn/${POD_LESSON}/9`),
+      otherPage.goto(`/#/learn/${RESTART_LESSON}/9`),
       holderPage.goto('/#/about'),
     ]);
     const releaseLock = await holdProgressLock(holderPage);
@@ -333,12 +357,12 @@ for (const completionOrder of ['service-first', 'pod-first'] as const) {
       .poll(async () => (await appProgress(page)).progressSaveStatusByLesson[SERVICE_LESSON])
       .toBe('saving');
     await expect
-      .poll(async () => (await appProgress(otherPage)).progressSaveStatusByLesson[POD_LESSON])
+      .poll(async () => (await appProgress(otherPage)).progressSaveStatusByLesson[RESTART_LESSON])
       .toBe('saving');
 
     await releaseLock();
 
-    const expected = [POD_LESSON, SERVICE_LESSON].sort();
+    const expected = [RESTART_LESSON, SERVICE_LESSON].sort();
     await expect.poll(async () => (await completedLessonIds(page)).sort()).toEqual(expected);
     await expect
       .poll(async () => (await appProgress(page)).completedLessonIds.sort())
@@ -353,7 +377,7 @@ for (const completionOrder of ['service-first', 'pod-first'] as const) {
       .poll(async () => (await appProgress(page)).progressSaveStatusByLesson[SERVICE_LESSON])
       .toBe('saved');
     await expect
-      .poll(async () => (await appProgress(otherPage)).progressSaveStatusByLesson[POD_LESSON])
+      .poll(async () => (await appProgress(otherPage)).progressSaveStatusByLesson[RESTART_LESSON])
       .toBe('saved');
     await Promise.all([otherPage.close(), holderPage.close()]);
   });
@@ -382,11 +406,11 @@ test('a held completion reports saving, then converges before Complete to Next',
     .getByRole('dialog', { name: 'Kubernetes Foundations' })
     .getByRole('link', { name: /Container restart is not Pod replacement/ })
     .click();
-  await expect(page).toHaveURL(new RegExp(`${POD_LESSON}/0$`));
+  await expect(page).toHaveURL(new RegExp(`${RESTART_LESSON}/0$`));
   await expect
     .poll(() => appProgress(page))
     .toMatchObject({
-      lessonId: POD_LESSON,
+      lessonId: RESTART_LESSON,
       stepIndex: 0,
       completedLessonIds: [SERVICE_LESSON],
       progressSaveStatusByLesson: { [SERVICE_LESSON]: 'saving' },
@@ -398,7 +422,7 @@ test('a held completion reports saving, then converges before Complete to Next',
   await expect
     .poll(() => appProgress(page))
     .toMatchObject({
-      lessonId: POD_LESSON,
+      lessonId: RESTART_LESSON,
       stepIndex: 0,
       completedLessonIds: [SERVICE_LESSON],
       progressSaveStatusByLesson: { [SERVICE_LESSON]: 'saved' },
@@ -424,9 +448,9 @@ test('same-tab A to B to A completion cards keep independent held-lock status', 
     ([lessonId, stepIndex]) => {
       window.__KUBEMOTION_TEST__?.goToLessonStep(lessonId, stepIndex);
     },
-    [POD_LESSON, 9] as const,
+    [RESTART_LESSON, 9] as const,
   );
-  await expect(page).toHaveURL(new RegExp(`${POD_LESSON}/9$`));
+  await expect(page).toHaveURL(new RegExp(`${RESTART_LESSON}/9$`));
   await completion.getByRole('button', { name: 'Complete lesson', exact: true }).click();
   await expect(completion).toHaveAttribute('data-save-status', 'saving');
   await expect(completion.getByText('Lesson complete')).toHaveCount(0);
@@ -446,15 +470,15 @@ test('same-tab A to B to A completion cards keep independent held-lock status', 
     ([lessonId, stepIndex]) => {
       window.__KUBEMOTION_TEST__?.goToLessonStep(lessonId, stepIndex);
     },
-    [POD_LESSON, 9] as const,
+    [RESTART_LESSON, 9] as const,
   );
-  await expect(page).toHaveURL(new RegExp(`${POD_LESSON}/9$`));
+  await expect(page).toHaveURL(new RegExp(`${RESTART_LESSON}/9$`));
   await expect(completion).toHaveAttribute('data-save-status', 'saving');
   await expect
     .poll(async () => (await appProgress(page)).progressSaveStatusByLesson)
     .toMatchObject({
       [SERVICE_LESSON]: 'saving',
-      [POD_LESSON]: 'saving',
+      [RESTART_LESSON]: 'saving',
     });
 
   await releaseLock();
@@ -464,7 +488,7 @@ test('same-tab A to B to A completion cards keep independent held-lock status', 
     .poll(async () => (await appProgress(page)).progressSaveStatusByLesson)
     .toMatchObject({
       [SERVICE_LESSON]: 'saved',
-      [POD_LESSON]: 'saved',
+      [RESTART_LESSON]: 'saved',
     });
   await page.evaluate(
     ([lessonId, stepIndex]) => {
@@ -474,7 +498,7 @@ test('same-tab A to B to A completion cards keep independent held-lock status', 
   );
   await expect(page).toHaveURL(new RegExp(`${SERVICE_LESSON}/5$`));
   await expect(completion).toHaveAttribute('data-save-status', 'saved');
-  const expected = [POD_LESSON, SERVICE_LESSON].sort();
+  const expected = [RESTART_LESSON, SERVICE_LESSON].sort();
   await expect.poll(async () => (await completedLessonIds(page)).sort()).toEqual(expected);
   await expect
     .poll(async () => (await appProgress(holderPage)).completedLessonIds.sort())
@@ -496,9 +520,9 @@ test('a held save failure stays visible with Retry after navigating to another l
     ([lessonId, stepIndex]) => {
       window.__KUBEMOTION_TEST__?.goToLessonStep(lessonId, stepIndex);
     },
-    [POD_LESSON, 0] as const,
+    [RESTART_LESSON, 0] as const,
   );
-  await expect(page).toHaveURL(new RegExp(`${POD_LESSON}/0$`));
+  await expect(page).toHaveURL(new RegExp(`${RESTART_LESSON}/0$`));
   await releaseLock();
 
   const alerts = page.getByTestId('progress-save-alerts');
@@ -622,11 +646,13 @@ test('a storage failure keeps session intent and Retry converges both tabs', asy
   const otherPage = await context.newPage();
   await Promise.all([
     page.goto(`/#/learn/${SERVICE_LESSON}/5`),
-    otherPage.goto(`/#/learn/${POD_LESSON}/9`),
+    otherPage.goto(`/#/learn/${RESTART_LESSON}/9`),
   ]);
   await otherPage.getByRole('button', { name: 'Complete lesson', exact: true }).click();
-  await expect.poll(() => completedLessonIds(otherPage)).toEqual([POD_LESSON]);
-  await expect.poll(async () => (await appProgress(page)).completedLessonIds).toEqual([POD_LESSON]);
+  await expect.poll(() => completedLessonIds(otherPage)).toEqual([RESTART_LESSON]);
+  await expect
+    .poll(async () => (await appProgress(page)).completedLessonIds)
+    .toEqual([RESTART_LESSON]);
 
   const allowProgressWrites = await failProgressWritesUntilReleased(page);
   const completion = page.getByTestId('lesson-completion-card');
@@ -639,7 +665,7 @@ test('a storage failure keeps session intent and Retry converges both tabs', asy
   await expect
     .poll(() => appProgress(page))
     .toMatchObject({
-      completedLessonIds: [POD_LESSON, SERVICE_LESSON],
+      completedLessonIds: [RESTART_LESSON, SERVICE_LESSON],
       progressSaveStatusByLesson: { [SERVICE_LESSON]: 'failed' },
     });
 
@@ -647,7 +673,7 @@ test('a storage failure keeps session intent and Retry converges both tabs', asy
   await completion.getByRole('button', { name: 'Retry save', exact: true }).click();
 
   await expect(completion).toHaveAttribute('data-save-status', 'saved');
-  const expected = [POD_LESSON, SERVICE_LESSON].sort();
+  const expected = [RESTART_LESSON, SERVICE_LESSON].sort();
   await expect.poll(async () => (await completedLessonIds(page)).sort()).toEqual(expected);
   await expect
     .poll(async () => (await appProgress(page)).completedLessonIds.sort())

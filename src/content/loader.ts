@@ -1,6 +1,9 @@
 import { parse } from 'yaml';
+import clusterOverviewLessonRaw from '../../content/courses/kubernetes-foundations/lessons/cluster-overview.yaml?raw';
 import courseRaw from '../../content/courses/kubernetes-foundations/course.yaml?raw';
 import goldenLessonRaw from '../../content/courses/kubernetes-foundations/lessons/container-restart-vs-pod-replacement.yaml?raw';
+import manifestLessonRaw from '../../content/courses/kubernetes-foundations/lessons/manifest-to-running-pod.yaml?raw';
+import podPlacementLessonRaw from '../../content/courses/kubernetes-foundations/lessons/pod-and-placement.yaml?raw';
 import serviceLessonRaw from '../../content/courses/kubernetes-foundations/lessons/service-routes-to-pods.yaml?raw';
 import foundationsRaw from '../../content/glossary/foundations.yaml?raw';
 import lifecycleRaw from '../../content/glossary/lifecycle.yaml?raw';
@@ -55,8 +58,11 @@ if (!goldenScenario) throw new Error('Golden scenario is missing');
 export const scenario: WorldSnapshot = goldenScenario;
 export const course: CourseManifest = courseSchema.parse(parseYaml(courseRaw));
 export const lessons: readonly LessonV2[] = [
-  lessonV2Schema.parse(parseYaml(goldenLessonRaw)) as unknown as LessonV2,
+  lessonV2Schema.parse(parseYaml(clusterOverviewLessonRaw)) as unknown as LessonV2,
+  lessonV2Schema.parse(parseYaml(podPlacementLessonRaw)) as unknown as LessonV2,
+  lessonV2Schema.parse(parseYaml(manifestLessonRaw)) as unknown as LessonV2,
   lessonV2Schema.parse(parseYaml(serviceLessonRaw)) as unknown as LessonV2,
+  lessonV2Schema.parse(parseYaml(goldenLessonRaw)) as unknown as LessonV2,
 ];
 export const lessonById = new Map(lessons.map((lesson) => [lesson.id, lesson]));
 if (lessonById.size !== lessons.length) throw new Error('Duplicate lesson ID');

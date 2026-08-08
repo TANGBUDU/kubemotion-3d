@@ -63,7 +63,7 @@ locales, four temporal phases per case, and no recorded failures.
 
 - [x] Route handles, wide-line geometry/material counts, tokens, and arrowheads are observable in
       diagnostics.
-- [x] Existing 20-cycle tests bound route and renderer resources for the two verified lessons.
+- [x] The 20-cycle gate rotates through all five verified lessons and bounds route and renderer resources.
 - [x] Changing steps removes obsolete route handles.
 - [x] Cancellation restores a settled route state in existing animation tests.
 - [ ] The same gates cover all six scene grammars and eight required stories.

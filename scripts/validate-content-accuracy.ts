@@ -118,6 +118,9 @@ const publicReadmes = {
   zh: read('README.zh-CN.md'),
 } as const;
 const requiredReadmeFacts = [
+  'cluster-overview',
+  'pod-and-placement',
+  'manifest-to-running-pod',
   'container-restart-vs-pod-replacement',
   'service-routes-to-pods',
   'containerID',
@@ -150,25 +153,25 @@ for (const [locale, source] of Object.entries(publicReadmes)) {
   }
 }
 check(
-  publicReadmes.en.includes('2 fully verified lessons') &&
+  publicReadmes.en.includes('5 fully verified lessons') &&
     publicReadmes.en.includes('10-step Pod lifecycle') &&
     publicReadmes.en.includes('6-step Service traffic path') &&
-    publicReadmes.en.includes('20 planned lessons'),
-  'English README: release scope must state 2 verified, 10 Pod, 6 Service, and 20 planned',
+    publicReadmes.en.includes('17 planned lessons'),
+  'English README: release scope must state 5 verified, 10 Pod, 6 Service, and 17 planned',
 );
 check(
-  publicReadmes.ja.includes('完全に検証済みのレッスンは2本') &&
+  publicReadmes.ja.includes('完全に検証済みのレッスンは5本') &&
     publicReadmes.ja.includes('Pod ライフサイクルは10ステップ') &&
     publicReadmes.ja.includes('Service トラフィックは6ステップ') &&
-    /計画中(?:のレッスン)?は20本/.test(publicReadmes.ja),
-  'Japanese README: release scope must state 2 verified, 10 Pod, 6 Service, and 20 planned',
+    /計画中(?:のレッスン)?は17本/.test(publicReadmes.ja),
+  'Japanese README: release scope must state 5 verified, 10 Pod, 6 Service, and 17 planned',
 );
 check(
-  publicReadmes.zh.includes('2 节完整验证课程') &&
+  publicReadmes.zh.includes('5 节完整验证课程') &&
     publicReadmes.zh.includes('10 步 Pod 生命周期') &&
     publicReadmes.zh.includes('6 步 Service 流量路径') &&
-    publicReadmes.zh.includes('20 节规划中课程'),
-  'Chinese README: release scope must state 2 verified, 10 Pod, 6 Service, and 20 planned',
+    publicReadmes.zh.includes('17 节规划中课程'),
+  'Chinese README: release scope must state 5 verified, 10 Pod, 6 Service, and 17 planned',
 );
 check(
   !/(?:one verified lesson|1 fully verified lesson)/i.test(publicReadmes.en),
@@ -256,7 +259,7 @@ check(checkedLocalLinks >= 18, 'public documentation: expected at least 18 local
 const finalPrDescription = read('docs/review/PR_FINAL_DESCRIPTION.md');
 check(!/PENDING_/.test(finalPrDescription), 'final PR description: validation placeholders remain');
 for (const requiredClaim of [
-  'two verified lessons',
+  'five verified foundation-first lessons',
   'manifest-driven `/learn` continuation',
   'normalized lesson deep links',
   'explicit completion',
@@ -271,16 +274,18 @@ for (const requiredClaim of [
   '`restartCount`',
   '`lastState`',
   `${scannedFiles.length} current-public text files`,
-  '43 files, 314 tests',
+  '44 files, 318 tests',
   '`pnpm visual:m5`',
   '`pnpm visual:m6`',
+  '`pnpm visual:m7`',
   '9 cases / 36 screenshots',
+  '10 objectives / 45 screenshots',
   '136 passed, 53 skipped, 0 failed',
   'forced-lock contention tests reconcile both writer tabs',
   'pending completion → later Reset',
   'injected `localStorage.setItem` failure',
   'Home preview / CTA coherence',
-  '20-cycle dual-lesson renderer resource pressure gate',
+  '20-cycle five-lesson renderer resource pressure gate',
   '38 full-page + 5 focused = 43 screenshots',
 ]) {
   check(
