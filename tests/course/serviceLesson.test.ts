@@ -66,17 +66,24 @@ function lessonWithRequestStep(
 }
 
 describe('service-routes-to-pods verified lesson', () => {
-  it('publishes all five migrated lessons and the required six-step Service sequence', () => {
+  it('publishes all twelve verified lessons in foundation order and the six-step Service sequence', () => {
     expect(
       course.lessons.filter((entry) => entry.status === 'available').map((entry) => entry.id),
     ).toEqual([
+      'why-kubernetes-exists',
       'cluster-overview',
+      'pod-and-container',
       'pod-and-placement',
+      'deployment-replicaset-and-pods',
       'manifest-to-running-pod',
-      LESSON_ID,
+      'pending-and-scheduling',
       'container-restart-vs-pod-replacement',
+      'labels-and-selectors',
+      LESSON_ID,
+      'dns-and-service-discovery',
+      'probes-and-rolling-update',
     ]);
-    expect(course.lessons.filter((entry) => entry.status === 'available')).toHaveLength(5);
+    expect(course.lessons.filter((entry) => entry.status === 'available')).toHaveLength(12);
     expect(compiled.steps.map((item) => item.stepId)).toEqual([
       'identify-traffic-objects',
       'stable-service-entry',

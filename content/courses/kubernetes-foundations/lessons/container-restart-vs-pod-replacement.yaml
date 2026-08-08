@@ -14,7 +14,7 @@ learningOutcome:
   en: Explain Container restart, Pod deletion, replacement creation, scheduling, and startup as separate factual events.
   ja: Container 再起動、Pod 削除、置換作成、スケジューリング、起動を別々の事実イベントとして説明する。
   zh-CN: 将容器重启、Pod 删除、替换创建、调度和启动解释为彼此独立的事实事件。
-prerequisites: [service-routes-to-pods]
+prerequisites: [pending-and-scheduling]
 sourceIds:
   - k8s-pods
   - k8s-pod-lifecycle

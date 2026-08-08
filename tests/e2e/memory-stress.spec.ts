@@ -19,16 +19,19 @@ async function sceneControllerLifecycle(page: Page): Promise<SceneControllerLife
   return lifecycle;
 }
 
-const foundationLessonIds = [
-  'cluster-overview',
-  'pod-and-placement',
-  'manifest-to-running-pod',
-] as const;
-
 const verifiedLessonCycle = [
-  ...foundationLessonIds.map((lessonId) => ({ lessonId, stepIndex: 0 })),
-  { lessonId: SERVICE_LESSON, stepIndex: 3 },
+  { lessonId: 'why-kubernetes-exists', stepIndex: 0 },
+  { lessonId: 'cluster-overview', stepIndex: 0 },
+  { lessonId: 'pod-and-container', stepIndex: 0 },
+  { lessonId: 'pod-and-placement', stepIndex: 0 },
+  { lessonId: 'deployment-replicaset-and-pods', stepIndex: 0 },
+  { lessonId: 'manifest-to-running-pod', stepIndex: 1 },
+  { lessonId: 'pending-and-scheduling', stepIndex: 1 },
   { lessonId: GOLDEN_LESSON, stepIndex: 7 },
+  { lessonId: 'labels-and-selectors', stepIndex: 0 },
+  { lessonId: SERVICE_LESSON, stepIndex: 3 },
+  { lessonId: 'dns-and-service-discovery', stepIndex: 1 },
+  { lessonId: 'probes-and-rolling-update', stepIndex: 4 },
 ] as const;
 
 test('20 navigation/replay/locale/selection/reset cycles keep resources bounded', async ({
@@ -53,8 +56,9 @@ test('20 navigation/replay/locale/selection/reset cycles keep resources bounded'
       .click();
     await waitForSceneIdle(page);
   }
-  for (const lessonId of foundationLessonIds) {
-    await page.goto(`/#/learn/${lessonId}/0`);
+  for (const { lessonId, stepIndex } of verifiedLessonCycle) {
+    if (lessonId === GOLDEN_LESSON || lessonId === SERVICE_LESSON) continue;
+    await page.goto(`/#/learn/${lessonId}/${stepIndex}`);
     await expect(page.getByTestId('teaching-step-heading')).toBeVisible();
     await page
       .locator('.lesson-header')

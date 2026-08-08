@@ -20,7 +20,7 @@
 | 5 — Camera, labels, responsive layout | COMPLETE    | `feat: make teaching scenes readable across viewport sizes`             | Responsive grammar runtime, safe viewport, two camera modes, unified mobile label budget, fifteen reviewed captures |
 | 6 — Persistent route engine           | COMPLETE    | `feat: replace free-flying tokens with persistent semantic routes`      | Canonical anchors, persistent wide routes, sparse obstacle planning, 9-case / 36-screenshot browser acceptance      |
 | 7 — Migrate existing authored lessons | COMPLETE    | `feat: migrate the original lessons to the foundation-first system`     | Five schema-v2 lessons, 10-objective / 45-screenshot multilingual browser acceptance                                |
-| 8 — Twelve complete lessons           | NOT STARTED | `feat: expand the interactive foundations curriculum to twelve lessons` | —                                                                                                                   |
+| 8 — Twelve complete lessons           | COMPLETE    | `feat: expand the interactive foundations curriculum to twelve lessons` | Twelve schema-v2 lessons, 13-objective / 51-screenshot multilingual browser acceptance                              |
 | 9 — Eight flow stories                | NOT STARTED | `feat: deliver readable control and application flow stories`           | —                                                                                                                   |
 | 10 — Final gates and deployment       | NOT STARTED | `test: lock visual teaching and flow acceptance gates`                  | —                                                                                                                   |
 
@@ -461,7 +461,57 @@ structural; Control Flow keeps API and scheduling routes visible; Traffic keeps 
 selection evidence rather than a packet hop. The reviewed mobile captures retain both a useful 3D
 scene and an expanded teaching sheet.
 
+## Milestone 8 checklist
+
+- [x] Published exactly 12 interactive schema-v2 lessons followed by 10 honest planned entries.
+- [x] Added Why Kubernetes exists, Pod and Container, Deployment/ReplicaSet/Pods, Pending and
+      scheduling, Labels and selectors, DNS and Service discovery, and Probes/Rolling update.
+- [x] Opened the first lesson with factual Container `image` Evidence that separates application
+      packaging from Kubernetes orchestration before introducing desired-state recovery.
+- [x] Kept a single manifest-order prerequisite chain from desired-state motivation through probes
+      and rolling updates.
+- [x] Gave every lesson 4–10 compiled, trilingual steps with exactly one primary focus, localized
+      What changed / Why / Takeaway, factual Evidence, glossary terms, and official sources.
+- [x] Separated DNS resolution from application traffic: client Pod → kube-dns Service → CoreDNS
+      Pod is one persistent DNS exchange; the later Client → Service → selected Pod request is
+      another route.
+- [x] Kept EndpointSlice as configuration and selection evidence rather than a packet hop.
+- [x] Distinguished startup gating, readiness eligibility, rolling ReplicaSet handoff, and
+      liveness-triggered same-Pod Container restart in the probe lesson.
+- [x] Updated Home, course drawer, completion, deep-link, cross-tab, reset, all-complete, and
+      20-cycle memory-pressure coverage for all twelve lessons.
+- [x] Added a viewport-aware M8 capture matrix and reviewed all 51 EN/JA/zh-CN PNGs at their authored
+      resolution.
+- [x] Corrected mobile label remeasurement after a temporarily collapsed scene host and locked it
+      with a DOM-measurement regression test.
+
+## Milestone 8 automated checks
+
+| Check                                         | Result                                                                                                           |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `pnpm content:validate`                       | PASS — 4 v2 scenarios, 54 entities, 64 relations, 12 verified lessons, 10 planned, 35 terms, 31 official sources |
+| `pnpm content:accuracy`                       | PASS — 250 current-public text files, 30 forbidden patterns, 23 local links                                      |
+| `pnpm visual:m8`                              | PASS — 13 objectives, 39 settled + 12 reduced-motion captures, 51 screenshots total                              |
+| Scene, comparison, hierarchy, and label gates | PASS — zero density, containment, safe-rectangle, overlap, overflow, or hidden-renderer failures                 |
+| Teaching, Evidence, and source gates          | PASS — all representative states remain localized, factual, inspectable, and source verified                     |
+| Persistent-route and reduced-motion gates     | PASS — four route objectives retain wide paths, arrows, markers, labels, and zero tokens under reduced motion    |
+| `pnpm test:unit -- --run`                     | PASS — 45 files, 326 tests                                                                                       |
+| `pnpm test:e2e`                               | PASS — 136 passed, 53 intentional project/viewport skips, 0 failed                                               |
+| `pnpm typecheck` / `pnpm build`               | PASS                                                                                                             |
+
+Manifest: [`evidence/m8/m8-curriculum-visual-manifest.json`](./evidence/m8/m8-curriculum-visual-manifest.json)
+
+Checklist: [`M8_CURRICULUM_ACCEPTANCE_CHECKLIST.md`](./M8_CURRICULUM_ACCEPTANCE_CHECKLIST.md)
+
+Human M8 result: PASS. The 51 reviewed PNGs visibly separate image packaging from orchestration;
+preserve distinct Overview, Logical, Placement, Control Flow, and Traffic compositions; keep Node
+→ Pod → Container containment structural; make DNS, scheduling, readiness traffic, and liveness
+routes statically traceable; and retain both a useful scene and expanded teaching explanation at
+390×844. The comparison step remains a readable non-WebGL world-history view on desktop and mobile.
+
 ## Next coherent task
 
-Milestone 8 must add the seven missing source-verified core lessons without double-counting the
-five migrated lessons, reaching exactly 12 available interactive lessons and 10 planned lessons.
+Milestone 9 must deliver and acceptance-lock all eight required flow stories, with Manifest →
+Running Pod, Internal Service Request, DNS and Service Discovery, and Container Restart vs Pod
+Replacement treated as P0 before the remaining readiness, rolling-update, external-request, and
+HPA stories.

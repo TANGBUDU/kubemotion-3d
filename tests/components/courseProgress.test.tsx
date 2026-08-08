@@ -5,6 +5,21 @@ import { LearnPage } from '../../src/pages/LearnPage';
 import { useAppStore } from '../../src/state/appStore';
 
 const progressKey = 'kubemotion:v1:progress';
+const availableLessonIds = [
+  'why-kubernetes-exists',
+  'cluster-overview',
+  'pod-and-container',
+  'pod-and-placement',
+  'deployment-replicaset-and-pods',
+  'manifest-to-running-pod',
+  'pending-and-scheduling',
+  'container-restart-vs-pod-replacement',
+  'labels-and-selectors',
+  'service-routes-to-pods',
+  'dns-and-service-discovery',
+  'probes-and-rolling-update',
+] as const;
+const lessonsBeforeService = availableLessonIds.slice(0, 9);
 
 vi.mock('../../src/components/SceneViewport', () => ({
   SceneViewport: () => <div data-testid="scene-viewport" />,
@@ -49,7 +64,7 @@ describe('course entry and completion flow', () => {
   it('starts the first available lesson from the manifest order', async () => {
     renderCourse('/learn');
     expect(await screen.findByTestId('teaching-step-heading')).toHaveTextContent(
-      'One cluster, two areas of responsibility',
+      'An image packages the application',
     );
   });
 
@@ -94,21 +109,21 @@ describe('course entry and completion flow', () => {
     });
   });
 
-  it('sends bare Learn to the Pod lesson after the cluster overview is complete', async () => {
+  it('sends bare Learn to the first unfinished lesson after its prerequisites are complete', async () => {
     seedProgress({
       lessonId: 'cluster-overview',
       stepIndex: 4,
-      completedLessonIds: ['cluster-overview'],
+      completedLessonIds: ['why-kubernetes-exists', 'cluster-overview'],
     });
 
     renderCourse('/learn');
 
     expect(await screen.findByTestId('teaching-step-heading')).toHaveTextContent(
-      'A Container runs inside a Pod boundary',
+      'Start with the Pod boundary',
     );
     await waitFor(() => {
       expect(useAppStore.getState()).toMatchObject({
-        lessonId: 'pod-and-placement',
+        lessonId: 'pod-and-container',
         stepIndex: 0,
       });
     });
@@ -116,15 +131,9 @@ describe('course entry and completion flow', () => {
 
   it('sends bare Learn to Explore after every available lesson is complete', async () => {
     seedProgress({
-      lessonId: 'container-restart-vs-pod-replacement',
-      stepIndex: 9,
-      completedLessonIds: [
-        'cluster-overview',
-        'pod-and-placement',
-        'manifest-to-running-pod',
-        'service-routes-to-pods',
-        'container-restart-vs-pod-replacement',
-      ],
+      lessonId: 'probes-and-rolling-update',
+      stepIndex: 7,
+      completedLessonIds: [...availableLessonIds],
     });
 
     renderCourse('/learn');
@@ -136,17 +145,13 @@ describe('course entry and completion flow', () => {
     seedProgress({
       lessonId: 'service-routes-to-pods',
       stepIndex: 5,
-      completedLessonIds: ['cluster-overview', 'pod-and-placement', 'manifest-to-running-pod'],
+      completedLessonIds: [...lessonsBeforeService],
     });
     renderCourse('/learn/service-routes-to-pods/5');
     const completion = await screen.findByTestId('lesson-completion-card');
 
     expect(within(completion).getByText('Final step ready')).toBeVisible();
-    expect(useAppStore.getState().completedLessonIds).toEqual([
-      'cluster-overview',
-      'pod-and-placement',
-      'manifest-to-running-pod',
-    ]);
+    expect(useAppStore.getState().completedLessonIds).toEqual(lessonsBeforeService);
     expect(
       within(completion).queryByRole('link', { name: /Next lesson:/i }),
     ).not.toBeInTheDocument();
@@ -156,14 +161,12 @@ describe('course entry and completion flow', () => {
     expect(await within(completion).findByText('Lesson complete')).toBeVisible();
     expect(
       within(completion).getByRole('link', {
-        name: /Next lesson: Container restart is not Pod replacement/i,
+        name: /Next lesson: DNS and Service discovery/i,
       }),
-    ).toHaveAttribute('href', '/learn/container-restart-vs-pod-replacement/0');
+    ).toHaveAttribute('href', '/learn/dns-and-service-discovery/0');
     await waitFor(() =>
       expect(useAppStore.getState().completedLessonIds).toEqual([
-        'cluster-overview',
-        'pod-and-placement',
-        'manifest-to-running-pod',
+        ...lessonsBeforeService,
         'service-routes-to-pods',
       ]),
     );
@@ -195,8 +198,8 @@ describe('course entry and completion flow', () => {
 
     expect(await within(completion).findByText('课程已完成')).toBeVisible();
     expect(
-      within(completion).getByRole('link', { name: /下一课：Kubernetes 集群包含什么/ }),
-    ).toHaveAttribute('href', '/learn/cluster-overview/0');
+      within(completion).getByRole('link', { name: /下一课：为什么需要 Kubernetes/ }),
+    ).toHaveAttribute('href', '/learn/why-kubernetes-exists/0');
     expect(within(completion).getByRole('link', { name: '返回首页' })).toHaveAttribute('href', '/');
     expect(screen.getAllByRole('button', { name: '重新开始课程' })).toHaveLength(2);
 
@@ -212,12 +215,9 @@ describe('course entry and completion flow', () => {
     seedProgress({
       lessonId: 'container-restart-vs-pod-replacement',
       stepIndex: 0,
-      completedLessonIds: [
-        'cluster-overview',
-        'pod-and-placement',
-        'manifest-to-running-pod',
-        'container-restart-vs-pod-replacement',
-      ],
+      completedLessonIds: availableLessonIds.filter(
+        (lessonId) => lessonId !== 'service-routes-to-pods',
+      ),
     });
 
     renderCourse('/learn/service-routes-to-pods/5');
@@ -226,17 +226,24 @@ describe('course entry and completion flow', () => {
     fireEvent.click(within(completion).getByRole('button', { name: 'Complete lesson' }));
 
     expect(
-      within(completion).queryByRole('link', { name: /Next lesson: Container restart/i }),
+      within(completion).queryByRole('link', { name: /Next lesson:/i }),
     ).not.toBeInTheDocument();
     expect(
       await within(completion).findByRole('link', { name: 'Explore the verified world' }),
     ).toHaveAttribute('href', '/explore');
     await waitFor(() =>
       expect(useAppStore.getState().completedLessonIds).toEqual([
+        'why-kubernetes-exists',
         'cluster-overview',
+        'pod-and-container',
         'pod-and-placement',
+        'deployment-replicaset-and-pods',
         'manifest-to-running-pod',
+        'pending-and-scheduling',
         'container-restart-vs-pod-replacement',
+        'labels-and-selectors',
+        'dns-and-service-discovery',
+        'probes-and-rolling-update',
         'service-routes-to-pods',
       ]),
     );

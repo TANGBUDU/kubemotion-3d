@@ -40,6 +40,14 @@ sources:
       verifiedAt: '2026-08-07',
       type: official-documentation,
     }
+  k8s-container-images:
+    {
+      title: Images,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/containers/images/,
+      verifiedAt: '2026-08-08',
+      type: official-documentation,
+    }
   k8s-pod-lifecycle:
     {
       title: Pod Lifecycle,
@@ -148,8 +156,16 @@ sources:
     {
       title: 'Liveness, Readiness, and Startup Probes',
       authority: Kubernetes Documentation,
-      url: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes,
-      verifiedAt: '2026-08-07',
+      url: https://kubernetes.io/docs/concepts/workloads/pods/probes/,
+      verifiedAt: '2026-08-08',
+      type: official-documentation,
+    }
+  k8s-dns-services-pods:
+    {
+      title: DNS for Services and Pods,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/,
+      verifiedAt: '2026-08-08',
       type: official-documentation,
     }
   k8s-resources:

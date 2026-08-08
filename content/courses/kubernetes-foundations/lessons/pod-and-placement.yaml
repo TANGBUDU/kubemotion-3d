@@ -14,7 +14,7 @@ learningOutcome:
   en: Explain that a Pod belongs to a Namespace, may be assigned to a Node, and contains its runtime Containers without placing Nodes inside Namespaces.
   ja: Pod が Namespace に属し、Node に割り当てられ、その内部にランタイム Container を持つことを、Node を Namespace 内に置かず説明する。
   zh-CN: 解释 Pod 属于 Namespace、可以被分配到 Node，并在内部包含运行时容器，同时不把 Node 放进 Namespace。
-prerequisites: [cluster-overview]
+prerequisites: [pod-and-container]
 sourceIds:
   - k8s-pods
   - k8s-pod-lifecycle

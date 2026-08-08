@@ -22,6 +22,21 @@ vi.mock('../../src/components/SceneViewport', () => ({
   ),
 }));
 
+const availableLessonIds = [
+  'why-kubernetes-exists',
+  'cluster-overview',
+  'pod-and-container',
+  'pod-and-placement',
+  'deployment-replicaset-and-pods',
+  'manifest-to-running-pod',
+  'pending-and-scheduling',
+  'container-restart-vs-pod-replacement',
+  'labels-and-selectors',
+  'service-routes-to-pods',
+  'dns-and-service-discovery',
+  'probes-and-rolling-update',
+] as const;
+
 function renderHome() {
   return render(
     <MemoryRouter initialEntries={['/']}>
@@ -56,17 +71,17 @@ describe('HomePage orientation', () => {
     expect(screen.getAllByRole('link', { name: 'Start lesson' })).toHaveLength(1);
     expect(screen.getByRole('link', { name: 'Start lesson' })).toHaveAttribute(
       'href',
-      '/learn/cluster-overview/0',
+      '/learn/why-kubernetes-exists/0',
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute(
       'data-lesson-id',
-      'cluster-overview',
+      'why-kubernetes-exists',
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
     expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
-      'Interactive lesson preview: What a Kubernetes cluster contains',
+      'Interactive lesson preview: Why Kubernetes exists',
     );
-    expect(screen.getByText('CURRENT LESSON · What a Kubernetes cluster contains')).toBeVisible();
+    expect(screen.getByText('CURRENT LESSON · Why Kubernetes exists')).toBeVisible();
     expect(screen.queryByRole('link', { name: /explore/i })).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'View orientation again' }),
@@ -129,31 +144,31 @@ describe('HomePage orientation', () => {
     renderHome();
     expect(screen.getByRole('link', { name: 'Start lesson' })).toHaveAttribute(
       'href',
-      '/learn/cluster-overview/0',
+      '/learn/why-kubernetes-exists/0',
     );
   });
 
-  it('starts the Pod lesson after the cluster overview is complete', () => {
+  it('starts the first unfinished Pod and Container lesson after its prerequisites are complete', () => {
     useAppStore.setState({
       orientationSeen: true,
       lessonId: 'cluster-overview',
       stepIndex: 4,
-      completedLessonIds: ['cluster-overview'],
+      completedLessonIds: ['why-kubernetes-exists', 'cluster-overview'],
     });
 
     renderHome();
 
     expect(screen.getByRole('link', { name: 'Start lesson' })).toHaveAttribute(
       'href',
-      '/learn/pod-and-placement/0',
+      '/learn/pod-and-container/0',
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute(
       'data-lesson-id',
-      'pod-and-placement',
+      'pod-and-container',
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
     expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
-      'Interactive lesson preview: Pods, Namespaces, and Nodes',
+      'Interactive lesson preview: Pod and Container',
     );
   });
 
@@ -162,13 +177,7 @@ describe('HomePage orientation', () => {
       orientationSeen: true,
       lessonId: 'container-restart-vs-pod-replacement',
       stepIndex: 9,
-      completedLessonIds: [
-        'cluster-overview',
-        'pod-and-placement',
-        'manifest-to-running-pod',
-        'service-routes-to-pods',
-        'container-restart-vs-pod-replacement',
-      ],
+      completedLessonIds: [...availableLessonIds],
     });
 
     renderHome();
@@ -192,15 +201,15 @@ describe('HomePage orientation', () => {
   it.each([
     [
       'en',
-      'Interactive lesson preview: What a Kubernetes cluster contains',
-      'CURRENT LESSON · What a Kubernetes cluster contains',
+      'Interactive lesson preview: Why Kubernetes exists',
+      'CURRENT LESSON · Why Kubernetes exists',
     ],
     [
       'ja',
-      'インタラクティブなレッスンプレビュー: Kubernetes クラスターの構成',
-      '現在のレッスン · Kubernetes クラスターの構成',
+      'インタラクティブなレッスンプレビュー: Kubernetes が存在する理由',
+      '現在のレッスン · Kubernetes が存在する理由',
     ],
-    ['zh-CN', '交互式课程预览: Kubernetes 集群包含什么', '当前课程 · Kubernetes 集群包含什么'],
+    ['zh-CN', '交互式课程预览: 为什么需要 Kubernetes', '当前课程 · 为什么需要 Kubernetes'],
   ] as const)('localizes the %s hero preview title', (locale, ariaLabel, caption) => {
     useAppStore.setState({ locale });
     renderHome();

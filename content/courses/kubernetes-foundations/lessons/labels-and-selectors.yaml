@@ -1,0 +1,416 @@
+schemaVersion: 2
+id: labels-and-selectors
+scenarioId: container-restart-golden
+chapterId: networking-resilience
+title:
+  en: Labels and selectors
+  ja: Label と Selector
+  zh-CN: Label 与 Selector
+summary:
+  en: Inspect Pod label metadata, run one selector query, and watch the matching set change without inventing a traffic path.
+  ja: Pod の Label metadata を確認し、一つの Selector query を実行して、traffic path を作らずに一致集合の変化を追います。
+  zh-CN: 检查 Pod 的 Label 元数据，执行一次 Selector 查询，并在不虚构流量路径的前提下观察匹配集合变化。
+learningOutcome:
+  en: Explain that labels are key/value metadata and selectors compute a matching object set that changes when labels change.
+  ja: Label は key/value metadata であり、Selector は Label の変更に応じて変化するオブジェクト集合を求めることを説明する。
+  zh-CN: 解释 Label 是键值元数据，Selector 会计算匹配对象集合，而 Label 变化会改变该集合。
+prerequisites: [container-restart-vs-pod-replacement]
+sourceIds:
+  - k8s-labels
+  - k8s-pods
+  - k8s-replicasets
+verifiedAt: '2026-08-08'
+baseView:
+  view: logical
+  cameraPresetId: logical
+  resetEntities: true
+  entityRules: []
+  relationRules: []
+  activeRoutes: []
+
+steps:
+  - id: inspect-label-metadata
+    title:
+      en: A label is key/value metadata on an object
+      ja: Label はオブジェクト上の key/value metadata
+      zh-CN: Label 是对象上的键值元数据
+    learningOutcome:
+      en: Locate one Pod label without treating it as the Pod name or Node assignment.
+      ja: Label を Pod 名や Node 割り当てと混同せず、一つの Pod Label を見つける。
+      zh-CN: 找到一个 Pod Label，并且不把它误认为 Pod 名称或 Node 分配。
+    narration:
+      en: api-7f8d9-a carries the label app.kubernetes.io/name=api. The label is metadata on this Pod object; its Pod UID, name, phase, and nodeName remain separate facts.
+      ja: api-7f8d9-a には app.kubernetes.io/name=api という Label があります。これは Pod オブジェクト上の metadata であり、Pod UID、名前、phase、nodeName は別の事実です。
+      zh-CN: api-7f8d9-a 带有 Label app.kubernetes.io/name=api。它是 Pod 对象上的元数据；Pod UID、名称、阶段与 nodeName 仍是彼此独立的事实。
+    teaching:
+      whatChanged:
+        en: No Kubernetes object changed; the logical scene isolated one Pod and exposed its existing label metadata.
+        ja: Kubernetes オブジェクトは変化せず、logical scene で一つの Pod と既存の Label metadata を分離表示しました。
+        zh-CN: Kubernetes 对象没有变化；逻辑场景单独展示一个 Pod 及其已有的 Label 元数据。
+      whyItHappened:
+        en: A selector can only be understood after the metadata it evaluates is visible.
+        ja: Selector が評価する metadata を先に見えるようにする必要があるためです。
+        zh-CN: 因为必须先看见 Selector 所检查的元数据，才能理解后续匹配。
+      takeaway:
+        en: A label is mutable key/value metadata, not object identity or physical placement.
+        ja: Label は変更可能な key/value metadata であり、オブジェクト ID や物理配置ではありません。
+        zh-CN: Label 是可变的键值元数据，不是对象身份，也不是物理放置。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-a-old
+    introducesTerms: [label, pod]
+    usesTerms: []
+    sourceIds: [k8s-labels, k8s-pods]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules: []
+      callouts:
+        - id: api-a-label-metadata
+          entityId: api-object:namespaced:shop:Pod:api-a-old
+          text:
+            en: app.kubernetes.io/name = api
+            ja: app.kubernetes.io/name = api
+            zh-CN: app.kubernetes.io/name = api
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: api-object:namespaced:shop:Pod:api-a-old
+          durationMs: 600
+
+  - id: issue-selector-query
+    title:
+      en: The ReplicaSet selector states the matching rule
+      ja: ReplicaSet の Selector が一致ルールを示す
+      zh-CN: ReplicaSet Selector 声明匹配规则
+    learningOutcome:
+      en: Read one equality-based label selector as a metadata predicate rather than a network route.
+      ja: 一つの等価 Label Selector を network route ではなく metadata predicate として読み取る。
+      zh-CN: 将一个等值 Label Selector 理解为元数据条件，而不是网络路线。
+    narration:
+      en: api-rs declares the equality selector app.kubernetes.io/name=api to identify matching Pods. The selector is a predicate over metadata; it is not a Service, proxy, or packet hop.
+      ja: api-rs は一致する Pod を識別するため、等価 Selector app.kubernetes.io/name=api を宣言します。Selector は metadata に対する条件であり、Service、proxy、packet hop ではありません。
+      zh-CN: api-rs 声明等值 Selector app.kubernetes.io/name=api，用于识别匹配 Pod。Selector 是针对元数据的条件，不是 Service、代理或数据包跳点。
+    teaching:
+      whatChanged:
+        en: The ReplicaSet teaching state now exposes its existing equality selector; no Pod or network state changed.
+        ja: ReplicaSet の教学 state に既存の等価 Selector を表示し、Pod や network state は変化していません。
+        zh-CN: ReplicaSet 教学状态现在显示其已有的等值 Selector；Pod 与网络状态均未变化。
+      whyItHappened:
+        en: A ReplicaSet uses its selector to identify Pods whose labels satisfy the declared rule.
+        ja: ReplicaSet は Selector を使い、宣言したルールを満たす Label の Pod を識別するためです。
+        zh-CN: 因为 ReplicaSet 使用 Selector 识别 Label 满足声明规则的 Pod。
+      takeaway:
+        en: A selector describes which objects match; it does not move traffic between them.
+        ja: Selector は一致するオブジェクトを記述し、オブジェクト間で traffic を運びません。
+        zh-CN: Selector 描述哪些对象匹配，并不会在对象之间传输流量。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - api-object:namespaced:shop:ReplicaSet:api-rs
+        - api-object:namespaced:shop:Pod:api-a-old
+    introducesTerms: [selector]
+    usesTerms: [label, pod]
+    sourceIds: [k8s-labels, k8s-replicasets, k8s-pods]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          patch:
+            data:
+              selector:
+                app.kubernetes.io/name: api
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:ReplicaSet:api-rs] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:api-a-old
+              - api-object:namespaced:shop:Pod:api-b
+              - api-object:namespaced:shop:Pod:api-c
+          visible: true
+          emphasis: normal
+          labelMode: short
+      relationRules: []
+      callouts:
+        - id: equality-selector-query
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          text:
+            en: app.kubernetes.io/name = api
+            ja: app.kubernetes.io/name = api
+            zh-CN: app.kubernetes.io/name = api
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          durationMs: 600
+
+  - id: show-matching-set
+    title:
+      en: Three Pods match the selector
+      ja: 三つの Pod が Selector に一致する
+      zh-CN: 三个 Pod 匹配 Selector
+    learningOutcome:
+      en: Identify the complete current result set for the selector.
+      ja: Selector の現在の完全な結果集合を特定する。
+      zh-CN: 确认该 Selector 当前的完整结果集合。
+    narration:
+      en: api-7f8d9-a, api-7f8d9-b, and api-7f8d9-c all carry app.kubernetes.io/name=api, so all three appear in the query result. Matching is based on label values, not Pod name prefixes or Node placement.
+      ja: api-7f8d9-a、api-7f8d9-b、api-7f8d9-c はすべて app.kubernetes.io/name=api を持つため、三つとも query result に入ります。一致は Pod 名の prefix や Node 配置ではなく Label value に基づきます。
+      zh-CN: api-7f8d9-a、api-7f8d9-b 与 api-7f8d9-c 都带有 app.kubernetes.io/name=api，因此三个 Pod 都进入查询结果。匹配依据是 Label 值，而不是 Pod 名称前缀或 Node 放置位置。
+    teaching:
+      whatChanged:
+        en: No object changed; the view expanded from one example Pod to the three-Pod matching set.
+        ja: オブジェクトは変化せず、表示を一つの例から三つの Pod の一致集合へ広げました。
+        zh-CN: 对象没有变化；视图从单个示例 Pod 扩展为三个 Pod 组成的匹配集合。
+      whyItHappened:
+        en: Each visible Pod currently has the key and value required by the selector.
+        ja: 表示された各 Pod が現在 Selector の要求する key と value を持つためです。
+        zh-CN: 因为每个可见 Pod 当前都具有 Selector 要求的键和值。
+      takeaway:
+        en: A selector returns every object whose labels satisfy its predicate.
+        ja: Selector は、その条件を満たす Label を持つすべてのオブジェクトを返します。
+        zh-CN: Selector 会返回 Label 满足其条件的所有对象。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-a-old
+        - api-object:namespaced:shop:Pod:api-b
+        - api-object:namespaced:shop:Pod:api-c
+    introducesTerms: []
+    usesTerms: [label, selector, pod]
+    sourceIds: [k8s-labels, k8s-pods]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:api-a-old
+              - api-object:namespaced:shop:Pod:api-b
+              - api-object:namespaced:shop:Pod:api-c
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: compact
+        - selector: { byIds: [api-object:namespaced:shop:ReplicaSet:api-rs] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: compact
+      relationRules: []
+      callouts:
+        - id: three-pod-result
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          text:
+            en: 3 matching Pods
+            ja: 一致する Pod は 3
+            zh-CN: 3 个匹配 Pod
+      activeRoutes: []
+    transition:
+      cues:
+        - type: layout-transition
+          entityIds:
+            - api-object:namespaced:shop:ReplicaSet:api-rs
+            - api-object:namespaced:shop:Pod:api-a-old
+            - api-object:namespaced:shop:Pod:api-b
+            - api-object:namespaced:shop:Pod:api-c
+          durationMs: 650
+
+  - id: one-pod-no-longer-matches
+    title:
+      en: One changed label creates a mismatch
+      ja: 一つの Label 変更で不一致になる
+      zh-CN: 一个 Label 变化造成不匹配
+    learningOutcome:
+      en: Observe that changing one label removes only that Pod from the current query result.
+      ja: 一つの Label を変更すると、その Pod だけが現在の query result から外れることを確認する。
+      zh-CN: 观察修改一个 Label 后，只有该 Pod 会退出当前查询结果。
+    narration:
+      en: The synthetic example changes api-7f8d9-c from app.kubernetes.io/name=api to app.kubernetes.io/name=api-canary. Its Pod UID, phase, and Node stay unchanged, but it no longer satisfies the selector.
+      ja: 合成例では api-7f8d9-c の app.kubernetes.io/name を api から api-canary に変更します。Pod UID、phase、Node は変わりませんが、Selector の条件を満たさなくなります。
+      zh-CN: 虚构示例把 api-7f8d9-c 的 app.kubernetes.io/name 从 api 改为 api-canary。其 Pod UID、阶段与 Node 均未变化，但它不再满足 Selector。
+    teaching:
+      whatChanged:
+        en: api-7f8d9-c's app.kubernetes.io/name label changed from api to api-canary; the other two Pods were unchanged.
+        ja: api-7f8d9-c の app.kubernetes.io/name Label が api から api-canary に変わり、他の二つの Pod は変わりません。
+        zh-CN: api-7f8d9-c 的 app.kubernetes.io/name Label 从 api 变为 api-canary；另外两个 Pod 保持不变。
+      whyItHappened:
+        en: This controlled teaching mutation demonstrates that selector membership is computed from current metadata.
+        ja: この制御された教学上の変更は、Selector membership が現在の metadata から計算されることを示すためです。
+        zh-CN: 这次受控教学变更用于说明 Selector 成员关系由当前元数据计算得出。
+      takeaway:
+        en: A Pod can keep the same identity and placement while leaving a selector result.
+        ja: Pod は同じ ID と配置を保ったまま Selector result から外れられます。
+        zh-CN: Pod 可以保持相同身份与放置位置，同时退出 Selector 结果集。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-c
+        - api-object:namespaced:shop:Pod:api-a-old
+        - api-object:namespaced:shop:Pod:api-b
+    introducesTerms: []
+    usesTerms: [label, selector, pod]
+    sourceIds: [k8s-labels, k8s-pods]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-c
+          patch:
+            labels:
+              app.kubernetes.io/name: api-canary
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:api-a-old
+              - api-object:namespaced:shop:Pod:api-b
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-c] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [api-object:namespaced:shop:ReplicaSet:api-rs] }
+          visible: true
+          emphasis: normal
+          labelMode: short
+      relationRules: []
+      callouts:
+        - id: mismatching-label
+          entityId: api-object:namespaced:shop:Pod:api-c
+          text:
+            en: api-canary ≠ api
+            ja: api-canary ≠ api
+            zh-CN: api-canary ≠ api
+        - id: two-pod-result
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          text:
+            en: 2 matching Pods
+            ja: 一致する Pod は 2
+            zh-CN: 2 个匹配 Pod
+      activeRoutes: []
+    transition:
+      cues:
+        - type: callout
+          entityId: api-object:namespaced:shop:Pod:api-c
+          label:
+            en: No longer matches
+            ja: 一致しない
+            zh-CN: 不再匹配
+          durationMs: 650
+
+  - id: label-change-restores-membership
+    title:
+      en: Changing the label restores membership
+      ja: Label を戻すと membership が復元する
+      zh-CN: 修改 Label 后恢复成员关系
+    learningOutcome:
+      en: Verify that the selector result updates from current labels without replacing the Pod.
+      ja: Pod を置換せず、現在の Label から Selector result が更新されることを確認する。
+      zh-CN: 验证 Selector 结果会根据当前 Label 更新，而无需替换 Pod。
+    narration:
+      en: api-7f8d9-c's label is changed back to app.kubernetes.io/name=api. The same Pod UID on the same Node re-enters the three-Pod result set; no Pod replacement and no traffic movement occurred.
+      ja: api-7f8d9-c の Label を app.kubernetes.io/name=api に戻します。同じ Node 上の同じ Pod UID が三つの Pod の result set に戻り、Pod 置換も traffic 移動も起きません。
+      zh-CN: api-7f8d9-c 的 Label 改回 app.kubernetes.io/name=api。同一个 Node 上具有相同 UID 的 Pod 重新进入三个 Pod 的结果集；没有发生 Pod 替换，也没有任何流量移动。
+    teaching:
+      whatChanged:
+        en: api-7f8d9-c's label changed from api-canary back to api, so the query result returned from two Pods to three.
+        ja: api-7f8d9-c の Label が api-canary から api に戻り、query result は二つから三つの Pod に戻りました。
+        zh-CN: api-7f8d9-c 的 Label 从 api-canary 改回 api，因此查询结果从两个 Pod 恢复为三个。
+      whyItHappened:
+        en: The selector reevaluates current object metadata, and api-7f8d9-c now satisfies its predicate again.
+        ja: Selector は現在の object metadata を再評価し、api-7f8d9-c が再び条件を満たしたためです。
+        zh-CN: 因为 Selector 重新检查当前对象元数据，而 api-7f8d9-c 再次满足条件。
+      takeaway:
+        en: Label changes alter selector membership; they do not by themselves create a packet route or a new Pod identity.
+        ja: Label 変更は Selector membership を変えますが、それだけで packet route や新しい Pod ID は作りません。
+        zh-CN: Label 变化会改变 Selector 成员关系，但不会自行创建数据包路线或新的 Pod 身份。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-c
+        - api-object:namespaced:shop:Pod:api-a-old
+        - api-object:namespaced:shop:Pod:api-b
+    introducesTerms: []
+    usesTerms: [label, selector, pod]
+    sourceIds: [k8s-labels, k8s-pods]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-c
+          patch:
+            labels:
+              app.kubernetes.io/name: api
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:api-a-old
+              - api-object:namespaced:shop:Pod:api-b
+              - api-object:namespaced:shop:Pod:api-c
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: compact
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-c] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [api-object:namespaced:shop:ReplicaSet:api-rs] }
+          visible: true
+          emphasis: normal
+          labelMode: short
+      relationRules: []
+      callouts:
+        - id: restored-label
+          entityId: api-object:namespaced:shop:Pod:api-c
+          text:
+            en: api = api
+            ja: api = api
+            zh-CN: api = api
+        - id: restored-three-pod-result
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          text:
+            en: 3 matching Pods
+            ja: 一致する Pod は 3
+            zh-CN: 3 个匹配 Pod
+      activeRoutes: []
+    transition:
+      cues:
+        - type: callout
+          entityId: api-object:namespaced:shop:Pod:api-c
+          label:
+            en: Matches again
+            ja: 再び一致
+            zh-CN: 再次匹配
+          durationMs: 650

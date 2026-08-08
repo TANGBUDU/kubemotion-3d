@@ -63,3 +63,10 @@ terms:
         zh-CN: 将流量导向已选 Endpoint 的实现。,
       }
     sourceIds: [k8s-services]
+  - id: dns
+    term: { en: Cluster DNS, ja: クラスター DNS, zh-CN: 集群 DNS }
+    definition:
+      en: The cluster service that resolves Kubernetes Service names for workloads.
+      ja: ワークロード向けに Kubernetes Service 名を解決するクラスターサービスです。
+      zh-CN: 为工作负载解析 Kubernetes Service 名称的集群服务。
+    sourceIds: [k8s-dns-services-pods]

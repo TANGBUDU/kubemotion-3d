@@ -14,7 +14,7 @@ learningOutcome:
   en: Identify the cluster boundary, four core control-plane components, and worker Nodes without treating them as one machine.
   ja: クラスター境界、主要な四つのコントロールプレーンコンポーネント、worker Node を、一台の機械と混同せず識別する。
   zh-CN: 识别集群边界、四个核心控制面组件与工作 Node，不把它们误认为一台机器。
-prerequisites: []
+prerequisites: [why-kubernetes-exists]
 sourceIds:
   - k8s-cluster-architecture
   - k8s-components

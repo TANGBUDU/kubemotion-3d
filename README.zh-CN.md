@@ -14,11 +14,12 @@ Kubernetes 事实，与用于讲解这些事实的镜头、强调、标签、路
 
 ## 当前已验证范围
 
-- **5 节完整验证课程：** `cluster-overview`、`pod-and-placement`、`manifest-to-running-pod`、`service-routes-to-pods` 与 `container-restart-vs-pod-replacement`
-- **从底盘逐层学习：** 集群边界 → Node／Pod／Container 放置 → 经 API 的清单流程 → 稳定 Service 流量 → 重启与替换对比
+- **12 节完整验证课程：** 从 `why-kubernetes-exists` 到 `probes-and-rolling-update`，覆盖集群结构、Pod／Container、Namespace 与 Node、Deployment 所有权、清单、Pending 调度、重启与替换、Label／Selector、Service／EndpointSlice 及 DNS
+- **Manifest 顺序：** `why-kubernetes-exists` → `cluster-overview` → `pod-and-container` → `pod-and-placement` → `deployment-replicaset-and-pods` → `manifest-to-running-pod` → `pending-and-scheduling` → `container-restart-vs-pod-replacement` → `labels-and-selectors` → `service-routes-to-pods` → `dns-and-service-discovery` → `probes-and-rolling-update`
+- **从底盘逐层学习：** 期望状态 → 集群底盘 → Pod／Container → 逻辑作用域与物理放置 → 工作负载所有权 → API／调度 → 自愈 → 选择 → Service 流量 → DNS → 探针与滚动更新
 - **10 步 Pod 生命周期：** 场景导览 → 健康基线 → 容器进程退出 → kubelet 在同一 Pod 内本地重启运行时容器 → 主动删除 Pod → Controller 创建替换 Pod → 未调度 Pending → Scheduler 绑定 Node → kubelet 启动容器并恢复 Ready → 根据 snapshot 生成对比
 - **6 步 Service 流量路径：** 识别对象 → 稳定 Service 入口 → EndpointSlice Ready 状态 → Request A 到达 Ready 后端 → Ready 状态变化 → 后续 Request B 选择另一个 Ready 后端
-- **17 节规划中课程：** 只作为路线图显示，不视为已经完成
+- **10 节规划中课程：** 只作为路线图显示，不视为已经完成
 - **Explore（Beta）：** 筛选编译后的 snapshot，同时保留一跳所有权和放置上下文
 - **仅使用合成数据：** 不连接真实集群，不接收凭据，不读取遥测，不提供后端 API，也不修改资源
 
@@ -31,9 +32,9 @@ conditions 分开显示，ReplicaSet 使用 `SPEC / OBSERVED / READY`，同 Pod 
 Service 流量课程区分稳定的 Service 地址、相邻的 EndpointSlice API 状态与实际选中的
 Ready 后端。Request A 完成后，api-a 仍列在 EndpointSlice 中，但条件变为
 `ready=false`、`serving=false`、`terminating=false`；之后发起的后续 Request B 通过同一
-Service 选择另一个 Ready 后端，而不是迁移已经运行的请求。五节课程都使用带证据与结论
-的固定教学面板、避碰标签、显式重放和不丢信息的减少动态效果回退；涉及因果或通信的步骤
-会持续显示宽教学路线。
+Service 选择另一个 Ready 后端，而不是迁移已经运行的请求。十二节课程都使用带证据与结论
+的固定教学面板、避碰标签、显式重放和不丢信息的减少动态效果回退；其中定义了路线的因果或
+通信步骤会持续显示宽教学路线。
 
 ## 架构
 
@@ -92,8 +93,8 @@ pnpm visual:capture
 ```
 
 测试覆盖类型化 patch transaction、确定性 diff、snapshot 不可变性、cue contract、专用
-视觉对象、按视图分离的布局、五条事实时间线、桌面／移动导航、语言持久化，以及镜头、
-路线和标签门禁。必需视觉截图覆盖 1440×900、1280×720 与 390×844；渲染资源还要通过五节
+视觉对象、按视图分离的布局、十二条事实时间线、桌面／移动导航、语言持久化，以及镜头、
+路线和标签门禁。必需视觉截图覆盖 1440×900、1280×720 与 390×844；渲染资源还要通过十二节
 已验证课程的 20 轮压力检查。自动测试不能替代人工截图验收，结果见
 [视觉验收清单](docs/review/VISUAL_ACCEPTANCE_CHECKLIST.md)和
 [改造前后证据](docs/review/BEFORE_AFTER.md)。

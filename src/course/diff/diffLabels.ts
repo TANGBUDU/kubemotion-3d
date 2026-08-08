@@ -19,6 +19,7 @@ export const diffLabels = {
   podReady: text('Pod Ready', 'Pod Ready', 'Pod Ready'),
   containerStatus: text('Container state', 'Container state', '容器状态'),
   containerId: text('Container ID', 'Container ID', 'Container ID'),
+  containerImage: text('Container image', 'コンテナイメージ', '容器镜像'),
   containerReady: text('Container Ready', 'Container Ready', 'Container Ready'),
   containerStarted: text('Container Started', 'Container Started', 'Container Started'),
   terminationReason: text('Last termination reason', '直前の終了理由', '上次终止原因'),
@@ -52,6 +53,8 @@ export function labelForPath(entity: WorldEntity, path: string): LocalizedText |
       return diffLabels.restartCount;
     case '/data/containerID':
       return diffLabels.containerId;
+    case '/data/image':
+      return diffLabels.containerImage;
     case '/data/state/kind':
       return diffLabels.containerStatus;
     case '/data/ready':

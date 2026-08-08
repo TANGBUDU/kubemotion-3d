@@ -26,6 +26,7 @@
     "visual:m5": "tsx scripts/capture-m5-responsive-review.mts",
     "visual:m6": "tsx scripts/capture-m6-route-review.mts",
     "visual:m7": "tsx scripts/capture-m7-lesson-review.mts",
+    "visual:m8": "tsx scripts/capture-m8-curriculum-review.mts",
     "visual:capture": "tsx scripts/capture-visual-acceptance.ts",
     "test": "vitest",
     "test:unit": "vitest",

@@ -5,20 +5,20 @@ test('home to first lesson', async ({ page }) => {
   await expect(page.getByText('Control Plane decides.')).toBeVisible();
   await expect(
     page.getByRole('img', {
-      name: 'Interactive lesson preview: What a Kubernetes cluster contains',
+      name: 'Interactive lesson preview: Why Kubernetes exists',
     }),
   ).toBeVisible();
   await expect(page.locator('.scene-caption')).toContainText(
-    'CURRENT LESSON · What a Kubernetes cluster contains',
+    'CURRENT LESSON · Why Kubernetes exists',
   );
   await page.getByRole('link', { name: /^Start lesson$/i }).click();
   await expect(page.getByTestId('teaching-step-heading')).toContainText(
-    'One cluster, two areas of responsibility',
+    'An image packages the application',
   );
   await page.getByRole('button', { name: /Next/i }).click();
-  await expect(page).toHaveURL(/cluster-overview\/1$/);
+  await expect(page).toHaveURL(/why-kubernetes-exists\/1$/);
   await expect(page.getByTestId('teaching-step-heading')).toContainText(
-    "The API Server is the cluster's API hub",
+    'Declare the target, not a one-time action',
   );
 });
 
@@ -28,16 +28,16 @@ test('localized home preview and entry stay on the same lesson', async ({ page }
 
   await expect(
     page.getByRole('img', {
-      name: '交互式课程预览: Kubernetes 集群包含什么',
+      name: '交互式课程预览: 为什么需要 Kubernetes',
     }),
   ).toBeVisible();
-  await expect(page.locator('.scene-caption')).toContainText('当前课程 · Kubernetes 集群包含什么');
+  await expect(page.locator('.scene-caption')).toContainText('当前课程 · 为什么需要 Kubernetes');
 
   const startLesson = page.getByRole('link', { name: '开始课程' });
-  await expect(startLesson).toHaveAttribute('href', '#/learn/cluster-overview/0');
+  await expect(startLesson).toHaveAttribute('href', '#/learn/why-kubernetes-exists/0');
   await startLesson.click();
-  await expect(page).toHaveURL(/cluster-overview\/0$/);
-  await expect(page.getByTestId('teaching-step-heading')).toContainText('一个集群，两类职责区域');
+  await expect(page).toHaveURL(/why-kubernetes-exists\/0$/);
+  await expect(page.getByTestId('teaching-step-heading')).toContainText('镜像负责打包应用');
 });
 
 test('saved Pod progress previews step zero while the action resumes step three', async ({

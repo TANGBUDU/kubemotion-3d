@@ -1,0 +1,437 @@
+schemaVersion: 2
+scenarioId: internal-request-and-dns
+revision: 0
+
+entities:
+  - id: infrastructure:cluster:global:Node:worker-client
+    category: infrastructure
+    kind: Node
+    name: worker-client
+    status: ready
+    data: { rackOrder: 1, podSlotCount: 2 }
+    title: { en: worker-client, ja: worker-client, zh-CN: worker-client }
+    summary:
+      en: Synthetic worker Node hosting the client Pod; hidden in the traffic lesson view.
+      ja: クライアント Pod を配置する合成 worker Node。Traffic ビューでは非表示です。
+      zh-CN: 承载客户端 Pod 的合成工作 Node；在流量课程视图中隐藏。
+    sourceIds: [k8s-nodes]
+    visual: { archetype: node, size: xl, group: placement-context }
+
+  - id: infrastructure:cluster:global:Node:worker-dns
+    category: infrastructure
+    kind: Node
+    name: worker-dns
+    status: ready
+    data: { rackOrder: 2, podSlotCount: 2 }
+    title: { en: worker-dns, ja: worker-dns, zh-CN: worker-dns }
+    summary:
+      en: Synthetic worker Node hosting the CoreDNS Pod; hidden in the traffic lesson view.
+      ja: CoreDNS Pod を配置する合成 worker Node。Traffic ビューでは非表示です。
+      zh-CN: 承载 CoreDNS Pod 的合成工作 Node；在流量课程视图中隐藏。
+    sourceIds: [k8s-nodes]
+    visual: { archetype: node, size: xl, group: placement-context }
+
+  - id: infrastructure:cluster:global:Node:worker-app
+    category: infrastructure
+    kind: Node
+    name: worker-app
+    status: ready
+    data: { rackOrder: 3, podSlotCount: 4 }
+    title: { en: worker-app, ja: worker-app, zh-CN: worker-app }
+    summary:
+      en: Synthetic worker Node hosting the two application backends; hidden in the traffic lesson view.
+      ja: 2 つのアプリケーション backend を配置する合成 worker Node。Traffic ビューでは非表示です。
+      zh-CN: 承载两个应用后端的合成工作 Node；在流量课程视图中隐藏。
+    sourceIds: [k8s-nodes]
+    visual: { archetype: node, size: xl, group: placement-context }
+
+  - id: api-object:namespaced:shop:Pod:dns-client
+    category: api-object
+    kind: Pod
+    name: dns-client
+    namespace: shop
+    labels: { app.kubernetes.io/name: dns-client }
+    status: ready
+    data:
+      uid: synthetic-uid-dns-client-01
+      nodeName: worker-client
+      phase: Running
+      restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
+      trafficRole: client
+      podIP: 192.0.2.50
+    title: { en: Client Pod, ja: クライアント Pod, zh-CN: 客户端 Pod }
+    summary:
+      en: A synthetic in-cluster client that resolves api.shop.svc.cluster.example before sending an application request.
+      ja: アプリケーション request の前に api.shop.svc.cluster.example を名前解決する、cluster 内の合成 client です。
+      zh-CN: 集群内的合成客户端，会先解析 api.shop.svc.cluster.example，再发送应用请求。
+    sourceIds: [k8s-pods, k8s-services, k8s-dns-services-pods]
+    visual: { archetype: pod, size: md, group: request-origin }
+
+  - id: api-object:namespaced:kube-system:Service:kube-dns
+    category: api-object
+    kind: Service
+    name: kube-dns
+    namespace: kube-system
+    labels: { k8s-app: kube-dns }
+    status: ready
+    data:
+      serviceType: ClusterIP
+      publishNotReadyAddresses: false
+      clusterIP: 198.51.100.53
+      syntheticAddress: true
+      selector: { k8s-app: kube-dns }
+      ports:
+        - { name: dns, port: 53, targetPort: 53, protocol: UDP }
+        - { name: dns-tcp, port: 53, targetPort: 53, protocol: TCP }
+    title: { en: kube-dns Service, ja: kube-dns Service, zh-CN: kube-dns Service }
+    summary:
+      en: The stable Service entry used by the synthetic client for cluster DNS queries; its address is documentation-only.
+      ja: 合成 client が cluster DNS query に使う安定した Service entry。アドレスは教材用です。
+      zh-CN: 合成客户端用于集群 DNS 查询的稳定 Service 入口；其地址仅用于教学。
+    sourceIds: [k8s-services, k8s-dns-services-pods]
+    visual: { archetype: service, size: lg, group: dns-entry }
+
+  - id: api-object:namespaced:kube-system:EndpointSlice:kube-dns-slice
+    category: api-object
+    kind: EndpointSlice
+    name: kube-dns-slice
+    namespace: kube-system
+    labels: { kubernetes.io/service-name: kube-dns }
+    status: ready
+    data:
+      addressType: IPv4
+      serviceName: kube-dns
+      ports:
+        - { name: dns, port: 53, protocol: UDP }
+      endpoints:
+        - address: 192.0.2.53
+          targetRef: api-object:namespaced:kube-system:Pod:coredns-a
+          conditions: { ready: true, serving: true, terminating: false }
+    title: { en: kube-dns EndpointSlice, ja: kube-dns EndpointSlice, zh-CN: kube-dns EndpointSlice }
+    summary:
+      en: API evidence that the kube-dns Service has a Ready CoreDNS endpoint; it is not a DNS packet hop.
+      ja: kube-dns Service に Ready な CoreDNS endpoint があることを示す API evidence。DNS packet の hop ではありません。
+      zh-CN: 表明 kube-dns Service 拥有 Ready CoreDNS Endpoint 的 API 证据；它不是 DNS 数据包的 Hop。
+    sourceIds: [k8s-endpoint-slices, k8s-services, k8s-dns-services-pods]
+    visual: { archetype: endpointslice, size: lg, group: dns-selection-evidence }
+
+  - id: api-object:namespaced:kube-system:Pod:coredns-a
+    category: api-object
+    kind: Pod
+    name: coredns-a
+    namespace: kube-system
+    labels: { k8s-app: kube-dns }
+    status: ready
+    data:
+      uid: synthetic-uid-coredns-a-01
+      nodeName: worker-dns
+      phase: Running
+      restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
+      trafficRole: backend
+      podIP: 192.0.2.53
+      containerPort: 53
+      dnsImplementation: CoreDNS
+    title: { en: CoreDNS Pod, ja: CoreDNS Pod, zh-CN: CoreDNS Pod }
+    summary:
+      en: A synthetic Ready CoreDNS Pod selected behind the kube-dns Service for the illustrated query.
+      ja: 図示した query で kube-dns Service の backend として選ばれる、合成の Ready CoreDNS Pod です。
+      zh-CN: 合成的 Ready CoreDNS Pod，在示例查询中作为 kube-dns Service 的后端被选中。
+    sourceIds: [k8s-pods, k8s-services, k8s-dns-services-pods]
+    visual: { archetype: pod, size: md, group: dns-backend }
+
+  - id: api-object:namespaced:shop:Service:api
+    category: api-object
+    kind: Service
+    name: api
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      serviceType: ClusterIP
+      publishNotReadyAddresses: false
+      clusterIP: 198.51.100.42
+      syntheticAddress: true
+      clusterDomain: cluster.example
+      dnsName: api.shop.svc.cluster.example
+      selector: { app.kubernetes.io/name: api }
+      ports:
+        - { name: http, port: 8080, targetPort: 8080, protocol: TCP }
+    title: { en: api Service, ja: api Service, zh-CN: api Service }
+    summary:
+      en: The stable application Service whose configured synthetic DNS name resolves to its ClusterIP.
+      ja: 設定された合成 DNS 名が ClusterIP に解決される、安定したアプリケーション Service です。
+      zh-CN: 稳定的应用 Service；在本合成配置中，其 DNS 名称解析为 ClusterIP。
+    sourceIds: [k8s-services, k8s-dns-services-pods]
+    visual: { archetype: service, size: lg, group: application-entry }
+
+  - id: api-object:namespaced:shop:EndpointSlice:api-slice
+    category: api-object
+    kind: EndpointSlice
+    name: api-slice
+    namespace: shop
+    labels: { kubernetes.io/service-name: api }
+    status: ready
+    data:
+      addressType: IPv4
+      serviceName: api
+      ports:
+        - { name: http, port: 8080, protocol: TCP }
+      endpoints:
+        - address: 192.0.2.11
+          targetRef: api-object:namespaced:shop:Pod:api-a
+          conditions: { ready: true, serving: true, terminating: false }
+        - address: 192.0.2.12
+          targetRef: api-object:namespaced:shop:Pod:api-b
+          conditions: { ready: true, serving: true, terminating: false }
+    title: { en: api EndpointSlice, ja: api EndpointSlice, zh-CN: api EndpointSlice }
+    summary:
+      en: The current Ready backend records for the api Service; it supports selection but is not an application packet hop.
+      ja: api Service の現在の Ready backend 記録。選択の evidence ですが application packet の hop ではありません。
+      zh-CN: api Service 当前的 Ready 后端记录；它支撑后端选择，但不是应用数据包的 Hop。
+    sourceIds: [k8s-endpoint-slices, k8s-services]
+    visual: { archetype: endpointslice, size: lg, group: application-selection-evidence }
+
+  - id: api-object:namespaced:shop:Pod:api-a
+    category: api-object
+    kind: Pod
+    name: api-a
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      uid: synthetic-uid-dns-api-a-01
+      nodeName: worker-app
+      phase: Running
+      restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
+      trafficRole: backend
+      podIP: 192.0.2.11
+      containerPort: 8080
+    title: { en: api-a Pod, ja: api-a Pod, zh-CN: api-a Pod }
+    summary:
+      en: The Ready application endpoint selected for the illustrated request after DNS resolution.
+      ja: DNS resolution 後の図示した request で選ばれる Ready application endpoint です。
+      zh-CN: DNS 解析完成后，示例应用请求选中的 Ready Endpoint。
+    sourceIds: [k8s-pods, k8s-services]
+    visual: { archetype: pod, size: md, group: application-backends }
+
+  - id: api-object:namespaced:shop:Pod:api-b
+    category: api-object
+    kind: Pod
+    name: api-b
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      uid: synthetic-uid-dns-api-b-01
+      nodeName: worker-app
+      phase: Running
+      restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
+      trafficRole: backend
+      podIP: 192.0.2.12
+      containerPort: 8080
+    title: { en: api-b Pod, ja: api-b Pod, zh-CN: api-b Pod }
+    summary:
+      en: A second Ready endpoint recorded for the api Service but not selected for this request.
+      ja: api Service に記録された 2 番目の Ready endpoint。この request では選ばれません。
+      zh-CN: api Service 记录的第二个 Ready Endpoint；本次请求没有选中它。
+    sourceIds: [k8s-pods, k8s-services]
+    visual: { archetype: pod, size: md, group: application-backends }
+
+relations:
+  - id: scheduled-dns-client-on-worker-client
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:dns-client
+    to: infrastructure:cluster:global:Node:worker-client
+    directed: true
+    semantic: placement
+    title:
+      {
+        en: client scheduled on worker-client,
+        ja: client を worker-client に配置,
+        zh-CN: client 调度到 worker-client,
+      }
+    sourceIds: [k8s-pods, k8s-nodes]
+
+  - id: scheduled-coredns-on-worker-dns
+    type: scheduled-on
+    from: api-object:namespaced:kube-system:Pod:coredns-a
+    to: infrastructure:cluster:global:Node:worker-dns
+    directed: true
+    semantic: placement
+    title:
+      {
+        en: CoreDNS scheduled on worker-dns,
+        ja: CoreDNS を worker-dns に配置,
+        zh-CN: CoreDNS 调度到 worker-dns,
+      }
+    sourceIds: [k8s-pods, k8s-nodes]
+
+  - id: scheduled-api-a-on-worker-app
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:api-a
+    to: infrastructure:cluster:global:Node:worker-app
+    directed: true
+    semantic: placement
+    title:
+      {
+        en: api-a scheduled on worker-app,
+        ja: api-a を worker-app に配置,
+        zh-CN: api-a 调度到 worker-app,
+      }
+    sourceIds: [k8s-pods, k8s-nodes]
+
+  - id: scheduled-api-b-on-worker-app
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:api-b
+    to: infrastructure:cluster:global:Node:worker-app
+    directed: true
+    semantic: placement
+    title:
+      {
+        en: api-b scheduled on worker-app,
+        ja: api-b を worker-app に配置,
+        zh-CN: api-b 调度到 worker-app,
+      }
+    sourceIds: [k8s-pods, k8s-nodes]
+
+  - id: kube-dns-selects-coredns
+    type: selects
+    from: api-object:namespaced:kube-system:Service:kube-dns
+    to: api-object:namespaced:kube-system:Pod:coredns-a
+    directed: true
+    semantic: selection
+    title:
+      { en: kube-dns selects CoreDNS, ja: kube-dns が CoreDNS を選択, zh-CN: kube-dns 选择 CoreDNS }
+    sourceIds: [k8s-services, k8s-labels, k8s-dns-services-pods]
+
+  - id: kube-dns-slice-for-service
+    type: contains-endpoint-for
+    from: api-object:namespaced:kube-system:EndpointSlice:kube-dns-slice
+    to: api-object:namespaced:kube-system:Service:kube-dns
+    directed: true
+    semantic: configuration
+    title:
+      {
+        en: endpoints for kube-dns Service,
+        ja: kube-dns Service の endpoint,
+        zh-CN: kube-dns Service 的 Endpoint,
+      }
+    sourceIds: [k8s-endpoint-slices, k8s-services, k8s-dns-services-pods]
+
+  - id: kube-dns-slice-references-coredns
+    type: references
+    from: api-object:namespaced:kube-system:EndpointSlice:kube-dns-slice
+    to: api-object:namespaced:kube-system:Pod:coredns-a
+    directed: true
+    semantic: endpoint-membership
+    title: { en: Ready CoreDNS endpoint, ja: Ready CoreDNS endpoint, zh-CN: Ready CoreDNS Endpoint }
+    sourceIds: [k8s-endpoint-slices, k8s-dns-services-pods]
+    data: { address: 192.0.2.53, ready: true, serving: true, terminating: false }
+
+  - id: client-queries-kube-dns
+    type: routes-to
+    from: api-object:namespaced:shop:Pod:dns-client
+    to: api-object:namespaced:kube-system:Service:kube-dns
+    directed: true
+    semantic: DNS-flow
+    title:
+      {
+        en: client queries kube-dns Service,
+        ja: client が kube-dns Service に query,
+        zh-CN: client 查询 kube-dns Service,
+      }
+    sourceIds: [k8s-services, k8s-dns-services-pods]
+
+  - id: kube-dns-routes-to-coredns
+    type: routes-to
+    from: api-object:namespaced:kube-system:Service:kube-dns
+    to: api-object:namespaced:kube-system:Pod:coredns-a
+    directed: true
+    semantic: DNS-flow
+    title:
+      {
+        en: kube-dns routes to CoreDNS,
+        ja: kube-dns から CoreDNS へ route,
+        zh-CN: kube-dns 路由到 CoreDNS,
+      }
+    sourceIds: [k8s-services, k8s-pods, k8s-dns-services-pods]
+
+  - id: api-service-selects-api-a
+    type: selects
+    from: api-object:namespaced:shop:Service:api
+    to: api-object:namespaced:shop:Pod:api-a
+    directed: true
+    semantic: selection
+    title: { en: selector matches api-a, ja: selector が api-a に一致, zh-CN: Selector 匹配 api-a }
+    sourceIds: [k8s-services, k8s-labels]
+
+  - id: api-service-selects-api-b
+    type: selects
+    from: api-object:namespaced:shop:Service:api
+    to: api-object:namespaced:shop:Pod:api-b
+    directed: true
+    semantic: selection
+    title: { en: selector matches api-b, ja: selector が api-b に一致, zh-CN: Selector 匹配 api-b }
+    sourceIds: [k8s-services, k8s-labels]
+
+  - id: api-slice-for-service
+    type: contains-endpoint-for
+    from: api-object:namespaced:shop:EndpointSlice:api-slice
+    to: api-object:namespaced:shop:Service:api
+    directed: true
+    semantic: configuration
+    title:
+      { en: endpoints for api Service, ja: api Service の endpoint, zh-CN: api Service 的 Endpoint }
+    sourceIds: [k8s-endpoint-slices, k8s-services]
+
+  - id: api-slice-references-api-a
+    type: references
+    from: api-object:namespaced:shop:EndpointSlice:api-slice
+    to: api-object:namespaced:shop:Pod:api-a
+    directed: true
+    semantic: endpoint-membership
+    title: { en: Ready endpoint api-a, ja: Ready endpoint api-a, zh-CN: Ready Endpoint api-a }
+    sourceIds: [k8s-endpoint-slices]
+    data: { address: 192.0.2.11, ready: true, serving: true, terminating: false }
+
+  - id: api-slice-references-api-b
+    type: references
+    from: api-object:namespaced:shop:EndpointSlice:api-slice
+    to: api-object:namespaced:shop:Pod:api-b
+    directed: true
+    semantic: endpoint-membership
+    title: { en: Ready endpoint api-b, ja: Ready endpoint api-b, zh-CN: Ready Endpoint api-b }
+    sourceIds: [k8s-endpoint-slices]
+    data: { address: 192.0.2.12, ready: true, serving: true, terminating: false }
+
+  - id: client-enters-api-service
+    type: routes-to
+    from: api-object:namespaced:shop:Pod:dns-client
+    to: api-object:namespaced:shop:Service:api
+    directed: true
+    semantic: data-flow
+    title:
+      {
+        en: client enters api Service,
+        ja: client が api Service に入る,
+        zh-CN: client 进入 api Service,
+      }
+    sourceIds: [k8s-services]
+
+  - id: api-service-routes-to-api-a
+    type: routes-to
+    from: api-object:namespaced:shop:Service:api
+    to: api-object:namespaced:shop:Pod:api-a
+    directed: true
+    semantic: data-flow
+    title:
+      {
+        en: api Service routes to api-a,
+        ja: api Service から api-a へ route,
+        zh-CN: api Service 路由到 api-a,
+      }
+    sourceIds: [k8s-services, k8s-pods]

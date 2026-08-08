@@ -145,7 +145,10 @@ function endpointConditionsValue(conditions: Readonly<Record<string, unknown>>):
   return sameText(`ready=${ready} · serving=${serving} · terminating=${terminating}`);
 }
 
-export function snapshotEvidence(entity: WorldEntity): readonly EvidenceRow[] {
+export function snapshotEvidence(
+  entity: WorldEntity,
+  includeContainerImage = false,
+): readonly EvidenceRow[] {
   if (entity.kind === 'Pod') {
     const data = getPodData(entity);
     return [
@@ -199,6 +202,9 @@ export function snapshotEvidence(entity: WorldEntity): readonly EvidenceRow[] {
         valueText(data.state.kind, '/data/state/kind'),
       ),
       row(entity, '/data/ready', 'unchanged', undefined, valueText(data.ready, '/data/ready')),
+      ...(includeContainerImage
+        ? [row(entity, '/data/image', 'unchanged', undefined, valueText(data.image, '/data/image'))]
+        : []),
     ];
   }
   if (entity.kind === 'ReplicaSet') {

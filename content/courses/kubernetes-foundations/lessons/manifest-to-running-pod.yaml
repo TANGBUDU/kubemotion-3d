@@ -1,7 +1,7 @@
 schemaVersion: 2
 id: manifest-to-running-pod
 scenarioId: container-restart-golden
-chapterId: foundations
+chapterId: workloads-self-healing
 title:
   en: From a Deployment manifest to a Ready Pod
   ja: Deployment manifest から Ready な Pod まで
@@ -14,7 +14,7 @@ learningOutcome:
   en: Explain the distinct responsibilities of kubectl, API Server, etcd, controllers, Scheduler, kubelet, and the container runtime when desired state becomes a Ready Pod.
   ja: desired state が Ready な Pod になるまでの kubectl、API Server、etcd、controller、Scheduler、kubelet、container runtime の責務を区別して説明する。
   zh-CN: 区分并解释期望状态变成 Ready Pod 时 kubectl、API Server、etcd、控制器、Scheduler、kubelet 和容器运行时各自的职责。
-prerequisites: [pod-and-placement]
+prerequisites: [deployment-replicaset-and-pods]
 sourceIds:
   - k8s-objects
   - k8s-api

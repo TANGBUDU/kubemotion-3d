@@ -41,14 +41,31 @@ Delivered rebuild milestones on this branch:
   teaching. The eight-step manifest story keeps API, reconciliation, scheduling, kubelet, runtime,
   and readiness responsibilities separate. A 10-objective multilingual browser matrix covers 30
   settled and 15 reduced-motion captures.
+- M8 publishes seven additional source-verified lessons and makes the public manifest exactly 12
+  available lessons followed by 10 honest planned entries. Every lesson has 4–10 compiled,
+  trilingual, Evidence-backed steps with one primary focus. The opening step uses the Container's
+  factual `image` field to distinguish container packaging from Kubernetes orchestration before
+  desired-state recovery. DNS resolution is a persistent client-Pod → kube-dns Service → CoreDNS
+  Pod route that is distinct from the later application request. Probe and rolling-update steps
+  separately show startup gating, readiness-controlled EndpointSlice membership and traffic,
+  new/old ReplicaSet handoff, and a liveness-triggered Container restart that preserves Pod identity.
+  The M8 browser matrix covers every lesson at desktop, risk-height, and mobile viewports, plus
+  reduced-motion replay for four route objectives.
 
 - immutable `WorldSnapshot` / `WorldPatch` / `WorldDiff` plus a separate `ViewProjection`;
-- five verified foundation-first lessons:
-  - Cluster overview;
-  - Pod, Namespace, and Node;
-  - Manifest to running Pod;
-  - Service routes to Ready Pods;
-  - Container restart vs Pod replacement;
+- twelve verified foundation-first lessons:
+  - Why Kubernetes exists;
+  - Cluster, Control Plane and Worker Nodes;
+  - Pod and Container;
+  - Namespace and Node;
+  - Deployment, ReplicaSet and Pods;
+  - Manifest to Running Pod;
+  - Pending Pod and Scheduling;
+  - Container Restart vs Pod Replacement;
+  - Labels and Selectors;
+  - Service and EndpointSlice;
+  - Internal Request and DNS;
+  - Probes and Rolling Update;
 - premium teaching visuals, semantic zones, persistent `Line2` routes, canonical semantic anchors,
   deterministic sparse obstacle-aware planning, label collision handling, and desktop/mobile
   teaching shells;
@@ -88,6 +105,15 @@ Delivered rebuild milestones on this branch:
   - the NotReady endpoint is not selected for ordinary traffic;
   - EndpointSlice is evidence, never a physical packet hop, and its selected endpoint matches the
     route's final backend;
+- DNS lesson:
+  - the DNS query/response route is client Pod → kube-dns Service → CoreDNS Pod;
+  - the later application request is a separate Client → Service → selected Pod route;
+  - neither request treats EndpointSlice as a packet hop;
+- probes and rolling update:
+  - startup success unlocks liveness/readiness checks without making the Pod Ready by itself;
+  - readiness changes EndpointSlice eligibility before traffic shifts to the v2 Pod;
+  - the old ReplicaSet shrinks only after the new endpoint becomes Ready;
+  - liveness failure changes Container ID and restart count while preserving Pod UID and Node;
 - route lifecycle:
   - the persistent wide route, arrowheads, and numbered markers exist before, during, and after
     token motion;
@@ -100,11 +126,11 @@ Delivered rebuild milestones on this branch:
 - `pnpm format:check` — PASS;
 - `pnpm lint` — PASS;
 - `pnpm typecheck` — PASS;
-- `pnpm content:validate` — PASS (2 v2 scenarios, 32 entities, 34 relations, 5 verified v2
-  lessons, 17 planned lessons, 26 terms, 29 official sources);
-- `pnpm content:accuracy` — PASS (238 current-public text files, 30 forbidden patterns, 23 local
+- `pnpm content:validate` — PASS (4 v2 scenarios, 54 entities, 64 relations, 12 verified v2
+  lessons, 10 planned lessons, 35 terms, 31 official sources);
+- `pnpm content:accuracy` — PASS (250 current-public text files, 30 forbidden patterns, 23 local
   links, and all README, visualization, lifecycle, and Service invariants);
-- `pnpm test:unit -- --run` — PASS (44 files, 318 tests);
+- `pnpm test:unit -- --run` — PASS (45 files, 326 tests);
 - `pnpm build` — PASS;
 - `pnpm visual:m2` — PASS (four captures; desktop foundation/island gate passes with 0 measured
   entity-label overlap and 0 labels outside the stage; mobile risk recorded for M5);
@@ -127,9 +153,13 @@ Delivered rebuild milestones on this branch:
   1280×720/800, and 390×844 with EN/JA/zh-CN rotation; 30 settled and 15 reduced-motion captures;
   scene density, focus, hierarchy, label, teaching, source, persistent-route, and static-readability
   failures are all 0);
+- `pnpm visual:m8` — PASS (13 objectives / 51 screenshots; all twelve lessons at 1440×900,
+  1280×720/800, and 390×844 with EN/JA/zh-CN rotation; 39 settled and 12 reduced-motion captures;
+  comparison, density, focus, hierarchy, label, teaching, source, persistent-route, and
+  static-readability failures are all 0);
 - `pnpm test:e2e` — PASS (136 passed, 53 skipped, 0 failed); skips are deliberate
   project/viewport ownership selections;
-- 20-cycle five-lesson renderer resource pressure gate — PASS;
+- 20-cycle twelve-lesson renderer resource pressure gate — PASS;
 - screenshot gate / visual acceptance — PASS (38 full-page + 5 focused = 43 screenshots; 0 labels outside the
   stage and 0 measured label overlap).
 
@@ -149,11 +179,13 @@ Delivered rebuild milestones on this branch:
 
 - current screenshot manifest: `docs/review/screenshots/manifest.json`;
 - M6 route manifest: `docs/review/evidence/m6/m6-route-visual-manifest.json`;
+- M8 curriculum manifest: `docs/review/evidence/m8/m8-curriculum-visual-manifest.json`;
+- M8 curriculum checklist: `docs/review/M8_CURRICULUM_ACCEPTANCE_CHECKLIST.md`;
 - factual and visual checklist: `docs/review/VISUAL_ACCEPTANCE_CHECKLIST.md`;
 - Before/After: `docs/review/BEFORE_AFTER.md`;
 - architecture: `docs/architecture.md`;
 - focused Evidence and comparison crops: `docs/review/screenshots/evidence-*.png` and
   `docs/review/screenshots/comparison-*.png`.
 
-The VPS review site was published from this PR branch. GitHub Pages remains sourced from `main`,
-and merging remains an explicit repository owner decision.
+The VPS review site is updated from this PR branch only after the M10 final gates. GitHub Pages
+remains sourced from `main`, and merging remains an explicit repository owner decision.

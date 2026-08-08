@@ -14,7 +14,7 @@ learningOutcome:
   en: Distinguish the stable Service address, EndpointSlice membership, and the concrete backend chosen for each request.
   ja: 安定した Service アドレス、EndpointSlice のメンバーシップ、各リクエストで選ばれる具体的なバックエンドを区別する。
   zh-CN: 区分稳定的 Service 地址、EndpointSlice 成员关系和每次请求实际选中的后端。
-prerequisites: [manifest-to-running-pod]
+prerequisites: [labels-and-selectors]
 sourceIds:
   - k8s-pods
   - k8s-labels

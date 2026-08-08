@@ -1,18 +1,32 @@
 import { expect, test, type Page } from '@playwright/test';
 
+const WHY_LESSON = 'why-kubernetes-exists';
 const CLUSTER_LESSON = 'cluster-overview';
+const POD_CONTAINER_LESSON = 'pod-and-container';
 const POD_PLACEMENT_LESSON = 'pod-and-placement';
+const DEPLOYMENT_LESSON = 'deployment-replicaset-and-pods';
 const MANIFEST_LESSON = 'manifest-to-running-pod';
+const PENDING_LESSON = 'pending-and-scheduling';
 const SERVICE_LESSON = 'service-routes-to-pods';
 const RESTART_LESSON = 'container-restart-vs-pod-replacement';
+const LABELS_LESSON = 'labels-and-selectors';
+const DNS_LESSON = 'dns-and-service-discovery';
+const PROBES_LESSON = 'probes-and-rolling-update';
 const progressKey = 'kubemotion:v1:progress';
 
 const availableLessons = [
+  { id: WHY_LESSON, finalStep: 5 },
   { id: CLUSTER_LESSON, finalStep: 4 },
+  { id: POD_CONTAINER_LESSON, finalStep: 4 },
   { id: POD_PLACEMENT_LESSON, finalStep: 5 },
+  { id: DEPLOYMENT_LESSON, finalStep: 5 },
   { id: MANIFEST_LESSON, finalStep: 7 },
-  { id: SERVICE_LESSON, finalStep: 5 },
+  { id: PENDING_LESSON, finalStep: 5 },
   { id: RESTART_LESSON, finalStep: 9 },
+  { id: LABELS_LESSON, finalStep: 4 },
+  { id: SERVICE_LESSON, finalStep: 5 },
+  { id: DNS_LESSON, finalStep: 5 },
+  { id: PROBES_LESSON, finalStep: 7 },
 ] as const;
 
 async function seedCompletedLessons(page: Page, completedLessonIds: readonly string[]) {
@@ -124,9 +138,9 @@ async function failProgressWritesUntilReleased(page: Page): Promise<() => Promis
 
 test('bare Learn follows manifest order and valid progress resumes', async ({ page }) => {
   await page.goto('/#/learn');
-  await expect(page).toHaveURL(/cluster-overview\/0$/);
+  await expect(page).toHaveURL(/why-kubernetes-exists\/0$/);
   await expect(page.getByTestId('teaching-step-heading')).toContainText(
-    'One cluster, two areas of responsibility',
+    'An image packages the application',
   );
 
   await page.goto('/#/learn/container-restart-vs-pod-replacement/3');
@@ -164,7 +178,17 @@ test('valid lesson deep links normalize missing or invalid steps to that lesson 
 });
 
 test('final steps persist completion and expose a usable next action', async ({ page }) => {
-  const completedBeforeService = [CLUSTER_LESSON, POD_PLACEMENT_LESSON, MANIFEST_LESSON];
+  const completedBeforeService = [
+    WHY_LESSON,
+    CLUSTER_LESSON,
+    POD_CONTAINER_LESSON,
+    POD_PLACEMENT_LESSON,
+    DEPLOYMENT_LESSON,
+    MANIFEST_LESSON,
+    PENDING_LESSON,
+    RESTART_LESSON,
+    LABELS_LESSON,
+  ];
   await seedCompletedLessons(page, completedBeforeService);
   await page.goto(`/#/learn/${SERVICE_LESSON}/5`);
   const completion = page.getByTestId('lesson-completion-card');
@@ -176,8 +200,8 @@ test('final steps persist completion and expose a usable next action', async ({ 
 
   await expect(completion).toContainText('Lesson complete');
   await expect(
-    completion.getByRole('link', { name: /Next lesson: Container restart/i }),
-  ).toHaveAttribute('href', `#/learn/${RESTART_LESSON}/0`);
+    completion.getByRole('link', { name: /Next lesson: DNS and Service discovery/i }),
+  ).toHaveAttribute('href', `#/learn/${DNS_LESSON}/0`);
 
   await expect
     .poll(() => completedLessonIds(page))
@@ -186,15 +210,18 @@ test('final steps persist completion and expose a usable next action', async ({ 
   await page.goto('/#/');
   await expect(page.getByRole('link', { name: 'Start lesson', exact: true })).toHaveAttribute(
     'href',
-    `#/learn/${RESTART_LESSON}/0`,
+    `#/learn/${DNS_LESSON}/0`,
   );
 
   await page.goto('/#/learn');
-  await expect(page).toHaveURL(new RegExp(`${RESTART_LESSON}/0$`));
-  await expect(page.getByTestId('teaching-step-heading')).toContainText('What you are looking at');
+  await expect(page).toHaveURL(new RegExp(`${DNS_LESSON}/0$`));
+  await expect(page.getByTestId('teaching-step-heading')).toContainText(
+    'A Service receives a DNS identity',
+  );
 });
 
 test('all completed lessons route Home and bare Learn to Explore until Reset', async ({ page }) => {
+  test.setTimeout(90_000);
   const completedInOrder: string[] = [];
   for (const lesson of availableLessons) {
     await page.goto(`/#/learn/${lesson.id}/${lesson.finalStep}`);
@@ -223,17 +250,14 @@ test('all completed lessons route Home and bare Learn to Explore until Reset', a
   await page.goto('/#/');
   await expect(page.getByRole('link', { name: 'Start lesson', exact: true })).toHaveAttribute(
     'href',
-    `#/learn/${CLUSTER_LESSON}/0`,
+    `#/learn/${WHY_LESSON}/0`,
   );
 });
 
 test('completion skips a next lesson that is already complete', async ({ page }) => {
-  const completedExceptService = [
-    CLUSTER_LESSON,
-    POD_PLACEMENT_LESSON,
-    MANIFEST_LESSON,
-    RESTART_LESSON,
-  ];
+  const completedExceptService = availableLessons
+    .map((lesson) => lesson.id)
+    .filter((lessonId) => lessonId !== SERVICE_LESSON);
   await seedCompletedLessons(page, completedExceptService);
 
   await page.goto(`/#/learn/${SERVICE_LESSON}/5`);
@@ -259,8 +283,8 @@ test('an out-of-order final lesson points to the first unfinished manifest lesso
   await completion.getByRole('button', { name: 'Complete lesson', exact: true }).click();
 
   await expect(
-    completion.getByRole('link', { name: /Next lesson: What a Kubernetes cluster contains/i }),
-  ).toHaveAttribute('href', `#/learn/${CLUSTER_LESSON}/0`);
+    completion.getByRole('link', { name: /Next lesson: Why Kubernetes exists/i }),
+  ).toHaveAttribute('href', `#/learn/${WHY_LESSON}/0`);
   await expect.poll(() => completedLessonIds(page)).toEqual([RESTART_LESSON]);
 });
 
@@ -302,7 +326,7 @@ test('cross-tab navigation preserves external completion and Reset updates', asy
   expect((await appProgress(otherPage)).lessonId).toBeUndefined();
 
   await otherPage.goto('/#/learn');
-  await expect(otherPage).toHaveURL(new RegExp(`${CLUSTER_LESSON}/0$`));
+  await expect(otherPage).toHaveURL(new RegExp(`${WHY_LESSON}/0$`));
   await otherPage.close();
 });
 

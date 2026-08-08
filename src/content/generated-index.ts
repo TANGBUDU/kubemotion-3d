@@ -2,12 +2,21 @@
 export const lessonFiles = [
   'cluster-overview.yaml',
   'container-restart-vs-pod-replacement.yaml',
+  'deployment-replicaset-and-pods.yaml',
+  'dns-and-service-discovery.yaml',
+  'labels-and-selectors.yaml',
   'manifest-to-running-pod.yaml',
+  'pending-and-scheduling.yaml',
+  'pod-and-container.yaml',
   'pod-and-placement.yaml',
+  'probes-and-rolling-update.yaml',
   'service-routes-to-pods.yaml',
+  'why-kubernetes-exists.yaml',
 ] as const;
 export const scenarioFiles = [
   'container-restart-golden.yaml',
   'demo-shop.yaml',
+  'internal-request-and-dns.yaml',
+  'probes-and-rolling-update.yaml',
   'service-routes-to-pods.yaml',
 ] as const;

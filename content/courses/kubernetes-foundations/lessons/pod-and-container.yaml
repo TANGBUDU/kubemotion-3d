@@ -1,0 +1,414 @@
+schemaVersion: 2
+id: pod-and-container
+scenarioId: container-restart-golden
+chapterId: foundations
+title:
+  en: Pod and Container
+  ja: Pod と Container
+  zh-CN: Pod 与容器
+summary:
+  en: Open one Pod shell, inspect its application Container, then reveal a second cooperating Container inside the same scheduling boundary.
+  ja: 一つの Pod シェルを開き、アプリケーション Container を確認してから、同じスケジューリング境界内の二つ目の協働 Container を表示します。
+  zh-CN: 打开一个 Pod 外壳，查看应用容器，再揭示同一调度边界内协作的第二个容器。
+learningOutcome:
+  en: Explain that Kubernetes schedules a Pod to a Node and that one Pod can contain one or more runtime Containers created from container images.
+  ja: Kubernetes が Pod を Node に配置し、一つの Pod が container image から作られた一つ以上のランタイム Container を含めることを説明する。
+  zh-CN: 解释 Kubernetes 将 Pod 调度到 Node，而一个 Pod 可以包含由容器镜像创建的一个或多个运行时容器。
+prerequisites: [cluster-overview]
+sourceIds:
+  - k8s-pods
+  - k8s-pod-lifecycle
+  - k8s-nodes
+  - k8s-container-images
+  - k8s-components
+verifiedAt: '2026-08-08'
+baseView:
+  view: placement
+  cameraPresetId: placement
+  resetEntities: true
+  entityRules: []
+  relationRules: []
+  activeRoutes: []
+
+steps:
+  - id: pod-is-the-boundary
+    title:
+      en: Start with the Pod boundary
+      ja: Pod 境界から始める
+      zh-CN: 先看 Pod 边界
+    learningOutcome:
+      en: Locate one assigned Pod as a unit inside a worker Node chassis.
+      ja: worker Node シャーシ内に配置された一つの Pod を単位として見つける。
+      zh-CN: 在工作 Node 底盘中找到作为一个整体被放置的 Pod。
+    narration:
+      en: api-7f8d9-a is one Pod assigned to worker-a. This lesson snapshot specifies two Containers in that Pod, but the first view isolates the translucent Pod shell so its scheduling boundary is unmistakable.
+      ja: api-7f8d9-a は worker-a に割り当てられた一つの Pod です。この学習スナップショットでは Pod 内に二つの Container が定義されていますが、最初のビューでは半透明の Pod シェルだけを分離し、スケジューリング境界を明確にします。
+      zh-CN: api-7f8d9-a 是分配到 worker-a 的一个 Pod。本教学快照为该 Pod 定义了两个容器，但第一幅视图先单独展示半透明 Pod 外壳，让调度边界清晰可辨。
+    teaching:
+      whatChanged:
+        en: The lesson snapshot establishes an application Container and a helper Container inside api-7f8d9-a; the view currently exposes only their shared Pod shell and worker-a.
+        ja: 学習スナップショットに api-7f8d9-a 内のアプリケーション Container と補助 Container を用意し、現在のビューでは共有する Pod シェルと worker-a だけを表示しました。
+        zh-CN: 教学快照在 api-7f8d9-a 内建立应用容器与辅助容器；当前视图只展示它们共享的 Pod 外壳和 worker-a。
+      whyItHappened:
+        en: The scheduling boundary must be visible before the runtime pieces inside it are introduced.
+        ja: 内部のランタイム要素を紹介する前に、スケジューリング境界を見えるようにするためです。
+        zh-CN: 这是为了在介绍内部运行时组件前，先让调度边界可见。
+      takeaway:
+        en: Kubernetes places the Pod as a unit on a Node.
+        ja: Kubernetes は Pod を一つの単位として Node に配置します。
+        zh-CN: Kubernetes 以 Pod 为单位将其放置到 Node。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - infrastructure:cluster:global:Node:worker-a
+        - api-object:namespaced:shop:Pod:api-a-old
+    introducesTerms: [pod, node]
+    usesTerms: [pod, node]
+    sourceIds: [k8s-pods, k8s-nodes]
+    worldPatch:
+      operations:
+        - op: add-entity
+          entity:
+            id: container-status:shop:Pod:api-a-old:Container:metrics
+            category: runtime-status
+            kind: Container
+            name: metrics
+            namespace: shop
+            status: running
+            data:
+              podId: api-object:namespaced:shop:Pod:api-a-old
+              name: metrics
+              image: registry.example.invalid/shop/metrics:v1
+              containerID: containerd://synthetic-metrics-a-old-01
+              restartCount: 0
+              ready: true
+              started: true
+              state:
+                kind: running
+                startedAt: 2026-08-08T00:00:00Z
+            title:
+              en: metrics Container · api-7f8d9-a
+              ja: metrics Container · api-7f8d9-a
+              zh-CN: metrics 容器 · api-7f8d9-a
+            summary:
+              en: A cooperating helper Container declared in the same Pod as the api Container.
+              ja: api Container と同じ Pod に定義された協働用の補助 Container です。
+              zh-CN: 与 api 容器声明在同一 Pod 中的协作辅助容器。
+            sourceIds: [k8s-pods, k8s-container-images]
+            visual: { archetype: container, size: sm, group: api-a-old }
+        - op: add-relation
+          relation:
+            id: contains-api-a-old-container-metrics
+            type: contains-runtime
+            from: api-object:namespaced:shop:Pod:api-a-old
+            to: container-status:shop:Pod:api-a-old:Container:metrics
+            directed: true
+            semantic: composition
+            title:
+              en: contains helper Container status
+              ja: 補助 Container 状態を含む
+              zh-CN: 包含辅助容器状态
+            sourceIds: [k8s-pods]
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules:
+        - byIds: [scheduled-api-a-old]
+          visible: true
+          emphasis: normal
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: api-object:namespaced:shop:Pod:api-a-old
+          durationMs: 600
+
+  - id: application-container
+    title:
+      en: A Container runs inside the Pod
+      ja: Container は Pod の内側で動く
+      zh-CN: 容器运行在 Pod 内部
+    learningOutcome:
+      en: Distinguish a runtime Container from the Pod that contains it.
+      ja: ランタイム Container と、それを含む Pod を区別する。
+      zh-CN: 区分运行时容器与包含它的 Pod。
+    narration:
+      en: The api Container is a running instance created from the image registry.example.invalid/shop/api:v1. It has its own Container ID and restart count, while the enclosing Pod has a separate Pod identity.
+      ja: api Container は image registry.example.invalid/shop/api:v1 から作成された実行中インスタンスです。固有の Container ID と再起動回数を持ち、外側の Pod は別の Pod ID を持ちます。
+      zh-CN: api 容器是由镜像 registry.example.invalid/shop/api:v1 创建的运行实例。它拥有自己的 Container ID 与重启次数，而外层 Pod 则具有独立的 Pod 身份。
+    teaching:
+      whatChanged:
+        en: No Kubernetes state changed; the view opened the Pod shell and revealed only its api runtime Container.
+        ja: Kubernetes の状態は変化せず、Pod シェルを開いて api ランタイム Container だけを表示しました。
+        zh-CN: Kubernetes 状态没有变化；视图打开 Pod 外壳，只显示其中的 api 运行时容器。
+      whyItHappened:
+        en: Pod and Container are different lifecycle records even though the Container executes inside the Pod boundary.
+        ja: Container は Pod 境界内で実行されますが、Pod と Container は異なるライフサイクル記録だからです。
+        zh-CN: 因为容器虽然在 Pod 边界内运行，但 Pod 与容器是不同的生命周期记录。
+      takeaway:
+        en: An image is the template; a Container is a runtime instance inside a Pod.
+        ja: image はテンプレート、Container は Pod 内のランタイムインスタンスです。
+        zh-CN: 镜像是模板，容器是 Pod 内部的运行时实例。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-a-old
+        - container-status:shop:Pod:api-a-old:Container:api
+    introducesTerms: [container-image, container]
+    usesTerms: [pod, container-image, container]
+    sourceIds: [k8s-pods, k8s-pod-lifecycle, k8s-container-images]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [container-status:shop:Pod:api-a-old:Container:api] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules:
+        - byIds: [contains-api-a-old-container-api]
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: container-status:shop:Pod:api-a-old:Container:api
+          durationMs: 600
+
+  - id: two-containers-one-pod
+    title:
+      en: One Pod can contain multiple Containers
+      ja: 一つの Pod は複数の Container を含める
+      zh-CN: 一个 Pod 可以包含多个容器
+    learningOutcome:
+      en: Verify that api and metrics are two Containers inside one Pod identity.
+      ja: api と metrics が一つの Pod ID 内にある二つの Container であることを確認する。
+      zh-CN: 验证 api 与 metrics 是同一 Pod 身份内部的两个容器。
+    narration:
+      en: The view now reveals the already-specified metrics helper beside api. Both Container status records point to api-7f8d9-a, and both models remain visibly inside the same Pod shell.
+      ja: ビューは、すでに定義済みの metrics 補助 Container を api の隣に表示します。二つの Container 状態はどちらも api-7f8d9-a を参照し、モデルも同じ Pod シェル内にあります。
+      zh-CN: 视图现在揭示早已声明的 metrics 辅助容器。两个容器状态都指向 api-7f8d9-a，模型也都清楚位于同一个 Pod 外壳内。
+    teaching:
+      whatChanged:
+        en: No API or runtime fact changed; the second Container became visible beside the first.
+        ja: API やランタイムの事実は変化せず、二つ目の Container を一つ目の隣に表示しました。
+        zh-CN: API 与运行时事实没有变化；第二个容器现在显示在第一个容器旁边。
+      whyItHappened:
+        en: The staged reveal makes the one-Pod-to-many-Containers composition readable without implying a live Container injection.
+        ja: 段階的な表示により、実行中の Container 追加を示唆せず、一つの Pod と複数 Container の構成を読み取れるためです。
+        zh-CN: 分步揭示能清楚表达“一个 Pod 包含多个容器”，同时避免暗示向运行中 Pod 动态注入容器。
+      takeaway:
+        en: Multiple Containers can cooperate inside one Pod; they are not multiple Pods.
+        ja: 複数の Container は一つの Pod 内で協働でき、複数の Pod になるわけではありません。
+        zh-CN: 多个容器可以在同一个 Pod 内协作，它们并不是多个 Pod。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-a-old
+        - container-status:shop:Pod:api-a-old:Container:api
+        - container-status:shop:Pod:api-a-old:Container:metrics
+    introducesTerms: []
+    usesTerms: [pod, container]
+    sourceIds: [k8s-pods, k8s-pod-lifecycle]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [container-status:shop:Pod:api-a-old:Container:api] }
+          visible: true
+          emphasis: normal
+          labelMode: short
+        - selector: { byIds: [container-status:shop:Pod:api-a-old:Container:metrics] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules:
+        - byIds:
+            - contains-api-a-old-container-api
+            - contains-api-a-old-container-metrics
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: container-status:shop:Pod:api-a-old:Container:metrics
+          durationMs: 600
+
+  - id: containers-share-placement
+    title:
+      en: The Node receives one Pod, not two Container assignments
+      ja: Node が受け取るのは二つの Container 割り当てではなく一つの Pod
+      zh-CN: Node 接收的是一个 Pod，而不是两次容器分配
+    learningOutcome:
+      en: Trace physical placement from worker-a to one Pod and then to both contained Containers.
+      ja: worker-a から一つの Pod、さらに内部の二つの Container へ物理配置をたどる。
+      zh-CN: 沿物理放置关系从 worker-a 追踪到一个 Pod，再到其内部两个容器。
+    narration:
+      en: The Scheduler assigned api-7f8d9-a to worker-a. The api and metrics Containers follow that one Pod placement; Kubernetes did not schedule each Container independently to a different Node.
+      ja: Scheduler は api-7f8d9-a を worker-a に割り当てました。api と metrics の Container はその一つの Pod 配置に従い、それぞれ別の Node へ独立にスケジュールされたのではありません。
+      zh-CN: Scheduler 将 api-7f8d9-a 分配到 worker-a。api 与 metrics 容器共同遵循这一次 Pod 放置；Kubernetes 并没有把每个容器独立调度到不同 Node。
+    teaching:
+      whatChanged:
+        en: No placement changed; worker-a and the scheduled-on relationship became visible around the same two-Container Pod.
+        ja: 配置は変化せず、同じ二 Container Pod の周囲に worker-a と scheduled-on 関係を表示しました。
+        zh-CN: 放置事实没有变化；视图在同一个双容器 Pod 周围显示 worker-a 与 scheduled-on 关系。
+      whyItHappened:
+        en: Scheduling operates on Pods, so all regular Containers in a Pod share its Node assignment.
+        ja: スケジューリングは Pod を単位とするため、Pod 内の通常 Container はその Node 割り当てを共有します。
+        zh-CN: 因为调度以 Pod 为单位，所以 Pod 中的常规容器共享该 Pod 的 Node 分配。
+      takeaway:
+        en: Node placement belongs to the Pod; contained Containers inherit that execution location.
+        ja: Node 配置は Pod に属し、内部 Container はその実行場所を共有します。
+        zh-CN: Node 放置属于 Pod，内部容器共同继承该执行位置。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - infrastructure:cluster:global:Node:worker-a
+        - api-object:namespaced:shop:Pod:api-a-old
+        - container-status:shop:Pod:api-a-old:Container:api
+        - container-status:shop:Pod:api-a-old:Container:metrics
+    introducesTerms: []
+    usesTerms: [node, pod, container]
+    sourceIds: [k8s-pods, k8s-nodes]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-a] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: compact
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector:
+            byIds:
+              - container-status:shop:Pod:api-a-old:Container:api
+              - container-status:shop:Pod:api-a-old:Container:metrics
+          visible: true
+          emphasis: normal
+          labelMode: short
+      relationRules:
+        - byIds: [scheduled-api-a-old]
+          visible: true
+          emphasis: focused
+        - byIds:
+            - contains-api-a-old-container-api
+            - contains-api-a-old-container-metrics
+          visible: true
+          emphasis: normal
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: infrastructure:cluster:global:Node:worker-a
+          durationMs: 600
+
+  - id: identities-remain-distinct
+    title:
+      en: One Pod identity, two Container identities
+      ja: 一つの Pod ID と二つの Container ID
+      zh-CN: 一个 Pod 身份，两个容器身份
+    learningOutcome:
+      en: Separate the Pod UID from each runtime Container ID.
+      ja: Pod UID と各ランタイム Container ID を区別する。
+      zh-CN: 区分 Pod UID 与各自的运行时 Container ID。
+    narration:
+      en: api-7f8d9-a has Pod UID synthetic-uid-old-a1. Inside it, api and metrics have separate Container IDs and status records. Restarting one Container can change its runtime identity without turning the sibling Container into another Pod.
+      ja: api-7f8d9-a の Pod UID は synthetic-uid-old-a1 です。その内部で api と metrics は別々の Container ID と状態記録を持ちます。一方の Container が再起動してランタイム ID が変わっても、もう一方が別の Pod になるわけではありません。
+      zh-CN: api-7f8d9-a 的 Pod UID 是 synthetic-uid-old-a1。内部的 api 与 metrics 拥有各自的 Container ID 和状态记录。即使某个容器重启并改变运行时身份，也不会让另一个容器变成新的 Pod。
+    teaching:
+      whatChanged:
+        en: No identity changed; the Pod inspector and both Container records were shown together for comparison.
+        ja: ID は変化せず、比較のため Pod inspector と二つの Container 記録を同時に表示しました。
+        zh-CN: 身份没有变化；视图同时展示 Pod 检查信息与两个容器记录以便比较。
+      whyItHappened:
+        en: Pod lifecycle and Container runtime lifecycle are related but separately observable facts.
+        ja: Pod のライフサイクルと Container のランタイムライフサイクルは関連しますが、別々に観測できる事実だからです。
+        zh-CN: 因为 Pod 生命周期与容器运行时生命周期相互关联，但属于可分别观察的事实。
+      takeaway:
+        en: The Pod is the shared scheduling boundary; each Container still has its own runtime status and identity.
+        ja: Pod は共有スケジューリング境界であり、各 Container は固有のランタイム状態と ID を持ちます。
+        zh-CN: Pod 是共享的调度边界，而每个容器仍有自己的运行时状态与身份。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-a-old
+        - container-status:shop:Pod:api-a-old:Container:api
+        - container-status:shop:Pod:api-a-old:Container:metrics
+    introducesTerms: [pod-uid]
+    usesTerms: [pod, pod-uid, container]
+    sourceIds: [k8s-pods, k8s-pod-lifecycle]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - container-status:shop:Pod:api-a-old:Container:api
+              - container-status:shop:Pod:api-a-old:Container:metrics
+          visible: true
+          emphasis: normal
+          labelMode: full
+      relationRules:
+        - byIds:
+            - contains-api-a-old-container-api
+            - contains-api-a-old-container-metrics
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: api-object:namespaced:shop:Pod:api-a-old
+          durationMs: 600

@@ -29,6 +29,7 @@ function deduplicate(rows: readonly EvidenceRow[]): readonly EvidenceRow[] {
 
 const evidencePathPriority: Readonly<Record<string, number>> = {
   '/data/containerID': 140,
+  '/data/image': 139,
   '/data/restartCount': 138,
   '/data/lastState/reason': 136,
   '/data/lastState/exitCode': 134,
@@ -120,7 +121,9 @@ function contextRows(
 ): readonly EvidenceRow[] {
   return request.entityIds.flatMap((id) => {
     const entity = entityForEvidence(id, beforeWorld, world);
-    return entity ? snapshotEvidence(entity) : [];
+    const includeContainerImage =
+      request.mode === 'snapshot' && request.entityIds.length === 1 && entity?.kind === 'Container';
+    return entity ? snapshotEvidence(entity, includeContainerImage) : [];
   });
 }
 

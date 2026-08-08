@@ -118,11 +118,18 @@ const publicReadmes = {
   zh: read('README.zh-CN.md'),
 } as const;
 const requiredReadmeFacts = [
+  'why-kubernetes-exists',
   'cluster-overview',
+  'pod-and-container',
   'pod-and-placement',
+  'deployment-replicaset-and-pods',
   'manifest-to-running-pod',
+  'pending-and-scheduling',
   'container-restart-vs-pod-replacement',
+  'labels-and-selectors',
   'service-routes-to-pods',
+  'dns-and-service-discovery',
+  'probes-and-rolling-update',
   'containerID',
   'restartCount',
   'lastState',
@@ -153,25 +160,25 @@ for (const [locale, source] of Object.entries(publicReadmes)) {
   }
 }
 check(
-  publicReadmes.en.includes('5 fully verified lessons') &&
+  publicReadmes.en.includes('12 fully verified lessons') &&
     publicReadmes.en.includes('10-step Pod lifecycle') &&
     publicReadmes.en.includes('6-step Service traffic path') &&
-    publicReadmes.en.includes('17 planned lessons'),
-  'English README: release scope must state 5 verified, 10 Pod, 6 Service, and 17 planned',
+    publicReadmes.en.includes('10 planned lessons'),
+  'English README: release scope must state 12 verified, 10-step Pod, 6-step Service, and 10 planned',
 );
 check(
-  publicReadmes.ja.includes('完全に検証済みのレッスンは5本') &&
+  publicReadmes.ja.includes('完全に検証済みのレッスンは12本') &&
     publicReadmes.ja.includes('Pod ライフサイクルは10ステップ') &&
     publicReadmes.ja.includes('Service トラフィックは6ステップ') &&
-    /計画中(?:のレッスン)?は17本/.test(publicReadmes.ja),
-  'Japanese README: release scope must state 5 verified, 10 Pod, 6 Service, and 17 planned',
+    /計画中(?:のレッスン)?は10本/.test(publicReadmes.ja),
+  'Japanese README: release scope must state 12 verified, 10-step Pod, 6-step Service, and 10 planned',
 );
 check(
-  publicReadmes.zh.includes('5 节完整验证课程') &&
+  publicReadmes.zh.includes('12 节完整验证课程') &&
     publicReadmes.zh.includes('10 步 Pod 生命周期') &&
     publicReadmes.zh.includes('6 步 Service 流量路径') &&
-    publicReadmes.zh.includes('17 节规划中课程'),
-  'Chinese README: release scope must state 5 verified, 10 Pod, 6 Service, and 17 planned',
+    publicReadmes.zh.includes('10 节规划中课程'),
+  'Chinese README: release scope must state 12 verified, 10-step Pod, 6-step Service, and 10 planned',
 );
 check(
   !/(?:one verified lesson|1 fully verified lesson)/i.test(publicReadmes.en),
@@ -259,7 +266,8 @@ check(checkedLocalLinks >= 18, 'public documentation: expected at least 18 local
 const finalPrDescription = read('docs/review/PR_FINAL_DESCRIPTION.md');
 check(!/PENDING_/.test(finalPrDescription), 'final PR description: validation placeholders remain');
 for (const requiredClaim of [
-  'five verified foundation-first lessons',
+  'twelve verified foundation-first lessons',
+  'distinguish container packaging from Kubernetes orchestration',
   'manifest-driven `/learn` continuation',
   'normalized lesson deep links',
   'explicit completion',
@@ -269,23 +277,25 @@ for (const requiredClaim of [
   'visible saving/saved/failed states',
   'local WebGL fallback and Retry',
   'SPEC / OBSERVED / READY',
-  '32 entities, 34 relations',
+  '54 entities, 64 relations',
   '`containerID`',
   '`restartCount`',
   '`lastState`',
   `${scannedFiles.length} current-public text files`,
-  '44 files, 318 tests',
+  '45 files, 326 tests',
   '`pnpm visual:m5`',
   '`pnpm visual:m6`',
   '`pnpm visual:m7`',
+  '`pnpm visual:m8`',
   '9 cases / 36 screenshots',
   '10 objectives / 45 screenshots',
+  '13 objectives / 51 screenshots',
   '136 passed, 53 skipped, 0 failed',
   'forced-lock contention tests reconcile both writer tabs',
   'pending completion → later Reset',
   'injected `localStorage.setItem` failure',
   'Home preview / CTA coherence',
-  '20-cycle five-lesson renderer resource pressure gate',
+  '20-cycle twelve-lesson renderer resource pressure gate',
   '38 full-page + 5 focused = 43 screenshots',
 ]) {
   check(
@@ -302,6 +312,7 @@ for (const obsoleteClaim of [
   '211 current-public text files',
   '212 current-public text files',
   '218 current-public text files',
+  '238 current-public text files',
   '23 files, 176 tests',
   '31 files, 212 tests',
   '32 files, 226 tests',
@@ -314,7 +325,11 @@ for (const obsoleteClaim of [
   '41 files, 273 tests',
   '41 files, 274 tests',
   '42 files, 292 tests',
+  '44 files, 318 tests',
+  '45 files, 324 tests',
+  '45 files, 325 tests',
   '30 entities, 32 relations',
+  '32 entities, 34 relations',
   '123 passed, 45 skipped, 0 failed',
   '102 passed, 45 skipped, 0 failed',
   '66 passed, 39 skipped, 0 failed',

@@ -509,6 +509,11 @@ export class LabelManager {
         hideRecord(record, 'distance');
         continue;
       }
+      // A temporarily collapsed scene host marks every label hidden through the invalid-viewport
+      // path above. Reveal a projected candidate before measuring it again so reopening an
+      // inspector does not lay out the rendered label with the much narrower text-length fallback.
+      // The placement pass below runs synchronously and will hide rejected candidates again.
+      record.element.hidden = false;
       const measuredWidth =
         record.element.offsetWidth || (record.element.textContent?.length ?? 8) * 6.5;
       const measuredHeight = record.element.offsetHeight || 24;

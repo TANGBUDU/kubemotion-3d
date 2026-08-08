@@ -223,6 +223,53 @@ describe('LabelManager deterministic screen-space layout', () => {
     manager.clear();
   });
 
+  it('remeasures a hidden layout label after the scene host reopens', () => {
+    const container = document.createElement('div');
+    const registry = makeRegistry(
+      [],
+      [
+        {
+          id: 'layout:traffic-backend-lane',
+          text: 'BACKEND PODS',
+          worldPosition: [4, 0, 0],
+          kind: 'zone-title',
+        },
+      ],
+    );
+    const manager = new LabelManager(container);
+    manager.sync(
+      registry,
+      makeView([], () => ({ visible: true, emphasis: 'normal', labelMode: 'short' })),
+      'en',
+    );
+    const label = container.querySelector<HTMLDivElement>(
+      '[data-layout-label-id="layout:traffic-backend-lane"]',
+    );
+    if (!label) throw new Error('Missing traffic backend layout label.');
+    Object.defineProperty(label, 'offsetWidth', {
+      configurable: true,
+      get: () => (label.hidden ? 0 : 112),
+    });
+    Object.defineProperty(label, 'offsetHeight', {
+      configurable: true,
+      get: () => (label.hidden ? 0 : 21),
+    });
+
+    manager.update(registry, camera(), 0, 0);
+    expect(label.hidden).toBe(true);
+    expect(label.dataset.hiddenReason).toBe('invalid-viewport');
+
+    const safe: LabelSafeRect = { x: 33.12, y: 34.98, width: 309.76, height: 337.04 };
+    manager.update(registry, camera(), 390, 407, safe);
+
+    expect(label.hidden).toBe(false);
+    expect(Number(label.dataset.screenWidth)).toBe(116);
+    const rect = screenRect(label);
+    expect(rect.left).toBeGreaterThanOrEqual(safe.x);
+    expect(rect.right).toBeLessThanOrEqual(safe.x + safe.width);
+    manager.clear();
+  });
+
   it('enforces mobile density by hiding deterministic low-priority labels', () => {
     const container = document.createElement('div');
     const handles = Array.from({ length: 9 }, (_, index) =>

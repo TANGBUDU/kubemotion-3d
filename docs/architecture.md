@@ -41,14 +41,15 @@ runtime process survives a restart.
 
 `computeWorldDiff` compares two snapshots without mutation. Its added, removed, and updated records are deterministically sorted and include changed JSON-pointer-style paths.
 
-The content loader parses five verified lessons and both v2 scenarios, rejects duplicate IDs, and
+The content loader parses twelve verified lessons and four v2 scenarios, rejects duplicate IDs, and
 indexes them as `lessonById` and `scenarioById`. `LearnPage` resolves each lesson through its
 `scenarioId`; the legacy `scenario` export remains only as the golden world alias used by Home and
 Explore.
 
 `CourseEngine` compiles every step from the selected scenario and authored patches. The verified
-catalog contains three foundation-first lessons plus the ten-step Pod lifecycle and six-step
-Service traffic lessons. A `CompiledStep` contains:
+catalog contains the twelve source-verified foundation lessons, including the ten-step Pod
+lifecycle, six-step Service traffic, DNS, scheduling, and probes/rolling-update stories. A
+`CompiledStep` contains:
 
 - `beforeWorld`
 - `world`
@@ -214,8 +215,8 @@ The debug bridge exposes `entityHandles`, aggregate `relationHandles`, `labels`,
 `routeMarkers`, `wideLineGeometries`, and `wideLineMaterials`; plus post-processing `renderTargets`
 and tracked `eventListeners`.
 
-The E2E resource gate warms representative steps across all five verified lessons, then performs 20
-cycles that rotate through all five while mixing navigation, replay, locale changes, selection, and
+The E2E resource gate warms representative steps across all twelve verified lessons, then performs
+20 cycles that rotate through all twelve while mixing navigation, replay, locale changes, selection, and
 camera reset. After returning to the same route-heavy Pod step and waiting for idle, it requires
 animations and retained exits to be zero, stable handle/render-target/listener counts to match, and
 renderer, pool, route-marker, arrowhead, and flow-token counts to stay within their stated bounds.

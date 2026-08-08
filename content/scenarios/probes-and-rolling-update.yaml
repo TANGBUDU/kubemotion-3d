@@ -1,0 +1,358 @@
+schemaVersion: 2
+scenarioId: probes-and-rolling-update
+revision: 0
+entities:
+  - id: infrastructure:cluster:global:Node:worker-rollout
+    category: infrastructure
+    kind: Node
+    name: worker-rollout
+    status: ready
+    data: { rackOrder: 1, podSlotCount: 5 }
+    title: { en: worker-rollout, ja: worker-rollout, zh-CN: worker-rollout }
+    summary:
+      en: Synthetic worker Node that hosts the rollout Pods.
+      ja: ロールアウト対象の Pod を実行する合成 worker Node です。
+      zh-CN: 承载滚动更新 Pod 的虚构工作 Node。
+    sourceIds: [k8s-nodes]
+    visual: { archetype: node, size: xl, group: rollout-placement }
+
+  - id: runtime-component:node:worker-rollout:Kubelet:kubelet
+    category: runtime-component
+    kind: Kubelet
+    name: kubelet
+    status: healthy
+    data: { nodeName: worker-rollout, role: probes-and-container-restarts }
+    title: { en: kubelet, ja: kubelet, zh-CN: kubelet }
+    summary:
+      en: Runs configured probes and restarts a container after repeated liveness failure.
+      ja: 設定された probe を実行し、liveness が規定回数失敗するとコンテナを再起動します。
+      zh-CN: 执行已配置的探针，并在存活探针连续失败达到阈值后重启容器。
+    sourceIds: [k8s-components, k8s-probes]
+    visual: { archetype: runtime, size: sm, group: rollout-placement }
+
+  - id: api-object:namespaced:shop:Pod:rollout-client
+    category: api-object
+    kind: Pod
+    name: rollout-client
+    namespace: shop
+    labels: { app.kubernetes.io/name: rollout-client }
+    status: ready
+    data:
+      uid: synthetic-rollout-client-01
+      nodeName: worker-rollout
+      phase: Running
+      restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
+      trafficRole: client
+      podIP: 192.0.2.70
+    title: { en: Client Pod, ja: クライアント Pod, zh-CN: 客户端 Pod }
+    summary:
+      en: Synthetic in-cluster client used to show which rollout endpoint receives new traffic.
+      ja: ロールアウト中に新しいトラフィックを受ける endpoint を示す合成クライアントです。
+      zh-CN: 用于展示滚动更新期间新流量所选 Endpoint 的虚构集群内客户端。
+    sourceIds: [k8s-pods, k8s-services]
+    visual: { archetype: pod, size: md, group: rollout-client }
+
+  - id: api-object:namespaced:shop:Deployment:api
+    category: api-object
+    kind: Deployment
+    name: api
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      desiredReplicas: 2
+      readyReplicas: 2
+      availableReplicas: 2
+      updatedReplicas: 0
+      strategy: RollingUpdate
+      maxSurge: 1
+      maxUnavailable: 0
+      revision: 1
+      version: v1
+      probes:
+        startup: { path: /startup, purpose: gate-liveness-and-readiness }
+        readiness: { path: /ready, purpose: traffic-eligibility }
+        liveness: { path: /live, purpose: container-restart }
+    title: { en: api Deployment, ja: api Deployment, zh-CN: api Deployment }
+    summary:
+      en: Declares two api replicas and a RollingUpdate strategy with one permitted surge Pod.
+      ja: api レプリカを 2 つ宣言し、surge Pod を 1 つ許可する RollingUpdate 戦略を持ちます。
+      zh-CN: 声明两个 api 副本，并采用允许一个额外 Pod 的 RollingUpdate 策略。
+    sourceIds: [k8s-deployments, k8s-probes]
+    visual: { archetype: deployment, size: lg, group: rollout-control }
+
+  - id: api-object:namespaced:shop:ReplicaSet:api-v1
+    category: api-object
+    kind: ReplicaSet
+    name: api-v1
+    namespace: shop
+    labels: { app.kubernetes.io/name: api, app.kubernetes.io/version: v1 }
+    status: ready
+    data: { specReplicas: 2, statusReplicas: 2, readyReplicas: 2, version: v1 }
+    title: { en: api-v1 ReplicaSet, ja: api-v1 ReplicaSet, zh-CN: api-v1 ReplicaSet }
+    summary:
+      en: Old ReplicaSet that initially maintains two Ready v1 Pods.
+      ja: 最初に Ready な v1 Pod を 2 つ維持する古い ReplicaSet です。
+      zh-CN: 初始维持两个 Ready v1 Pod 的旧 ReplicaSet。
+    sourceIds: [k8s-deployments, k8s-replicasets]
+    visual: { archetype: replicaset, size: md, group: rollout-control }
+
+  - id: api-object:namespaced:shop:Pod:api-v1-a
+    category: api-object
+    kind: Pod
+    name: api-v1-a
+    namespace: shop
+    labels: { app.kubernetes.io/name: api, app.kubernetes.io/version: v1 }
+    status: ready
+    data:
+      uid: synthetic-api-v1-a-01
+      nodeName: worker-rollout
+      phase: Running
+      restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
+      podIP: 192.0.2.71
+    title: { en: api-v1-a Pod, ja: api-v1-a Pod, zh-CN: api-v1-a Pod }
+    summary:
+      en: First Ready old-version backend.
+      ja: Ready な旧バージョンの第 1 バックエンドです。
+      zh-CN: 第一个 Ready 的旧版本后端。
+    sourceIds: [k8s-pods, k8s-deployments]
+    visual: { archetype: pod, size: md, group: api-v1 }
+
+  - id: container-status:shop:Pod:api-v1-a:Container:api
+    category: runtime-status
+    kind: Container
+    name: api
+    namespace: shop
+    status: running
+    data:
+      podId: api-object:namespaced:shop:Pod:api-v1-a
+      name: api
+      image: registry.example.invalid/shop/api:v1
+      containerID: containerd://synthetic-api-v1-a-01
+      restartCount: 0
+      ready: true
+      started: true
+      state: { kind: running, startedAt: '2026-08-08T00:00:00Z' }
+      probes:
+        startup: { configured: true, succeeded: true }
+        readiness: { configured: true, succeeded: true }
+        liveness: { configured: true, succeeded: true }
+    title: { en: api v1 container A, ja: api v1 コンテナ A, zh-CN: api v1 容器 A }
+    summary:
+      en: Running v1 container with startup, readiness, and liveness probes configured.
+      ja: startup、readiness、liveness probe が設定された実行中の v1 コンテナです。
+      zh-CN: 配置了启动、就绪和存活探针的运行中 v1 容器。
+    sourceIds: [k8s-pods, k8s-probes]
+    visual: { archetype: container, size: sm, group: api-v1-a }
+
+  - id: api-object:namespaced:shop:Pod:api-v1-b
+    category: api-object
+    kind: Pod
+    name: api-v1-b
+    namespace: shop
+    labels: { app.kubernetes.io/name: api, app.kubernetes.io/version: v1 }
+    status: ready
+    data:
+      uid: synthetic-api-v1-b-01
+      nodeName: worker-rollout
+      phase: Running
+      restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
+      podIP: 192.0.2.72
+    title: { en: api-v1-b Pod, ja: api-v1-b Pod, zh-CN: api-v1-b Pod }
+    summary:
+      en: Second Ready old-version backend.
+      ja: Ready な旧バージョンの第 2 バックエンドです。
+      zh-CN: 第二个 Ready 的旧版本后端。
+    sourceIds: [k8s-pods, k8s-deployments]
+    visual: { archetype: pod, size: md, group: api-v1 }
+
+  - id: container-status:shop:Pod:api-v1-b:Container:api
+    category: runtime-status
+    kind: Container
+    name: api
+    namespace: shop
+    status: running
+    data:
+      podId: api-object:namespaced:shop:Pod:api-v1-b
+      name: api
+      image: registry.example.invalid/shop/api:v1
+      containerID: containerd://synthetic-api-v1-b-01
+      restartCount: 0
+      ready: true
+      started: true
+      state: { kind: running, startedAt: '2026-08-08T00:00:00Z' }
+    title: { en: api v1 container B, ja: api v1 コンテナ B, zh-CN: api v1 容器 B }
+    summary:
+      en: Running container inside the second old-version Pod.
+      ja: 2 つ目の旧バージョン Pod 内で動くコンテナです。
+      zh-CN: 在第二个旧版本 Pod 内运行的容器。
+    sourceIds: [k8s-pods]
+    visual: { archetype: container, size: sm, group: api-v1-b }
+
+  - id: api-object:namespaced:shop:Service:api
+    category: api-object
+    kind: Service
+    name: api
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      serviceType: ClusterIP
+      publishNotReadyAddresses: false
+      clusterIP: 198.51.100.80
+      syntheticAddress: true
+      selector: { app.kubernetes.io/name: api }
+      ports: [{ name: http, port: 8080, targetPort: 8080, protocol: TCP }]
+    title: { en: api Service, ja: api Service, zh-CN: api Service }
+    summary:
+      en: Stable entry whose eligible backend set changes during the rollout.
+      ja: ロールアウト中に利用可能なバックエンド集合が変わる安定した入口です。
+      zh-CN: 在滚动更新期间可用后端集合发生变化的稳定入口。
+    sourceIds: [k8s-services, k8s-labels]
+    visual: { archetype: service, size: lg, group: rollout-traffic }
+
+  - id: api-object:namespaced:shop:EndpointSlice:api-slice
+    category: api-object
+    kind: EndpointSlice
+    name: api-slice
+    namespace: shop
+    labels: { kubernetes.io/service-name: api }
+    status: ready
+    data:
+      addressType: IPv4
+      serviceName: api
+      ports: [{ name: http, port: 8080, protocol: TCP }]
+      endpoints:
+        - address: 192.0.2.71
+          targetRef: api-object:namespaced:shop:Pod:api-v1-a
+          conditions: { ready: true, serving: true, terminating: false }
+        - address: 192.0.2.72
+          targetRef: api-object:namespaced:shop:Pod:api-v1-b
+          conditions: { ready: true, serving: true, terminating: false }
+    title: { en: api EndpointSlice, ja: api EndpointSlice, zh-CN: api EndpointSlice }
+    summary:
+      en: Records the Ready endpoints eligible for ordinary Service traffic.
+      ja: 通常の Service トラフィックで利用可能な Ready endpoint を記録します。
+      zh-CN: 记录可接收普通 Service 流量的 Ready Endpoint。
+    sourceIds: [k8s-endpoint-slices, k8s-probes]
+    visual: { archetype: endpointslice, size: lg, group: rollout-traffic }
+
+relations:
+  - id: deployment-owns-api-v1
+    type: owns
+    from: api-object:namespaced:shop:Deployment:api
+    to: api-object:namespaced:shop:ReplicaSet:api-v1
+    directed: true
+    semantic: ownership
+    title: { en: owns old ReplicaSet, ja: 古い ReplicaSet を所有, zh-CN: 拥有旧 ReplicaSet }
+    sourceIds: [k8s-deployments]
+  - id: api-v1-owns-a
+    type: owns
+    from: api-object:namespaced:shop:ReplicaSet:api-v1
+    to: api-object:namespaced:shop:Pod:api-v1-a
+    directed: true
+    semantic: ownership
+    title: { en: owns v1 Pod A, ja: v1 Pod A を所有, zh-CN: 拥有 v1 Pod A }
+    sourceIds: [k8s-replicasets]
+  - id: api-v1-owns-b
+    type: owns
+    from: api-object:namespaced:shop:ReplicaSet:api-v1
+    to: api-object:namespaced:shop:Pod:api-v1-b
+    directed: true
+    semantic: ownership
+    title: { en: owns v1 Pod B, ja: v1 Pod B を所有, zh-CN: 拥有 v1 Pod B }
+    sourceIds: [k8s-replicasets]
+  - id: api-v1-a-on-worker
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:api-v1-a
+    to: infrastructure:cluster:global:Node:worker-rollout
+    directed: true
+    semantic: placement
+    title: { en: scheduled on worker, ja: worker に配置, zh-CN: 调度到 worker }
+    sourceIds: [k8s-pods, k8s-nodes]
+  - id: api-v1-b-on-worker
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:api-v1-b
+    to: infrastructure:cluster:global:Node:worker-rollout
+    directed: true
+    semantic: placement
+    title: { en: scheduled on worker, ja: worker に配置, zh-CN: 调度到 worker }
+    sourceIds: [k8s-pods, k8s-nodes]
+  - id: rollout-client-on-worker
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:rollout-client
+    to: infrastructure:cluster:global:Node:worker-rollout
+    directed: true
+    semantic: placement
+    title:
+      { en: client scheduled on worker, ja: client を worker に配置, zh-CN: client 调度到 worker }
+    sourceIds: [k8s-pods, k8s-nodes]
+  - id: api-v1-a-contains-container
+    type: contains-runtime
+    from: api-object:namespaced:shop:Pod:api-v1-a
+    to: container-status:shop:Pod:api-v1-a:Container:api
+    directed: true
+    semantic: composition
+    title: { en: contains api container, ja: api コンテナを内包, zh-CN: 包含 api 容器 }
+    sourceIds: [k8s-pods]
+  - id: api-v1-b-contains-container
+    type: contains-runtime
+    from: api-object:namespaced:shop:Pod:api-v1-b
+    to: container-status:shop:Pod:api-v1-b:Container:api
+    directed: true
+    semantic: composition
+    title: { en: contains api container, ja: api コンテナを内包, zh-CN: 包含 api 容器 }
+    sourceIds: [k8s-pods]
+  - id: kubelet-watches-api-v1-a
+    type: watches
+    from: runtime-component:node:worker-rollout:Kubelet:kubelet
+    to: api-object:namespaced:shop:Pod:api-v1-a
+    directed: true
+    semantic: control-observation
+    title: { en: probes containers, ja: コンテナを probe, zh-CN: 探测容器 }
+    sourceIds: [k8s-probes, k8s-components]
+  - id: service-selects-api-v1-a
+    type: selects
+    from: api-object:namespaced:shop:Service:api
+    to: api-object:namespaced:shop:Pod:api-v1-a
+    directed: true
+    semantic: selection
+    title: { en: selector matches v1-a, ja: selector が v1-a に一致, zh-CN: Selector 匹配 v1-a }
+    sourceIds: [k8s-services, k8s-labels]
+  - id: service-selects-api-v1-b
+    type: selects
+    from: api-object:namespaced:shop:Service:api
+    to: api-object:namespaced:shop:Pod:api-v1-b
+    directed: true
+    semantic: selection
+    title: { en: selector matches v1-b, ja: selector が v1-b に一致, zh-CN: Selector 匹配 v1-b }
+    sourceIds: [k8s-services, k8s-labels]
+  - id: endpoint-slice-for-api-service
+    type: contains-endpoint-for
+    from: api-object:namespaced:shop:EndpointSlice:api-slice
+    to: api-object:namespaced:shop:Service:api
+    directed: true
+    semantic: configuration
+    title: { en: endpoints for api, ja: api の endpoint, zh-CN: api 的 Endpoint }
+    sourceIds: [k8s-endpoint-slices, k8s-services]
+  - id: endpoint-slice-references-api-v1-a
+    type: references
+    from: api-object:namespaced:shop:EndpointSlice:api-slice
+    to: api-object:namespaced:shop:Pod:api-v1-a
+    directed: true
+    semantic: endpoint-membership
+    title: { en: Ready v1-a endpoint, ja: Ready v1-a endpoint, zh-CN: Ready v1-a Endpoint }
+    sourceIds: [k8s-endpoint-slices]
+    data: { address: 192.0.2.71, ready: true, serving: true, terminating: false }
+  - id: endpoint-slice-references-api-v1-b
+    type: references
+    from: api-object:namespaced:shop:EndpointSlice:api-slice
+    to: api-object:namespaced:shop:Pod:api-v1-b
+    directed: true
+    semantic: endpoint-membership
+    title: { en: Ready v1-b endpoint, ja: Ready v1-b endpoint, zh-CN: Ready v1-b Endpoint }
+    sourceIds: [k8s-endpoint-slices]
+    data: { address: 192.0.2.72, ready: true, serving: true, terminating: false }

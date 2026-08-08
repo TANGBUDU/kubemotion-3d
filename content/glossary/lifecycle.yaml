@@ -27,3 +27,31 @@ terms:
         zh-CN: 指导 kubelet 重启容器的 Pod 级策略。,
       }
     sourceIds: [k8s-pod-lifecycle]
+  - id: startup-probe
+    term: { en: Startup probe, ja: startup probe, zh-CN: 启动探针 }
+    definition:
+      en: A probe that gates liveness and readiness checks until the application has started.
+      ja: アプリケーションが起動するまで liveness と readiness の検査を待たせる probe です。
+      zh-CN: 在应用启动成功前阻止存活与就绪检查运行的探针。
+    sourceIds: [k8s-probes]
+  - id: readiness-probe
+    term: { en: Readiness probe, ja: readiness probe, zh-CN: 就绪探针 }
+    definition:
+      en: A probe that determines whether a container is ready to accept Service traffic.
+      ja: コンテナが Service トラフィックを受けられるかを判定する probe です。
+      zh-CN: 判断容器是否已准备好接收 Service 流量的探针。
+    sourceIds: [k8s-probes]
+  - id: liveness-probe
+    term: { en: Liveness probe, ja: liveness probe, zh-CN: 存活探针 }
+    definition:
+      en: A probe whose repeated failure can cause kubelet to restart that container.
+      ja: 規定回数の失敗後に kubelet がそのコンテナを再起動できる probe です。
+      zh-CN: 连续失败达到阈值后可使 kubelet 重启该容器的探针。
+    sourceIds: [k8s-probes]
+  - id: rolling-update
+    term: { en: Rolling update, ja: ローリング更新, zh-CN: 滚动更新 }
+    definition:
+      en: A Deployment strategy that gradually scales a new ReplicaSet up and old ReplicaSets down.
+      ja: 新しい ReplicaSet を段階的に増やし、古い ReplicaSet を減らす Deployment 戦略です。
+      zh-CN: 逐步扩展新 ReplicaSet 并缩减旧 ReplicaSet 的 Deployment 策略。
+    sourceIds: [k8s-deployments]

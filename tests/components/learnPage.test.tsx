@@ -6,6 +6,20 @@ import { useAppStore } from '../../src/state/appStore';
 
 const focusedPodId = 'api-object:namespaced:shop:Pod:api-a-old';
 const desktopMatchMedia = window.matchMedia;
+const verifiedLessonHrefs = [
+  '/learn/why-kubernetes-exists/0',
+  '/learn/cluster-overview/0',
+  '/learn/pod-and-container/0',
+  '/learn/pod-and-placement/0',
+  '/learn/deployment-replicaset-and-pods/0',
+  '/learn/manifest-to-running-pod/0',
+  '/learn/pending-and-scheduling/0',
+  '/learn/container-restart-vs-pod-replacement/0',
+  '/learn/labels-and-selectors/0',
+  '/learn/service-routes-to-pods/0',
+  '/learn/dns-and-service-discovery/0',
+  '/learn/probes-and-rolling-update/0',
+] as const;
 
 vi.mock('../../src/components/SceneViewport', () => ({
   SceneViewport: ({
@@ -78,14 +92,17 @@ describe('LearnPage lesson information architecture', () => {
     ).toHaveLength(10);
   });
 
-  it('lists only verified lessons after the course drawer is explicitly opened', () => {
+  it('lists all twelve verified lessons in foundation order after the drawer is opened', () => {
     renderLesson();
     fireEvent.click(screen.getByRole('button', { name: /open course contents/i }));
-    expect(screen.getByRole('dialog', { name: /Kubernetes Foundations/i })).toBeVisible();
+    const drawer = screen.getByRole('dialog', { name: /Kubernetes Foundations/i });
+    expect(drawer).toBeVisible();
+    expect(within(drawer).getByText('12 verified lessons')).toBeVisible();
     expect(
-      screen.getByRole('link', { name: /Container restart is not Pod replacement/i }),
-    ).toBeVisible();
-    expect(screen.queryByRole('link', { name: /Probes/i })).not.toBeInTheDocument();
+      within(drawer)
+        .getAllByRole('link')
+        .map((link) => link.getAttribute('href')),
+    ).toEqual(verifiedLessonHrefs);
   });
 
   it('keeps the inspector secondary until a scene object is selected', () => {

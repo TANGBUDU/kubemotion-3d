@@ -148,16 +148,28 @@ for (const file of lessonFiles) {
 }
 
 const available = course.lessons.filter((entry) => entry.status === 'available');
-const expectedMigratedLessonIds = [
+const expectedAvailableLessonIds = [
+  'why-kubernetes-exists',
   'cluster-overview',
+  'pod-and-container',
   'pod-and-placement',
+  'deployment-replicaset-and-pods',
   'manifest-to-running-pod',
-  'service-routes-to-pods',
+  'pending-and-scheduling',
   'container-restart-vs-pod-replacement',
+  'labels-and-selectors',
+  'service-routes-to-pods',
+  'dns-and-service-discovery',
+  'probes-and-rolling-update',
 ] as const;
 check(
-  JSON.stringify(available.map((entry) => entry.id)) === JSON.stringify(expectedMigratedLessonIds),
-  'course.yaml: M7 must publish exactly the five migrated lessons in foundation-first order',
+  JSON.stringify(available.map((entry) => entry.id)) === JSON.stringify(expectedAvailableLessonIds),
+  'course.yaml: M8 must publish exactly twelve interactive lessons in foundation-first order',
+);
+check(course.lessons.length === 22, 'course.yaml: the catalog must retain exactly 22 lessons');
+check(
+  course.lessons.length - available.length === 10,
+  'course.yaml: M8 must retain exactly ten explicitly planned lessons',
 );
 for (const entry of available)
   check(v2Lessons.has(entry.id), `${entry.id}: available lessons must use schemaVersion 2`);

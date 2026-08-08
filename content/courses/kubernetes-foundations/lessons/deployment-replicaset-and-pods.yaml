@@ -1,0 +1,525 @@
+schemaVersion: 2
+id: deployment-replicaset-and-pods
+scenarioId: container-restart-golden
+chapterId: workloads-self-healing
+title:
+  en: Deployment, ReplicaSet, and Pods
+  ja: Deployment・ReplicaSet・Pod
+  zh-CN: Deployment、ReplicaSet 与 Pod
+summary:
+  en: Read the ownership chain from an application blueprint to replica counters and replaceable Pod identities.
+  ja: アプリケーション設計図からレプリカカウンター、交換可能な Pod ID までの所有関係を読み取ります。
+  zh-CN: 读懂从应用蓝图到副本计数，再到可替换 Pod 身份的所有权链路。
+learningOutcome:
+  en: Explain how a Deployment owns a ReplicaSet, how the ReplicaSet counts Pods, and how a controller creates a replacement when current count falls below the target.
+  ja: Deployment が ReplicaSet を所有し、ReplicaSet が Pod を数え、現在数が目標を下回ると controller が置換を作成する仕組みを説明する。
+  zh-CN: 解释 Deployment 如何拥有 ReplicaSet、ReplicaSet 如何统计 Pod，以及当前数量低于目标时控制器如何创建替换对象。
+prerequisites: [pod-and-placement]
+sourceIds:
+  - k8s-deployments
+  - k8s-replicasets
+  - k8s-replicaset-api
+  - k8s-pods
+  - k8s-pod-lifecycle
+  - k8s-components
+  - k8s-api
+verifiedAt: '2026-08-08'
+baseView:
+  view: logical
+  cameraPresetId: logical
+  resetEntities: true
+  entityRules: []
+  relationRules: []
+  activeRoutes: []
+
+steps:
+  - id: deployment-blueprint
+    title:
+      en: Deployment is the application blueprint
+      ja: Deployment はアプリケーション設計図
+      zh-CN: Deployment 是应用蓝图
+    learningOutcome:
+      en: Locate the replica target and rollout strategy on the Deployment object.
+      ja: Deployment オブジェクト上のレプリカ目標とロールアウト戦略を見つける。
+      zh-CN: 在 Deployment 对象上找到副本目标与发布策略。
+    narration:
+      en: The api Deployment declares three desired replicas, image version v1, and a RollingUpdate strategy. It describes the application target; it is not itself one of the running application processes.
+      ja: api Deployment は desired replicas 3、image version v1、RollingUpdate 戦略を宣言します。これはアプリケーションの目標を表し、それ自体が実行中のアプリケーションプロセスではありません。
+      zh-CN: api Deployment 声明期望副本数 3、镜像版本 v1 与 RollingUpdate 策略。它描述应用目标，本身并不是某个正在运行的应用进程。
+    teaching:
+      whatChanged:
+        en: No API state changed; the logical view isolated the Deployment and exposed its desired replica target.
+        ja: API 状態は変化せず、論理ビューで Deployment を分離し、望ましいレプリカ目標を表示しました。
+        zh-CN: API 状态没有变化；逻辑视图单独展示 Deployment 及其期望副本目标。
+      whyItHappened:
+        en: The declarative blueprint must be understood before following the controller objects that implement it.
+        ja: それを実装する controller オブジェクトをたどる前に、宣言的な設計図を理解する必要があるためです。
+        zh-CN: 因为在追踪实现目标的控制对象前，必须先理解声明式蓝图。
+      takeaway:
+        en: A Deployment records the application rollout target, not a physical Pod location.
+        ja: Deployment が記録するのはアプリケーションのロールアウト目標であり、Pod の物理配置ではありません。
+        zh-CN: Deployment 记录的是应用发布目标，而不是 Pod 的物理位置。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:namespaced:shop:Deployment:api
+    introducesTerms: [deployment, desired-state]
+    usesTerms: [deployment, desired-state]
+    sourceIds: [k8s-deployments, k8s-objects]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:Deployment:api] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules: []
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: api-object:namespaced:shop:Deployment:api
+          durationMs: 600
+
+  - id: deployment-owns-replicaset
+    title:
+      en: Deployment owns a ReplicaSet
+      ja: Deployment は ReplicaSet を所有する
+      zh-CN: Deployment 拥有 ReplicaSet
+    learningOutcome:
+      en: Follow the first ownership edge from Deployment to ReplicaSet.
+      ja: Deployment から ReplicaSet への最初の所有関係をたどる。
+      zh-CN: 沿第一条所有权连线从 Deployment 追踪到 ReplicaSet。
+    narration:
+      en: The api Deployment owns api-rs. During this revision, the ReplicaSet is the controller-facing record that maintains the requested number of matching Pods.
+      ja: api Deployment は api-rs を所有します。この revision では、ReplicaSet が一致する Pod の要求数を維持する controller 向け記録です。
+      zh-CN: api Deployment 拥有 api-rs。在当前 revision 中，ReplicaSet 是负责维持匹配 Pod 数量的控制记录。
+    teaching:
+      whatChanged:
+        en: No object changed; the ReplicaSet and directed Deployment-to-ReplicaSet ownership edge became visible.
+        ja: オブジェクトは変化せず、ReplicaSet と Deployment から ReplicaSet への有向所有関係を表示しました。
+        zh-CN: 对象没有变化；ReplicaSet 与从 Deployment 指向 ReplicaSet 的有向所有权连线现在可见。
+      whyItHappened:
+        en: A Deployment manages rollout revisions through ReplicaSets instead of owning every runtime Container directly.
+        ja: Deployment は各ランタイム Container を直接所有せず、ReplicaSet を通じて rollout revision を管理するためです。
+        zh-CN: 因为 Deployment 通过 ReplicaSet 管理发布版本，而不是直接拥有每个运行时容器。
+      takeaway:
+        en: The ownership chain begins Deployment → ReplicaSet.
+        ja: 所有関係は Deployment → ReplicaSet から始まります。
+        zh-CN: 所有权链从 Deployment → ReplicaSet 开始。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:namespaced:shop:Deployment:api
+        - api-object:namespaced:shop:ReplicaSet:api-rs
+    introducesTerms: [replicaset]
+    usesTerms: [deployment, replicaset, desired-state]
+    sourceIds: [k8s-deployments, k8s-replicasets]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:Deployment:api] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:ReplicaSet:api-rs] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules:
+        - byIds: [api-deployment-owns-api-replicaset]
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: relation-reveal
+          relationId: api-deployment-owns-api-replicaset
+          durationMs: 650
+
+  - id: replicaset-counters
+    title:
+      en: SPEC, OBSERVED, and READY answer different questions
+      ja: SPEC・OBSERVED・READY は別の問いに答える
+      zh-CN: SPEC、OBSERVED 与 READY 回答不同问题
+    learningOutcome:
+      en: Read the desired, current, and ready replica counts separately.
+      ja: 望ましいレプリカ数、現在数、Ready 数を分けて読み取る。
+      zh-CN: 分别读取期望、当前与就绪副本计数。
+    narration:
+      en: api-rs reports SPEC 3, OBSERVED 3, and READY 3. SPEC is the target, OBSERVED is the current number represented by the ReplicaSet, and READY is the subset currently reporting readiness.
+      ja: api-rs は SPEC 3、OBSERVED 3、READY 3 を報告します。SPEC は目標、OBSERVED は ReplicaSet が表す現在数、READY はそのうち Ready を報告する数です。
+      zh-CN: api-rs 显示 SPEC 3、OBSERVED 3 与 READY 3。SPEC 是目标，OBSERVED 是 ReplicaSet 当前表示的数量，READY 是其中报告就绪的子集。
+    teaching:
+      whatChanged:
+        en: No replica count changed; the expanded ReplicaSet evidence card exposed all three counters together.
+        ja: レプリカ数は変化せず、展開した ReplicaSet evidence card に三つのカウンターを同時表示しました。
+        zh-CN: 副本计数没有变化；展开的 ReplicaSet 证据卡同时显示三个计数。
+      whyItHappened:
+        en: Keeping target, current count, and readiness separate makes later deficits and startup delays factual rather than inferred.
+        ja: 目標、現在数、Ready 数を分けると、後の不足や起動遅延を推測ではなく事実として確認できるためです。
+        zh-CN: 因为把目标、当前数量与就绪数量分开，后续的缺口和启动延迟才能以事实呈现，而不是靠猜测。
+      takeaway:
+        en: A current Pod can exist without being Ready, so OBSERVED and READY need not be equal.
+        ja: 現在の Pod は存在しても Ready とは限らず、OBSERVED と READY は同じとは限りません。
+        zh-CN: 一个当前存在的 Pod 不一定已经 Ready，因此 OBSERVED 与 READY 不必相等。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:namespaced:shop:ReplicaSet:api-rs
+    introducesTerms: []
+    usesTerms: [replicaset, desired-state]
+    sourceIds: [k8s-replicasets, k8s-replicaset-api]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:ReplicaSet:api-rs] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules: []
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          durationMs: 600
+
+  - id: replicaset-owns-pod-slots
+    title:
+      en: ReplicaSet owns replaceable Pod slots
+      ja: ReplicaSet は交換可能な Pod スロットを所有する
+      zh-CN: ReplicaSet 拥有可替换的 Pod 槽位
+    learningOutcome:
+      en: Map OBSERVED 3 to three distinct owned Pod identities.
+      ja: OBSERVED 3 を所有される三つの異なる Pod ID に対応付ける。
+      zh-CN: 将 OBSERVED 3 映射到三个不同的受控 Pod 身份。
+    narration:
+      en: api-rs owns api-7f8d9-a, api-7f8d9-b, and api-7f8d9-c. The ownership edges explain which objects satisfy the replica count; their separate names and UIDs show that the Pods are replaceable identities, not one object drawn three times.
+      ja: api-rs は api-7f8d9-a、api-7f8d9-b、api-7f8d9-c を所有します。所有関係はどのオブジェクトがレプリカ数を満たすかを示し、別々の名前と UID は一つのオブジェクトを三回描いたのではなく、交換可能な Pod ID であることを示します。
+      zh-CN: api-rs 拥有 api-7f8d9-a、api-7f8d9-b 与 api-7f8d9-c。所有权连线说明哪些对象满足副本计数；不同名称与 UID 表明它们是可替换的 Pod 身份，而不是把同一个对象画了三遍。
+    teaching:
+      whatChanged:
+        en: No workload state changed; three Pod cards and the ReplicaSet-to-Pod ownership edges became visible.
+        ja: ワークロード状態は変化せず、三つの Pod card と ReplicaSet から Pod への所有関係を表示しました。
+        zh-CN: 工作负载状态没有变化；三个 Pod 卡片及 ReplicaSet→Pod 所有权连线现在可见。
+      whyItHappened:
+        en: The model must connect an abstract replica count to concrete API object identities.
+        ja: 抽象的なレプリカ数を具体的な API オブジェクト ID に結び付ける必要があるためです。
+        zh-CN: 因为模型必须把抽象副本计数与具体 API 对象身份连接起来。
+      takeaway:
+        en: ReplicaSet maintains a count by owning multiple distinct Pods.
+        ja: ReplicaSet は複数の異なる Pod を所有して数を維持します。
+        zh-CN: ReplicaSet 通过拥有多个独立 Pod 来维持数量。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:namespaced:shop:ReplicaSet:api-rs
+        - api-object:namespaced:shop:Pod:api-a-old
+        - api-object:namespaced:shop:Pod:api-b
+        - api-object:namespaced:shop:Pod:api-c
+    introducesTerms: [pod]
+    usesTerms: [replicaset, pod]
+    sourceIds: [k8s-replicasets, k8s-pods]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:ReplicaSet:api-rs] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: compact
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-a-old] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: compact
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:api-b
+              - api-object:namespaced:shop:Pod:api-c
+          visible: true
+          emphasis: normal
+          labelMode: short
+      relationRules:
+        - byIds: [owns-api-a-old, owns-api-b, owns-api-c]
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: layout-transition
+          entityIds:
+            - api-object:namespaced:shop:ReplicaSet:api-rs
+            - api-object:namespaced:shop:Pod:api-a-old
+            - api-object:namespaced:shop:Pod:api-b
+            - api-object:namespaced:shop:Pod:api-c
+          durationMs: 700
+
+  - id: replica-deficit
+    title:
+      en: Losing one Pod creates a replica deficit
+      ja: 一つの Pod の消失がレプリカ不足を作る
+      zh-CN: 一个 Pod 消失会产生副本缺口
+    learningOutcome:
+      en: Compare unchanged SPEC 3 with OBSERVED 2 and READY 2.
+      ja: 変わらない SPEC 3 と OBSERVED 2、READY 2 を比較する。
+      zh-CN: 比较保持不变的 SPEC 3 与 OBSERVED 2、READY 2。
+    narration:
+      en: api-7f8d9-a is removed. The ReplicaSet still targets three replicas, but only api-7f8d9-b and api-7f8d9-c remain, so OBSERVED and READY both fall to 2.
+      ja: api-7f8d9-a が削除されます。ReplicaSet の目標は三レプリカのままですが、api-7f8d9-b と api-7f8d9-c だけが残り、OBSERVED と READY はともに 2 へ下がります。
+      zh-CN: api-7f8d9-a 被移除。ReplicaSet 的目标仍是三个副本，但只剩 api-7f8d9-b 与 api-7f8d9-c，因此 OBSERVED 和 READY 都降为 2。
+    teaching:
+      whatChanged:
+        en: One owned Pod and its Container status disappeared; ReplicaSet OBSERVED and READY changed from 3 to 2 while SPEC remained 3.
+        ja: 所有されていた一つの Pod と Container 状態が消え、ReplicaSet の SPEC は 3 のまま、OBSERVED と READY が 3 から 2 に変わりました。
+        zh-CN: 一个受控 Pod 及其容器状态消失；ReplicaSet 的 SPEC 保持 3，而 OBSERVED 与 READY 从 3 变为 2。
+      whyItHappened:
+        en: Ownership lost one concrete member, while the declarative target stored on the ReplicaSet did not change.
+        ja: 所有関係から具体的なメンバーが一つ失われましたが、ReplicaSet に保存された宣言目標は変化しなかったためです。
+        zh-CN: 因为所有集合失去一个具体成员，而 ReplicaSet 中保存的声明目标没有变化。
+      takeaway:
+        en: The counter mismatch is the factual input to reconciliation.
+        ja: カウンターの不一致が調整処理への事実入力になります。
+        zh-CN: 计数不一致就是协调循环的事实输入。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - api-object:namespaced:shop:ReplicaSet:api-rs
+        - api-object:namespaced:shop:Pod:api-a-old
+    introducesTerms: []
+    usesTerms: [desired-state, replicaset, pod]
+    sourceIds: [k8s-replicasets, k8s-replicaset-api, k8s-pods]
+    worldPatch:
+      operations:
+        - { op: remove-relation, relationId: owns-api-a-old }
+        - { op: remove-relation, relationId: scheduled-api-a-old }
+        - { op: remove-relation, relationId: contains-api-a-old-container-api }
+        - { op: remove-relation, relationId: api-exposes-api-a-old }
+        - { op: remove-entity, entityId: container-status:shop:Pod:api-a-old:Container:api }
+        - { op: remove-entity, entityId: api-object:namespaced:shop:Pod:api-a-old }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          patch:
+            data: { specReplicas: 3, statusReplicas: 2, readyReplicas: 2 }
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:ReplicaSet:api-rs] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:api-b
+              - api-object:namespaced:shop:Pod:api-c
+          visible: true
+          emphasis: normal
+          labelMode: short
+      relationRules:
+        - byIds: [owns-api-b, owns-api-c]
+          visible: true
+          emphasis: normal
+      activeRoutes: []
+    transition:
+      cues:
+        - type: entity-exit
+          entityId: api-object:namespaced:shop:Pod:api-a-old
+          durationMs: 700
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          field: data.statusReplicas
+          from: 3
+          to: 2
+          delayMs: 420
+          durationMs: 480
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          field: data.readyReplicas
+          from: 3
+          to: 2
+          delayMs: 420
+          durationMs: 480
+
+  - id: controller-creates-new-pod
+    title:
+      en: The controller fills the empty slot with a new Pod
+      ja: controller が新しい Pod で空きスロットを埋める
+      zh-CN: 控制器用新 Pod 填补空槽位
+    learningOutcome:
+      en: Verify that reconciliation creates a new Pod identity and restores OBSERVED before READY.
+      ja: 調整によって新しい Pod ID が作られ、READY より先に OBSERVED が戻ることを確認する。
+      zh-CN: 验证协调会创建新的 Pod 身份，并先恢复 OBSERVED、再等待 READY。
+    narration:
+      en: The ReplicaSet controller observes the deficit through the Kubernetes API and creates api-7f8d9-d. The new Pod is Pending, so OBSERVED returns to 3 while READY remains 2; it replaces the slot, not the deleted Pod UID.
+      ja: ReplicaSet controller は Kubernetes API 経由で不足を観測し、api-7f8d9-d を作成します。新しい Pod は Pending のため、OBSERVED は 3 に戻っても READY は 2 のままです。置き換わるのはスロットであり、削除された Pod UID ではありません。
+      zh-CN: ReplicaSet 控制器通过 Kubernetes API 观察到缺口并创建 api-7f8d9-d。新 Pod 处于 Pending，因此 OBSERVED 恢复到 3，READY 仍为 2；被补回的是副本槽位，而不是已删除的 Pod UID。
+    teaching:
+      whatChanged:
+        en: A new Pending Pod and waiting Container status were created, a new ownership edge appeared, and OBSERVED rose from 2 to 3.
+        ja: 新しい Pending Pod と waiting Container 状態が作られ、新しい所有関係が現れ、OBSERVED は 2 から 3 に増えました。
+        zh-CN: 新的 Pending Pod 与 waiting 容器状态被创建，新的所有权连线出现，OBSERVED 从 2 升至 3。
+      whyItHappened:
+        en: The ReplicaSet controller reconciles the current owned count toward SPEC through API-mediated actions.
+        ja: ReplicaSet controller が API を介した操作で現在の所有数を SPEC へ調整するためです。
+        zh-CN: 因为 ReplicaSet 控制器通过 API 中介操作，使当前受控数量趋近 SPEC。
+      takeaway:
+        en: Deployment → ReplicaSet → Pod is an ownership chain with replaceable Pod identities.
+        ja: Deployment → ReplicaSet → Pod は、交換可能な Pod ID を持つ所有関係です。
+        zh-CN: Deployment → ReplicaSet → Pod 是一条包含可替换 Pod 身份的所有权链。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - runtime-component:cluster:global:ControllerManager:kube-controller-manager
+        - api-object:namespaced:shop:ReplicaSet:api-rs
+        - api-object:namespaced:shop:Pod:api-d-new
+    introducesTerms: [controller]
+    usesTerms: [controller, deployment, replicaset, pod, desired-state]
+    sourceIds: [k8s-components, k8s-api, k8s-replicasets, k8s-pods, k8s-pod-lifecycle]
+    worldPatch:
+      operations:
+        - op: add-entity
+          entity:
+            id: api-object:namespaced:shop:Pod:api-d-new
+            category: api-object
+            kind: Pod
+            name: api-7f8d9-d
+            namespace: shop
+            labels: { app.kubernetes.io/name: api }
+            status: pending
+            data:
+              uid: synthetic-uid-new-d1
+              phase: Pending
+              restartPolicy: Always
+              conditions:
+                podScheduled: false
+                initialized: true
+                containersReady: false
+                ready: false
+            title: { en: api-7f8d9-d Pod, ja: api-7f8d9-d Pod, zh-CN: api-7f8d9-d Pod }
+            summary:
+              en: Newly created replacement Pod awaiting Node assignment.
+              ja: Node への割り当てを待つ、新しく作成された置換 Pod です。
+              zh-CN: 新创建、正在等待 Node 分配的替换 Pod。
+            sourceIds: [k8s-pods, k8s-pod-lifecycle, k8s-replicasets]
+            visual: { archetype: pod, size: md, group: api }
+        - op: add-entity
+          entity:
+            id: container-status:shop:Pod:api-d-new:Container:api
+            category: runtime-status
+            kind: Container
+            name: api
+            namespace: shop
+            status: waiting
+            data:
+              podId: api-object:namespaced:shop:Pod:api-d-new
+              name: api
+              image: registry.example.invalid/shop/api:v1
+              restartCount: 0
+              ready: false
+              started: false
+              state: { kind: waiting, reason: Pending }
+            title:
+              en: api Container · api-7f8d9-d
+              ja: api Container · api-7f8d9-d
+              zh-CN: api 容器 · api-7f8d9-d
+            summary:
+              en: Container status waiting for Node assignment and startup.
+              ja: Node 割り当てと起動を待つ Container 状態です。
+              zh-CN: 等待 Node 分配与启动的容器状态。
+            sourceIds: [k8s-pods, k8s-pod-lifecycle]
+            visual: { archetype: container, size: sm, group: api-d-new }
+        - op: add-relation
+          relation:
+            id: owns-api-d-new
+            type: owns
+            from: api-object:namespaced:shop:ReplicaSet:api-rs
+            to: api-object:namespaced:shop:Pod:api-d-new
+            directed: true
+            semantic: ownership
+            title: { en: owns, ja: 所有, zh-CN: 拥有 }
+            sourceIds: [k8s-replicasets]
+        - op: add-relation
+          relation:
+            id: contains-api-d-new-container-api
+            type: contains-runtime
+            from: api-object:namespaced:shop:Pod:api-d-new
+            to: container-status:shop:Pod:api-d-new:Container:api
+            directed: true
+            semantic: composition
+            title: { en: contains Container status, ja: Container 状態を含む, zh-CN: 包含容器状态 }
+            sourceIds: [k8s-pods]
+        - op: add-relation
+          relation:
+            id: api-exposes-api-d-new
+            type: references
+            from: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+            to: api-object:namespaced:shop:Pod:api-d-new
+            directed: true
+            semantic: control-observation
+            title:
+              en: exposes Pod API object
+              ja: Pod API オブジェクトを公開
+              zh-CN: 提供 Pod API 对象
+            sourceIds: [k8s-api, k8s-pods]
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          patch:
+            data: { specReplicas: 3, statusReplicas: 3, readyReplicas: 2 }
+    viewPatch:
+      view: control-flow
+      cameraPresetId: control-flow
+      resetEntities: true
+      entityRules:
+        - selector:
+            { byIds: [runtime-component:cluster:global:ControllerManager:kube-controller-manager] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: compact
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - api-object:namespaced:shop:ReplicaSet:api-rs
+              - api-object:namespaced:shop:Pod:api-d-new
+          visible: true
+          emphasis: normal
+          labelMode: full
+      relationRules:
+        - byIds: [controller-watches-api-server, api-exposes-api-rs, api-exposes-api-d-new]
+          visible: true
+          emphasis: normal
+        - byIds: [owns-api-d-new]
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: entity-enter
+          entityId: api-object:namespaced:shop:Pod:api-d-new
+          durationMs: 700
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          field: data.statusReplicas
+          from: 2
+          to: 3
+          delayMs: 700
+          durationMs: 480
