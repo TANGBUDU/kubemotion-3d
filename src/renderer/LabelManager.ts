@@ -50,15 +50,24 @@ interface ProjectedLabel {
 const VIEWPORT_PADDING = 4;
 const HORIZONTAL_GAP = 8;
 const VERTICAL_GAP = 5;
-const CRITICAL_PRIORITY = 80;
+const MOBILE_BREAKPOINT = 720;
+const ZONE_HEADING_PRIORITY = 120;
+const ACTIVE_PENDING_TRAY_PRIORITY = 115;
+const FOCUSED_ENTITY_PRIORITY = 110;
+const ACTIVE_ROUTE_PRIORITY = 105;
+const SELECTED_ENTITY_PRIORITY = 100;
+const CRITICAL_PRIORITY = SELECTED_ENTITY_PRIORITY;
 const DESKTOP_LABEL_LIMIT = 7;
 const MOBILE_LABEL_LIMIT = 3;
 const DESKTOP_ROUTE_LABEL_LIMIT = 3;
 const MOBILE_ROUTE_LABEL_LIMIT = 1;
 
 const labelPriority = (kind: string, emphasis: string, selected: boolean): number => {
-  if (selected) return 100;
-  if (emphasis === 'focused') return 80;
+  // These authored classes deliberately outrank every kind-specific context score.
+  // Their ordering follows the directive: zone > focus > active route > selection > context.
+  if (emphasis === 'focused') return FOCUSED_ENTITY_PRIORITY;
+  if (selected) return SELECTED_ENTITY_PRIORITY;
+  if (emphasis === 'dimmed') return 8;
   if (kind === 'Cluster') return 82;
   if (kind === 'KubeAPIServer' || kind === 'ApiServer' || kind === 'APIServer') return 72;
   if (kind === 'Etcd') return 70;
@@ -75,7 +84,6 @@ const labelPriority = (kind: string, emphasis: string, selected: boolean): numbe
   if (kind === 'Pod') return 54;
   if (kind === 'Kubelet') return 48;
   if (kind === 'Kubectl' || kind === 'Developer' || kind === 'Browser') return 61;
-  if (emphasis === 'dimmed') return 8;
   return 30;
 };
 
@@ -316,13 +324,24 @@ export class LabelManager {
       record.element.textContent = entityLabelText(handle, state);
       record.element.dataset.mode = state.labelMode;
       record.element.dataset.emphasis = state.emphasis;
-      record.priority =
-        labelPriority(entity.kind, state.emphasis, handle.root.userData.selected === true) +
-        (state.labelMode === 'full' ? 9 : 0);
+      record.priority = labelPriority(
+        entity.kind,
+        state.emphasis,
+        handle.root.userData.selected === true,
+      );
       record.element.dataset.priority = String(record.priority);
       record.element.hidden = false;
       delete record.element.dataset.hiddenReason;
     }
+    const hasVisiblePendingPod = [...registry.values()].some((handle) => {
+      const state = view.entityStates[handle.entityId];
+      return (
+        state?.visible === true &&
+        state.emphasis !== 'hidden' &&
+        handle.entity.kind === 'Pod' &&
+        (handle.entity.status === 'pending' || handle.entity.data.phase === 'Pending')
+      );
+    });
     const layoutLabels = typeof registry.layoutLabels === 'function' ? registry.layoutLabels() : [];
     for (const anchor of layoutLabels) {
       active.add(anchor.id);
@@ -347,7 +366,12 @@ export class LabelManager {
       record.entityId = undefined;
       record.worldPosition ??= new THREE.Vector3();
       record.worldPosition.set(...anchor.worldPosition);
-      record.priority = anchor.kind === 'zone-title' ? 76 : 64;
+      record.priority =
+        anchor.kind === 'zone-title'
+          ? ZONE_HEADING_PRIORITY
+          : anchor.kind === 'tray-title' && hasVisiblePendingPod
+            ? ACTIVE_PENDING_TRAY_PRIORITY
+            : 64;
       record.element.className = `scene-label scene-layout-label scene-${anchor.kind}`;
       record.element.lang = locale;
       record.element.textContent = anchor.text;
@@ -379,7 +403,7 @@ export class LabelManager {
             key,
             element,
             source: 'route',
-            priority: 78,
+            priority: ACTIVE_ROUTE_PRIORITY,
             entityId: undefined,
             worldPosition: new THREE.Vector3(),
           };
@@ -391,7 +415,7 @@ export class LabelManager {
         record.worldPosition.copy(
           handle.plan.markers[hop.index]?.position ?? samplePolyline(hop.points, 0.5),
         );
-        record.priority = 78 - hop.index;
+        record.priority = Math.max(SELECTED_ENTITY_PRIORITY + 1, ACTIVE_ROUTE_PRIORITY - hop.index);
         record.element.className = 'scene-label scene-route-label';
         record.element.lang = locale;
         record.element.textContent = label;
@@ -419,6 +443,7 @@ export class LabelManager {
     width: number,
     height: number,
     requestedSafeRect?: LabelSafeRect,
+    avoidanceRects: readonly LabelSafeRect[] = [],
   ): void {
     if (!this.view) return;
     const safe = normalizeSafeRect(width, height, requestedSafeRect);
@@ -497,9 +522,31 @@ export class LabelManager {
     }
 
     const accepted: Array<{ readonly label: ProjectedLabel; readonly rect: LayoutRect }> = [];
-    const maximumVisibleEntities = width <= 600 ? MOBILE_LABEL_LIMIT : DESKTOP_LABEL_LIMIT;
-    const maximumVisibleRoutes =
-      width <= 600 ? MOBILE_ROUTE_LABEL_LIMIT : DESKTOP_ROUTE_LABEL_LIMIT;
+    const avoidance = avoidanceRects.flatMap((rect): LayoutRect[] => {
+      if (
+        !Number.isFinite(rect.x) ||
+        !Number.isFinite(rect.y) ||
+        !Number.isFinite(rect.width) ||
+        !Number.isFinite(rect.height) ||
+        rect.width <= 0 ||
+        rect.height <= 0
+      ) {
+        return [];
+      }
+      return [
+        {
+          ...rect,
+          left: rect.x,
+          right: rect.x + rect.width,
+          top: rect.y,
+          bottom: rect.y + rect.height,
+        },
+      ];
+    });
+    const isMobile = width <= MOBILE_BREAKPOINT;
+    const mobileLabelLimit = Math.max(0, MOBILE_LABEL_LIMIT - avoidance.length);
+    const maximumVisibleEntities = isMobile ? MOBILE_LABEL_LIMIT : DESKTOP_LABEL_LIMIT;
+    const maximumVisibleRoutes = isMobile ? MOBILE_ROUTE_LABEL_LIMIT : DESKTOP_ROUTE_LABEL_LIMIT;
     projected
       .sort(
         (left, right) =>
@@ -509,6 +556,28 @@ export class LabelManager {
       )
       .forEach((candidate) => {
         const critical = candidate.record.priority >= CRITICAL_PRIORITY;
+        const acceptedZoneHeadingCount = accepted.filter(
+          (current) =>
+            current.label.record.source === 'layout' &&
+            current.label.record.element.dataset.layoutKind === 'zone-title',
+        ).length;
+        // The mobile ceiling is shared by entity, layout, and route labels. Separate
+        // per-source ceilings let layout labels escape the density budget. One zone heading is
+        // enough to orient a narrow teaching view; the remaining slots preserve object identity
+        // and the active route instead of repeating three region titles.
+        if (isMobile && accepted.length >= mobileLabelLimit) {
+          hideRecord(candidate.record, 'density');
+          return;
+        }
+        if (
+          isMobile &&
+          candidate.record.source === 'layout' &&
+          candidate.record.element.dataset.layoutKind === 'zone-title' &&
+          acceptedZoneHeadingCount >= 1
+        ) {
+          hideRecord(candidate.record, 'density');
+          return;
+        }
         const acceptedEntityCount = accepted.filter(
           (current) => current.label.record.source === 'entity',
         ).length;
@@ -540,6 +609,7 @@ export class LabelManager {
           .find(
             (rect) =>
               rectInside(rect, safe) &&
+              !avoidance.some((obstacle) => rectsOverlap(obstacle, rect)) &&
               !accepted.some((current) => rectsOverlap(current.rect, rect)) &&
               !protectedCenters.some((center) => rectContainsPoint(rect, center)),
           );

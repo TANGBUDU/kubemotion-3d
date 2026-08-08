@@ -1,5 +1,5 @@
-import { Box, Filter, Search, X } from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import { Box, Filter, RotateCcw, Search, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { ui } from '../app/i18n';
 import type { Locale } from '../app/types';
@@ -8,7 +8,10 @@ import { lessonById, scenario, sources } from '../content/loader';
 import { courseEngine } from '../course/CourseEngine';
 import { createExploreProjection } from '../course/exploreProjection';
 import type { CompiledStep, ViewMode } from '../course/types';
+import type { SceneCameraMode } from '../renderer/SceneController';
 import { useAppStore } from '../state/appStore';
+import { SceneLegend } from '../ui/lesson/SceneLegend';
+import { useMediaQuery } from '../ui/lesson/useMediaQuery';
 import type { EntityStatus } from '../world/types';
 
 const views: ViewMode[] = [
@@ -19,6 +22,16 @@ const views: ViewMode[] = [
   'traffic',
   'storage',
 ];
+
+const exploreSafeExclusionSelectors = [
+  '.app-header',
+  '.explore-tools',
+  '.inspector',
+  '.view-tabs',
+  '.explore-camera-controls',
+  '.scene-legend',
+  '.scene-caption',
+] as const;
 
 const exploreCopy: Record<
   Locale,
@@ -33,19 +46,27 @@ const exploreCopy: Record<
     betaNote: string;
     closeInspector: string;
     labels: string;
+    cameraProjection: string;
+    orthographic: string;
+    perspective: string;
+    resetCamera: string;
     sceneLabel: (view: string) => string;
     sceneCaption: (view: string) => string;
     viewLabels: Readonly<Record<ViewMode, string>>;
   }
 > = {
   en: {
+    cameraProjection: 'Camera projection',
+    orthographic: 'Orthographic',
+    perspective: 'Perspective',
+    resetCamera: 'Reset camera',
     panelTitle: 'GOLDEN WORLD',
     filters: 'FILTERS',
     kind: 'Kind',
     namespace: 'Namespace',
     status: 'Status',
     inspectObject: 'Inspect an object',
-    chooseObject: 'Choose an object…',
+    chooseObject: 'Choose object…',
     betaNote: 'Matches stay focused while one-hop owners and Nodes remain dimmed.',
     closeInspector: 'Close inspector',
     labels: 'Labels',
@@ -61,6 +82,10 @@ const exploreCopy: Record<
     },
   },
   ja: {
+    cameraProjection: 'カメラ投影',
+    orthographic: '正投影',
+    perspective: '透視投影',
+    resetCamera: 'カメラをリセット',
     panelTitle: 'ゴールデン WORLD',
     filters: 'フィルター',
     kind: 'Kind',
@@ -83,6 +108,10 @@ const exploreCopy: Record<
     },
   },
   'zh-CN': {
+    cameraProjection: '相机投影',
+    orthographic: '正交',
+    perspective: '透视',
+    resetCamera: '重置相机',
     panelTitle: '黄金 WORLD',
     filters: '筛选条件',
     kind: 'Kind',
@@ -117,17 +146,28 @@ export function ExplorePage() {
   const selectEntity = useAppStore((state) => state.selectEntity);
   const reducedMotion = useAppStore((state) => state.reducedMotion);
   const enterExplore = useAppStore((state) => state.enterExplore);
+  const [cameraMode, setCameraMode] = useState<SceneCameraMode>('orthographic');
+  const [cameraResetId, setCameraResetId] = useState(0);
+  const isMobile = useMediaQuery('(max-width: 720px)');
+  const [sceneViewportClass, setSceneViewportClass] = useState<'mobile' | 'desktop'>(() =>
+    isMobile ? 'mobile' : 'desktop',
+  );
   const objectPickerRef = useRef<HTMLSelectElement>(null);
   const inspectorCloseRef = useRef<HTMLButtonElement>(null);
   const lesson = lessonById.get('container-restart-vs-pod-replacement');
   const compiled = useMemo(
-    () => (lesson ? courseEngine.compileLesson(lesson, scenario) : undefined),
-    [lesson],
+    () =>
+      lesson
+        ? courseEngine.compileLesson(lesson, scenario, {
+            viewport: sceneViewportClass,
+          })
+        : undefined,
+    [lesson, sceneViewportClass],
   );
   const world = compiled?.steps[0]?.world ?? scenario;
   const projection = useMemo(
-    () => createExploreProjection(world, activeView, filters),
-    [activeView, filters, world],
+    () => createExploreProjection(world, activeView, filters, sceneViewportClass),
+    [activeView, filters, sceneViewportClass, world],
   );
   const sceneStep = useMemo<CompiledStep | undefined>(() => {
     const base = compiled?.steps[0];
@@ -203,6 +243,13 @@ export function ExplorePage() {
           <Box size={17} aria-hidden="true" />
           {copy.panelTitle} <span className="beta-chip">{t.beta}</span>
         </div>
+        <button
+          className="mobile-filter-reset"
+          type="button"
+          onClick={() => setFilters({ query: '', kind: '', namespace: '', status: '' })}
+        >
+          {t.reset}
+        </button>
         <label>
           <span>
             <Search size={15} aria-hidden="true" />
@@ -296,6 +343,31 @@ export function ExplorePage() {
             </button>
           ))}
         </div>
+        <div className="explore-camera-controls" role="group" aria-label={copy.cameraProjection}>
+          <button
+            type="button"
+            aria-pressed={cameraMode === 'orthographic'}
+            onClick={() => setCameraMode('orthographic')}
+          >
+            {copy.orthographic}
+          </button>
+          <button
+            type="button"
+            aria-pressed={cameraMode === 'perspective'}
+            onClick={() => setCameraMode('perspective')}
+          >
+            {copy.perspective}
+          </button>
+          <button
+            className="explore-camera-reset"
+            type="button"
+            aria-label={copy.resetCamera}
+            title={copy.resetCamera}
+            onClick={() => setCameraResetId((value) => value + 1)}
+          >
+            <RotateCcw size={15} aria-hidden="true" />
+          </button>
+        </div>
         <div
           id="explore-scene-panel"
           role="tabpanel"
@@ -310,9 +382,17 @@ export function ExplorePage() {
             selectedEntityId={selected}
             locale={locale}
             reducedMotion={reducedMotion}
+            allowPerspective
+            cameraMode={cameraMode}
+            cameraResetId={cameraResetId}
+            safeInsets={{ top: 14, right: 14, bottom: 14, left: 14 }}
+            safeExclusionSelectors={exploreSafeExclusionSelectors}
+            safeViewportRevision={`${Boolean(entity)}:${activeView}`}
+            onViewportClassChange={setSceneViewportClass}
             onSelectEntity={selectEntity}
           />
         </div>
+        <SceneLegend locale={locale} view={projection.view} />
         <div className="scene-caption">
           <span className="live-dot" /> {copy.sceneCaption(copy.viewLabels[projection.view])}
         </div>

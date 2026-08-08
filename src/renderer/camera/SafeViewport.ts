@@ -55,14 +55,23 @@ const largestRemainder = (rect: ViewportRect, excluded: ViewportRect): ViewportR
       height: rect.y + rect.height - overlap.y - overlap.height,
     },
   ];
-  return [...candidates].sort((left, right) => area(right) - area(left))[0] ?? rect;
+  return (
+    [...candidates]
+      .filter((candidate) => candidate.width > 0 && candidate.height > 0)
+      .sort((left, right) => area(right) - area(left))[0] ?? {
+      x: overlap.x,
+      y: overlap.y,
+      width: 0,
+      height: 0,
+    }
+  );
 };
 
 const insetRect = (rect: ViewportRect, amountX: number, amountY: number): ViewportRect => ({
   x: rect.x + amountX,
   y: rect.y + amountY,
-  width: Math.max(1, rect.width - amountX * 2),
-  height: Math.max(1, rect.height - amountY * 2),
+  width: Math.max(0, rect.width - amountX * 2),
+  height: Math.max(0, rect.height - amountY * 2),
 });
 
 export class SafeViewport {
@@ -84,8 +93,8 @@ export class SafeViewport {
     let content: ViewportRect = {
       x: insets.left,
       y: insets.top,
-      width: Math.max(1, this.viewport.width - insets.left - insets.right),
-      height: Math.max(1, this.viewport.height - insets.top - insets.bottom),
+      width: Math.max(0, this.viewport.width - insets.left - insets.right),
+      height: Math.max(0, this.viewport.height - insets.top - insets.bottom),
     };
     for (const exclusion of input.exclusions ?? []) {
       content = largestRemainder(content, exclusion);
@@ -96,7 +105,9 @@ export class SafeViewport {
   }
 
   public get aspect(): number {
-    return this.safeRect.width / this.safeRect.height;
+    return this.hasUsableArea
+      ? this.safeRect.width / this.safeRect.height
+      : this.viewport.width / this.viewport.height;
   }
 
   public get widthFraction(): number {
@@ -107,7 +118,12 @@ export class SafeViewport {
     return this.safeRect.height / this.viewport.height;
   }
 
+  public get hasUsableArea(): boolean {
+    return this.safeRect.width > 0 && this.safeRect.height > 0;
+  }
+
   public get centerNdc(): Readonly<{ x: number; y: number }> {
+    if (!this.hasUsableArea) return { x: 0, y: 0 };
     const centerX = this.safeRect.x + this.safeRect.width / 2;
     const centerY = this.safeRect.y + this.safeRect.height / 2;
     return {
@@ -117,6 +133,7 @@ export class SafeViewport {
   }
 
   public contains(rect: ViewportRect): boolean {
+    if (!this.hasUsableArea) return false;
     return (
       rect.x >= this.safeRect.x &&
       rect.y >= this.safeRect.y &&

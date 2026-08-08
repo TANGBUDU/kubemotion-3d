@@ -22,6 +22,12 @@ Delivered rebuild milestones on this branch:
   Service is a stable portal, and EndpointSlice is a dynamic endpoint inventory whose selected
   row follows the real Client → Service → Pod route. Browser and Developer actors use external
   terminal silhouettes, while Logical and Placement no longer share Pod/Node containment.
+- M5 makes those scenes readable at the actual renderer width: desktop/mobile grammar compilation,
+  measured safe-viewport exclusions, orthographic Guided scenes, optional low-distortion Explore
+  perspective, cancelable camera transitions, callout-aware labels, and one shared three-label
+  mobile budget. Host-width recompilation does not replay settled cues; bounded mobile inspectors
+  and recoverable hidden filters preserve the scene. Fifteen reviewed EN/JA/zh-CN captures close
+  the historical M2/M3/M4 390 px risks.
 
 - immutable `WorldSnapshot` / `WorldPatch` / `WorldDiff` plus a separate `ViewProjection`;
 - two verified lessons:
@@ -72,9 +78,9 @@ Delivered rebuild milestones on this branch:
 - `pnpm typecheck` — PASS;
 - `pnpm content:validate` — PASS (2 v2 scenarios, 32 entities, 34 relations, 2 verified v2
   lessons, 20 planned lessons, 26 terms, 29 official sources);
-- `pnpm content:accuracy` — PASS (227 current-public text files, 30 forbidden patterns, 23 local
+- `pnpm content:accuracy` — PASS (231 current-public text files, 30 forbidden patterns, 23 local
   links, and all README, visualization, lifecycle, and Service invariants);
-- `pnpm test:unit -- --run` — PASS (41 files, 274 tests);
+- `pnpm test:unit -- --run` — PASS (42 files, 292 tests);
 - `pnpm build` — PASS;
 - `pnpm visual:m2` — PASS (four captures; desktop foundation/island gate passes with 0 measured
   entity-label overlap and 0 labels outside the stage; mobile risk recorded for M5);
@@ -83,7 +89,12 @@ Delivered rebuild milestones on this branch:
 - `pnpm visual:m4` — PASS (six captures; eight unique specialized model contracts, Logical and
   Placement separation, dynamic EndpointSlice rows, visible external kubectl, zero generic
   handles, label overlap, or labels outside the stage; mobile composition risk recorded for M5);
-- `pnpm test:e2e` — PASS (132 passed, 45 skipped, 0 failed); skips are deliberate
+- `pnpm visual:m5` — PASS (15 captures; five objectives × three required viewports with EN/JA/zh-CN
+  rotation; every 390×844 capture has three visible labels/callouts, lesson scenes measure 49.4vh,
+  Pending keeps its `UNSCHEDULED / TRANSIT` heading, “What changed” is fully unobscured, minimum
+  scene text is 10 CSS px, the Overview subject fills 48–97% of the safe frame, and horizontal
+  overflow / label-callout overlap / safe-frame / complete-foundation violations are 0);
+- `pnpm test:e2e` — PASS (135 passed, 51 skipped, 0 failed); skips are deliberate
   project/viewport ownership selections;
 - 20-cycle dual-lesson renderer resource pressure gate — PASS;
 - screenshot gate / visual acceptance — PASS (38 full-page + 5 focused = 43 screenshots; 0 labels outside the

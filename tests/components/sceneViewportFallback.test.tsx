@@ -39,6 +39,8 @@ const createController = (host: HTMLElement) => {
     destroy: vi.fn(() => canvas.remove()),
     setLocale: vi.fn(),
     setSafeInsets: vi.fn(),
+    setCameraMode: vi.fn(),
+    setReducedMotion: vi.fn(),
     setOnSelect: vi.fn(),
     applyStep: vi.fn(),
     playTransition: vi.fn(),
@@ -141,6 +143,11 @@ describe('SceneViewport WebGL initialization fallback', () => {
     expect(recoveredController.applyStep).toHaveBeenCalledWith(step);
     expect(recoveredController.playTransition).toHaveBeenCalledWith(playback, false);
     expect(recoveredController.setLocale).toHaveBeenCalledWith('en');
+    expect(recoveredController.setCameraMode).toHaveBeenCalledWith('orthographic');
+    expect(recoveredController.setReducedMotion).toHaveBeenCalledWith(false);
+    expect(recoveredController.setReducedMotion.mock.invocationCallOrder[0]).toBeLessThan(
+      recoveredController.applyStep.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+    );
 
     unmount();
   });
@@ -154,5 +161,55 @@ describe('SceneViewport WebGL initialization fallback', () => {
       'unexpected renderer construction defect',
     );
     expect(screen.queryByTestId('scene-renderer-fallback')).not.toBeInTheDocument();
+  });
+
+  it('measures visible DOM overlays as host-relative safe viewport exclusions', async () => {
+    const controller = createController(document.createElement('div'));
+    controllerMock.construct.mockImplementation((host) => {
+      const canvas = document.createElement('canvas');
+      host.append(canvas);
+      return { ...controller, destroy: vi.fn(() => canvas.remove()) };
+    });
+    const domRect = (left: number, top: number, width: number, height: number): DOMRect =>
+      ({
+        x: left,
+        y: top,
+        left,
+        top,
+        width,
+        height,
+        right: left + width,
+        bottom: top + height,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    const rectSpy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.classList.contains('scene-render-host')) return domRect(0, 0, 1_000, 600);
+        if (this.classList.contains('test-inspector')) return domRect(700, 0, 300, 600);
+        return domRect(0, 0, 0, 0);
+      });
+
+    try {
+      render(
+        <>
+          <aside className="test-inspector">Inspector</aside>
+          <SceneViewport
+            {...props}
+            safeInsets={{ top: 12, right: 12, bottom: 12, left: 12 }}
+            safeExclusionSelectors={['.test-inspector']}
+          />
+        </>,
+      );
+
+      await waitFor(() =>
+        expect(controller.setSafeInsets).toHaveBeenCalledWith(
+          { top: 12, right: 12, bottom: 12, left: 12 },
+          [{ x: 700, y: 0, width: 300, height: 600 }],
+        ),
+      );
+    } finally {
+      rectSpy.mockRestore();
+    }
   });
 });

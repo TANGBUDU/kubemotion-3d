@@ -22,6 +22,12 @@ import { getContainerData, getPodData, getReplicaSetData } from '../world';
 import type { EntityId, WorldEntity } from '../world/types';
 
 const availableLessons = orderedAvailableLessons(course, lessonById);
+const lessonSafeExclusionSelectors = [
+  '.lesson-header',
+  '.mobile-teaching-sheet',
+  '.step-timeline',
+  '.inspector-drawer:not([hidden])',
+] as const;
 
 const chapterTitles: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
   en: {
@@ -122,12 +128,20 @@ export function LearnPage() {
     stepIndex: savedStepIndex,
     completedLessonIds,
   });
+  const isMobile = useMediaQuery('(max-width: 720px)');
+  const [sceneViewportClass, setSceneViewportClass] = useState<'mobile' | 'desktop'>(() =>
+    isMobile ? 'mobile' : 'desktop',
+  );
   const lesson = params.lessonId ? lessonById.get(params.lessonId) : undefined;
   const compiled = useMemo(() => {
     if (!lesson) return undefined;
     const lessonScenario = scenarioById.get(lesson.scenarioId);
-    return lessonScenario ? courseEngine.compileLesson(lesson, lessonScenario) : undefined;
-  }, [lesson]);
+    return lessonScenario
+      ? courseEngine.compileLesson(lesson, lessonScenario, {
+          viewport: sceneViewportClass,
+        })
+      : undefined;
+  }, [lesson, sceneViewportClass]);
   const stepIndex = Number(params.stepIndex ?? 0);
   const [playbackId, setPlaybackId] = useState(0);
   const [cameraResetId, setCameraResetId] = useState(0);
@@ -135,7 +149,6 @@ export function LearnPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailSection, setDetailSection] = useState<DetailSection>('inspector');
   const [sheetExpanded, setSheetExpanded] = useState(true);
-  const isMobile = useMediaQuery('(max-width: 720px)');
   const t = lessonUi(locale);
   const valid = Boolean(
     lesson &&
@@ -343,13 +356,8 @@ export function LearnPage() {
     (candidate) => candidate.id !== lesson.id && !completedLessonIds.includes(candidate.id),
   );
   const safeInsets = isMobile
-    ? { top: 38, right: 16, bottom: sheetExpanded ? 28 : 16, left: 16 }
-    : {
-        top: 50,
-        right: detailsOpen ? 48 : 20,
-        bottom: 20,
-        left: courseOpen ? 304 : 20,
-      };
+    ? { top: 12, right: 12, bottom: 12, left: 12 }
+    : { top: 18, right: 18, bottom: 18, left: 18 };
   const routeSummary = step.view.activeRoutes
     .map((route) => {
       const hops = route.hops
@@ -447,11 +455,15 @@ export function LearnPage() {
               locale={locale}
               reducedMotion={reducedMotion}
               cameraResetId={cameraResetId}
+              cameraMode="orthographic"
               safeInsets={safeInsets}
+              safeExclusionSelectors={lessonSafeExclusionSelectors}
+              safeViewportRevision={`${isMobile}:${sheetExpanded}:${detailsOpen}:${courseOpen}`}
+              onViewportClassChange={setSceneViewportClass}
               onSelectEntity={handleSelectEntity}
             />
           </div>
-          <SceneLegend locale={locale} />
+          <SceneLegend locale={locale} view={step.view.view} />
         </>
       )}
       {step.view.comparison && <CompareView model={step.view.comparison} locale={locale} />}

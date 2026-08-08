@@ -68,7 +68,7 @@ const text = {
     view: 'ビュー',
     search: 'オブジェクトを検索',
     allKinds: 'すべての Kind',
-    allNamespaces: 'すべての Namespace',
+    allNamespaces: '全 Namespace',
     allStatuses: 'すべての状態',
     reset: 'リセット',
     resetProgress: '学習進捗をリセット',

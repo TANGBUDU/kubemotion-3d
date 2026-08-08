@@ -29,6 +29,7 @@ const makeHandle = (
   position: THREE.Vector3,
   labelOffsetY = 0,
   selected = false,
+  status: WorldEntity['status'] = 'running',
 ): FakeHandle => {
   const root = new THREE.Group();
   root.position.copy(position);
@@ -38,7 +39,7 @@ const makeHandle = (
     category: kind === 'Node' ? 'infrastructure' : 'api-object',
     kind,
     name: id,
-    status: 'running',
+    status,
     data: {},
     title: localized,
     summary: localized,
@@ -250,6 +251,304 @@ describe('LabelManager deterministic screen-space layout', () => {
     }
     manager.clear();
   });
+
+  it('ranks dimmed infrastructure below normal context when the mobile budget is full', () => {
+    const container = document.createElement('div');
+    const dimmedService = makeHandle('dimmed-service', 'Service', new THREE.Vector3(-4, 0, 0), 0.7);
+    const pods = [-1.5, 1.5, 4].map((x, index) =>
+      makeHandle(`normal-pod-${String(index)}`, 'Pod', new THREE.Vector3(x, 0, 0), 0.7),
+    );
+    const handles = [dimmedService, ...pods];
+    const registry = makeRegistry(handles);
+    const view = makeView(handles, (handle) => ({
+      visible: true,
+      emphasis: handle.entityId === dimmedService.entityId ? 'dimmed' : 'normal',
+      labelMode: 'short',
+    }));
+    const manager = new LabelManager(container);
+    manager.sync(registry, view, 'en');
+    for (const handle of handles) setLabelSize(labelFor(container, handle.entityId), 58, 22);
+
+    manager.update(registry, camera(), 390, 844);
+
+    expect(labelFor(container, dimmedService.entityId).dataset.priority).toBe('8');
+    expect(labelFor(container, dimmedService.entityId).dataset.hiddenReason).toBe('density');
+    expect(pods.every((pod) => !labelFor(container, pod.entityId).hidden)).toBe(true);
+    manager.clear();
+  });
+
+  it('keeps the active unscheduled tray heading beside a focused Pending Pod on mobile', () => {
+    const container = document.createElement('div');
+    const pending = makeHandle(
+      'pending-pod',
+      'Pod',
+      new THREE.Vector3(2, -2, 0),
+      0.7,
+      false,
+      'pending',
+    );
+    const apiServer = makeHandle('api-server', 'KubeAPIServer', new THREE.Vector3(-2, 2, 0), 0.7);
+    const handles = [apiServer, pending];
+    const registry = makeRegistry(handles, [
+      {
+        id: 'layout:worker-nodes-island',
+        text: 'WORKER NODES ISLAND',
+        worldPosition: [-3, 0, 0],
+        zoneId: 'worker-nodes',
+        kind: 'zone-title',
+      },
+      {
+        id: 'layout:unscheduled-transit-lane',
+        text: 'UNSCHEDULED / TRANSIT',
+        worldPosition: [3, 2, 0],
+        kind: 'tray-title',
+      },
+    ]);
+    const view = makeView(handles, (handle) => ({
+      visible: true,
+      emphasis: handle.entityId === pending.entityId ? 'focused' : 'normal',
+      labelMode: 'short',
+    }));
+    const manager = new LabelManager(container);
+    manager.sync(registry, view, 'en');
+    for (const element of container.querySelectorAll<HTMLDivElement>('.scene-label')) {
+      setLabelSize(element, 80, 22);
+    }
+
+    manager.update(registry, camera(), 390, 844);
+
+    const tray = container.querySelector<HTMLDivElement>(
+      '[data-layout-label-id="layout:unscheduled-transit-lane"]',
+    );
+    expect(tray?.dataset.priority).toBe('115');
+    expect(tray?.hidden).toBe(false);
+    expect(labelFor(container, pending.entityId).hidden).toBe(false);
+    expect(labelFor(container, apiServer.entityId).dataset.hiddenReason).toBe('density');
+    manager.clear();
+  });
+
+  it('shares one mobile budget across zone, focus, route, selected, and context labels', () => {
+    const container = document.createElement('div');
+    const focused = makeHandle('focused-pod', 'Pod', new THREE.Vector3(-2, -2, 0), 0.8);
+    const selected = makeHandle('selected-pod', 'Pod', new THREE.Vector3(3, -2, 0), 0.8, true);
+    const context = makeHandle('context-node', 'Node', new THREE.Vector3(4, 3, 0), 0.8);
+    const handles = [context, selected, focused];
+    const registry = makeRegistry(handles, [
+      {
+        id: 'layout:primary-zone',
+        text: 'PRIMARY ZONE',
+        worldPosition: [-4, 4, 0],
+        zoneId: 'control-plane',
+        kind: 'zone-title',
+      },
+      {
+        id: 'layout:secondary-zone',
+        text: 'SECONDARY ZONE',
+        worldPosition: [4, 4, 0],
+        zoneId: 'worker-nodes',
+        kind: 'zone-title',
+      },
+      {
+        id: 'layout:transit-zone',
+        text: 'TRANSIT',
+        worldPosition: [0, -4, 0],
+        zoneId: 'worker-nodes',
+        kind: 'tray-title',
+      },
+    ]);
+    const hop = {
+      index: 0,
+      hop: {
+        fromEntityId: 'from',
+        fromAnchor: 'control' as const,
+        toEntityId: 'to',
+        toAnchor: 'control' as const,
+        label: { en: 'routes to', ja: 'ルート', 'zh-CN': '路由到' },
+      },
+      points: [new THREE.Vector3(-0.3, 2, 0), new THREE.Vector3(0.3, 2, 0)],
+      length: 0.6,
+    };
+    const route = {
+      id: 'route:priority',
+      semantic: 'control' as const,
+      label: localized,
+      persistAfterAnimation: true,
+      numbered: true,
+      hops: [hop.hop],
+    };
+    const view: ViewProjection = {
+      ...makeView(handles, (handle) => ({
+        visible: true,
+        emphasis: handle.entityId === focused.entityId ? 'focused' : 'normal',
+        labelMode: 'short',
+      })),
+      activeRoutes: [route],
+    };
+    const routeLayer = {
+      getRoute: () => ({
+        plan: {
+          hops: [hop],
+          markers: [{ number: 1, hopIndex: 0, position: new THREE.Vector3(0, 2, 0) }],
+        },
+      }),
+    } as unknown as RelationLayer;
+    const manager = new LabelManager(container);
+    manager.sync(registry, view, 'en', routeLayer);
+    for (const element of container.querySelectorAll<HTMLDivElement>('.scene-label')) {
+      setLabelSize(element, 86, 22);
+    }
+    manager.update(registry, camera(), 720, 600);
+
+    const zone = container.querySelector<HTMLDivElement>('[data-layout-label-id]');
+    const layoutLabels = [...container.querySelectorAll<HTMLDivElement>('[data-layout-label-id]')];
+    const routeLabel = container.querySelector<HTMLDivElement>('[data-route-label-id]');
+    const focusedLabel = labelFor(container, focused.entityId);
+    const selectedLabel = labelFor(container, selected.entityId);
+    const contextLabel = labelFor(container, context.entityId);
+    const visible = [...container.querySelectorAll<HTMLDivElement>('.scene-label')].filter(
+      (element) => !element.hidden,
+    );
+    expect(visible).toHaveLength(3);
+    expect(layoutLabels.filter((element) => !element.hidden)).toHaveLength(1);
+    expect(zone?.hidden).toBe(false);
+    expect(focusedLabel.hidden).toBe(false);
+    expect(routeLabel?.hidden).toBe(false);
+    expect(selectedLabel.dataset.hiddenReason).toBe('density');
+    expect(contextLabel.dataset.hiddenReason).toBe('density');
+    expect(Number(zone?.dataset.priority)).toBeGreaterThan(Number(focusedLabel.dataset.priority));
+    expect(Number(focusedLabel.dataset.priority)).toBeGreaterThan(
+      Number(routeLabel?.dataset.priority),
+    );
+    expect(Number(routeLabel?.dataset.priority)).toBeGreaterThan(
+      Number(selectedLabel.dataset.priority),
+    );
+    expect(Number(selectedLabel.dataset.priority)).toBeGreaterThan(
+      Number(contextLabel.dataset.priority),
+    );
+    manager.clear();
+  });
+
+  it('places a focused label away from a teaching callout obstacle', () => {
+    const container = document.createElement('div');
+    const focused = makeHandle('focused-pod', 'Pod', new THREE.Vector3(0, 0, 0), 0.8);
+    const registry = makeRegistry([focused]);
+    const view = makeView([focused], () => ({
+      visible: true,
+      emphasis: 'focused',
+      labelMode: 'short',
+    }));
+    const manager = new LabelManager(container);
+    manager.sync(registry, view, 'en');
+    const element = labelFor(container, focused.entityId);
+    setLabelSize(element, 90, 22);
+    const obstacle = { x: 150, y: 130, width: 100, height: 40 };
+
+    manager.update(registry, camera(), 400, 300, undefined, [obstacle]);
+
+    const rect = screenRect(element);
+    expect(element.hidden).toBe(false);
+    expect(
+      rect.left < obstacle.x + obstacle.width + 8 &&
+        rect.right > obstacle.x - 8 &&
+        rect.top < obstacle.y + obstacle.height + 5 &&
+        rect.bottom > obstacle.y - 5,
+    ).toBe(false);
+    manager.clear();
+  });
+
+  it.each([
+    ['en', 'CONTROL PLANE FOUNDATION', 'sends request to API server', 196],
+    ['ja', 'コントロールプレーン基盤', 'API サーバーへ要求を送信', 224],
+    ['zh-CN', '控制平面基础区', '向 API 服务器发送请求', 184],
+  ] as const)(
+    'keeps the %s mobile label budget and safe bounds stable for mixed-language widths',
+    (locale, zoneText, routeText, measuredWidth) => {
+      const container = document.createElement('div');
+      const focused = makeHandle(`focused-${locale}`, 'Pod', new THREE.Vector3(-3, -1, 0), 0.8);
+      focused.root.userData.domLabel = { text: `${zoneText} workload` };
+      const selected = makeHandle(
+        `selected-${locale}`,
+        'Service',
+        new THREE.Vector3(3, -1, 0),
+        0.8,
+        true,
+      );
+      const context = makeHandle(`context-${locale}`, 'Node', new THREE.Vector3(0, -3, 0), 0.8);
+      const handles = [selected, context, focused];
+      const registry = makeRegistry(handles, [
+        {
+          id: `layout:zone-${locale}`,
+          text: zoneText,
+          worldPosition: [-3, 4, 0],
+          zoneId: 'control-plane',
+          kind: 'zone-title',
+        },
+      ]);
+      const hop = {
+        index: 0,
+        hop: {
+          fromEntityId: 'from',
+          fromAnchor: 'control' as const,
+          toEntityId: 'to',
+          toAnchor: 'control' as const,
+          label: { en: routeText, ja: routeText, 'zh-CN': routeText },
+        },
+        points: [new THREE.Vector3(1.7, 3, 0), new THREE.Vector3(2.3, 3, 0)],
+        length: 0.6,
+      };
+      const view: ViewProjection = {
+        ...makeView(handles, (handle) => ({
+          visible: true,
+          emphasis: handle.entityId === focused.entityId ? 'focused' : 'normal',
+          labelMode: 'short',
+        })),
+        activeRoutes: [
+          {
+            id: `route:locale-${locale}`,
+            semantic: 'control' as const,
+            label: localized,
+            persistAfterAnimation: true,
+            numbered: true,
+            hops: [hop.hop],
+          },
+        ],
+      };
+      const routeLayer = {
+        getRoute: () => ({
+          plan: {
+            hops: [hop],
+            markers: [{ number: 1, hopIndex: 0, position: new THREE.Vector3(2, 3, 0) }],
+          },
+        }),
+      } as unknown as RelationLayer;
+      const manager = new LabelManager(container);
+      manager.sync(registry, view, locale, routeLayer);
+      for (const element of container.querySelectorAll<HTMLDivElement>('.scene-label')) {
+        setLabelSize(element, measuredWidth, 24);
+      }
+      const safe: LabelSafeRect = { x: 12, y: 20, width: 366, height: 790 };
+      manager.update(registry, camera(), 390, 844, safe);
+
+      const visible = [...container.querySelectorAll<HTMLDivElement>('.scene-label')].filter(
+        (element) => !element.hidden,
+      );
+      expect(visible).toHaveLength(3);
+      expect(visible.every((element) => element.lang === locale)).toBe(true);
+      for (const element of visible) {
+        const rect = screenRect(element);
+        expect(rect.left).toBeGreaterThanOrEqual(safe.x);
+        expect(rect.top).toBeGreaterThanOrEqual(safe.y);
+        expect(rect.right).toBeLessThanOrEqual(safe.x + safe.width);
+        expect(rect.bottom).toBeLessThanOrEqual(safe.y + safe.height);
+      }
+      expect(
+        [...container.querySelectorAll<HTMLDivElement>('.scene-label')].some(
+          (element) => element.dataset.hiddenReason === 'density',
+        ),
+      ).toBe(true);
+      manager.clear();
+    },
+  );
 
   it('caps desktop entity labels at seven without charging zone titles to that budget', () => {
     const container = document.createElement('div');

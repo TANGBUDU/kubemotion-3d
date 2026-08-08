@@ -37,6 +37,12 @@ test('mobile teaching sheet, timeline, drawers, and controls do not cover one an
 
   await page.getByRole('button', { name: /Collapse teaching details/i }).click();
   await expect(page.getByTestId('teaching-what-changed')).toBeVisible();
+  const collapsedSceneRatio = await page.locator('.scene-canvas').evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    return box.height / window.innerHeight;
+  });
+  expect(collapsedSceneRatio).toBeGreaterThanOrEqual(0.48);
+  expect(collapsedSceneRatio).toBeLessThanOrEqual(0.55);
   await page.getByRole('button', { name: /Show teaching details/i }).click();
   await expect(page.getByTestId('evidence-panel')).toBeVisible();
 

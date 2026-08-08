@@ -5,10 +5,25 @@ import { LearnPage } from '../../src/pages/LearnPage';
 import { useAppStore } from '../../src/state/appStore';
 
 const focusedPodId = 'api-object:namespaced:shop:Pod:api-a-old';
+const desktopMatchMedia = window.matchMedia;
 
 vi.mock('../../src/components/SceneViewport', () => ({
-  SceneViewport: ({ onSelectEntity }: { onSelectEntity: (id?: string) => void }) => (
-    <button type="button" onClick={() => onSelectEntity(focusedPodId)}>
+  SceneViewport: ({
+    onSelectEntity,
+    step,
+  }: {
+    onSelectEntity: (id?: string) => void;
+    step: { view: { entityStates: Record<string, { visible: boolean; labelMode: string }> } };
+  }) => (
+    <button
+      type="button"
+      data-visible-labels={
+        Object.values(step.view.entityStates).filter(
+          (state) => state.visible && state.labelMode !== 'none',
+        ).length
+      }
+      onClick={() => onSelectEntity(focusedPodId)}
+    >
       Select focused Pod
     </button>
   ),
@@ -26,6 +41,7 @@ function renderLesson(path = '/learn/container-restart-vs-pod-replacement/0') {
 
 describe('LearnPage lesson information architecture', () => {
   beforeEach(() => {
+    window.matchMedia = desktopMatchMedia;
     localStorage.clear();
     useAppStore.setState({ locale: 'en', selectedEntityId: undefined });
   });
@@ -86,5 +102,24 @@ describe('LearnPage lesson information architecture', () => {
     const link = screen.getByRole('link', { name: /Pods/i });
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noreferrer noopener');
+  });
+
+  it('compiles the guided scene through the mobile grammar at the runtime breakpoint', () => {
+    window.matchMedia = vi.fn((query: string) => ({
+      matches: query === '(max-width: 720px)',
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+
+    renderLesson();
+    expect(screen.getByRole('button', { name: 'Select focused Pod' })).toHaveAttribute(
+      'data-visible-labels',
+      '3',
+    );
   });
 });

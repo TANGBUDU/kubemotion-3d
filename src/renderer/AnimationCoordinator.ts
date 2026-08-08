@@ -63,6 +63,10 @@ export class AnimationCoordinator {
     this.active = started;
     this.lastPlaybackIds.set(request.stepKey, request.playbackId);
     if (started.length > 0) this.baseContext.markDirty?.();
+    // Reduced motion is a settled factual state, not a shorter animation. Completing in the same
+    // call prevents route tokens, opacity fades, and lifecycle intermediates from changing a
+    // screenshot after navigation while persistent routes and final evidence remain visible.
+    if (reducedMotion && started.length > 0) this.finish();
     return true;
   }
 

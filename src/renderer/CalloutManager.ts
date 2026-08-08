@@ -76,6 +76,12 @@ const hideRecord = (record: CalloutRecord, reason: string): void => {
   delete record.element.dataset.screenHeight;
 };
 
+const calloutRectsOverlap = (left: LabelSafeRect, right: LabelSafeRect): boolean =>
+  left.x < right.x + right.width + 8 &&
+  left.x + left.width > right.x - 8 &&
+  left.y < right.y + right.height + 5 &&
+  left.y + left.height > right.y - 5;
+
 const measuredSize = (
   element: HTMLDivElement,
 ): { readonly width: number; readonly height: number } => {
@@ -123,13 +129,14 @@ export class CalloutManager {
     width: number,
     height: number,
     requestedSafeRect?: LabelSafeRect,
-  ): void {
+  ): readonly LabelSafeRect[] {
     const safe = normalizeSafeRect(width, height, requestedSafeRect);
     if (!safe) {
       for (const record of this.records.values()) hideRecord(record, 'invalid-viewport');
-      return;
+      return [];
     }
 
+    const placed: LabelSafeRect[] = [];
     let offsetIndex = 0;
     for (const record of this.records.values()) {
       const handle = registry.get(record.callout.entityId);
@@ -168,18 +175,49 @@ export class CalloutManager {
       const measured = measuredSize(record.element);
       const calloutWidth = Math.min(measured.width, safe.width);
       const calloutHeight = Math.min(measured.height, safe.height);
-      const x = clamp(rawX, safe.left + calloutWidth / 2, safe.right - calloutWidth / 2);
-      const y = clamp(rawY, safe.top + calloutHeight / 2, safe.bottom - calloutHeight / 2);
-      const left = x - calloutWidth / 2;
-      const top = y - calloutHeight / 2;
+      const candidateOffsets = [
+        [0, offsetIndex * 42],
+        [0, -(offsetIndex + 1) * 42],
+        [-(calloutWidth + 16), offsetIndex * 42],
+        [calloutWidth + 16, offsetIndex * 42],
+        [0, (offsetIndex + 1) * 84],
+      ] as const;
+      const placement = candidateOffsets
+        .map(([offsetX, offsetY]) => {
+          const x = clamp(
+            rawX + offsetX,
+            safe.left + calloutWidth / 2,
+            safe.right - calloutWidth / 2,
+          );
+          const y = clamp(
+            rawY + offsetY,
+            safe.top + calloutHeight / 2,
+            safe.bottom - calloutHeight / 2,
+          );
+          return {
+            x: x - calloutWidth / 2,
+            y: y - calloutHeight / 2,
+            width: calloutWidth,
+            height: calloutHeight,
+          };
+        })
+        .find((candidate) => !placed.some((current) => calloutRectsOverlap(current, candidate)));
+      if (!placement) {
+        hideRecord(record, 'collision');
+        continue;
+      }
+      const x = placement.x + placement.width / 2;
+      const y = placement.y + placement.height / 2;
       delete record.element.dataset.hiddenReason;
-      record.element.dataset.screenX = String(left);
-      record.element.dataset.screenY = String(top);
+      record.element.dataset.screenX = String(placement.x);
+      record.element.dataset.screenY = String(placement.y);
       record.element.dataset.screenWidth = String(calloutWidth);
       record.element.dataset.screenHeight = String(calloutHeight);
       record.element.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+      placed.push(placement);
       offsetIndex += 1;
     }
+    return placed;
   }
 
   public flash(entityId: string, text: string): void {

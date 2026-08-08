@@ -86,8 +86,9 @@ describe('CalloutManager safe viewport layout', () => {
     for (const callout of callouts) setCalloutSize(calloutFor(container, callout.id), 120, 40);
 
     const safe = { x: 100, y: 50, width: 180, height: 120 };
-    manager.update(registry, camera(), 400, 300, safe);
+    const placed = manager.update(registry, camera(), 400, 300, safe);
 
+    expect(placed).toHaveLength(2);
     for (const callout of callouts) {
       const element = calloutFor(container, callout.id);
       const rect = screenRect(element);
@@ -99,6 +100,19 @@ describe('CalloutManager safe viewport layout', () => {
       expect(Number(element.dataset.screenWidth)).toBe(120);
       expect(Number(element.dataset.screenHeight)).toBe(40);
     }
+    expect(placed[0]).toEqual({
+      x: Number(calloutFor(container, callouts[0]!.id).dataset.screenX),
+      y: Number(calloutFor(container, callouts[0]!.id).dataset.screenY),
+      width: 120,
+      height: 40,
+    });
+    const [first, second] = placed;
+    expect(
+      first!.x < second!.x + second!.width &&
+        first!.x + first!.width > second!.x &&
+        first!.y < second!.y + second!.height &&
+        first!.y + first!.height > second!.y,
+    ).toBe(false);
   });
 
   it('shrinks an oversized measured rectangle to the available safe area', () => {

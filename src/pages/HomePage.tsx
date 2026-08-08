@@ -140,6 +140,7 @@ export function HomePage() {
   const completedLessonIds = useAppStore((state) => state.completedLessonIds);
   const setOrientationSeen = useAppStore((state) => state.setOrientationSeen);
   const [orientationOpen, setOrientationOpen] = useState(() => !orientationSeen);
+  const [sceneViewportClass, setSceneViewportClass] = useState<'mobile' | 'desktop'>('desktop');
   const revisitButtonRef = useRef<HTMLButtonElement>(null);
   const orientationHeadingRef = useRef<HTMLHeadingElement>(null);
   const pendingFocus = useRef<'orientation' | 'revisit' | null>(null);
@@ -156,9 +157,11 @@ export function HomePage() {
   const step = useMemo(
     () =>
       previewLesson && previewScenario
-        ? courseEngine.compileLesson(previewLesson, previewScenario).steps[0]
+        ? courseEngine.compileLesson(previewLesson, previewScenario, {
+            viewport: sceneViewportClass,
+          }).steps[0]
         : undefined,
-    [previewLesson, previewScenario],
+    [previewLesson, previewScenario, sceneViewportClass],
   );
 
   useEffect(() => {
@@ -291,6 +294,7 @@ export function HomePage() {
             }}
             locale={locale}
             reducedMotion={reducedMotion}
+            onViewportClassChange={setSceneViewportClass}
             onSelectEntity={() => undefined}
           />
           <div className="scene-caption">

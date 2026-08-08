@@ -2,8 +2,6 @@ import * as THREE from 'three';
 import type { ResolvedAnimationContext } from './contracts';
 import type { ActiveCue } from './contracts';
 
-const REDUCED_MOTION_MAX_MS = 140;
-
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
 export const easeOutCubic = (value: number): number => 1 - (1 - value) ** 3;
@@ -110,9 +108,7 @@ export abstract class TimedActiveCue implements ActiveCue {
   ) {
     this.startedAt = context.now();
     this.delayMs = context.reducedMotion ? 0 : Math.max(0, requestedDelayMs);
-    this.durationMs = context.reducedMotion
-      ? Math.min(Math.max(1, requestedDurationMs), REDUCED_MOTION_MAX_MS)
-      : Math.max(1, requestedDurationMs);
+    this.durationMs = context.reducedMotion ? 1 : Math.max(1, requestedDurationMs);
   }
 
   private startEffects(): void {

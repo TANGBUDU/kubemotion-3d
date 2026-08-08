@@ -5,7 +5,8 @@ import type { Locale } from '../app/types';
 import { SceneController, SceneRendererInitializationError } from '../renderer/SceneController';
 import { recordSceneControllerCreated, setDiagnosticsProvider } from '../test-support/debugBridge';
 import type { EntityId } from '../world/types';
-import type { ViewportInsets } from '../renderer/camera/SafeViewport';
+import type { ViewportInsets, ViewportRect } from '../renderer/camera/SafeViewport';
+import type { SceneCameraMode } from '../renderer/SceneController';
 import '../styles/scene-renderer-fallback.css';
 
 export interface SceneViewportProps {
@@ -15,7 +16,12 @@ export interface SceneViewportProps {
   locale: Locale;
   reducedMotion: boolean;
   cameraResetId?: number | undefined;
+  cameraMode?: SceneCameraMode | undefined;
+  allowPerspective?: boolean | undefined;
   safeInsets?: Partial<ViewportInsets> | undefined;
+  safeExclusionSelectors?: readonly string[] | undefined;
+  safeViewportRevision?: string | number | undefined;
+  onViewportClassChange?: ((viewport: 'mobile' | 'desktop') => void) | undefined;
   onSelectEntity: (id?: EntityId | undefined) => void;
   role?: AriaRole | undefined;
   'aria-label'?: AriaAttributes['aria-label'] | undefined;
@@ -24,6 +30,20 @@ export interface SceneViewportProps {
 }
 
 type RendererState = 'initializing' | 'ready' | 'failed';
+
+const relativeIntersection = (host: DOMRect, exclusion: DOMRect): ViewportRect | undefined => {
+  const left = Math.max(host.left, exclusion.left);
+  const top = Math.max(host.top, exclusion.top);
+  const right = Math.min(host.right, exclusion.right);
+  const bottom = Math.min(host.bottom, exclusion.bottom);
+  if (right <= left || bottom <= top) return undefined;
+  return {
+    x: left - host.left,
+    y: top - host.top,
+    width: right - left,
+    height: bottom - top,
+  };
+};
 
 const rendererFallbackCopy: Record<
   Locale,
@@ -52,6 +72,8 @@ export function SceneViewport(props: SceneViewportProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const fallbackRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<SceneController>(null);
+  const allowPerspectiveRef = useRef(props.allowPerspective ?? false);
+  const initialCameraModeRef = useRef<SceneCameraMode>(props.cameraMode ?? 'orthographic');
   const restoreFocusAfterRetryRef = useRef(false);
   const fallbackTitleId = useId();
   const fallbackDescriptionId = useId();
@@ -61,6 +83,10 @@ export function SceneViewport(props: SceneViewportProps) {
   const safeRight = props.safeInsets?.right ?? 0;
   const safeBottom = props.safeInsets?.bottom ?? 0;
   const safeLeft = props.safeInsets?.left ?? 0;
+  const cameraMode = props.cameraMode ?? 'orthographic';
+  const exclusionSelectorsKey = props.safeExclusionSelectors?.join('\u001f') ?? '';
+  const onViewportClassChange = props.onViewportClassChange;
+  const safeViewportRevision = props.safeViewportRevision;
   const fallbackCopy = rendererFallbackCopy[props.locale];
 
   useEffect(() => {
@@ -74,7 +100,10 @@ export function SceneViewport(props: SceneViewportProps) {
     };
     let controller: SceneController;
     try {
-      controller = new SceneController(host);
+      controller = new SceneController(host, {
+        allowPerspective: allowPerspectiveRef.current,
+        cameraMode: initialCameraModeRef.current,
+      });
     } catch (error: unknown) {
       if (!(error instanceof SceneRendererInitializationError)) throw error;
       controllerRef.current = null;
@@ -112,13 +141,77 @@ export function SceneViewport(props: SceneViewportProps) {
     controllerRef.current?.setLocale(props.locale);
   }, [attempt, props.locale]);
   useEffect(() => {
-    controllerRef.current?.setSafeInsets({
-      top: safeTop,
-      right: safeRight,
-      bottom: safeBottom,
-      left: safeLeft,
-    });
-  }, [attempt, safeBottom, safeLeft, safeRight, safeTop]);
+    const host = hostRef.current;
+    const controller = controllerRef.current;
+    if (!host || !controller || rendererState !== 'ready') return;
+    const selectors = exclusionSelectorsKey ? exclusionSelectorsKey.split('\u001f') : [];
+    const candidates = [
+      ...new Set(
+        selectors.flatMap((selector) => [...document.querySelectorAll<HTMLElement>(selector)]),
+      ),
+    ];
+    let animationFrame: number | undefined;
+    let lastSignature = '';
+    const measure = () => {
+      animationFrame = undefined;
+      const hostRect = host.getBoundingClientRect();
+      onViewportClassChange?.(hostRect.width <= 720 ? 'mobile' : 'desktop');
+      const exclusions = candidates.flatMap((element) => {
+        if (element.hidden) return [];
+        const rect = relativeIntersection(hostRect, element.getBoundingClientRect());
+        return rect ? [rect] : [];
+      });
+      const signature = JSON.stringify(exclusions);
+      if (signature === lastSignature) return;
+      lastSignature = signature;
+      controller.setSafeInsets(
+        { top: safeTop, right: safeRight, bottom: safeBottom, left: safeLeft },
+        exclusions,
+      );
+    };
+    const scheduleMeasure = () => {
+      if (animationFrame !== undefined) cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(measure);
+    };
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(scheduleMeasure);
+    resizeObserver?.observe(host);
+    for (const element of candidates) resizeObserver?.observe(element);
+    const mutationObserver =
+      typeof MutationObserver === 'undefined' ? undefined : new MutationObserver(scheduleMeasure);
+    for (const element of candidates) {
+      mutationObserver?.observe(element, {
+        attributes: true,
+        attributeFilter: ['class', 'hidden', 'style'],
+      });
+    }
+    window.addEventListener('resize', scheduleMeasure);
+    window.addEventListener('scroll', scheduleMeasure, true);
+    measure();
+    return () => {
+      if (animationFrame !== undefined) cancelAnimationFrame(animationFrame);
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
+      window.removeEventListener('resize', scheduleMeasure);
+      window.removeEventListener('scroll', scheduleMeasure, true);
+    };
+  }, [
+    attempt,
+    exclusionSelectorsKey,
+    safeViewportRevision,
+    onViewportClassChange,
+    rendererState,
+    safeBottom,
+    safeLeft,
+    safeRight,
+    safeTop,
+  ]);
+  useEffect(() => {
+    controllerRef.current?.setCameraMode(cameraMode);
+  }, [attempt, cameraMode]);
+  useEffect(() => {
+    controllerRef.current?.setReducedMotion(props.reducedMotion);
+  }, [attempt, props.reducedMotion]);
   useEffect(() => {
     controllerRef.current?.setOnSelect(props.onSelectEntity);
   }, [attempt, props.onSelectEntity]);
@@ -155,6 +248,7 @@ export function SceneViewport(props: SceneViewportProps) {
       tabIndex={-1}
       data-testid="scene-viewport"
       data-renderer-state={rendererState}
+      data-camera-mode={cameraMode}
     >
       <div className="scene-render-host" ref={hostRef} data-testid="scene-render-host" />
       {rendererState === 'failed' && (

@@ -7,6 +7,7 @@ export interface OrthographicCameraPose {
   readonly right: number;
   readonly top: number;
   readonly bottom: number;
+  readonly zoom: number;
 }
 
 const capturePose = (camera: THREE.OrthographicCamera): OrthographicCameraPose => ({
@@ -16,15 +17,20 @@ const capturePose = (camera: THREE.OrthographicCamera): OrthographicCameraPose =
   right: camera.right,
   top: camera.top,
   bottom: camera.bottom,
+  zoom: camera.zoom,
 });
 
-const applyPose = (camera: THREE.OrthographicCamera, pose: OrthographicCameraPose): void => {
+export const applyCameraPose = (
+  camera: THREE.OrthographicCamera,
+  pose: OrthographicCameraPose,
+): void => {
   camera.position.copy(pose.position);
   camera.quaternion.copy(pose.quaternion);
   camera.left = pose.left;
   camera.right = pose.right;
   camera.top = pose.top;
   camera.bottom = pose.bottom;
+  camera.zoom = pose.zoom;
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld(true);
 };
@@ -36,10 +42,14 @@ export class CameraTransition {
   private readonly baseline: OrthographicCameraPose;
   private readonly destination: OrthographicCameraPose;
   private finished = false;
+  private readonly baselineTarget: THREE.Vector3 | undefined;
+  private readonly destinationTarget: THREE.Vector3 | undefined;
 
   public constructor(
     private readonly camera: THREE.OrthographicCamera,
     destination: OrthographicCameraPose,
+    private readonly target?: THREE.Vector3,
+    destinationTarget?: THREE.Vector3,
   ) {
     this.baseline = capturePose(camera);
     this.destination = {
@@ -47,6 +57,8 @@ export class CameraTransition {
       position: destination.position.clone(),
       quaternion: destination.quaternion.clone(),
     };
+    this.baselineTarget = target?.clone();
+    this.destinationTarget = destinationTarget?.clone();
   }
 
   public update(progress: number): boolean {
@@ -66,6 +78,10 @@ export class CameraTransition {
       this.destination.bottom,
       amount,
     );
+    this.camera.zoom = THREE.MathUtils.lerp(this.baseline.zoom, this.destination.zoom, amount);
+    if (this.target && this.baselineTarget && this.destinationTarget) {
+      this.target.lerpVectors(this.baselineTarget, this.destinationTarget, amount);
+    }
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld(true);
     if (progress >= 1) {
@@ -76,12 +92,16 @@ export class CameraTransition {
   }
 
   public finish(): void {
-    applyPose(this.camera, this.destination);
+    applyCameraPose(this.camera, this.destination);
+    if (this.target && this.destinationTarget) this.target.copy(this.destinationTarget);
     this.finished = true;
   }
 
-  public cancel(): void {
-    applyPose(this.camera, this.baseline);
+  public cancel(restoreBaseline = true): void {
+    if (restoreBaseline) {
+      applyCameraPose(this.camera, this.baseline);
+      if (this.target && this.baselineTarget) this.target.copy(this.baselineTarget);
+    }
     this.finished = true;
   }
 }

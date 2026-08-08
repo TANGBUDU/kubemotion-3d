@@ -1,14 +1,36 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExplorePage } from '../../src/pages/ExplorePage';
 import { useAppStore } from '../../src/state/appStore';
 
+const desktopMatchMedia = window.matchMedia;
+
 vi.mock('../../src/components/SceneViewport', () => ({
-  SceneViewport: () => <div data-testid="mock-scene-viewport" />,
+  SceneViewport: ({
+    cameraMode,
+    cameraResetId,
+    step,
+  }: {
+    cameraMode?: string;
+    cameraResetId?: number;
+    step: { view: { entityStates: Record<string, { visible: boolean; labelMode: string }> } };
+  }) => (
+    <div
+      data-testid="mock-scene-viewport"
+      data-camera-mode={cameraMode}
+      data-camera-reset-id={cameraResetId}
+      data-visible-labels={
+        Object.values(step.view.entityStates).filter(
+          (state) => state.visible && state.labelMode !== 'none',
+        ).length
+      }
+    />
+  ),
 }));
 
 describe('Explore view tabs', () => {
   beforeEach(() => {
+    window.matchMedia = desktopMatchMedia;
     useAppStore.setState({
       locale: 'en',
       view: 'overview',
@@ -74,5 +96,44 @@ describe('Explore view tabs', () => {
       'aria-labelledby',
       'explore-view-tab-logical',
     );
+  });
+
+  it('offers explicit orthographic, perspective, and reset camera controls', () => {
+    render(<ExplorePage />);
+
+    const controls = screen.getByRole('group', { name: 'Camera projection' });
+    const orthographic = within(controls).getByRole('button', { name: 'Orthographic' });
+    const perspective = within(controls).getByRole('button', { name: 'Perspective' });
+    expect(orthographic).toHaveAttribute('aria-pressed', 'true');
+    expect(perspective).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('mock-scene-viewport')).toHaveAttribute(
+      'data-camera-mode',
+      'orthographic',
+    );
+
+    fireEvent.click(perspective);
+    expect(perspective).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('mock-scene-viewport')).toHaveAttribute(
+      'data-camera-mode',
+      'perspective',
+    );
+    fireEvent.click(within(controls).getByRole('button', { name: 'Reset camera' }));
+    expect(screen.getByTestId('mock-scene-viewport')).toHaveAttribute('data-camera-reset-id', '1');
+  });
+
+  it('compiles Explore through the mobile grammar at the runtime breakpoint', () => {
+    window.matchMedia = vi.fn((query: string) => ({
+      matches: query === '(max-width: 720px)',
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+
+    render(<ExplorePage />);
+    expect(screen.getByTestId('mock-scene-viewport')).toHaveAttribute('data-visible-labels', '3');
   });
 });

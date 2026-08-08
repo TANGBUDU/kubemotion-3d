@@ -104,7 +104,9 @@ export const controlFlowGrammar = Object.freeze({
       ...MOBILE_SCENE_DENSITY_BUDGET,
       maxPrimaryEntities: 7,
       maxSecondaryEntities: 2,
-      maxAnimatedTokens: 2,
+      // A single causal story can legitimately span actor -> API -> controller/runtime. Keep all
+      // persistent hops on mobile while remaining within the shared three-token ceiling.
+      maxAnimatedTokens: 3,
     },
   },
 } satisfies SceneGrammar);

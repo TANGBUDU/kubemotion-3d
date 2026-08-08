@@ -34,6 +34,7 @@ describe('PostProcessingPipeline', () => {
       antialiasing,
     });
     expect(renderer.info.autoReset).toBe(false);
+    expect(() => pipeline.setCamera(new THREE.PerspectiveCamera())).not.toThrow();
     expect(() => pipeline.setSize(0, 180, 1)).toThrow(/positive finite/);
     expect(() => pipeline.setSize(320, 180, 1)).not.toThrow();
 

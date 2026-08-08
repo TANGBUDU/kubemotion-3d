@@ -83,6 +83,11 @@ export class PostProcessingPipeline {
     if (this.disposed) throw new Error('Post-processing pipeline has been disposed.');
   }
 
+  public setCamera(camera: THREE.Camera): void {
+    this.assertUsable();
+    this.renderPass.camera = camera;
+  }
+
   public setSize(width: number, height: number, pixelRatio: number): void {
     this.assertUsable();
     if (

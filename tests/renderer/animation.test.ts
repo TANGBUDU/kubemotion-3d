@@ -523,26 +523,24 @@ describe('AnimationCoordinator playback identity and replay safety', () => {
 });
 
 describe('AnimationCoordinator reduced motion', () => {
-  it('uses a short fade without scale movement for lifecycle cues', () => {
+  it('settles lifecycle cues synchronously without scale movement', () => {
     const harness = createHarness(true);
     const baseline = snapshot(harness.handles.a);
     const cue: TransitionCue = { type: 'container-restart', entityId: 'a', durationMs: 2_000 };
     harness.coordinator.play(request(cue));
     expect(harness.handles.a.root.scale.toArray()).toEqual(baseline.scale);
-    expect(harness.handles.a.mesh.material.opacity).toBeLessThan(baseline.opacity);
-    expect(harness.coordinator.update(70)).toBe(true);
-    expect(harness.handles.a.root.scale.toArray()).toEqual(baseline.scale);
-    expect(harness.coordinator.update(140)).toBe(false);
     expect(snapshot(harness.handles.a)).toEqual(baseline);
+    expect(harness.coordinator.activeCount).toBe(0);
+    expect(harness.coordinator.update(0)).toBe(false);
     harness.dispose();
   });
 
-  it('snaps camera intent and preserves route direction in at most 140ms', () => {
+  it('snaps camera intent and preserves route direction synchronously', () => {
     const harness = createHarness(true);
     const focus: TransitionCue = { type: 'focus-camera', entityId: 'a', durationMs: 5_000 };
     harness.coordinator.play(request(focus, 1));
     expect(harness.phases[0]).toBe('focus:start');
-    expect(harness.coordinator.update(140)).toBe(false);
+    expect(harness.coordinator.activeCount).toBe(0);
 
     const packet: TransitionCue = {
       type: 'data-packet',
@@ -551,17 +549,14 @@ describe('AnimationCoordinator reduced motion', () => {
       durationMs: 5_000,
     };
     harness.coordinator.play(request(packet, 2));
-    expect(harness.routeProgress).toEqual([1]);
-    expect(harness.scene.getObjectByName('animation-token')).toBeUndefined();
-    harness.coordinator.update(70);
     expect(harness.routeProgress.at(-1)).toBe(1);
-    expect(harness.coordinator.update(140)).toBe(false);
+    expect(harness.scene.getObjectByName('animation-token')).toBeUndefined();
     expect(harness.routeFinishes.value).toBe(1);
     expect(harness.coordinator.leasedTokenCount).toBe(0);
     harness.dispose();
   });
 
-  it('collapses authored delays for an immediately legible reduced-motion result', () => {
+  it('collapses authored delays into an immediately legible reduced-motion result', () => {
     const harness = createHarness(true);
     const baseline = snapshot(harness.handles.a);
     const cue: TransitionCue = {
@@ -571,9 +566,8 @@ describe('AnimationCoordinator reduced motion', () => {
       durationMs: 2_000,
     };
     harness.coordinator.play(request(cue));
-    expect(harness.handles.a.mesh.material.opacity).toBeLessThan(baseline.opacity);
-    expect(harness.coordinator.update(140)).toBe(false);
     expect(snapshot(harness.handles.a)).toEqual(baseline);
+    expect(harness.coordinator.activeCount).toBe(0);
     harness.dispose();
   });
 

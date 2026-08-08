@@ -189,7 +189,7 @@
 
 .scene-legend > strong {
   color: var(--text-secondary);
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -209,7 +209,7 @@
   align-items: center;
   gap: 7px;
   color: var(--text-secondary);
-  font-size: 9px;
+  font-size: 10px;
   white-space: nowrap;
 }
 

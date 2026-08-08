@@ -6,7 +6,7 @@ import {
   getPodData,
 } from '../world';
 import type { EntityId, RelationId, WorldEntity, WorldSnapshot } from '../world/types';
-import { createEffectiveScenePlan } from '../renderer/scene-grammar';
+import { createEffectiveScenePlan, type SceneViewportClass } from '../renderer/scene-grammar';
 import type {
   ActiveTeachingRoute,
   ComparisonPanelModel,
@@ -25,6 +25,11 @@ import type {
 import { humanizeWorldDiff } from './diff/humanizeWorldDiff';
 
 const emptyTransition: TransitionPlan = { cues: [] };
+
+export interface CourseCompilationOptions {
+  /** Density and visibility grammar selected by the actual scene viewport. */
+  readonly viewport?: SceneViewportClass;
+}
 
 function freezeValue<T>(value: T): T {
   return deepFreeze(structuredClone(value)) as unknown as T;
@@ -638,7 +643,11 @@ function validateTransition(
 }
 
 export const courseEngine = {
-  compileLesson(lesson: LessonV2, initialWorld: WorldSnapshot): CompiledLesson {
+  compileLesson(
+    lesson: LessonV2,
+    initialWorld: WorldSnapshot,
+    options: CourseCompilationOptions = {},
+  ): CompiledLesson {
     if (lesson.scenarioId !== initialWorld.scenarioId) {
       throw new Error(`Lesson ${lesson.id} requires scenario ${lesson.scenarioId}`);
     }
@@ -664,7 +673,7 @@ export const courseEngine = {
       const transition = freezeValue(authoredStep.transition ?? emptyTransition);
       validateTransition(transition, beforeWorld, world, view);
       view = createEffectiveScenePlan(world, view, {
-        viewport: 'desktop',
+        viewport: options.viewport ?? 'desktop',
         applyGrammarDefaults: false,
       }).projection;
       const worldDiff = computeWorldDiff(beforeWorld, world);
@@ -691,7 +700,12 @@ export const courseEngine = {
     return step;
   },
 
-  compileDirect(lesson: LessonV2, initialWorld: WorldSnapshot, stepIndex: number): CompiledStep {
-    return this.getStep(this.compileLesson(lesson, initialWorld), stepIndex);
+  compileDirect(
+    lesson: LessonV2,
+    initialWorld: WorldSnapshot,
+    stepIndex: number,
+    options: CourseCompilationOptions = {},
+  ): CompiledStep {
+    return this.getStep(this.compileLesson(lesson, initialWorld, options), stepIndex);
   },
 };

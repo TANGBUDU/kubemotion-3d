@@ -17,7 +17,7 @@
 | 2 — Foundation and semantic islands   | COMPLETE    | `feat: rebuild the cluster from a clear foundation`                     | One bounded foundation, three non-overlapping semantic islands, dedicated Cluster/etcd visuals, desktop screenshots |
 | 3 — Runtime hierarchy models          | COMPLETE    | `feat: make runtime containment visually self-evident`                  | One Node dimension source, four bays, embedded system modules, strict containment diagnostics, desktop screenshots  |
 | 4 — Logical object models             | COMPLETE    | `feat: establish distinct logical Kubernetes object visuals`            | Namespace workspace, Deployment blueprint, dynamic EndpointSlice rows, external actors, six reviewed captures       |
-| 5 — Camera, labels, responsive layout | NOT STARTED | `feat: make teaching scenes readable across viewport sizes`             | —                                                                                                                   |
+| 5 — Camera, labels, responsive layout | COMPLETE    | `feat: make teaching scenes readable across viewport sizes`             | Responsive grammar runtime, safe viewport, two camera modes, unified mobile label budget, fifteen reviewed captures |
 | 6 — Persistent route engine           | NOT STARTED | `feat: replace free-flying tokens with persistent semantic routes`      | —                                                                                                                   |
 | 7 — Migrate existing authored lessons | NOT STARTED | `feat: migrate the original lessons to the foundation-first system`     | —                                                                                                                   |
 | 8 — Twelve complete lessons           | NOT STARTED | `feat: expand the interactive foundations curriculum to twelve lessons` | —                                                                                                                   |
@@ -300,9 +300,72 @@ Human M4 result: PASS for desktop model identity, logical/physical separation, a
 external actor. The 390×844 capture remains evidence of the already-owned M5 responsive
 composition problem; it does not weaken M4's model semantics.
 
+## Milestone 5 checklist
+
+- [x] Made CourseEngine and Explore compile the same authored world through the actual desktop or
+      mobile grammar at runtime instead of shrinking a desktop projection.
+- [x] Kept Guided lessons on the orthographic teaching camera and added a low-distortion
+      perspective option plus deterministic reset controls to Explore only.
+- [x] Connected safe viewport framing to measured overlay rectangles, including Explore tabs,
+      camera controls, legend, caption, and any intersecting inspector surface.
+- [x] Kept both camera frustums current across resize, selection, refocus, view changes, and
+      projection toggles.
+- [x] Wired cancelable orthographic camera transitions with deterministic finish behavior,
+      disabled controls during transition, and instant settled poses for reduced motion.
+- [x] Enforced the directive's label priority order: zone heading, focused entity, active route,
+      selected secondary entity, then context.
+- [x] Enforced one shared mobile budget of three across entity, layout, route, and teaching-callout
+      labels, with a one-route-label sub-budget and deterministic tie breaking.
+- [x] Made dimmed labels lower priority than every normal context label and made labels avoid
+      teaching-callout rectangles.
+- [x] Added EN, JA, and zh-CN safe-frame and label-budget regressions at 390 px and the exact 720 px
+      breakpoint.
+- [x] Replaced the permanent Explore sidebar with a compact top toolbar and added a compact scene
+      legend without hiding the six view grammars.
+- [x] Recompiled from the renderer host width (including the exact 720 px boundary) without
+      replaying an already-settled authored step.
+- [x] Kept the mobile inspector to a bounded bottom sheet and exposed a mobile reset whenever
+      desktop-only filters remain active.
+- [x] Made the mobile lesson scene occupy 49.4vh while keeping the Teaching sheet, “What changed,”
+      Evidence, and timeline visible without horizontal overflow.
+- [x] Kept the active `UNSCHEDULED / TRANSIT` heading in the three-label mobile budget whenever a
+      Pending Pod is visible, and rejected clipped or completion-card-obscured “What changed” text.
+- [x] Captured and machine-checked five objectives at 1440×900, 1280×720, and 390×844, rotating all
+      three locales through every objective and viewport class.
+- [x] Completed the human five-second review of all fifteen captures.
+
+## Milestone 5 automated checks
+
+| Check                                                               | Result                                                                                                                                |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm visual:m5`                                                    | PASS — 15/15 captures across five objectives, three viewports, and three locales                                                      |
+| Runtime viewport projection                                         | PASS — desktop/mobile plans differ deterministically without mutating authored lessons                                                |
+| Camera and safe viewport                                            | PASS — Guided orthographic, Explore orthographic/perspective/reset, measured exclusions, zero active camera transitions at settlement |
+| Mobile total label budget                                           | PASS — exactly 3 visible entity/layout/route/callout labels in every 390×844 capture                                                  |
+| Mobile composition                                                  | PASS — lesson scene 49.4vh, expanded Teaching sheet, fully visible/unobscured “What changed,” zero horizontal overflow                |
+| Label and safe-frame geometry                                       | PASS — zero label/callout overlaps, zero labels outside stage or safe rectangle, minimum scene text 10 CSS px                         |
+| Overview framing                                                    | PASS — teaching subjects fill 48–97% of the safe frame and the complete foundation stays inside the UI-free content rectangle         |
+| Persistent-route evidence                                           | PASS — settled Service and restart captures retain wide lines, arrowheads, and numbered markers                                       |
+| Runtime hierarchy                                                   | PASS — scheduled Pods remain in bays, Containers remain in Pods, Pending Pod remains outside Nodes                                    |
+| `pnpm content:validate`                                             | PASS — 2 v2 scenarios, 32 entities, 34 relations, 2 verified lessons, 20 planned                                                      |
+| `pnpm test:unit -- --run`                                           | PASS — 42 files, 292 tests                                                                                                            |
+| `pnpm test:e2e`                                                     | PASS — 135 passed, 51 intentional skips, 0 failed                                                                                     |
+| `pnpm format:check` / `pnpm lint` / `pnpm typecheck` / `pnpm build` | PASS                                                                                                                                  |
+
+## Milestone 5 screenshot review
+
+Manifest: [`evidence/m5/m5-responsive-visual-manifest.json`](./evidence/m5/m5-responsive-visual-manifest.json)
+
+Human acceptance: [`evidence/m5/M5_VISUAL_ACCEPTANCE.md`](./evidence/m5/M5_VISUAL_ACCEPTANCE.md)
+
+Human M5 result: PASS. The mobile Overview uses a compact toolbar and a two-row six-view selector;
+the focused Pod/Container capture fills the useful scene; the Service request remains statically
+traceable; restart and Pending states retain the focused object beside an expanded explanation.
+The historical M2/M3/M4 390×844 risk captures are superseded by this passing matrix without being
+rewritten or deleted.
+
 ## Next coherent task
 
-Milestone 5 must make the same accepted scenes readable across real safe viewport rectangles. It
-must apply mobile grammar at runtime, unify the mobile label budget, connect header/panel/timeline
-and teaching-sheet exclusions to camera framing, add an Explore perspective option, and convert the
-recorded M2/M3/M4 390×844 risks into passing responsive evidence.
+Milestone 6 must finish the persistent route engine contract: route definitions and anchors,
+obstacle-safe planning, wide route handles, clipped-arrow detection, pooled direction markers and
+tokens, and hard failures whenever a packet-like cue lacks a persistent route.

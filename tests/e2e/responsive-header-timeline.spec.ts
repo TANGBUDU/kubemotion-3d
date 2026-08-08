@@ -144,13 +144,51 @@ test('mobile Explore controls meet touch targets and view tabs rove by keyboard'
     );
     const closeInspector = page.getByRole('button', { name: 'Close inspector' });
     await expect(closeInspector).toBeVisible();
-    const closeSize = await closeInspector.evaluate((element) => {
-      const box = element.getBoundingClientRect();
-      return { width: box.width, height: box.height };
+    const inspectorMetrics = await page.evaluate(() => {
+      const close = document.querySelector<HTMLElement>('.inspector-close');
+      const inspector = document.querySelector<HTMLElement>('.inspector');
+      const stage = document.querySelector<HTMLElement>('.explore-stage');
+      if (!close || !inspector || !stage) throw new Error('Missing mobile inspector layout');
+      const closeBox = close.getBoundingClientRect();
+      const inspectorBox = inspector.getBoundingClientRect();
+      const stageBox = stage.getBoundingClientRect();
+      return {
+        closeWidth: closeBox.width,
+        closeHeight: closeBox.height,
+        inspectorHeight: inspectorBox.height,
+        visibleStageAboveInspector: inspectorBox.top - stageBox.top,
+        viewportHeight: window.innerHeight,
+      };
     });
-    expect(closeSize.width).toBeGreaterThanOrEqual(44);
-    expect(closeSize.height).toBeGreaterThanOrEqual(44);
+    expect(inspectorMetrics.closeWidth).toBeGreaterThanOrEqual(44);
+    expect(inspectorMetrics.closeHeight).toBeGreaterThanOrEqual(44);
+    expect(inspectorMetrics.inspectorHeight).toBeLessThanOrEqual(
+      Math.min(inspectorMetrics.viewportHeight * 0.3, 260) + 1,
+    );
+    expect(inspectorMetrics.visibleStageAboveInspector).toBeGreaterThanOrEqual(90);
+    if (viewport.width === 390) {
+      await expect(page.locator('.scene-label:not([hidden])')).not.toHaveCount(0);
+    }
+    await closeInspector.click();
+    await expect(page.locator('.inspector')).toHaveCount(0);
   }
+});
+
+test('mobile Explore exposes a reset for filters that became hidden across the breakpoint', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-chromium', 'Mobile filter recovery gate');
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/#/explore');
+  await page.getByRole('combobox', { name: 'Kind' }).selectOption('Pod');
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  const reset = page.locator('.mobile-filter-reset');
+  await expect(reset).toBeVisible();
+  await reset.click();
+  await expect
+    .poll(() => page.locator('.explore-tools label').nth(2).locator('select').inputValue())
+    .toBe('');
 });
 
 test('deep-linked active timeline scrolls nearest without moving page or focus', async ({

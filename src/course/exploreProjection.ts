@@ -1,7 +1,11 @@
 import type { ExploreFilters } from '../state/appStore';
 import type { EntityId, RelationId, WorldSnapshot } from '../world/types';
+import {
+  createEffectiveScenePlan,
+  type EffectiveScenePlan,
+  type SceneViewportClass,
+} from '../renderer/scene-grammar';
 import type { EntityViewState, RelationViewState, ViewMode, ViewProjection } from './types';
-import { createEffectiveScenePlan } from '../renderer/scene-grammar';
 
 function isDirectMatch(
   world: WorldSnapshot,
@@ -19,11 +23,19 @@ function isDirectMatch(
   );
 }
 
-export function createExploreProjection(
+/**
+ * Compile Explore's filter intent through the selected viewport grammar.
+ *
+ * Returning the complete plan gives runtime consumers one deterministic source for visibility,
+ * density, camera, and layout metadata. `createExploreProjection` remains the convenient,
+ * backwards-compatible projection-only API.
+ */
+export function createExploreScenePlan(
   world: WorldSnapshot,
   view: ViewMode,
   filters: ExploreFilters,
-): ViewProjection {
+  viewport: SceneViewportClass = 'desktop',
+): EffectiveScenePlan {
   const query = filters.query.trim().toLowerCase();
   const filtering = Boolean(query || filters.kind || filters.namespace || filters.status);
   const matches = new Set<EntityId>();
@@ -99,8 +111,17 @@ export function createExploreProjection(
     cameraPresetId: view,
   };
   return createEffectiveScenePlan(world, authoredProjection, {
-    viewport: 'desktop',
+    viewport,
     applyGrammarDefaults: !filtering,
     allowFocusedKindOverride: filtering,
-  }).projection;
+  });
+}
+
+export function createExploreProjection(
+  world: WorldSnapshot,
+  view: ViewMode,
+  filters: ExploreFilters,
+  viewport: SceneViewportClass = 'desktop',
+): ViewProjection {
+  return createExploreScenePlan(world, view, filters, viewport).projection;
 }

@@ -125,3 +125,48 @@ test('Service identity stays stable while a later request selects another Ready 
     'Readiness changes which backends are eligible for new traffic',
   );
 });
+
+test('teaching callouts and scene labels share collision-free space', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-1280-chromium',
+    'The 1280px teaching panel reproduces the densest desktop layout',
+  );
+  await gotoServiceStep(page, 4);
+  await page.locator('.lesson-language select').selectOption('zh-CN');
+  await expect(page.locator('.scene-callout:not([hidden])')).toContainText('ready=false');
+
+  const collisions = await page.evaluate(() => {
+    const callouts = [...document.querySelectorAll<HTMLElement>('.scene-callout:not([hidden])')];
+    const labels = [...document.querySelectorAll<HTMLElement>('.scene-label:not([hidden])')];
+    return callouts.flatMap((callout) => {
+      const left = callout.getBoundingClientRect();
+      return labels.flatMap((label) => {
+        const right = label.getBoundingClientRect();
+        return left.left < right.right &&
+          left.right > right.left &&
+          left.top < right.bottom &&
+          left.bottom > right.top
+          ? [
+              `${callout.dataset.calloutId ?? 'callout'}/${label.dataset.entityId ?? label.dataset.layoutLabelId ?? 'label'}`,
+            ]
+          : [];
+      });
+    });
+  });
+  expect(collisions).toEqual([]);
+});
+
+test('mobile callouts count toward the three-label scene ceiling', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile-chromium', 'Mobile density gate');
+  for (const stepIndex of [1, 4]) {
+    await gotoServiceStep(page, stepIndex);
+    const visibleTeachingLabels = page.locator(
+      '.scene-label:not([hidden]), .scene-callout:not([hidden])',
+    );
+    await expect(visibleTeachingLabels).not.toHaveCount(0);
+    expect(await visibleTeachingLabels.count()).toBeLessThanOrEqual(3);
+    await expect(page.locator('.scene-callout:not([hidden])')).toHaveCount(1);
+  }
+});

@@ -136,7 +136,7 @@
 
 .lesson-completion-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) repeat(2, auto);
+  grid-template-columns: 1fr 1fr;
   gap: 7px;
 }
 
@@ -164,6 +164,7 @@
 }
 
 .lesson-completion-actions .lesson-completion-primary {
+  grid-column: 1 / -1;
   justify-content: flex-start;
   border-color: color-mix(in srgb, var(--success) 48%, var(--border));
   background: rgb(69 196 134 / 12%);
