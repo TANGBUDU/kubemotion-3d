@@ -14,16 +14,40 @@ change is therefore a change of teaching projection, not a rearrangement of one 
 Zones organize responsibility and placement before an event is animated. They are stable teaching
 landmarks, not Kubernetes API objects.
 
-| Lesson context  | Zone                            | Current meaning                                                                                  |
-| --------------- | ------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Pod lifecycle   | `CONTROL PLANE`                 | Simplified API interaction, reconciliation, and scheduling responsibility.                       |
-| Pod lifecycle   | `WORKLOAD STATE / UNSCHEDULED`  | ReplicaSet counters and the tray for a Pending Pod that has no assigned Node.                    |
-| Pod lifecycle   | `WORKER NODES`                  | Physical placement context for Nodes, embedded kubelets, Pods, and their Container status slots. |
-| Service traffic | `CLIENT`                        | The workload that begins a logical application request.                                          |
-| Service traffic | `STABLE ENTRY / ENDPOINT STATE` | The stable Service entry and adjacent EndpointSlice API state.                                   |
-| Service traffic | `BACKEND PODS`                  | Backend identities whose readiness determines eligibility for new traffic.                       |
+| Lesson context  | Zone                            | Current meaning                                                                                   |
+| --------------- | ------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Overview        | `CLUSTER FOUNDATION`            | One bounded teaching surface for the synthetic cluster; it is not a Namespace or Node container.  |
+| Overview        | `CONTROL PLANE`                 | API Server, etcd, scheduler, and controller responsibility at cluster overview scale.             |
+| Overview        | `WORKER NODES`                  | Up to three Node chassis with representative assigned Pods visibly seated in their bays.          |
+| Overview        | `UNSCHEDULED / TRANSIT`         | Separate location for a Pending Pod; remains visible and empty when no Pod is awaiting placement. |
+| Pod lifecycle   | `CONTROL PLANE`                 | Simplified API interaction, reconciliation, and scheduling responsibility.                        |
+| Pod lifecycle   | `WORKLOAD STATE / UNSCHEDULED`  | ReplicaSet counters and the tray for a Pending Pod that has no assigned Node.                     |
+| Pod lifecycle   | `WORKER NODES`                  | Physical placement context for Nodes, embedded kubelets, Pods, and their Container status slots.  |
+| Service traffic | `CLIENT`                        | The workload that begins a logical application request.                                           |
+| Service traffic | `STABLE ENTRY / ENDPOINT STATE` | The stable Service entry and adjacent EndpointSlice API state.                                    |
+| Service traffic | `BACKEND PODS`                  | Backend identities whose readiness determines eligibility for new traffic.                        |
 
 > These are teaching zones. They explain responsibility and placement; they are not a claim that every cluster deploys control-plane components in the same physical arrangement.
+
+## Foundation and semantic-island ownership
+
+Every rendered teaching scene rests on one bounded foundation. `SceneStage` owns that base and only
+local alignment marks; the current view layout owns the semantic-island plan, and `SceneRegistry`
+owns the corresponding island plates and the unscheduled tray. No entity visual or view may add a
+second floor. This single-owner rule prevents the overlapping transparent discs and universal grid
+that made the rejected baseline look like one undifferentiated debug scene.
+
+The Cluster marker is a compact boundary plaque at the foundation edge. It means “the synthetic
+cluster discussed in this scene.” It does not mean that a Namespace is a physical platform, that a
+Namespace contains Nodes, or that every Kubernetes object lives at the same physical level. A
+Namespace remains logical scope; a Node remains physical placement; their relationship is taught in
+different scene grammars.
+
+Overview and Control Flow use separate projection and layout contracts. Overview establishes the
+cluster foundation, control-plane island, worker-node island, and unscheduled/transit lane. Control
+Flow keeps only the context needed for one API-mediated causal chain and maps that context onto its
+own three-island composition. Changing between them therefore changes the teaching grammar, not
+just the position of the camera or the same universal object pile.
 
 ## Entity visual language
 
@@ -31,11 +55,13 @@ Verified lesson entities use dedicated visuals rather than a generic fallback.
 
 | Entity                | Implemented visual language                                                                  | Factual meaning shown to the learner                                                                                                                                                                |
 | --------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cluster               | Compact front boundary plaque and short rails; never a floor slab.                           | Identifies the synthetic cluster teaching boundary without implying Namespace/Node containment or adding another physical platform.                                                                 |
 | Node                  | Dark rack or chassis with visible Pod bays, an embedded kubelet, Node name, and Node status. | Physical placement context. A Pod inside a bay is assigned to that Node.                                                                                                                            |
 | Pod                   | Translucent logical shell with a status header or rail and a named child visual.             | Pod UID, assigned Node, phase, and conditions remain separate factual fields. Detailed facts stay in the fixed Evidence panel instead of large world-space metadata slabs.                          |
 | Container status slot | Named child inside one Pod, with state-dependent form and status treatment.                  | Stable API-facing slot for one named Container within that Pod; runtime identity and restart evidence come from ContainerStatus fields.                                                             |
 | ReplicaSet            | Three-part counter card labelled `SPEC`, `OBSERVED`, and `READY`.                            | `SPEC` maps to `.spec.replicas`; `OBSERVED` maps to `.status.replicas`; `READY` maps to `.status.readyReplicas`.                                                                                    |
 | API Server            | Kubernetes API interaction hub in the simplified control story.                              | API-mediated reads, watches, writes, and bindings may pass through it; it is not the cause of a Node-local process restart.                                                                         |
+| etcd                  | Three storage columns containing replicated-looking storage cells and one API-facing port.   | Conceptual Kubernetes API data store. In the basic model only the API Server connects to it; the cells are not a literal topology, quorum diagram, or application database.                         |
 | Controller Manager    | Reconciliation-loop visual with API-mediated control emphasis.                               | Observes workload state and creates a replacement Pod when the ReplicaSet has a replica deficit; it is not a network proxy.                                                                         |
 | Scheduler             | Amber scheduling and decision visual.                                                        | Selects a Node for an unscheduled Pod and records the binding through the API; it does not start Containers.                                                                                        |
 | kubelet               | Agent embedded in each Node visual.                                                          | Starts assigned Containers and owns the local same-Pod restart route. API observation can remain contextual without becoming the per-crash initiator.                                               |
@@ -50,15 +76,16 @@ Persistent relations describe settled structure in a snapshot. They remain disti
 teaching route, and their line form, routing, width, dashes, direction, and emphasis carry meaning
 in addition to color.
 
-| Meaning                 | Visual form                                      | Current role                                                                                       |
-| ----------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| containment             | Physical nesting or a short composition relation | A Pod contains its named Container status slot.                                                    |
-| ownership               | Restrained purple relation                       | A ReplicaSet owns its Pods.                                                                        |
-| control observation     | Low-emphasis purple relation                     | Preserves API context without claiming that the API Server initiates local restarts.               |
-| `endpoint-membership`   | Green relation                                   | Connects an EndpointSlice endpoint record to its backend identity.                                 |
-| placement               | Pod settled in a Node bay                        | Shows the assigned Node after scheduling.                                                          |
-| scope and configuration | Lower-emphasis contextual relation               | Supplies namespace or configuration context only when the lesson needs it.                         |
-| storage                 | Reserved green orthogonal relation               | Reserved for a future verified storage lesson; the current lessons make no storage-behavior claim. |
+| Meaning                 | Visual form                                      | Current role                                                                                                                      |
+| ----------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| containment             | Physical nesting or a short composition relation | A Pod contains its named Container status slot.                                                                                   |
+| ownership               | Restrained purple relation                       | A ReplicaSet owns its Pods.                                                                                                       |
+| control observation     | Low-emphasis purple relation                     | Preserves API context without claiming that the API Server initiates local restarts.                                              |
+| API data storage        | Short directed API Server → etcd relation        | Shows the only permitted basic-model client of etcd; no controller, scheduler, kubelet, or application request connects directly. |
+| `endpoint-membership`   | Green relation                                   | Connects an EndpointSlice endpoint record to its backend identity.                                                                |
+| placement               | Pod settled in a Node bay                        | Shows the assigned Node after scheduling.                                                                                         |
+| scope and configuration | Lower-emphasis contextual relation               | Supplies namespace or configuration context only when the lesson needs it.                                                        |
+| storage                 | Reserved green orthogonal relation               | Reserved for a future verified storage lesson; the current lessons make no storage-behavior claim.                                |
 
 Endpoint membership records eligibility state but does not create an application-traffic hop.
 
@@ -131,6 +158,10 @@ Service routing is shown as a logical client-to-Service-to-backend path. A clust
 data-plane implementation is implementation-dependent. The current verified scope covers the Pod
 lifecycle and Service traffic lessons described here; reserved relation styles do not assert
 behavior that those lessons do not model.
+
+The foundation and island arrangement is likewise conceptual. It separates logical responsibility,
+physical placement, and transit state for teaching clarity; it does not claim a rack topology,
+control-plane hosting model, Namespace boundary, network boundary, or etcd deployment topology.
 
 Related documentation:
 

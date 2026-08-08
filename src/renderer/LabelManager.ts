@@ -59,7 +59,9 @@ const MOBILE_ROUTE_LABEL_LIMIT = 1;
 const labelPriority = (kind: string, emphasis: string, selected: boolean): number => {
   if (selected) return 100;
   if (emphasis === 'focused') return 80;
+  if (kind === 'Cluster') return 82;
   if (kind === 'KubeAPIServer' || kind === 'ApiServer' || kind === 'APIServer') return 72;
+  if (kind === 'Etcd') return 70;
   if (kind === 'ControllerManager' || kind === 'KubeControllerManager') return 68;
   if (kind === 'Scheduler') return 65;
   if (kind === 'Node') return 62;

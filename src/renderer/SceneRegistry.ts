@@ -197,8 +197,86 @@ const createPendingTray = (container: LayoutContainer): LayoutGuideHandle => {
   };
 };
 
+const createSemanticIsland = (container: LayoutContainer): LayoutGuideHandle => {
+  const root = new THREE.Group();
+  configureGuideRoot(root, container);
+  root.userData.role = 'semantic-island';
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  const ownGeometry = <TGeometry extends THREE.BufferGeometry>(geometry: TGeometry): TGeometry => {
+    geometries.add(geometry);
+    return geometry;
+  };
+  const ownMaterial = <TMaterial extends THREE.Material>(material: TMaterial): TMaterial => {
+    materials.add(material);
+    return material;
+  };
+
+  const height = Math.max(0.09, container.bounds.size[1]);
+  const geometry = ownGeometry(
+    createRoundedBoxGeometry(container.bounds.size[0], height, container.bounds.size[2], 0.24, 4),
+  );
+  const material = ownMaterial(
+    createSurfaceMaterial({
+      color: palette.surfaceSecondary,
+      roughness: 0.76,
+      metalness: 0.04,
+      transparent: true,
+      opacity: 0.94,
+    }),
+  );
+  const base = new THREE.Mesh(geometry, material);
+  base.receiveShadow = true;
+  base.userData.role = 'semantic-island-base';
+  base.userData.islandKind = container.kind;
+  base.userData.selectable = false;
+  root.add(base);
+
+  const edgeGeometry = ownGeometry(new THREE.EdgesGeometry(geometry, 24));
+  const edgeMaterial = ownMaterial(createFlatAccentMaterial(guideColor(container), 0.74));
+  const edge = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+  edge.userData.role = 'semantic-island-edge';
+  edge.userData.islandKind = container.kind;
+  edge.userData.selectable = false;
+  root.add(edge);
+
+  const markerWidth = Math.min(3.4, Math.max(1.4, container.bounds.size[0] * 0.24));
+  const markerGeometry = ownGeometry(createRoundedBoxGeometry(markerWidth, 0.055, 0.09, 0.025));
+  const markerMaterial = ownMaterial(createFlatAccentMaterial(guideColor(container), 0.9));
+  const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+  marker.position.set(
+    -container.bounds.size[0] / 2 + markerWidth / 2 + 0.36,
+    height / 2 + 0.035,
+    -container.bounds.size[2] / 2 + 0.17,
+  );
+  marker.userData.role = 'semantic-island-heading-rail';
+  marker.userData.selectable = false;
+  root.add(marker);
+
+  const labelAnchor = addDomLabelAnchor(root, container);
+  root.position.set(...container.bounds.center);
+  return {
+    root,
+    shapeKey: layoutGuideShapeKey(container),
+    ...(labelAnchor ? { labelAnchor } : {}),
+    dispose: () => {
+      root.removeFromParent();
+      root.clear();
+      for (const ownedGeometry of geometries) ownedGeometry.dispose();
+      for (const ownedMaterial of materials) ownedMaterial.dispose();
+    },
+  };
+};
+
 const createLayoutGuide = (container: LayoutContainer): LayoutGuideHandle => {
   if (container.kind === 'pending-lane') return createPendingTray(container);
+  if (
+    container.kind === 'control-lane' ||
+    container.kind === 'worker-lane' ||
+    container.kind === 'workload-lane'
+  ) {
+    return createSemanticIsland(container);
+  }
   const root = new THREE.Group();
   configureGuideRoot(root, container);
   const geometry = new THREE.BoxGeometry(
@@ -265,9 +343,12 @@ const disposalRank = (handle: EntityVisualHandle): number => {
 };
 
 const LAYOUT_LABEL_ORDER: Readonly<Record<string, number>> = Object.freeze({
+  'control-plane-island': 0,
   'control-plane-zone': 0,
   'workload-state-zone': 1,
+  'unscheduled-transit-lane': 2,
   'pending-lane': 2,
+  'worker-nodes-island': 3,
   'worker-nodes-zone': 3,
 });
 
@@ -572,5 +653,13 @@ export class SceneRegistry {
 
   public get guideCount(): number {
     return this.guides.size;
+  }
+
+  public get semanticIslandCount(): number {
+    return [...this.guides.values()].filter(
+      (guide) =>
+        guide.root.userData.role === 'semantic-island' ||
+        guide.root.userData.role === 'unscheduled-pods-tray',
+    ).length;
   }
 }

@@ -5,49 +5,22 @@ import { createRoundedBoxGeometry } from '../design/geometry';
 import { createFlatAccentMaterial, createSurfaceMaterial } from '../design/materials';
 import { palette } from '../design/palette';
 
-export interface StageZoneDefinition {
-  readonly id: 'control-plane' | 'workload-state' | 'worker-nodes';
-  readonly title: string;
-  readonly center: readonly [number, number, number];
-  readonly size: readonly [number, number];
-  readonly labelAnchor: readonly [number, number, number];
-  readonly accent: number;
-}
-
 export interface StageDomLabelData {
   readonly id: string;
-  readonly labelClass: 'zone-title' | 'fixed-legend';
+  readonly labelClass: 'fixed-legend';
   readonly text: string;
-  readonly zoneId?: StageZoneDefinition['id'];
 }
 
-export const lessonStageZones: readonly StageZoneDefinition[] = [
-  {
-    id: 'control-plane',
-    title: 'CONTROL PLANE',
-    center: [0, 0.055, -5.25] as const,
-    size: [20, 2.55] as const,
-    labelAnchor: [-9.4, 0.12, -6.38] as const,
-    accent: palette.controlFlow,
-  },
-  {
-    id: 'workload-state',
-    title: 'WORKLOAD STATE / UNSCHEDULED QUEUE',
-    center: [0, 0.055, -2.05] as const,
-    size: [20, 2.35] as const,
-    labelAnchor: [-9.4, 0.12, -3.12] as const,
-    accent: palette.scheduling,
-  },
-  {
-    id: 'worker-nodes',
-    title: 'WORKER NODES',
-    center: [0, 0.055, 2.85] as const,
-    size: [20, 5.55] as const,
-    labelAnchor: [-9.4, 0.12, 0.28] as const,
-    accent: palette.dataFlow,
-  },
-];
+export interface StageFoundationDiagnostics {
+  readonly foundationMeshes: number;
+  readonly localAlignmentMarks: number;
+  readonly dominantGridMarks: number;
+}
 
+/**
+ * Owns the bounded teaching foundation only. View-specific semantic islands are produced by the
+ * active layout and rendered by SceneRegistry, so there is exactly one owner for every base plate.
+ */
 export class SceneStage {
   public readonly root = new THREE.Group();
   public readonly labelAnchors = new Map<string, THREE.Object3D>();
@@ -56,17 +29,15 @@ export class SceneStage {
 
   public constructor(parent: THREE.Object3D) {
     this.root.name = 'lesson-stage';
-    this.addFloor();
-    this.addLocalGrid();
-    for (const zone of lessonStageZones) this.addZone(zone);
+    this.root.userData.foundation = Object.freeze({
+      bounded: true,
+      width: dimensions.stage.width,
+      depth: dimensions.stage.depth,
+      semanticIslandOwner: 'layout-registry',
+    });
+    this.addFoundation();
+    this.addAlignmentMarks();
     this.addLegendAnchor();
-    this.root.userData.zones = lessonStageZones.map((zone) => ({
-      id: zone.id,
-      title: zone.title,
-      center: zone.center,
-      size: zone.size,
-      labelAnchor: zone.labelAnchor,
-    }));
     parent.add(this.root);
   }
 
@@ -80,8 +51,8 @@ export class SceneStage {
     return material;
   }
 
-  private addFloor(): void {
-    const geometry = this.ownGeometry(
+  private addFoundation(): void {
+    const baseGeometry = this.ownGeometry(
       createRoundedBoxGeometry(
         dimensions.stage.width,
         dimensions.stage.floorHeight,
@@ -90,79 +61,81 @@ export class SceneStage {
         5,
       ),
     );
-    const material = this.ownMaterial(
-      createSurfaceMaterial({ color: palette.floor, roughness: 0.82, metalness: 0.02 }),
+    const baseMaterial = this.ownMaterial(
+      createSurfaceMaterial({ color: palette.surfaceRecessed, roughness: 0.78, metalness: 0.08 }),
     );
-    const floor = new THREE.Mesh(geometry, material);
-    floor.position.y = -dimensions.stage.floorHeight / 2;
-    floor.receiveShadow = true;
-    floor.userData.role = 'lesson-floor';
-    this.root.add(floor);
+    const base = new THREE.Mesh(baseGeometry, baseMaterial);
+    base.position.y = -dimensions.stage.floorHeight / 2;
+    base.castShadow = true;
+    base.receiveShadow = true;
+    base.userData.role = 'cluster-foundation-base';
+    base.userData.selectable = false;
+    this.root.add(base);
+
+    const topGeometry = this.ownGeometry(
+      createRoundedBoxGeometry(
+        dimensions.stage.width - 0.34,
+        0.055,
+        dimensions.stage.depth - 0.34,
+        Math.max(0.18, dimensions.stage.cornerRadius - 0.08),
+        4,
+      ),
+    );
+    const topMaterial = this.ownMaterial(
+      createSurfaceMaterial({ color: palette.floor, roughness: 0.88, metalness: 0.01 }),
+    );
+    const top = new THREE.Mesh(topGeometry, topMaterial);
+    top.position.y = 0.016;
+    top.receiveShadow = true;
+    top.userData.role = 'cluster-foundation-top';
+    top.userData.selectable = false;
+    this.root.add(top);
+
+    const frontRailGeometry = this.ownGeometry(createRoundedBoxGeometry(5.6, 0.2, 0.16, 0.055, 3));
+    const frontRailMaterial = this.ownMaterial(
+      createSurfaceMaterial({ color: palette.surfaceElevated, roughness: 0.52, metalness: 0.16 }),
+    );
+    const frontRail = new THREE.Mesh(frontRailGeometry, frontRailMaterial);
+    frontRail.position.set(0, 0.045, dimensions.stage.depth / 2 - 0.08);
+    frontRail.castShadow = true;
+    frontRail.userData.role = 'cluster-foundation-front-rail';
+    frontRail.userData.selectable = false;
+    this.root.add(frontRail);
+
+    const edgeMaterial = this.ownMaterial(createFlatAccentMaterial(palette.borderNeutral, 0.76));
+    const edgeGeometry = this.ownGeometry(new THREE.EdgesGeometry(baseGeometry, 24));
+    const edge = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+    edge.position.copy(base.position);
+    edge.userData.role = 'cluster-foundation-edge';
+    edge.userData.selectable = false;
+    this.root.add(edge);
   }
 
-  private addLocalGrid(): void {
-    const material = this.ownMaterial(createFlatAccentMaterial(palette.floorGrid, 0.2));
-    const horizontalGeometry = this.ownGeometry(new THREE.BoxGeometry(20.5, 0.012, 0.018));
-    const verticalGeometry = this.ownGeometry(new THREE.BoxGeometry(0.018, 0.012, 13.5));
-    for (let z = -6; z <= 6; z += 1) {
-      const line = new THREE.Mesh(horizontalGeometry, material);
-      line.position.set(0, 0.008, z);
-      line.userData.role = 'stage-grid-mark';
-      this.root.add(line);
+  private addAlignmentMarks(): void {
+    const material = this.ownMaterial(createFlatAccentMaterial(palette.floorGrid, 0.34));
+    const horizontalGeometry = this.ownGeometry(new THREE.BoxGeometry(0.72, 0.014, 0.028));
+    const verticalGeometry = this.ownGeometry(new THREE.BoxGeometry(0.028, 0.014, 0.72));
+    const frontZ = dimensions.stage.depth / 2 - 0.34;
+    const sideX = dimensions.stage.width / 2 - 0.34;
+
+    for (const x of [-8, -4, 4, 8]) {
+      for (const z of [-frontZ, frontZ]) {
+        const mark = new THREE.Mesh(horizontalGeometry, material);
+        mark.position.set(x, 0.052, z);
+        mark.userData.role = 'stage-alignment-mark';
+        mark.userData.selectable = false;
+        this.root.add(mark);
+      }
     }
-    for (let x = -10; x <= 10; x += 1) {
-      const line = new THREE.Mesh(verticalGeometry, material);
-      line.position.set(x, 0.008, 0);
-      line.userData.role = 'stage-grid-mark';
-      this.root.add(line);
+    for (const z of [-4.4, 0, 4.4]) {
+      for (const x of [-sideX, sideX]) {
+        const mark = new THREE.Mesh(verticalGeometry, material);
+        mark.position.set(x, 0.052, z);
+        mark.userData.role = 'stage-alignment-mark';
+        mark.userData.selectable = false;
+        this.root.add(mark);
+      }
     }
-  }
-
-  private addZone(zone: StageZoneDefinition): void {
-    const geometry = this.ownGeometry(
-      createRoundedBoxGeometry(zone.size[0], 0.045, zone.size[1], 0.18, 3),
-    );
-    const material = this.ownMaterial(createFlatAccentMaterial(zone.accent, 0.055));
-    const plate = new THREE.Mesh(geometry, material);
-    plate.position.set(...zone.center);
-    plate.userData.role = 'teaching-zone';
-    plate.userData.zoneId = zone.id;
-    plate.userData.zoneTitle = zone.title;
-    plate.userData.labelAnchor = zone.labelAnchor;
-    plate.userData.selectable = false;
-    this.root.add(plate);
-
-    const edgeGeometry = this.ownGeometry(new THREE.EdgesGeometry(geometry));
-    const edgeMaterial = this.ownMaterial(createFlatAccentMaterial(zone.accent, 0.3));
-    const boundary = new THREE.LineSegments(edgeGeometry, edgeMaterial);
-    boundary.position.copy(plate.position);
-    boundary.userData.role = 'teaching-zone-boundary';
-    boundary.userData.zoneId = zone.id;
-    boundary.userData.selectable = false;
-    this.root.add(boundary);
-
-    const markerGeometry = this.ownGeometry(
-      createRoundedBoxGeometry(Math.min(3.6, zone.size[0] * 0.3), 0.035, 0.055, 0.02),
-    );
-    const markerMaterial = this.ownMaterial(createFlatAccentMaterial(zone.accent, 0.72));
-    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-    marker.position.set(zone.labelAnchor[0] + 1.8, 0.09, zone.labelAnchor[2] + 0.1);
-    marker.userData.role = 'zone-title-marker';
-    marker.userData.zoneTitle = zone.title;
-    this.root.add(marker);
-
-    const anchor = new THREE.Object3D();
-    anchor.name = `zone-label-anchor:${zone.id}`;
-    anchor.position.set(...zone.labelAnchor);
-    anchor.userData.role = 'dom-label-anchor';
-    anchor.userData.domLabel = Object.freeze({
-      id: `zone:${zone.id}`,
-      labelClass: 'zone-title',
-      text: zone.title,
-      zoneId: zone.id,
-    } satisfies StageDomLabelData);
-    this.labelAnchors.set(zone.id, anchor);
-    this.root.add(anchor);
   }
 
   private addLegendAnchor(): void {
@@ -173,7 +146,7 @@ export class SceneStage {
     anchor.userData.domLabel = Object.freeze({
       id: 'stage:logical-layout-note',
       labelClass: 'fixed-legend',
-      text: 'Logical teaching layout; components may be deployed differently in real clusters.',
+      text: 'Logical teaching arrangement; it does not imply deployment nesting.',
     } satisfies StageDomLabelData);
     this.labelAnchors.set('logical-layout-note', anchor);
     this.root.add(anchor);
@@ -186,18 +159,28 @@ export class SceneStage {
     return anchor.getWorldPosition(target);
   }
 
-  /** Traffic has its own left-to-right semantic lanes; golden control-plane plates would be noise. */
-  public setViewMode(view: ViewMode): void {
-    const showGoldenZones = view !== 'traffic';
+  public getFramingBounds(target = new THREE.Box3()): THREE.Box3 {
+    this.root.updateWorldMatrix(true, true);
+    return target.setFromObject(this.root, true);
+  }
+
+  public diagnostics(): StageFoundationDiagnostics {
+    let foundationMeshes = 0;
+    let localAlignmentMarks = 0;
+    let dominantGridMarks = 0;
     this.root.traverse((object) => {
-      if (
-        object.userData.role === 'teaching-zone' ||
-        object.userData.role === 'teaching-zone-boundary' ||
-        object.userData.role === 'zone-title-marker'
-      ) {
-        object.visible = showGoldenZones;
+      const role = object.userData.role;
+      if (typeof role !== 'string') return;
+      if (role.startsWith('cluster-foundation-') && object instanceof THREE.Mesh) {
+        foundationMeshes += 1;
       }
+      if (role === 'stage-alignment-mark') localAlignmentMarks += 1;
+      if (role === 'stage-grid-mark') dominantGridMarks += 1;
     });
+    return { foundationMeshes, localAlignmentMarks, dominantGridMarks };
+  }
+
+  public setViewMode(view: ViewMode): void {
     this.root.userData.viewMode = view;
   }
 

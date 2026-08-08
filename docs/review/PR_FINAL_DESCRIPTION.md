@@ -3,6 +3,16 @@
 > Foundation-first rebuild note: this document records the accepted pre-rebuild release baseline.
 > Milestones 0–10 replace its visual and curriculum completion claims as they are delivered.
 
+Delivered rebuild milestones on this branch:
+
+- M0 preserves the rejected production baseline and locks the machine-readable rebuild gates;
+- M1 gives Overview, Logical Ownership, Placement & Runtime, Control Flow, Traffic, and Storage
+  independent scene grammars and density budgets;
+- M2 replaces the unbounded shared floor with one bounded Cluster foundation, three
+  layout-owned semantic islands, dedicated Cluster/etcd visuals, and deterministic Overview and
+  Control Flow placement. The desktop five-second gate passes; the intentionally recorded 390 px
+  composition remains an explicit M5 responsibility.
+
 - immutable `WorldSnapshot` / `WorldPatch` / `WorldDiff` plus a separate `ViewProjection`;
 - two verified lessons:
   - Container restart vs Pod replacement;
@@ -50,12 +60,14 @@
 - `pnpm format:check` — PASS;
 - `pnpm lint` — PASS;
 - `pnpm typecheck` — PASS;
-- `pnpm content:validate` — PASS (2 v2 scenarios, 25 entities, 28 relations, 2 verified v2
+- `pnpm content:validate` — PASS (2 v2 scenarios, 27 entities, 29 relations, 2 verified v2
   lessons, 20 planned lessons, 26 terms, 29 official sources);
-- `pnpm content:accuracy` — PASS (208 current-public text files, 30 forbidden patterns, 23 local
+- `pnpm content:accuracy` — PASS (212 current-public text files, 30 forbidden patterns, 23 local
   links, and all README, visualization, lifecycle, and Service invariants);
-- `pnpm test:unit -- --run` — PASS (34 files, 238 tests);
+- `pnpm test:unit -- --run` — PASS (35 files, 244 tests);
 - `pnpm build` — PASS;
+- `pnpm visual:m2` — PASS (four captures; desktop foundation/island gate passes with 0 measured
+  entity-label overlap and 0 labels outside the stage; mobile risk recorded for M5);
 - `pnpm test:e2e` — PASS (132 passed, 45 skipped, 0 failed); skips are deliberate
   project/viewport ownership selections;
 - 20-cycle dual-lesson renderer resource pressure gate — PASS;

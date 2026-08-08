@@ -11,8 +11,10 @@ import {
 } from '../../src/renderer/VisualFactoryRegistry';
 import {
   ApiServerVisualHandle,
+  ClusterFoundationVisualHandle,
   ContainerVisualHandle,
   ControllerManagerVisualHandle,
+  EtcdVisualHandle,
   GenericVisualHandle,
   KubeletVisualHandle,
   KubectlVisualHandle,
@@ -42,12 +44,13 @@ const makeEntity = (
   category:
     kind === 'Container'
       ? 'runtime-status'
-      : kind === 'Node'
+      : kind === 'Node' || kind === 'Cluster'
         ? 'infrastructure'
         : kind === 'Kubectl'
           ? 'external'
           : kind === 'Kubelet' ||
               kind === 'KubeAPIServer' ||
+              kind === 'Etcd' ||
               kind === 'ControllerManager' ||
               kind === 'Scheduler'
             ? 'runtime-component'
@@ -62,23 +65,28 @@ const makeEntity = (
   sourceIds: ['source'],
   visual: {
     archetype:
-      kind === 'Node'
-        ? 'node'
-        : kind === 'Pod'
-          ? 'pod'
-          : kind === 'Container'
-            ? 'container'
-            : kind === 'ReplicaSet'
-              ? 'replicaset'
-              : kind === 'Kubelet'
-                ? 'runtime'
-                : kind === 'Kubectl'
-                  ? 'external'
-                  : 'control-plane',
+      kind === 'Cluster'
+        ? 'cluster'
+        : kind === 'Node'
+          ? 'node'
+          : kind === 'Pod'
+            ? 'pod'
+            : kind === 'Container'
+              ? 'container'
+              : kind === 'ReplicaSet'
+                ? 'replicaset'
+                : kind === 'Kubelet'
+                  ? 'runtime'
+                  : kind === 'Kubectl'
+                    ? 'external'
+                    : 'control-plane',
   },
 });
 
 const node = makeEntity('node:atlas', 'Node', {});
+const cluster = makeEntity('cluster:demo-shop', 'Cluster', {
+  boundaryRole: 'synthetic-teaching-cluster',
+});
 const pod = makeEntity('pod:api-old', 'Pod', {
   uid: 'uid-old',
   nodeName: node.name,
@@ -105,6 +113,10 @@ const kubelet = makeEntity('component:kubelet', 'Kubelet', { nodeName: node.name
 const controller = makeEntity('component:controller', 'ControllerManager', {});
 const scheduler = makeEntity('component:scheduler', 'Scheduler', {});
 const apiServer = makeEntity('component:api-server', 'KubeAPIServer', {});
+const etcd = makeEntity('component:etcd', 'Etcd', {
+  role: 'kubernetes-api-data-store',
+  basicModelClient: 'kube-apiserver',
+});
 const kubectl = makeEntity('external:kubectl', 'Kubectl', { role: 'operator-trigger' });
 
 const makeRelation = (
@@ -212,12 +224,14 @@ describe('visual factory foundation', () => {
   it('uses a specialized visual for every golden-lesson kind', () => {
     const registry = new VisualFactoryRegistry();
     const expectations: readonly (readonly [WorldEntity, object])[] = [
+      [cluster, ClusterFoundationVisualHandle.prototype],
       [node, NodeVisualHandle.prototype],
       [pod, PodVisualHandle.prototype],
       [container, ContainerVisualHandle.prototype],
       [replicaSet, ReplicaSetVisualHandle.prototype],
       [kubelet, KubeletVisualHandle.prototype],
       [apiServer, ApiServerVisualHandle.prototype],
+      [etcd, EtcdVisualHandle.prototype],
       [controller, ControllerManagerVisualHandle.prototype],
       [scheduler, SchedulerVisualHandle.prototype],
       [kubectl, KubectlVisualHandle.prototype],
@@ -228,6 +242,52 @@ describe('visual factory foundation', () => {
       expect(handle.root.userData.genericVisual).not.toBe(true);
       handle.dispose();
     }
+  });
+
+  it('uses a compact boundary marker for Cluster and replicated storage cells for etcd', () => {
+    const registry = new VisualFactoryRegistry();
+    const clusterHandle = registry.create(cluster, normal, { allowGeneric: false });
+    const etcdHandle = registry.create(etcd, normal, { allowGeneric: false });
+
+    expect(clusterHandle).toBeInstanceOf(ClusterFoundationVisualHandle);
+    expect(clusterHandle.root.userData).toMatchObject({
+      visualKind: 'cluster-foundation-boundary',
+      boundarySemantic: 'cluster',
+      foundationOnly: true,
+      hasFloorSlab: false,
+    });
+    const clusterRoles: string[] = [];
+    clusterHandle.root.traverse((object) => {
+      if (typeof object.userData.role === 'string') clusterRoles.push(object.userData.role);
+    });
+    expect(clusterRoles).toContain('cluster-foundation-plaque');
+    expect(clusterRoles.filter((role) => role === 'cluster-boundary-rail')).toHaveLength(2);
+    expect(clusterRoles).not.toContain('cluster-floor');
+    const clusterSize = clusterHandle.getWorldBounds?.().getSize(new THREE.Vector3());
+    expect(clusterSize?.y).toBeLessThan(1);
+    expect(clusterSize?.z).toBeLessThan(1);
+
+    expect(etcdHandle).toBeInstanceOf(EtcdVisualHandle);
+    expect(etcdHandle.root.userData).toMatchObject({
+      visualKind: 'etcd-storage-cells',
+      storageCellCount: 3,
+      apiAccess: 'api-server-only-basic-model',
+    });
+    const etcdRoles: string[] = [];
+    etcdHandle.root.traverse((object) => {
+      if (typeof object.userData.role === 'string') etcdRoles.push(object.userData.role);
+      if (object instanceof THREE.Mesh) {
+        expect(object.geometry).not.toBeInstanceOf(THREE.TorusKnotGeometry);
+        expect(object.geometry).not.toBeInstanceOf(THREE.ConeGeometry);
+      }
+    });
+    expect(etcdRoles.filter((role) => role === 'etcd-storage-column')).toHaveLength(3);
+    expect(etcdRoles.filter((role) => role === 'etcd-storage-cell')).toHaveLength(9);
+    expect(etcdRoles).toContain('etcd-api-server-port');
+    expect(etcdRoles).not.toContain('api-server-gateway');
+
+    clusterHandle.dispose();
+    etcdHandle.dispose();
   });
 
   it('uses distinct control-plane silhouettes without canvas badges or placeholder solids', () => {
@@ -429,6 +489,7 @@ describe('SceneRegistry lifecycle', () => {
     registry.sync(world, view);
     registry.applyLayout(calculateLayout({ world, view }));
     expect(registry.guideCount).toBe(4);
+    expect(registry.semanticIslandCount).toBe(4);
     const tray = scene.getObjectByName('layout-guide:pending-lane');
     expect(tray?.userData.role).toBe('unscheduled-pods-tray');
     expect(tray?.userData.empty).toBe(true);
@@ -451,6 +512,7 @@ describe('SceneRegistry lifecycle', () => {
     );
     registry.clear();
     expect(registry.guideCount).toBe(0);
+    expect(registry.semanticIslandCount).toBe(0);
     expect(registry.layoutLabels()).toEqual([]);
   });
 
@@ -481,18 +543,22 @@ describe('SceneRegistry lifecycle', () => {
 });
 
 describe('lesson stage semantics', () => {
-  it('publishes ordered zone-title and legend anchors for a DOM label layer', () => {
+  it('owns one bounded foundation without duplicating view-specific islands or a dominant grid', () => {
     const parent = new THREE.Group();
     const stage = new SceneStage(parent);
-    const control = stage.getLabelAnchorWorld('control-plane');
-    const workload = stage.getLabelAnchorWorld('workload-state');
-    const workers = stage.getLabelAnchorWorld('worker-nodes');
-    expect(control?.z).toBeLessThan(workload?.z ?? Number.NEGATIVE_INFINITY);
-    expect(workload?.z).toBeLessThan(workers?.z ?? Number.NEGATIVE_INFINITY);
-    expect(stage.labelAnchors.get('control-plane')?.userData.domLabel).toMatchObject({
-      labelClass: 'zone-title',
-      text: 'CONTROL PLANE',
+    expect(stage.root.userData.foundation).toMatchObject({
+      bounded: true,
+      semanticIslandOwner: 'layout-registry',
     });
+    expect(stage.diagnostics()).toEqual({
+      foundationMeshes: 3,
+      localAlignmentMarks: 14,
+      dominantGridMarks: 0,
+    });
+    expect(stage.getFramingBounds().isEmpty()).toBe(false);
+    expect(stage.root.children.some((child) => child.userData.role === 'semantic-island')).toBe(
+      false,
+    );
     expect(stage.labelAnchors.get('logical-layout-note')?.userData.domLabel.labelClass).toBe(
       'fixed-legend',
     );

@@ -37,6 +37,11 @@ export interface SceneDiagnostics {
   readonly relationHandles: number;
   readonly labels: number;
   readonly callouts: number;
+  readonly layoutGuides: number;
+  readonly semanticIslands: number;
+  readonly foundationMeshes: number;
+  readonly localAlignmentMarks: number;
+  readonly dominantGridMarks: number;
   readonly activeAnimations: number;
   readonly geometries: number;
   readonly textures: number;
@@ -275,6 +280,11 @@ export class SceneController {
 
   private frameScene(presetId = this.currentStep?.view.cameraPresetId ?? 'overview'): void {
     boundsForHandles(this.registry.values(), this.sceneBounds);
+    const viewMode = this.currentStep?.view.view;
+    if (viewMode === 'overview' || viewMode === 'control-flow') {
+      const stageBounds = this.stage.getFramingBounds(new THREE.Box3());
+      if (!stageBounds.isEmpty()) this.sceneBounds.union(stageBounds);
+    }
     const routeBounds = new THREE.Box3();
     const routeScratch = new THREE.Box3();
     for (const routeRoot of this.activeRoutes.root.children) {
@@ -510,11 +520,17 @@ export class SceneController {
 
   public getDiagnostics(): SceneDiagnostics {
     const routeDiagnostics = this.activeRoutes.diagnostics;
+    const stageDiagnostics = this.stage.diagnostics();
     return {
       entityHandles: this.registry.size,
       relationHandles: this.relations.size + routeDiagnostics.routeHandles,
       labels: this.labels.size,
       callouts: this.callouts.size,
+      layoutGuides: this.registry.guideCount,
+      semanticIslands: this.registry.semanticIslandCount,
+      foundationMeshes: stageDiagnostics.foundationMeshes,
+      localAlignmentMarks: stageDiagnostics.localAlignmentMarks,
+      dominantGridMarks: stageDiagnostics.dominantGridMarks,
       activeAnimations: this.animations.activeCount,
       geometries: this.renderer.info.memory.geometries,
       textures: this.renderer.info.memory.textures,

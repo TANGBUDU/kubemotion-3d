@@ -16,10 +16,35 @@ one independent grammar contract:
 | Traffic      | Explain a statically readable application request             | Client, Service, EndpointSlice evidence, selected backend, and bounded peers                                    | Controllers, etcd, workload ownership objects, and unrelated network objects                   |
 | Storage      | Explain mount and persistence relationships                   | Pod, Container, PVC, PV, and storage backend                                                                    | Unrelated control-plane and network objects                                                    |
 
-The current milestone establishes the contracts and safety policy. Foundation geometry, distinct
-layout algorithms, model completion, responsive replanning, and authored-course migration are
-delivered by their later rebuild milestones; a grammar's declared layout, camera, aggregation, and
-separation policies are not claims that those later visual systems are already complete.
+Milestone 1 established these contracts and the safety policy. Milestone 2 implemented the shared
+bounded foundation and the Overview/Control Flow semantic-island layouts. Runtime-hierarchy model
+completion, full logical-model completion, responsive replanning, and authored-course migration
+remain owned by their later rebuild milestones; a grammar's declared camera, aggregation, or
+separation policy is not a claim that those later systems are already complete.
+
+## Foundation ownership and layout independence
+
+All six grammars render on one `SceneStage` foundation, but the foundation is not a universal scene
+layout. Ownership is explicit:
+
+- `SceneStage` owns one bounded base and local alignment marks. It owns no semantic-island plates.
+- the selected view layout produces semantic-island bounds, slots, and labels;
+- `SceneRegistry` owns and diffs the resulting island plates and unscheduled tray;
+- the Cluster entity renders only a compact boundary plaque, never a duplicate floor.
+
+Overview no longer inherits Placement geometry. Its deterministic layout separates
+`control-plane-island`, `worker-nodes-island`, and `unscheduled-transit-lane`, seats scheduled Pods
+inside Node bays, and leaves Pending Pods parentless in the transit lane. The three islands must be
+pairwise non-overlapping and remain inside the bounded stage.
+
+Control Flow is also an independent grammar and semantic composition. It may start with the proven
+physical allocation of Node/Pod context, but it projects only the entities needed for one causal
+chain into control-plane, workload/transit, and worker-node island families. It is not Overview with
+different coordinates and it is not the Placement allowlist with extra control-plane objects.
+
+The Overview etcd model has one permitted basic relation: API Server → etcd. No controller,
+scheduler, kubelet, external client, or application request connects directly to etcd in this basic
+teaching projection.
 
 ## Effective scene plan
 
@@ -74,7 +99,9 @@ grammars lower those ceilings further where the explanation needs less context.
 Mobile budgets are part of the pure planning API and its deterministic tests. Viewport-driven
 renderer replanning and peer aggregation are intentionally tracked under the responsive-layout
 milestone; until then, compiled guided projections use the desktop profile and the existing label
-manager still applies its mobile screen-space label limit.
+manager still applies its mobile screen-space label limit. The M2 390×844 foundation capture is
+therefore recorded as a known readability failure owned by M5, not as evidence that the desktop
+composition is automatically responsive.
 
 ## Hierarchy and relation rules
 

@@ -48,7 +48,7 @@ export const overviewGrammar = Object.freeze({
     Developer: 1,
   },
   allowedRelationSemantics: ['control-observation', 'placement'],
-  defaultHiddenRelationSemantics: [],
+  defaultHiddenRelationSemantics: ['placement'],
   relationFamilyPriority: ['control-observation', 'placement'],
   zones: [
     {

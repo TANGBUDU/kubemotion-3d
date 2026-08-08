@@ -16,8 +16,10 @@ export {
 } from './visuals/ApiServerVisual';
 export { ContainerVisualHandle } from './visuals/ContainerVisual';
 export { ClientVisualHandle } from './visuals/ClientVisual';
+export { ClusterFoundationVisualHandle } from './visuals/ClusterFoundationVisual';
 export { ControllerManagerVisualHandle } from './visuals/ControllerManagerVisual';
 export { EndpointSliceVisualHandle } from './visuals/EndpointSliceVisual';
+export { EtcdVisualHandle } from './visuals/EtcdVisual';
 export { GenericUnsupportedVisual as GenericVisualHandle } from './visuals/GenericUnsupportedVisual';
 export { KubeletVisualHandle } from './visuals/KubeletVisual';
 export { KubectlVisualHandle } from './visuals/KubectlVisual';

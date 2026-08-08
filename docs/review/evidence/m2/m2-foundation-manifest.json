@@ -1,0 +1,219 @@
+{
+  "generatedAt": "2026-08-08T07:00:06.290Z",
+  "milestone": 2,
+  "baseUrl": "http://127.0.0.1:4173",
+  "desktopGate": {
+    "minimumFoundationMeshes": 3,
+    "overviewSemanticIslands": 3,
+    "dominantGridMarks": 0,
+    "maximumLabelOverlap": 0.12,
+    "labelsOutsideStage": 0
+  },
+  "mobilePolicy": "The 390x844 capture records the known M5 responsive-layout risk and does not fail M2.",
+  "captures": [
+    {
+      "id": "overview-desktop-wide",
+      "file": "m2-overview-foundation-1440x900.png",
+      "view": "overview",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "gate": "desktop-m2",
+      "status": "pass",
+      "inspection": {
+        "entityLabels": 7,
+        "layoutLabels": 3,
+        "relationLabels": 0,
+        "routeLabels": 0,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "diagnostics": {
+          "entityHandles": 11,
+          "relationHandles": 4,
+          "labels": 10,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "activeAnimations": 0,
+          "geometries": 121,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 267,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      },
+      "acceptance": {
+        "clusterBoundaryClear": true,
+        "semanticFoundationClear": true,
+        "dominantInfiniteGridAbsent": true,
+        "note": "Automated M2 desktop foundation gate passed."
+      }
+    },
+    {
+      "id": "overview-desktop-compact",
+      "file": "m2-overview-foundation-1280x720.png",
+      "view": "overview",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "gate": "desktop-m2",
+      "status": "pass",
+      "inspection": {
+        "entityLabels": 7,
+        "layoutLabels": 3,
+        "relationLabels": 0,
+        "routeLabels": 0,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "diagnostics": {
+          "entityHandles": 11,
+          "relationHandles": 4,
+          "labels": 10,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "activeAnimations": 0,
+          "geometries": 121,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 267,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      },
+      "acceptance": {
+        "clusterBoundaryClear": true,
+        "semanticFoundationClear": true,
+        "dominantInfiniteGridAbsent": true,
+        "note": "Automated M2 desktop foundation gate passed."
+      }
+    },
+    {
+      "id": "overview-mobile-risk-record",
+      "file": "m2-overview-foundation-390x844.png",
+      "view": "overview",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "gate": "known-m5-risk",
+      "status": "recorded",
+      "inspection": {
+        "entityLabels": 3,
+        "layoutLabels": 3,
+        "relationLabels": 0,
+        "routeLabels": 0,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "diagnostics": {
+          "entityHandles": 11,
+          "relationHandles": 4,
+          "labels": 10,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "activeAnimations": 0,
+          "geometries": 121,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 267,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      },
+      "acceptance": {
+        "clusterBoundaryClear": true,
+        "semanticFoundationClear": true,
+        "dominantInfiniteGridAbsent": true,
+        "note": "Mobile composition is evidence-only for M2; responsive teaching layout is owned by M5."
+      }
+    },
+    {
+      "id": "control-flow-desktop-compact",
+      "file": "m2-control-flow-foundation-1280x720.png",
+      "view": "control-flow",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "gate": "desktop-m2",
+      "status": "pass",
+      "inspection": {
+        "entityLabels": 5,
+        "layoutLabels": 3,
+        "relationLabels": 0,
+        "routeLabels": 0,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "diagnostics": {
+          "entityHandles": 12,
+          "relationHandles": 10,
+          "labels": 10,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "activeAnimations": 0,
+          "geometries": 131,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 294,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      },
+      "acceptance": {
+        "clusterBoundaryClear": true,
+        "semanticFoundationClear": true,
+        "dominantInfiniteGridAbsent": true,
+        "note": "Automated M2 desktop foundation gate passed."
+      }
+    }
+  ]
+}

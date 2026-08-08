@@ -19,7 +19,12 @@ flowchart TD
   World --> Scene["SceneController"]
   Diff --> Scene
   View --> Scene
+  Scene --> Layout["View-owned LayoutEngine plan"]
+  Layout --> Stage["One SceneStage foundation"]
+  Layout --> Islands["SceneRegistry semantic islands"]
   Scene --> Registries["entity / relation / teaching-route / label / callout registries"]
+  Stage --> Three
+  Islands --> Three
   Registries --> Three["Three.js + DOM overlays + post-processing"]
 ```
 
@@ -89,6 +94,20 @@ Explore now starts from the Overview grammar instead of an all-object projection
 focus their direct matches and retain bounded one-hop context; the focused override is Explore-only
 and still passes through density and relation-endpoint gates.
 
+Overview and Control Flow are independent scene grammars, not alternate camera positions over one
+universal arrangement. Overview owns a deterministic foundation-first layout for cluster identity,
+control-plane responsibility, worker placement, and the unscheduled/transit area; it does not
+inherit Placement geometry. Control Flow owns a separate causal projection onto control-plane,
+workload/transit, and worker-node island families. It may reuse the proven physical allocation of a
+Node and its assigned Pods, but that reuse does not make its visible-object policy, semantic zones,
+or composition identical to Placement or Overview.
+
+The foundational Cluster entity is a compact teaching-boundary plaque. It marks which objects are
+being discussed as one synthetic cluster, but it is not a second floor and does not assert that a
+Namespace physically contains Nodes or that Nodes are nested under a Namespace. The basic etcd
+model permits only the API Server → etcd data-store relation; controllers, schedulers, kubelets,
+clients, and application traffic do not connect directly to etcd in this conceptual layer.
+
 ## Renderer ownership
 
 React owns routing, localization, collapsible panels, replay IDs, and serializable Zustand state. It stores no `Object3D`, DOM node, GPU resource, animation object, promise, or cancellation token.
@@ -96,6 +115,7 @@ React owns routing, localization, collapsible panels, replay IDs, and serializab
 `SceneController` owns:
 
 - one `WebGLRenderer`, scene, camera, controls, and render scheduler;
+- one bounded `SceneStage` foundation used for framing, with no dominant global debug grid;
 - specialized entity handles and stable layout guides;
 - relation handles with per-semantic styles and arrowheads;
 - obstacle-aware persistent teaching routes with pooled arrowheads, flow tokens, and numbered markers;
@@ -104,9 +124,21 @@ React owns routing, localization, collapsible panels, replay IDs, and serializab
 - a color-correct post-processing pipeline and tracked renderer event listeners;
 - all cleanup on replacement or unmount.
 
+Foundation ownership is intentionally split by responsibility without duplicating geometry:
+
+- `SceneStage` owns exactly one bounded base, its inset top/edge treatment, and a small set of local
+  alignment marks. It does not own semantic islands.
+- the selected layout computes the current view's island bounds, slots, and labels;
+- `SceneRegistry` materializes and diffs those view-specific island plates and the unscheduled tray;
+- the Cluster visual contributes only its compact boundary marker and never another floor slab.
+
+Diagnostics expose foundation mesh count, semantic-island count, local alignment marks, and
+dominant-grid marks so duplicate foundations or a returning full-stage grid are test failures rather
+than subjective review findings.
+
 Lesson scenes disable generic fallback visuals. Node, Pod, client Pod, Container, ReplicaSet, API
-Server, kubectl, kubelet, controller manager, scheduler, Service, and EndpointSlice each have a
-dedicated factory and visual handle.
+Server, etcd, Cluster boundary, kubectl, kubelet, controller manager, scheduler, Service, and
+EndpointSlice each have a dedicated factory and visual handle.
 
 ## Post-processing
 

@@ -3,9 +3,11 @@ import type { WorldEntity } from '../world/types';
 import { ApiServerVisualHandle } from './visuals/ApiServerVisual';
 import type { EntityVisualHandle, VisualContext } from './visuals/BaseVisualHandle';
 import { ClientVisualHandle } from './visuals/ClientVisual';
+import { ClusterFoundationVisualHandle } from './visuals/ClusterFoundationVisual';
 import { ContainerVisualHandle } from './visuals/ContainerVisual';
 import { ControllerManagerVisualHandle } from './visuals/ControllerManagerVisual';
 import { EndpointSliceVisualHandle } from './visuals/EndpointSliceVisual';
+import { EtcdVisualHandle } from './visuals/EtcdVisual';
 import { GenericUnsupportedVisual } from './visuals/GenericUnsupportedVisual';
 import { KubeletVisualHandle } from './visuals/KubeletVisual';
 import { KubectlVisualHandle } from './visuals/KubectlVisual';
@@ -44,11 +46,13 @@ const isApiServer = (entity: WorldEntity): boolean =>
   entity.kind === 'KubeAPIServer' || entity.kind === 'ApiServer' || entity.kind === 'APIServer';
 
 export const GOLDEN_LESSON_VISUAL_KINDS = Object.freeze([
+  'Cluster',
   'Node',
   'Pod',
   'Container',
   'ReplicaSet',
   'KubeAPIServer',
+  'Etcd',
   'Kubectl',
   'Kubelet',
   'ControllerManager',
@@ -72,6 +76,11 @@ export class UnsupportedVisualError extends Error {
 }
 
 const builtInFactories = (): readonly EntityVisualFactory[] => [
+  factory(
+    'cluster-foundation-boundary',
+    (entity) => entity.kind === 'Cluster',
+    ClusterFoundationVisualHandle,
+  ),
   factory('node-rack', (entity) => entity.kind === 'Node', NodeVisualHandle),
   factory(
     'client-pod-emitter',
@@ -92,6 +101,7 @@ const builtInFactories = (): readonly EntityVisualFactory[] => [
     EndpointSliceVisualHandle,
   ),
   factory('api-server-gateway', isApiServer, ApiServerVisualHandle),
+  factory('etcd-storage-cells', (entity) => entity.kind === 'Etcd', EtcdVisualHandle),
   factory('kubectl-command-entry', (entity) => entity.kind === 'Kubectl', KubectlVisualHandle),
   factory('kubelet-agent', (entity) => entity.kind === 'Kubelet', KubeletVisualHandle),
   factory('controller-manager', isControllerManager, ControllerManagerVisualHandle),

@@ -4,9 +4,9 @@ import { gotoGoldenStep } from './helpers';
 test('all ten steps expose the correct causal and factual timeline', async ({ page }) => {
   await gotoGoldenStep(page, 0);
   await expect(page.locator('.scene-layout-label')).toContainText([
-    'CONTROL PLANE',
-    'WORKLOAD STATE / UNSCHEDULED QUEUE',
-    'WORKER NODES',
+    'CONTROL PLANE ISLAND',
+    'UNSCHEDULED / TRANSIT',
+    'WORKER NODES ISLAND',
   ]);
 
   await gotoGoldenStep(page, 1);

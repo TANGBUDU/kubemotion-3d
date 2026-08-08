@@ -20,6 +20,8 @@ const NEW_POD = 'api-object:namespaced:shop:Pod:api-d-new';
 const NEW_CONTAINER = 'container-status:shop:Pod:api-d-new:Container:api';
 const REPLICA_SET = 'api-object:namespaced:shop:ReplicaSet:api-rs';
 const API_SERVER = 'runtime-component:cluster:global:KubeAPIServer:kube-apiserver';
+const CLUSTER_FOUNDATION = 'infrastructure:cluster:global:Cluster:demo-shop';
+const ETCD = 'runtime-component:cluster:global:Etcd:etcd';
 const KUBELET_A = 'runtime-component:node:worker-a:Kubelet:kubelet';
 const KUBELET_B = 'runtime-component:node:worker-b:Kubelet:kubelet';
 const CONTROLLER_MANAGER =
@@ -115,6 +117,34 @@ function lessonWithLocalRestartRoute(route: ActiveTeachingRoute): LessonV2 {
 }
 
 describe('CourseEngine v2 factual timeline', () => {
+  it('loads Cluster and etcd context without exposing them in the original lesson base view', () => {
+    expect(scenario.entities[CLUSTER_FOUNDATION]).toMatchObject({
+      kind: 'Cluster',
+      visual: { archetype: 'cluster' },
+    });
+    expect(scenario.entities[ETCD]).toMatchObject({
+      kind: 'Etcd',
+      data: { role: 'kubernetes-api-data-store', basicModelClient: 'kube-apiserver' },
+    });
+    expect(scenario.relations['api-stores-etcd']).toMatchObject({
+      type: 'stores-in',
+      from: API_SERVER,
+      to: ETCD,
+      semantic: 'control-observation',
+    });
+
+    const orientation = step('scene-orientation');
+    expect(orientation.view.entityStates[CLUSTER_FOUNDATION]).toMatchObject({
+      visible: false,
+      emphasis: 'hidden',
+    });
+    expect(orientation.view.entityStates[ETCD]).toMatchObject({
+      visible: false,
+      emphasis: 'hidden',
+    });
+    expect(orientation.view.relationStates['api-stores-etcd']).toMatchObject({ visible: false });
+  });
+
   it('compiles the required ten-step lesson sequence', () => {
     expect(compiled.steps.map((candidate) => candidate.stepId)).toEqual(EXPECTED_STEPS);
     expect(lesson.steps.every((candidate) => candidate.teaching.whatChanged.en.length > 0)).toBe(

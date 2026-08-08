@@ -2,6 +2,22 @@ schemaVersion: 2
 scenarioId: container-restart-golden
 revision: 0
 entities:
+  - id: infrastructure:cluster:global:Cluster:demo-shop
+    category: infrastructure
+    kind: Cluster
+    name: demo-shop
+    status: healthy
+    data:
+      boundaryRole: synthetic-teaching-cluster
+    title: { en: Demo cluster, ja: デモクラスター, zh-CN: 演示集群 }
+    summary:
+      {
+        en: Synthetic teaching boundary containing the control plane and worker Nodes.,
+        ja: コントロールプレーンと worker Node を含む合成の学習境界です。,
+        zh-CN: 包含控制面和工作 Node 的虚构教学边界。,
+      }
+    sourceIds: [k8s-cluster-architecture]
+    visual: { archetype: cluster, size: xl, group: foundation }
   - id: infrastructure:cluster:global:Node:worker-a
     category: infrastructure
     kind: Node
@@ -113,6 +129,23 @@ entities:
       }
     sourceIds: [k8s-api, k8s-components]
     visual: { archetype: control-plane, size: lg, group: control }
+  - id: runtime-component:cluster:global:Etcd:etcd
+    category: runtime-component
+    kind: Etcd
+    name: etcd
+    status: healthy
+    data:
+      role: kubernetes-api-data-store
+      basicModelClient: kube-apiserver
+    title: { en: etcd, ja: etcd, zh-CN: etcd }
+    summary:
+      {
+        en: Stores Kubernetes API data; clients use the API Server rather than connecting here directly.,
+        ja: Kubernetes API データを保存します。クライアントはここへ直接接続せず API サーバーを使用します。,
+        zh-CN: 保存 Kubernetes API 数据；客户端使用 API Server，而不直接连接这里。,
+      }
+    sourceIds: [k8s-components, k8s-api]
+    visual: { archetype: control-plane, size: md, group: control }
   - id: runtime-component:cluster:global:ControllerManager:kube-controller-manager
     category: runtime-component
     kind: ControllerManager
@@ -352,6 +385,14 @@ entities:
     sourceIds: [k8s-pods]
     visual: { archetype: container, size: sm, group: api-c }
 relations:
+  - id: api-stores-etcd
+    type: stores-in
+    from: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+    to: runtime-component:cluster:global:Etcd:etcd
+    directed: true
+    semantic: control-observation
+    title: { en: persists API data, ja: API データを保存, zh-CN: 持久化 API 数据 }
+    sourceIds: [k8s-components, k8s-api]
   - id: owns-api-a-old
     type: owns
     from: api-object:namespaced:shop:ReplicaSet:api-rs

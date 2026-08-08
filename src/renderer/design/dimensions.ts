@@ -1,5 +1,5 @@
 export const dimensions = Object.freeze({
-  stage: Object.freeze({ width: 22, depth: 15, floorHeight: 0.18, cornerRadius: 0.42 }),
+  stage: Object.freeze({ width: 22, depth: 15, floorHeight: 0.28, cornerRadius: 0.42 }),
   node: Object.freeze({
     width: 5.2,
     depth: 3.8,
