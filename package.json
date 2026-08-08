@@ -22,6 +22,7 @@
     "visual:m1": "tsx scripts/capture-scene-grammar-review.ts",
     "visual:m2": "tsx scripts/capture-foundation-review.ts",
     "visual:m3": "tsx scripts/capture-runtime-hierarchy-review.ts",
+    "visual:m4": "tsx scripts/capture-m4-visuals.mts",
     "visual:capture": "tsx scripts/capture-visual-acceptance.ts",
     "test": "vitest",
     "test:unit": "vitest",

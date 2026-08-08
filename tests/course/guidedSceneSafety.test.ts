@@ -32,6 +32,10 @@ describe('guided scene grammar safety', () => {
         );
 
         const visible = new Set(plan.visibleEntityIds);
+        if (lesson.id === 'container-restart-vs-pod-replacement') {
+          expect(visible.has('api-object:cluster:global:Namespace:shop')).toBe(false);
+          expect(visible.has('api-object:namespaced:shop:Deployment:api')).toBe(false);
+        }
         const focused = Object.values(step.view.entityStates).filter(
           (state) => state.visible && state.emphasis === 'focused',
         );

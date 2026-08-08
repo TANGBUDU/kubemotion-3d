@@ -16,7 +16,7 @@
 | 1 — Scene grammar and density         | COMPLETE    | `feat: add view-specific scene grammars and density budgets`            | Six grammar contracts, enforced projections, deterministic safety tests, six-view screenshots                       |
 | 2 — Foundation and semantic islands   | COMPLETE    | `feat: rebuild the cluster from a clear foundation`                     | One bounded foundation, three non-overlapping semantic islands, dedicated Cluster/etcd visuals, desktop screenshots |
 | 3 — Runtime hierarchy models          | COMPLETE    | `feat: make runtime containment visually self-evident`                  | One Node dimension source, four bays, embedded system modules, strict containment diagnostics, desktop screenshots  |
-| 4 — Logical object models             | NOT STARTED | `feat: establish distinct logical Kubernetes object visuals`            | —                                                                                                                   |
+| 4 — Logical object models             | COMPLETE    | `feat: establish distinct logical Kubernetes object visuals`            | Namespace workspace, Deployment blueprint, dynamic EndpointSlice rows, external actors, six reviewed captures       |
 | 5 — Camera, labels, responsive layout | NOT STARTED | `feat: make teaching scenes readable across viewport sizes`             | —                                                                                                                   |
 | 6 — Persistent route engine           | NOT STARTED | `feat: replace free-flying tokens with persistent semantic routes`      | —                                                                                                                   |
 | 7 — Migrate existing authored lessons | NOT STARTED | `feat: migrate the original lessons to the foundation-first system`     | —                                                                                                                   |
@@ -249,9 +249,60 @@ The 390×844 capture remains an explicit M5 risk. M3 proves geometry and contain
 viewport; it does not claim that the current mobile panel, camera framing, label budget, or teaching
 sheet makes the hierarchy comfortably readable.
 
+## Milestone 4 checklist
+
+- [x] Added the verified `shop` Namespace and `api` Deployment to the golden v2 world, with real
+      scope and ownership relations and no invented traffic semantics.
+- [x] Replaced Logical's former Placement inheritance with independent Namespace, Deployment,
+      ReplicaSet, and Pod ownership columns; Node context is hidden by default and never acts as a
+      logical parent.
+- [x] Rendered Namespace as a shallow logical workspace and Deployment as an in-place-updating
+      desired-state blueprint with strategy, version, revision, and replica intent.
+- [x] Preserved the existing ReplicaSet SPEC / OBSERVED / READY card and Service stable-entry
+      portal as distinct silhouettes.
+- [x] Rebuilt EndpointSlice as a dynamic endpoint inventory with Ready, serving, terminating, and
+      route-selected evidence; row growth preserves existing handles.
+- [x] Kept application requests on Client → Service → Pod while using EndpointSlice only as
+      selection/configuration evidence.
+- [x] Added standalone Browser/ExternalClient and Developer terminal models with no Pod anatomy.
+- [x] Moved kubectl outside the control-plane island so the verified external actor remains visible
+      and enters the API Server from outside the cluster context.
+- [x] Added registry, layout-separation, guided-scene, endpoint-selection, dynamic-row, label, and
+      disposal regression coverage.
+
+## Milestone 4 automated checks
+
+| Check                                         | Result                                                                                       |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `pnpm visual:m4`                              | PASS — six captures, zero generic handles, label overlap, or labels outside the stage        |
+| Logical/Placement separation                  | PASS — Logical has 1 Namespace / 1 Deployment / 1 ReplicaSet / 3 Pods / 0 Nodes              |
+| Dedicated model and role-signature audit      | PASS — eight unique specialized models and eight unique role signatures                      |
+| EndpointSlice growth and selected-route audit | PASS — 3→5 stable rows; one selected backend; EndpointSlice never becomes a request hop      |
+| External actor placement                      | PASS — kubectl is outside the control-plane island and visibly separated from the API Server |
+| `pnpm content:validate`                       | PASS — 2 v2 scenarios, 32 entities, 34 relations, 2 verified lessons, 20 planned             |
+| `pnpm content:accuracy`                       | PASS — 227 current-public text files and all factual invariants                              |
+| `pnpm test:unit -- --run`                     | PASS — 41 files, 274 tests                                                                   |
+| `pnpm format:check` / `pnpm lint`             | PASS                                                                                         |
+| `pnpm typecheck` / `pnpm build`               | PASS                                                                                         |
+
+## Milestone 4 screenshot review
+
+Manifest: [`evidence/m4/m4-logical-models-manifest.json`](./evidence/m4/m4-logical-models-manifest.json)
+
+The 1440×900 and 1280×720 Logical captures make the Namespace workspace and the
+Deployment → ReplicaSet → Pod chain readable without confusing it with Node placement. The
+Placement capture contains Nodes and Pods but no Namespace, Deployment, or ReplicaSet. The traffic
+capture retains the Service portal, EndpointSlice rows, persistent route, direction markers, and
+selected Ready backend. The corrected Control Flow capture clearly places the kubectl terminal to
+the left of—and outside—the control-plane island.
+
+Human M4 result: PASS for desktop model identity, logical/physical separation, and the verified
+external actor. The 390×844 capture remains evidence of the already-owned M5 responsive
+composition problem; it does not weaken M4's model semantics.
+
 ## Next coherent task
 
-Milestone 4 must replace the remaining generic logical-object vocabulary with distinct Kubernetes
-models. Deployment, ReplicaSet, Service, EndpointSlice, Namespace, and the relevant control-plane
-actors must remain recognizable from their model hierarchy and affordances before a learner relies
-on labels. M4 must preserve the M2 foundation ownership and the M3 runtime-containment gates.
+Milestone 5 must make the same accepted scenes readable across real safe viewport rectangles. It
+must apply mobile grammar at runtime, unify the mobile label budget, connect header/panel/timeline
+and teaching-sheet exclusions to camera framing, add an Explore perspective option, and convert the
+recorded M2/M3/M4 390×844 risks into passing responsive evidence.

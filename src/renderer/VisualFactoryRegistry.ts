@@ -7,11 +7,15 @@ import { ClusterFoundationVisualHandle } from './visuals/ClusterFoundationVisual
 import { ContainerRuntimeVisualHandle } from './visuals/ContainerRuntimeVisual';
 import { ContainerVisualHandle } from './visuals/ContainerVisual';
 import { ControllerManagerVisualHandle } from './visuals/ControllerManagerVisual';
+import { DeploymentVisualHandle } from './visuals/DeploymentVisual';
+import { DeveloperVisualHandle } from './visuals/DeveloperVisual';
 import { EndpointSliceVisualHandle } from './visuals/EndpointSliceVisual';
 import { EtcdVisualHandle } from './visuals/EtcdVisual';
+import { ExternalClientVisualHandle } from './visuals/ExternalClientVisual';
 import { GenericUnsupportedVisual } from './visuals/GenericUnsupportedVisual';
 import { KubeletVisualHandle } from './visuals/KubeletVisual';
 import { KubectlVisualHandle } from './visuals/KubectlVisual';
+import { NamespaceVisualHandle } from './visuals/NamespaceVisual';
 import { NodeVisualHandle } from './visuals/NodeVisual';
 import { PodVisualHandle } from './visuals/PodVisual';
 import { ReplicaSetVisualHandle } from './visuals/ReplicaSetVisual';
@@ -52,7 +56,14 @@ export const GOLDEN_LESSON_VISUAL_KINDS = Object.freeze([
   'Pod',
   'Container',
   'ContainerRuntime',
+  'Namespace',
+  'Deployment',
   'ReplicaSet',
+  'Service',
+  'EndpointSlice',
+  'Browser',
+  'ExternalClient',
+  'Developer',
   'KubeAPIServer',
   'Etcd',
   'Kubectl',
@@ -100,6 +111,12 @@ const builtInFactories = (): readonly EntityVisualFactory[] => [
     (entity) => entity.kind === 'ContainerRuntime',
     ContainerRuntimeVisualHandle,
   ),
+  factory(
+    'namespace-logical-workspace',
+    (entity) => entity.kind === 'Namespace',
+    NamespaceVisualHandle,
+  ),
+  factory('deployment-blueprint', (entity) => entity.kind === 'Deployment', DeploymentVisualHandle),
   factory('replicaset-counter', (entity) => entity.kind === 'ReplicaSet', ReplicaSetVisualHandle),
   factory('service-routing-hub', (entity) => entity.kind === 'Service', ServiceVisualHandle),
   factory(
@@ -107,6 +124,12 @@ const builtInFactories = (): readonly EntityVisualFactory[] => [
     (entity) => entity.kind === 'EndpointSlice',
     EndpointSliceVisualHandle,
   ),
+  factory(
+    'external-client-browser-terminal',
+    (entity) => entity.kind === 'Browser' || entity.kind === 'ExternalClient',
+    ExternalClientVisualHandle,
+  ),
+  factory('developer-cli-station', (entity) => entity.kind === 'Developer', DeveloperVisualHandle),
   factory('api-server-gateway', isApiServer, ApiServerVisualHandle),
   factory('etcd-storage-cells', (entity) => entity.kind === 'Etcd', EtcdVisualHandle),
   factory('kubectl-command-entry', (entity) => entity.kind === 'Kubectl', KubectlVisualHandle),

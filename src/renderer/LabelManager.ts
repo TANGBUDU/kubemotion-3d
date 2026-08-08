@@ -64,13 +64,17 @@ const labelPriority = (kind: string, emphasis: string, selected: boolean): numbe
   if (kind === 'Etcd') return 70;
   if (kind === 'ControllerManager' || kind === 'KubeControllerManager') return 68;
   if (kind === 'Scheduler') return 65;
+  if (kind === 'Namespace') return 64;
+  if (kind === 'Service') return 64;
   if (kind === 'Node') return 62;
+  if (kind === 'EndpointSlice') return 60;
+  if (kind === 'Deployment') return 58;
   // The SPEC/OBSERVED/READY counters are a core teaching fact, so keep the ReplicaSet label
   // ahead of interchangeable worker labels when the desktop density cap applies.
   if (kind === 'ReplicaSet') return 66;
   if (kind === 'Pod') return 54;
   if (kind === 'Kubelet') return 48;
-  if (kind === 'Kubectl') return 46;
+  if (kind === 'Kubectl' || kind === 'Developer' || kind === 'Browser') return 61;
   if (emphasis === 'dimmed') return 8;
   return 30;
 };

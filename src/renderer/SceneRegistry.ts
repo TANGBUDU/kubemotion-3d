@@ -10,6 +10,7 @@ import { palette } from './design/palette';
 import type { EntityVisualHandle, VisualContext } from './visuals/BaseVisualHandle';
 import { ContainerRuntimeVisualHandle } from './visuals/ContainerRuntimeVisual';
 import { ContainerVisualHandle } from './visuals/ContainerVisual';
+import { EndpointSliceVisualHandle } from './visuals/EndpointSliceVisual';
 import { KubeletVisualHandle } from './visuals/KubeletVisual';
 import { NodeVisualHandle } from './visuals/NodeVisual';
 import { PodVisualHandle } from './visuals/PodVisual';
@@ -482,7 +483,35 @@ export class SceneRegistry {
       this.ensure(entity, state);
     }
     this.syncPodComposition(world);
+    this.syncEndpointSelections(view);
     return { added, updated, removed };
+  }
+
+  private syncEndpointSelections(view: ViewProjection): void {
+    const routeParticipants = new Set<EntityId>();
+    for (const route of view.activeRoutes) {
+      for (const hop of route.hops) {
+        routeParticipants.add(hop.fromEntityId);
+        routeParticipants.add(hop.toEntityId);
+      }
+    }
+    for (const handle of this.handles.values()) {
+      if (!(handle instanceof EndpointSliceVisualHandle)) continue;
+      const endpoints = handle.root.userData.endpointStates;
+      const selected = Array.isArray(endpoints)
+        ? endpoints.find(
+            (endpoint) =>
+              endpoint &&
+              typeof endpoint === 'object' &&
+              !Array.isArray(endpoint) &&
+              typeof endpoint.targetRef === 'string' &&
+              routeParticipants.has(endpoint.targetRef),
+          )
+        : undefined;
+      handle.setSelectedEndpoint(
+        selected && typeof selected.targetRef === 'string' ? selected.targetRef : undefined,
+      );
+    }
   }
 
   private syncPodComposition(world: WorldSnapshot): void {

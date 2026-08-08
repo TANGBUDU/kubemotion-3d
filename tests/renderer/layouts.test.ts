@@ -303,6 +303,17 @@ describe('PlacementLayout', () => {
     expect(layout.entities.get(controller.id)?.lane).toBe('control');
     expect(layout.entities.get(scheduler.id)?.lane).toBe('control');
     expect(layout.entities.get(kubectl.id)?.containerId).toBe('external-control-input');
+    const controlLane = layout.containers.find((container) => container.kind === 'control-lane');
+    const kubectlPosition = layout.entities.get(kubectl.id)?.position;
+    expect(kubectlPosition).toBeDefined();
+    expect(controlLane).toBeDefined();
+    if (!kubectlPosition || !controlLane) return;
+    expect(kubectlPosition[0]).toBeLessThan(
+      controlLane.bounds.center[0] - controlLane.bounds.size[0] / 2,
+    );
+    expect(
+      Math.abs(kubectlPosition[0] - (layout.entities.get(apiServer.id)?.position[0] ?? 0)),
+    ).toBeGreaterThan(3);
     expect(layout.containers.some((container) => container.kind === 'control-lane')).toBe(true);
     expect(layout.containers.some((container) => container.kind === 'workload-lane')).toBe(true);
     expect(layout.containers.some((container) => container.kind === 'worker-lane')).toBe(true);

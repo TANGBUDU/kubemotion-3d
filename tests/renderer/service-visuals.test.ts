@@ -1,9 +1,10 @@
-import type * as THREE from 'three';
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { lessonById, scenarioById } from '../../src/content/loader';
 import { courseEngine } from '../../src/course/CourseEngine';
 import { calculateLayout } from '../../src/renderer/LayoutEngine';
 import { VisualFactoryRegistry } from '../../src/renderer/VisualFactoryRegistry';
+import { SceneRegistry } from '../../src/renderer/SceneRegistry';
 import {
   ClientVisualHandle,
   EndpointSliceVisualHandle,
@@ -21,7 +22,9 @@ const scenario = scenarioById.get(lesson.scenarioId);
 if (!scenario) throw new Error('Service scenario is missing');
 const compiled = courseEngine.compileLesson(lesson, scenario);
 const baseline = compiled.steps[0]!;
+const requestA = compiled.steps[3]!;
 const notReady = compiled.steps[4]!;
+const requestC = compiled.steps[5]!;
 
 function roles(root: THREE.Object3D): string[] {
   const values: string[] = [];
@@ -60,7 +63,13 @@ describe('Service lesson specialized visuals', () => {
         'client-request-arrow',
       ]),
     );
-    expect(service.root.userData.domLabel.text).toContain('198.51.100.42:8080');
+    expect(service.root.userData.domLabel.text).toBe('Service • api');
+    expect(service.root.userData.domLabel.text).not.toContain('198.51.100.42');
+    expect(service.root.userData).toMatchObject({
+      clusterIP: '198.51.100.42',
+      port: 8080,
+      protocol: 'TCP',
+    });
     expect(service.root.userData.stableEntry).toBe(true);
     expect(roles(service.root)).toEqual(
       expect.arrayContaining(['service-stable-ring', 'service-portal', 'service-status-rail']),
@@ -131,6 +140,61 @@ describe('Service lesson specialized visuals', () => {
     });
     expect(handle.root.userData.readyEndpointCount).toBe(3);
     handle.dispose();
+  });
+
+  it('expands beyond three endpoint rows without dropping backend facts', () => {
+    const entity = structuredClone(baseline.world.entities[SLICE]!);
+    const endpoints = Array.from({ length: 6 }, (_, index) => ({
+      address: `192.0.2.${index + 21}`,
+      targetRef: `api-object:namespaced:shop:Pod:api-${index + 1}`,
+      conditions: {
+        ready: index !== 4,
+        serving: index !== 4,
+        terminating: index === 5,
+      },
+    }));
+    (entity.data as Record<string, unknown>).endpoints = endpoints;
+
+    const handle = new EndpointSliceVisualHandle(entity, baseline.view.entityStates[SLICE]!);
+    expect(handle.endpointSlots).toHaveLength(6);
+    expect(handle.root.userData.endpointCount).toBe(6);
+    expect(handle.root.userData.endpointRowCount).toBe(2);
+    expect(handle.root.userData.endpointStates).toHaveLength(6);
+    expect(handle.endpointSlots[5]?.userData).toMatchObject({
+      address: '192.0.2.26',
+      targetRef: 'api-object:namespaced:shop:Pod:api-6',
+      terminating: true,
+    });
+    handle.dispose();
+  });
+
+  it('highlights the backend selected by the active route without routing through EndpointSlice', () => {
+    const scene = new THREE.Scene();
+    const registry = new SceneRegistry(scene);
+
+    registry.sync(requestA.world, requestA.view);
+    const sliceA = registry.get(SLICE);
+    expect(sliceA).toBeInstanceOf(EndpointSliceVisualHandle);
+    expect(sliceA?.root.userData.selectedEndpointTarget).toBe(API_A);
+    expect(requestA.view.activeRoutes[0]?.hops.map((hop) => hop.toEntityId)).toEqual([
+      SERVICE,
+      API_A,
+    ]);
+    expect(requestA.view.activeRoutes[0]?.hops.some((hop) => hop.toEntityId === SLICE)).toBe(false);
+
+    registry.sync(notReady.world, notReady.view);
+    expect(registry.get(SLICE)?.root.userData.selectedEndpointTarget).toBeNull();
+
+    registry.sync(requestC.world, requestC.view);
+    expect(registry.get(SLICE)?.root.userData.selectedEndpointTarget).toBe(API_C);
+    const selectedRows: THREE.Object3D[] = [];
+    registry.get(SLICE)?.root.traverse((object) => {
+      if (object.userData.role === 'endpoint-selected-outline' && object.visible) {
+        selectedRows.push(object);
+      }
+    });
+    expect(selectedRows).toHaveLength(1);
+    registry.clear();
   });
 
   it('uses a stable left-to-right traffic layout and does not move objects on readiness updates', () => {

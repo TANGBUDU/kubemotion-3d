@@ -34,6 +34,15 @@ export const dimensions = Object.freeze({
     height: 0.62,
     cornerRadius: 0.1,
   }),
+  logical: Object.freeze({
+    namespaceWorkspace: Object.freeze({ centerX: -2.45, width: 13.2, depth: 8.4 }),
+    deploymentColumnX: -6.3,
+    replicaSetColumnX: -2.35,
+    podColumnX: 1.55,
+    placementContextX: 7.35,
+    rowSpacing: 2.05,
+    nodeRowSpacing: 4.15,
+  }),
   focus: Object.freeze({ ringThickness: 0.045, elevation: 0.055 }),
   camera: Object.freeze({ safeFrameRatio: 0.06, fitPadding: 1.12, minViewHeight: 8 }),
 });

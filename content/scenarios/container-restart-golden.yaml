@@ -245,6 +245,39 @@ entities:
       }
     sourceIds: [k8s-components]
     visual: { archetype: control-plane, size: md, group: control }
+  - id: api-object:cluster:global:Namespace:shop
+    category: api-object
+    kind: Namespace
+    name: shop
+    status: healthy
+    data:
+      scopeRole: logical-workspace
+    title: { en: shop Namespace, ja: shop Namespace, zh-CN: shop Namespace }
+    summary:
+      en: Logical scope for the synthetic shop workload; it is not a physical host.
+      ja: 合成 shop ワークロードの論理スコープであり、物理ホストではありません。
+      zh-CN: 虚构 shop 工作负载的逻辑作用域，并不是物理主机。
+    sourceIds: [k8s-namespaces]
+    visual: { archetype: namespace, size: xl, group: logical-scope }
+  - id: api-object:namespaced:shop:Deployment:api
+    category: api-object
+    kind: Deployment
+    name: api
+    namespace: shop
+    labels: { app.kubernetes.io/name: api }
+    status: ready
+    data:
+      desiredReplicas: 3
+      strategy: RollingUpdate
+      revision: 1
+      version: v1
+    title: { en: api Deployment, ja: api Deployment, zh-CN: api Deployment }
+    summary:
+      en: Application blueprint that declares three replaceable api replicas.
+      ja: 置換可能な api レプリカを 3 つ宣言するアプリケーション設計図です。
+      zh-CN: 声明三个可替换 api 副本的应用蓝图。
+    sourceIds: [k8s-deployments]
+    visual: { archetype: deployment, size: lg, group: logical-control }
   - id: external:external:global:Kubectl:kubectl
     category: external
     kind: Kubectl
@@ -462,6 +495,22 @@ relations:
     semantic: control-observation
     title: { en: persists API data, ja: API データを保存, zh-CN: 持久化 API 数据 }
     sourceIds: [k8s-components, k8s-api]
+  - id: api-deployment-scoped-by-shop
+    type: scoped-by
+    from: api-object:namespaced:shop:Deployment:api
+    to: api-object:cluster:global:Namespace:shop
+    directed: true
+    semantic: scope
+    title: { en: scoped by shop, ja: shop によりスコープ化, zh-CN: 作用域为 shop }
+    sourceIds: [k8s-namespaces, k8s-deployments]
+  - id: api-deployment-owns-api-replicaset
+    type: owns
+    from: api-object:namespaced:shop:Deployment:api
+    to: api-object:namespaced:shop:ReplicaSet:api-rs
+    directed: true
+    semantic: ownership
+    title: { en: owns ReplicaSet, ja: ReplicaSet を所有, zh-CN: 拥有 ReplicaSet }
+    sourceIds: [k8s-deployments, k8s-replicasets]
   - id: owns-api-a-old
     type: owns
     from: api-object:namespaced:shop:ReplicaSet:api-rs

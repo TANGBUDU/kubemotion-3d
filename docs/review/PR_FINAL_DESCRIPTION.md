@@ -17,6 +17,11 @@ Delivered rebuild milestones on this branch:
   deterministic Container slots, a short UID fingerprint, and a conditional restart badge.
   Runtime diagnostics use rendered THREE AABBs and reject overflow, overlap, orphan modules,
   Containers outside Pods, and Pending Pods inside Nodes.
+- M4 establishes a separate logical-object language: Namespace is a shallow workspace,
+  Deployment is a desired-state blueprint, ReplicaSet keeps SPEC / OBSERVED / READY counters,
+  Service is a stable portal, and EndpointSlice is a dynamic endpoint inventory whose selected
+  row follows the real Client → Service → Pod route. Browser and Developer actors use external
+  terminal silhouettes, while Logical and Placement no longer share Pod/Node containment.
 
 - immutable `WorldSnapshot` / `WorldPatch` / `WorldDiff` plus a separate `ViewProjection`;
 - two verified lessons:
@@ -65,16 +70,19 @@ Delivered rebuild milestones on this branch:
 - `pnpm format:check` — PASS;
 - `pnpm lint` — PASS;
 - `pnpm typecheck` — PASS;
-- `pnpm content:validate` — PASS (2 v2 scenarios, 30 entities, 32 relations, 2 verified v2
+- `pnpm content:validate` — PASS (2 v2 scenarios, 32 entities, 34 relations, 2 verified v2
   lessons, 20 planned lessons, 26 terms, 29 official sources);
-- `pnpm content:accuracy` — PASS (218 current-public text files, 30 forbidden patterns, 23 local
+- `pnpm content:accuracy` — PASS (227 current-public text files, 30 forbidden patterns, 23 local
   links, and all README, visualization, lifecycle, and Service invariants);
-- `pnpm test:unit -- --run` — PASS (38 files, 264 tests);
+- `pnpm test:unit -- --run` — PASS (41 files, 274 tests);
 - `pnpm build` — PASS;
 - `pnpm visual:m2` — PASS (four captures; desktop foundation/island gate passes with 0 measured
   entity-label overlap and 0 labels outside the stage; mobile risk recorded for M5);
 - `pnpm visual:m3` — PASS (four captures; 12 deterministic bays, 3 mounted kubelets, 3 mounted
   runtimes, 3 contained Containers, no hierarchy/overlap failures; mobile risk recorded for M5);
+- `pnpm visual:m4` — PASS (six captures; eight unique specialized model contracts, Logical and
+  Placement separation, dynamic EndpointSlice rows, visible external kubectl, zero generic
+  handles, label overlap, or labels outside the stage; mobile composition risk recorded for M5);
 - `pnpm test:e2e` — PASS (132 passed, 45 skipped, 0 failed); skips are deliberate
   project/viewport ownership selections;
 - 20-cycle dual-lesson renderer resource pressure gate — PASS;

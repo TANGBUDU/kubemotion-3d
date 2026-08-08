@@ -170,6 +170,27 @@ describe('LabelManager deterministic screen-space layout', () => {
     manager.clear();
   });
 
+  it('keeps the Namespace workspace title visible at a distant logical-view anchor', () => {
+    const container = document.createElement('div');
+    const namespace = makeHandle('shop', 'Namespace', new THREE.Vector3(0, 0, -20));
+    const registry = makeRegistry([namespace]);
+    const view = makeView([namespace], () => ({
+      visible: true,
+      emphasis: 'normal',
+      labelMode: 'short',
+    }));
+    const manager = new LabelManager(container);
+    manager.sync(registry, view, 'en');
+    const label = labelFor(container, namespace.entityId);
+    setLabelSize(label, 112, 24);
+    manager.update(registry, camera(), 400, 300);
+
+    expect(label.dataset.priority).toBe('64');
+    expect(label.hidden).toBe(false);
+    expect(label.dataset.hiddenReason).toBeUndefined();
+    manager.clear();
+  });
+
   it('constrains every visible label to the requested safe rect and camera viewport', () => {
     const container = document.createElement('div');
     const focused = makeHandle('edge-focus', 'Pod', new THREE.Vector3(-4.5, 0, 0));

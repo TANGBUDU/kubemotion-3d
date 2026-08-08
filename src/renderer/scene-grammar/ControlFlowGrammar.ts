@@ -19,7 +19,7 @@ export const controlFlowGrammar = Object.freeze({
     'Pod',
     'Container',
   ],
-  defaultHiddenEntityKinds: [],
+  defaultHiddenEntityKinds: ['Deployment'],
   primaryEntityKinds: [
     'Developer',
     'Kubectl',

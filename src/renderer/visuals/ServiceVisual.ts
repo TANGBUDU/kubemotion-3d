@@ -110,11 +110,11 @@ export class ServiceVisualHandle extends BaseVisualHandle {
     this.root.userData.port = port.port ?? null;
     this.root.userData.protocol = protocol;
     this.root.userData.stableEntry = true;
-    this.root.userData.shortLabel = `Service · ${shortResourceName(entity.name, 14)}`;
-    this.root.userData.visibleText = `${entity.name} Service · ${clusterIP}:${portText}`;
+    this.root.userData.shortLabel = `Service • ${shortResourceName(entity.name, 14)}`;
+    this.root.userData.visibleText = `${entity.name} Service • ${clusterIP}:${portText}`;
     this.root.userData.domLabel = Object.freeze({
       labelClass: 'entity-short-name',
-      text: `Service · ${shortResourceName(entity.name, 12)} · ${clusterIP}:${portText}`,
+      text: `Service • ${shortResourceName(entity.name, 12)}`,
       anchor: 'label',
     });
   }

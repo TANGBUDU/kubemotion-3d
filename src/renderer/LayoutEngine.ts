@@ -95,6 +95,7 @@ const TEACHING_ZONES = Object.freeze({
 });
 
 const PENDING_TRAY_CENTER_X = 4.6;
+const EXTERNAL_CONTROL_INPUT_X = -11.65;
 
 const byId = (left: WorldEntity, right: WorldEntity): number => left.id.localeCompare(right.id);
 
@@ -475,13 +476,19 @@ export class PlacementLayout implements LayoutModule {
       });
     }
 
-    const kubectlEntities = visibleEntities
-      .filter((entity) => entity.kind === 'Kubectl')
+    const externalControlEntities = visibleEntities
+      .filter((entity) => entity.kind === 'Kubectl' || entity.kind === 'Developer')
       .sort(byId);
-    kubectlEntities.forEach((entity, index) => {
+    externalControlEntities.forEach((entity, index) => {
       layouts.set(entity.id, {
         entityId: entity.id,
-        position: [-8.8, 0.08, TEACHING_ZONES.controlPlane.centerZ + index * 1.4],
+        // Keep the command terminal outside the control-plane island instead of hiding it behind
+        // the API Server. The camera framer includes this external actor in its fitted bounds.
+        position: [
+          EXTERNAL_CONTROL_INPUT_X,
+          0.08,
+          TEACHING_ZONES.controlPlane.centerZ + index * 1.8,
+        ],
         lane: 'control',
         containerId: 'external-control-input',
         slotIndex: index,
@@ -653,14 +660,6 @@ abstract class SemanticLaneLayout implements LayoutModule {
         });
       });
     return completeResult(input.world, input.view, layouts, containers);
-  }
-}
-
-abstract class StableTeachingStageLayout implements LayoutModule {
-  public abstract readonly view: ViewMode;
-
-  public calculate(input: LayoutInput): LayoutResult {
-    return new PlacementLayout().calculate(input);
   }
 }
 
@@ -943,8 +942,106 @@ export class OverviewLayout implements LayoutModule {
   }
 }
 
-export class LogicalLayout extends StableTeachingStageLayout {
+/**
+ * Logical ownership is deliberately not a rearranged Placement scene. Namespaced API objects sit
+ * on a shallow workspace in ownership columns, while optional Node context stays outside it.
+ */
+export class LogicalLayout implements LayoutModule {
   public readonly view = 'logical' as const;
+
+  public calculate(input: LayoutInput): LayoutResult {
+    const visible = Object.values(input.world.entities)
+      .filter((entity) => isVisible(entity, input.view))
+      .sort(byId);
+    const layouts = new Map<EntityId, EntityLayout>();
+    const containers: LayoutContainer[] = [];
+    const logical = dimensions.logical;
+    const rowZ = (index: number, count: number, spacing: number): number =>
+      (index - (count - 1) / 2) * spacing;
+
+    const namespaces = visible.filter((entity) => entity.kind === 'Namespace');
+    namespaces.forEach((entity, index) => {
+      layouts.set(entity.id, {
+        entityId: entity.id,
+        position: [logical.namespaceWorkspace.centerX, 0.03 + index * 0.02, 0],
+        lane: 'semantic',
+        containerId: 'namespace-workspace',
+        slotIndex: index,
+      });
+    });
+
+    const placeOwnershipColumn = (kind: string, x: number): void => {
+      const entities = visible.filter((entity) => entity.kind === kind);
+      entities.forEach((entity, index) => {
+        layouts.set(entity.id, {
+          entityId: entity.id,
+          position: [x, 0.18, rowZ(index, entities.length, logical.rowSpacing)],
+          lane: 'semantic',
+          containerId: 'namespace-workspace',
+          slotIndex: index,
+        });
+      });
+    };
+    placeOwnershipColumn('Deployment', logical.deploymentColumnX);
+    placeOwnershipColumn('ReplicaSet', logical.replicaSetColumnX);
+    placeOwnershipColumn('Pod', logical.podColumnX);
+
+    const nodes = visible.filter((entity) => entity.kind === 'Node').sort(byRackOrder);
+    nodes.forEach((entity, index) => {
+      layouts.set(entity.id, {
+        entityId: entity.id,
+        position: [logical.placementContextX, 0, rowZ(index, nodes.length, logical.nodeRowSpacing)],
+        lane: 'node',
+        containerId: 'logical-placement-context',
+        slotIndex: index,
+      });
+    });
+    if (nodes.length > 0) {
+      const depth = Math.max(
+        dimensions.node.depth + 0.5,
+        (nodes.length - 1) * logical.nodeRowSpacing + dimensions.node.depth + 0.35,
+      );
+      containers.push({
+        id: 'logical-placement-context',
+        kind: 'semantic-lane',
+        label: 'PLACEMENT CONTEXT / NODES',
+        bounds: {
+          center: [logical.placementContextX, 0.025, 0],
+          size: [dimensions.node.width + 0.5, 0.05, depth],
+        },
+        labelAnchor: [logical.placementContextX - dimensions.node.width / 2, 0.12, -depth / 2],
+        slots: nodes.map((entity, index) => ({
+          id: `logical-placement-context:slot:${index}`,
+          index,
+          position: [
+            logical.placementContextX,
+            0,
+            rowZ(index, nodes.length, logical.nodeRowSpacing),
+          ],
+          occupiedBy: entity.id,
+        })),
+      });
+    }
+
+    const reserved = new Set(layouts.keys());
+    const remainder = visible.filter((entity) => !reserved.has(entity.id));
+    remainder.forEach((entity, index) => {
+      layouts.set(entity.id, {
+        entityId: entity.id,
+        position: [
+          logical.namespaceWorkspace.centerX +
+            (index - (remainder.length - 1) / 2) * logical.rowSpacing,
+          0.18,
+          logical.namespaceWorkspace.depth / 2 + 1.3,
+        ],
+        lane: 'semantic',
+        containerId: 'logical-context',
+        slotIndex: index,
+      });
+    });
+
+    return completeResult(input.world, input.view, layouts, containers);
+  }
 }
 
 /**
