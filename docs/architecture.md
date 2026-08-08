@@ -13,8 +13,9 @@ flowchart TD
   Before --> Diff["deterministic WorldDiff"]
   World --> Diff
   Engine --> ViewPatch["ViewProjectionPatch + active teaching routes"]
-  World --> View["ViewProjection"]
-  ViewPatch --> View
+  World --> Grammar["View-specific scene grammar + density policy"]
+  ViewPatch --> Grammar
+  Grammar --> View["Effective ViewProjection"]
   World --> Scene["SceneController"]
   Diff --> Scene
   View --> Scene
@@ -56,10 +57,15 @@ Direct links and arbitrary jumps therefore compile to the same settled state wit
 ## Presentation state
 
 `ViewProjection` controls visibility, emphasis, labels, inspector detail, camera preset, relation
-emphasis, callouts, active teaching routes, and the comparison panel. It has no factual status
-override. The comparison table is derived from compiled snapshots and diffs rather than duplicated
-prose constants. Its six rows cover Pod name, Pod UID, Node, Container ID, Container restart count,
-and Pod object; it deliberately makes no storage-persistence claim.
+emphasis, callouts, active teaching routes, and the comparison panel. Before rendering, the final
+authored projection passes through one of six scene grammars. The grammar fails closed on unrelated
+kinds, enforces per-view and per-kind density, preserves required route/focus context, closes the
+physical hierarchy in Placement and Control Flow, and limits relation families. It has no factual
+status override. See [Scene grammars](./scene-grammars.md).
+
+The comparison table is derived from compiled snapshots and diffs rather than duplicated prose
+constants. Its six rows cover Pod name, Pod UID, Node, Container ID, Container restart count, and
+Pod object; it deliberately makes no storage-persistence claim.
 
 `WorldEntity.status` is a renderer-facing summary used for color, silhouette, and status badges. It
 remains available to rendering code, but it is never promoted to learner-facing Evidence,
@@ -79,7 +85,9 @@ Control routes simplify watch/update interactions and are not packet captures. S
 behavior is implementation-dependent; distinct request IDs prevent a later request from looking
 like migration of an in-flight request.
 
-Explore builds a context-preserving projection over a compiled snapshot: matches are focused; directly related ownership, composition, and placement context remains visible and dimmed.
+Explore now starts from the Overview grammar instead of an all-object projection. Explicit filters
+focus their direct matches and retain bounded one-hop context; the focused override is Explore-only
+and still passes through density and relation-endpoint gates.
 
 ## Renderer ownership
 

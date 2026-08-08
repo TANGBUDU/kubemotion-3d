@@ -1,0 +1,80 @@
+import { DESKTOP_SCENE_DENSITY_BUDGET, MOBILE_SCENE_DENSITY_BUDGET } from './SceneDensityBudget';
+import type { SceneGrammar } from './SceneGrammar';
+
+export const storageGrammar = Object.freeze({
+  id: 'storage',
+  purpose: 'Container mount, PVC request, PV, and storage backend attachment.',
+  allowedEntityKinds: [
+    'Pod',
+    'Container',
+    'PersistentVolumeClaim',
+    'PersistentVolume',
+    'StorageClass',
+    'StorageBackend',
+    'CSIDriver',
+    'Node',
+  ],
+  defaultHiddenEntityKinds: ['Node', 'StorageClass', 'CSIDriver'],
+  primaryEntityKinds: [
+    'Pod',
+    'Container',
+    'PersistentVolumeClaim',
+    'PersistentVolume',
+    'StorageBackend',
+  ],
+  entityKindPriority: [
+    'Pod',
+    'Container',
+    'PersistentVolumeClaim',
+    'PersistentVolume',
+    'StorageBackend',
+    'StorageClass',
+    'CSIDriver',
+    'Node',
+  ],
+  maxVisibleByKind: {
+    Pod: 1,
+    Container: 1,
+    PersistentVolumeClaim: 1,
+    PersistentVolume: 1,
+    StorageClass: 1,
+    StorageBackend: 1,
+    CSIDriver: 1,
+    Node: 1,
+  },
+  allowedRelationSemantics: ['composition', 'storage', 'configuration'],
+  defaultHiddenRelationSemantics: ['configuration'],
+  relationFamilyPriority: ['composition', 'storage', 'configuration'],
+  zones: [
+    { id: 'workload', allowedKinds: ['Pod', 'Container'] },
+    {
+      id: 'volume-binding',
+      allowedKinds: ['PersistentVolumeClaim', 'PersistentVolume', 'StorageClass'],
+    },
+    { id: 'storage-backend', allowedKinds: ['StorageBackend', 'CSIDriver'] },
+    { id: 'placement-context', allowedKinds: ['Node'] },
+  ],
+  layoutAlgorithm: 'storage-chain',
+  cameraType: 'orthographic-isometric',
+  routeRules: {
+    allowedSemantics: ['data-flow', 'node-runtime'],
+    requirePersistentRoute: true,
+    routeParticipantsHavePriority: true,
+  },
+  aggregation: { aggregateKinds: [], mobileAggregateKinds: ['Node'] },
+  separation: { horizontalClearance: 0.75, labelClearance: 12 },
+  budgets: {
+    desktop: {
+      ...DESKTOP_SCENE_DENSITY_BUDGET,
+      maxPrimaryEntities: 5,
+      maxSecondaryEntities: 3,
+      maxAnimatedTokens: 2,
+    },
+    mobile: {
+      ...MOBILE_SCENE_DENSITY_BUDGET,
+      maxPrimaryEntities: 5,
+      maxSecondaryEntities: 1,
+      maxAnimatedTokens: 1,
+    },
+  },
+} satisfies SceneGrammar);

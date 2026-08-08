@@ -1,0 +1,97 @@
+import { DESKTOP_SCENE_DENSITY_BUDGET, MOBILE_SCENE_DENSITY_BUDGET } from './SceneDensityBudget';
+import type { SceneGrammar } from './SceneGrammar';
+
+export const trafficGrammar = Object.freeze({
+  id: 'traffic',
+  purpose: 'A persistent client to Service to selected endpoint to Pod request path.',
+  allowedEntityKinds: [
+    'Browser',
+    'ExternalClient',
+    'Developer',
+    'Pod',
+    'Service',
+    'EndpointSlice',
+    'Node',
+    'Gateway',
+    'GatewayClass',
+    'HTTPRoute',
+    'DNS',
+  ],
+  defaultHiddenEntityKinds: ['Node', 'Developer', 'GatewayClass', 'HTTPRoute', 'DNS'],
+  primaryEntityKinds: ['Browser', 'ExternalClient', 'Pod', 'Service', 'Gateway'],
+  entityKindPriority: [
+    'Browser',
+    'ExternalClient',
+    'Service',
+    'Gateway',
+    'Pod',
+    'EndpointSlice',
+    'DNS',
+    'HTTPRoute',
+    'GatewayClass',
+    'Node',
+    'Developer',
+  ],
+  maxVisibleByKind: {
+    Browser: 1,
+    ExternalClient: 1,
+    Developer: 1,
+    Pod: 4,
+    Service: 2,
+    EndpointSlice: 2,
+    Node: 3,
+    Gateway: 1,
+    GatewayClass: 1,
+    HTTPRoute: 1,
+    DNS: 1,
+  },
+  allowedRelationSemantics: [
+    'selection',
+    'endpoint-membership',
+    'configuration',
+    'data-flow',
+    'DNS-flow',
+  ],
+  defaultHiddenRelationSemantics: [],
+  // The two static families keep EndpointSlice -> Service and EndpointSlice -> backend legible.
+  // Selector matches remain encoded by the Service/EndpointSlice cards and active route.
+  relationFamilyPriority: [
+    'data-flow',
+    'DNS-flow',
+    'configuration',
+    'endpoint-membership',
+    'selection',
+  ],
+  zones: [
+    { id: 'request-origin', allowedKinds: ['Browser', 'ExternalClient', 'Developer', 'Pod'] },
+    { id: 'stable-entry', allowedKinds: ['DNS', 'Gateway', 'Service'] },
+    {
+      id: 'endpoint-selection',
+      allowedKinds: ['EndpointSlice', 'Pod', 'HTTPRoute', 'GatewayClass'],
+    },
+    { id: 'placement-context', allowedKinds: ['Node'] },
+  ],
+  layoutAlgorithm: 'traffic-lane',
+  cameraType: 'orthographic-isometric',
+  routeRules: {
+    allowedSemantics: ['data-flow', 'dns'],
+    requirePersistentRoute: true,
+    routeParticipantsHavePriority: true,
+  },
+  aggregation: { aggregateKinds: ['Pod'], mobileAggregateKinds: ['Pod', 'Node'] },
+  separation: { horizontalClearance: 0.8, labelClearance: 12 },
+  budgets: {
+    desktop: {
+      ...DESKTOP_SCENE_DENSITY_BUDGET,
+      maxPrimaryEntities: 5,
+      maxSecondaryEntities: 5,
+      maxRelationLabels: 2,
+    },
+    mobile: {
+      ...MOBILE_SCENE_DENSITY_BUDGET,
+      maxPrimaryEntities: 4,
+      maxSecondaryEntities: 2,
+      maxAnimatedTokens: 2,
+    },
+  },
+} satisfies SceneGrammar);

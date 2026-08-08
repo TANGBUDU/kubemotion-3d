@@ -6,6 +6,7 @@ import {
   getPodData,
 } from '../world';
 import type { EntityId, RelationId, WorldEntity, WorldSnapshot } from '../world/types';
+import { createEffectiveScenePlan } from '../renderer/scene-grammar';
 import type {
   ActiveTeachingRoute,
   ComparisonPanelModel,
@@ -34,9 +35,9 @@ function initialProjection(world: WorldSnapshot): ViewProjection {
     Object.values(world.entities).map((entity) => [
       entity.id,
       {
-        visible: true,
-        emphasis: 'normal',
-        labelMode: 'short',
+        visible: false,
+        emphasis: 'hidden',
+        labelMode: 'none',
         inspectorMode: 'none',
       } satisfies EntityViewState,
     ]),
@@ -662,6 +663,10 @@ export const courseEngine = {
       }
       const transition = freezeValue(authoredStep.transition ?? emptyTransition);
       validateTransition(transition, beforeWorld, world, view);
+      view = createEffectiveScenePlan(world, view, {
+        viewport: 'desktop',
+        applyGrammarDefaults: false,
+      }).projection;
       const worldDiff = computeWorldDiff(beforeWorld, world);
       compiledSteps.push(
         freezeValue({

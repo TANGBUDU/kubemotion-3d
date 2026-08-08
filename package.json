@@ -19,6 +19,7 @@
     "content:accuracy": "tsx scripts/validate-content-accuracy.ts",
     "content:index": "tsx scripts/generate-content-index.ts",
     "visual:baseline": "tsx scripts/capture-foundation-baseline.ts",
+    "visual:m1": "tsx scripts/capture-scene-grammar-review.ts",
     "visual:capture": "tsx scripts/capture-visual-acceptance.ts",
     "test": "vitest",
     "test:unit": "vitest",

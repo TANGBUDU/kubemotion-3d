@@ -6,6 +6,11 @@ explain that state without replacing it.
 
 ## Scene zones
 
+KubeMotion uses six projections of the same synthetic world: Overview, Logical Ownership,
+Placement & Runtime, Control Flow, Traffic, and Storage. Their allowlists, relation families,
+density profiles, and hierarchy rules are defined in [Scene grammars](./scene-grammars.md). A view
+change is therefore a change of teaching projection, not a rearrangement of one universal scene.
+
 Zones organize responsibility and placement before an event is animated. They are stable teaching
 landmarks, not Kubernetes API objects.
 

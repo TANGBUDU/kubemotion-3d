@@ -94,7 +94,7 @@ test('mobile Explore controls meet touch targets and view tabs rove by keyboard'
     await page.goto('/#/explore');
     const overview = page.getByRole('tab', { name: 'overview' });
     const logical = page.getByRole('tab', { name: 'logical' });
-    const traffic = page.getByRole('tab', { name: 'traffic' });
+    const storage = page.getByRole('tab', { name: 'storage' });
     await expect(overview).toBeVisible();
 
     const metrics = await page.evaluate(() => {
@@ -132,8 +132,8 @@ test('mobile Explore controls meet touch targets and view tabs rove by keyboard'
     await expect(logical).toHaveAttribute('aria-selected', 'true');
     await expect(overview).toHaveAttribute('tabindex', '-1');
     await page.keyboard.press('End');
-    await expect(traffic).toBeFocused();
-    await expect(traffic).toHaveAttribute('aria-selected', 'true');
+    await expect(storage).toBeFocused();
+    await expect(storage).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('Home');
     await expect(overview).toBeFocused();
     await expect(overview).toHaveAttribute('aria-selected', 'true');

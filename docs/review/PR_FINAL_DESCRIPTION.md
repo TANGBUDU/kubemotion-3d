@@ -52,9 +52,9 @@
 - `pnpm typecheck` — PASS;
 - `pnpm content:validate` — PASS (2 v2 scenarios, 25 entities, 28 relations, 2 verified v2
   lessons, 20 planned lessons, 26 terms, 29 official sources);
-- `pnpm content:accuracy` — PASS (194 current-public text files, 30 forbidden patterns, 22 local
+- `pnpm content:accuracy` — PASS (208 current-public text files, 30 forbidden patterns, 23 local
   links, and all README, visualization, lifecycle, and Service invariants);
-- `pnpm test:unit -- --run` — PASS (32 files, 229 tests);
+- `pnpm test:unit -- --run` — PASS (34 files, 238 tests);
 - `pnpm build` — PASS;
 - `pnpm test:e2e` — PASS (132 passed, 45 skipped, 0 failed); skips are deliberate
   project/viewport ownership selections;

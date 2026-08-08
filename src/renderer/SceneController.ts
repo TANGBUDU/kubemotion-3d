@@ -28,6 +28,7 @@ import { SceneEnvironment } from './scene/SceneEnvironment';
 import { SceneLayers } from './scene/SceneLayers';
 import { SceneStage } from './scene/SceneStage';
 import { SceneRegistry } from './SceneRegistry';
+import { createEffectiveScenePlan } from './scene-grammar';
 import { VisualFactoryRegistry } from './VisualFactoryRegistry';
 import { ReplicaSetVisualHandle } from './VisualHandles';
 
@@ -103,19 +104,19 @@ const exitProjection = (step: CompiledStep): ViewProjection => {
   for (const entity of Object.values(step.beforeWorld.entities)) {
     const authored = step.view.entityStates[entity.id];
     entityStates[entity.id] = authored ?? {
-      visible: true,
-      emphasis: exitTargets.has(entity.id) ? 'focused' : 'normal',
-      labelMode: exitTargets.has(entity.id) ? 'full' : 'short',
+      visible: exitTargets.has(entity.id),
+      emphasis: exitTargets.has(entity.id) ? 'focused' : 'hidden',
+      labelMode: exitTargets.has(entity.id) ? 'full' : 'none',
     };
   }
   const relationStates: Record<RelationId, RelationViewState> = {};
   for (const relation of Object.values(step.beforeWorld.relations)) {
     relationStates[relation.id] = step.view.relationStates[relation.id] ?? {
-      visible: true,
+      visible: false,
       emphasis: 'normal',
     };
   }
-  return {
+  const authoredProjection: ViewProjection = {
     view: step.view.view,
     cameraPresetId: step.view.cameraPresetId,
     entityStates,
@@ -123,6 +124,10 @@ const exitProjection = (step: CompiledStep): ViewProjection => {
     callouts: [],
     activeRoutes: [],
   };
+  return createEffectiveScenePlan(step.beforeWorld, authoredProjection, {
+    viewport: 'desktop',
+    applyGrammarDefaults: false,
+  }).projection;
 };
 
 export class SceneController {

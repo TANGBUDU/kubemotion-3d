@@ -31,6 +31,7 @@ const currentPublicTextTargets = [
   'docs/content-authoring.md',
   'docs/deployment.md',
   'docs/monitoring-boundary.md',
+  'docs/scene-grammars.md',
   'docs/visualization-semantics.md',
 ] as const;
 const intentionallyExcludedHistoricalPaths = [
@@ -269,7 +270,7 @@ for (const requiredClaim of [
   '`restartCount`',
   '`lastState`',
   `${scannedFiles.length} current-public text files`,
-  '32 files, 229 tests',
+  '34 files, 238 tests',
   '132 passed, 45 skipped, 0 failed',
   'forced-lock contention tests reconcile both writer tabs',
   'pending completion → later Reset',
@@ -286,9 +287,13 @@ for (const requiredClaim of [
 for (const obsoleteClaim of [
   '174 current-public text files',
   '190 current-public text files',
+  '194 current-public text files',
+  '207 current-public text files',
   '23 files, 176 tests',
   '31 files, 212 tests',
   '32 files, 226 tests',
+  '32 files, 229 tests',
+  '34 files, 237 tests',
   '123 passed, 45 skipped, 0 failed',
   '102 passed, 45 skipped, 0 failed',
   '66 passed, 39 skipped, 0 failed',

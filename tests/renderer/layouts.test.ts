@@ -6,6 +6,7 @@ import type {
   ViewProjection,
 } from '../../src/course/types';
 import { calculateLayout } from '../../src/renderer/LayoutEngine';
+import { sceneGrammarFor } from '../../src/renderer/scene-grammar';
 import type {
   EntityId,
   LocalizedText,
@@ -250,13 +251,22 @@ describe('PlacementLayout', () => {
     expect(tray?.slots.every((slot) => slot.occupiedBy === undefined)).toBe(true);
   });
 
-  it('keeps the same teaching-stage geometry across golden lesson view modes', () => {
-    const reference = calculateLayout({ world, view: projection(world, 'placement') });
-    for (const viewMode of ['overview', 'logical', 'control-flow', 'traffic'] as const) {
-      const candidate = calculateLayout({ world, view: projection(world, viewMode) });
-      expect(candidate.entities).toEqual(reference.entities);
-      expect(candidate.containers).toEqual(reference.containers);
+  it('keeps every view deterministic without treating Placement geometry as the contract', () => {
+    const viewModes: readonly ViewMode[] = [
+      'overview',
+      'logical',
+      'placement',
+      'control-flow',
+      'traffic',
+      'storage',
+    ];
+    const strategies = new Set<string>();
+    for (const viewMode of viewModes) {
+      const view = projection(world, viewMode);
+      expect(calculateLayout({ world, view })).toEqual(calculateLayout({ world, view }));
+      strategies.add(sceneGrammarFor(viewMode).layoutAlgorithm);
     }
+    expect(strategies.size).toBe(viewModes.length);
   });
 
   it('keeps slots stable across status/data-only updates and composes Containers in Pods', () => {

@@ -1,6 +1,7 @@
 import type { ExploreFilters } from '../state/appStore';
 import type { EntityId, RelationId, WorldSnapshot } from '../world/types';
 import type { EntityViewState, RelationViewState, ViewMode, ViewProjection } from './types';
+import { createEffectiveScenePlan } from '../renderer/scene-grammar';
 
 function isDirectMatch(
   world: WorldSnapshot,
@@ -26,8 +27,10 @@ export function createExploreProjection(
   const query = filters.query.trim().toLowerCase();
   const filtering = Boolean(query || filters.kind || filters.namespace || filters.status);
   const matches = new Set<EntityId>();
-  for (const id of Object.keys(world.entities)) {
-    if (isDirectMatch(world, id, filters, query)) matches.add(id);
+  if (filtering) {
+    for (const id of Object.keys(world.entities)) {
+      if (isDirectMatch(world, id, filters, query)) matches.add(id);
+    }
   }
 
   const context = new Set<EntityId>(matches);
@@ -87,7 +90,7 @@ export function createExploreProjection(
     }),
   ) as Record<RelationId, RelationViewState>;
 
-  return {
+  const authoredProjection: ViewProjection = {
     view,
     entityStates,
     relationStates,
@@ -95,4 +98,9 @@ export function createExploreProjection(
     activeRoutes: [],
     cameraPresetId: view,
   };
+  return createEffectiveScenePlan(world, authoredProjection, {
+    viewport: 'desktop',
+    applyGrammarDefaults: !filtering,
+    allowFocusedKindOverride: filtering,
+  }).projection;
 }

@@ -24,7 +24,7 @@ describe('Explore view tabs', () => {
 
     const overview = screen.getByRole('tab', { name: 'overview' });
     const logical = screen.getByRole('tab', { name: 'logical' });
-    const traffic = screen.getByRole('tab', { name: 'traffic' });
+    const storage = screen.getByRole('tab', { name: 'storage' });
     expect(overview).toHaveAttribute('aria-selected', 'true');
     expect(overview).toHaveAttribute('aria-controls', 'explore-scene-panel');
     expect(overview).toHaveAttribute('tabindex', '0');
@@ -43,14 +43,14 @@ describe('Explore view tabs', () => {
     expect(useAppStore.getState().view).toBe('logical');
 
     fireEvent.keyDown(logical, { key: 'End' });
-    expect(traffic).toHaveFocus();
-    expect(traffic).toHaveAttribute('aria-selected', 'true');
-    fireEvent.keyDown(traffic, { key: 'Home' });
+    expect(storage).toHaveFocus();
+    expect(storage).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(storage, { key: 'Home' });
     expect(overview).toHaveFocus();
     expect(overview).toHaveAttribute('aria-selected', 'true');
     fireEvent.keyDown(overview, { key: 'ArrowLeft' });
-    expect(traffic).toHaveFocus();
-    expect(traffic).toHaveAttribute('aria-selected', 'true');
+    expect(storage).toHaveFocus();
+    expect(storage).toHaveAttribute('aria-selected', 'true');
     expect(windowKeydown).not.toHaveBeenCalled();
     window.removeEventListener('keydown', windowKeydown);
   });

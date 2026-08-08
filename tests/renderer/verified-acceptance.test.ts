@@ -11,6 +11,7 @@ import { getTeachingRouteStyle } from '../../src/renderer/relations/RelationStyl
 import { boundsForHandles } from '../../src/renderer/camera/CameraFramer';
 import { OrthographicLessonCamera } from '../../src/renderer/camera/OrthographicLessonCamera';
 import { SceneRegistry } from '../../src/renderer/SceneRegistry';
+import { createEffectiveScenePlan } from '../../src/renderer/scene-grammar';
 import { VisualFactoryRegistry } from '../../src/renderer/VisualFactoryRegistry';
 
 const lessonIds = ['container-restart-vs-pod-replacement', 'service-routes-to-pods'] as const;
@@ -73,15 +74,18 @@ function sceneFor(step: CompiledStep, layout: LayoutResult) {
   const registry = new SceneRegistry(root, new VisualFactoryRegistry(), { allowGeneric: false });
   const retainedExitIds = new Set(step.worldDiff.removedEntities.map((entity) => entity.id));
   if (retainedExitIds.size > 0) {
-    const beforeView = {
+    const exitTargets = new Set(
+      step.transition.cues.flatMap((cue) => (cue.type === 'entity-exit' ? [cue.entityId] : [])),
+    );
+    const authoredBeforeView = {
       ...step.view,
       entityStates: Object.fromEntries(
         Object.values(step.beforeWorld.entities).map((entity) => [
           entity.id,
           step.view.entityStates[entity.id] ?? {
-            visible: true,
-            emphasis: retainedExitIds.has(entity.id) ? 'focused' : 'normal',
-            labelMode: retainedExitIds.has(entity.id) ? 'full' : 'short',
+            visible: exitTargets.has(entity.id),
+            emphasis: exitTargets.has(entity.id) ? 'focused' : 'hidden',
+            labelMode: exitTargets.has(entity.id) ? 'full' : 'none',
           },
         ]),
       ),
@@ -89,12 +93,16 @@ function sceneFor(step: CompiledStep, layout: LayoutResult) {
         Object.values(step.beforeWorld.relations).map((relation) => [
           relation.id,
           step.view.relationStates[relation.id] ?? {
-            visible: true,
+            visible: false,
             emphasis: 'normal',
           },
         ]),
       ),
     } as typeof step.view;
+    const beforeView = createEffectiveScenePlan(step.beforeWorld, authoredBeforeView, {
+      viewport: 'desktop',
+      applyGrammarDefaults: false,
+    }).projection;
     registry.sync(step.beforeWorld, beforeView);
     registry.applyLayout(calculateLayout({ world: step.beforeWorld, view: beforeView }));
   }

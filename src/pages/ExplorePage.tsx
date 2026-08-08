@@ -11,7 +11,14 @@ import type { CompiledStep, ViewMode } from '../course/types';
 import { useAppStore } from '../state/appStore';
 import type { EntityStatus } from '../world/types';
 
-const views: ViewMode[] = ['overview', 'logical', 'placement', 'control-flow', 'traffic'];
+const views: ViewMode[] = [
+  'overview',
+  'logical',
+  'placement',
+  'control-flow',
+  'traffic',
+  'storage',
+];
 
 const exploreCopy: Record<
   Locale,

@@ -13,7 +13,7 @@
 | Milestone                             | Status      | Commit message                                                          | Evidence                                                                                       |
 | ------------------------------------- | ----------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | 0 — Baseline and protection           | COMPLETE    | `docs: capture rejected visual baseline and rebuild gates`              | Current findings, repeatable baseline capture, rejected reference, visual and route checklists |
-| 1 — Scene grammar and density         | NOT STARTED | `feat: add view-specific scene grammars and density budgets`            | —                                                                                              |
+| 1 — Scene grammar and density         | COMPLETE    | `feat: add view-specific scene grammars and density budgets`            | Six grammar contracts, enforced projections, deterministic safety tests, six-view screenshots  |
 | 2 — Foundation and semantic islands   | NOT STARTED | `feat: rebuild the cluster from a clear foundation`                     | —                                                                                              |
 | 3 — Runtime hierarchy models          | NOT STARTED | `feat: make node pod and container hierarchy explicit`                  | —                                                                                              |
 | 4 — Logical object models             | NOT STARTED | `feat: establish distinct logical Kubernetes object visuals`            | —                                                                                              |
@@ -68,9 +68,66 @@ condition. They are not approved future baselines.
   contracts do not.
 - Teaching final gate: PASS for the two guided lessons, FAIL for default Explore composition.
 
+## Milestone 1 checklist
+
+- [x] Added independent Overview, Logical Ownership, Placement & Runtime, Control Flow, Traffic,
+      and Storage grammar contracts.
+- [x] Defined explicit allowed/default-hidden kinds, semantic zones, layout and camera policies,
+      route rules, aggregation intent, separation values, and desktop/mobile budgets per grammar.
+- [x] Added deterministic total and per-kind density pruning with explicit hidden reasons.
+- [x] Made unfiltered Explore use the Overview grammar instead of focus-all/full-label state.
+- [x] Kept explicit Explore filters as bounded detail-on-demand without weakening guided lessons.
+- [x] Made guided compilation start hidden and pass the final authored view through the grammar.
+- [x] Protected active-route and callout context and enforced relation endpoint visibility.
+- [x] Enforced Container → Pod closure and scheduled Pod → Node closure only in physical views.
+- [x] Replaced the exit-animation all-visible fallback with a grammar-safe before-world projection.
+- [x] Added the missing Storage view tab and updated keyboard navigation gates.
+- [x] Replaced the test that treated Placement geometry as the cross-view contract.
+- [x] Added deterministic grammar and all-available-guided-step safety tests.
+- [x] Captured and inspected all six Explore views at 1440×900.
+- [x] Commit Milestone 1 with the mandated message.
+
+## Milestone 1 automated checks
+
+| Check                     | Result                                              |
+| ------------------------- | --------------------------------------------------- |
+| `pnpm visual:m1`          | PASS — 6 grammar views captured and density-checked |
+| `pnpm format:check`       | PASS                                                |
+| `pnpm lint`               | PASS                                                |
+| `pnpm typecheck`          | PASS                                                |
+| `pnpm content:validate`   | PASS — 2 available, 20 planned                      |
+| `pnpm content:accuracy`   | PASS — current count recorded by the release gate   |
+| `pnpm test:unit -- --run` | PASS — 34 files, 238 tests                          |
+| `pnpm build`              | PASS                                                |
+| `pnpm test:e2e`           | PASS — 132 passed, 45 intentional skips, 0 failed   |
+
+## Milestone 1 screenshot review
+
+Manifest: [`before-after/m1-scene-grammar-manifest.json`](./before-after/m1-scene-grammar-manifest.json)
+
+| View         | Entities | Relations | Entity labels | Maximum label overlap | Labels outside stage | M1 result                                                        |
+| ------------ | -------: | --------: | ------------: | --------------------: | -------------------: | ---------------------------------------------------------------- |
+| Overview     |        9 |         6 |             6 |                     0 |                    0 | PASS — no longer the 17-entity universal scene                   |
+| Logical      |        4 |         3 |             4 |                     0 |                    0 | PASS — ownership subset only                                     |
+| Placement    |       12 |         6 |             3 |                     0 |                    0 | PASS — runtime subset within its budget                          |
+| Control Flow |       12 |         9 |             4 |                     0 |                    0 | PASS — bounded context; relation-family cap is two               |
+| Traffic      |        3 |         0 |             3 |                     0 |                    0 | PASS for filtering; source-world gap tracked for M2/M4           |
+| Storage      |        2 |         1 |             2 |                     0 |                    0 | PASS for filtering; storage chain remains future curriculum work |
+
+Human M1 result: PASS. The screenshots prove that view changes now change the visible teaching
+subset and remain within density/label gates. They also show three deliberate non-M1 failures that
+must not be mistaken for final acceptance:
+
+- the layouts still use the old Placement-derived stage geometry;
+- the Explore source world lacks Cluster, etcd, Service, and storage-chain objects;
+- viewport-driven mobile entity replanning is not wired into the renderer yet.
+
+Those are owned by the Foundation, model, responsive-layout, and course-migration milestones. The
+M2 five-second Overview gate therefore remains FAIL until the foundation and semantic islands are
+rebuilt.
+
 ## Next coherent task
 
-Milestone 1 must make visibility a scene-grammar responsibility, create six independent grammar
-definitions and explicit desktop/mobile density budgets, change Explore's default projection to the
-Overview grammar, and replace the test that currently requires multiple views to share identical
-geometry.
+Milestone 2 must make `SceneStage` the single owner of the bounded cluster foundation and semantic
+islands, remove the Placement-derived layout fallback from Overview, and produce an Overview that
+passes the five-second foundation gate without relying on empty universal lanes.
