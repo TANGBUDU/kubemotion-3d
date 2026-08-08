@@ -112,9 +112,11 @@ export function LearnPage() {
   const enterLesson = useAppStore((state) => state.enterLesson);
   const setLessonStep = useAppStore((state) => state.setLessonStep);
   const completeLesson = useAppStore((state) => state.completeLesson);
+  const retryProgressSave = useAppStore((state) => state.retryProgressSave);
   const savedLessonId = useAppStore((state) => state.lessonId);
   const savedStepIndex = useAppStore((state) => state.stepIndex);
   const completedLessonIds = useAppStore((state) => state.completedLessonIds);
+  const progressSaveStatusByLesson = useAppStore((state) => state.progressSaveStatusByLesson);
   const resumeEntry = resolveLessonEntry(availableLessons, {
     lessonId: savedLessonId,
     stepIndex: savedStepIndex,
@@ -336,6 +338,7 @@ export function LearnPage() {
   });
   const titles = lesson.steps.map((lessonStep) => lessonStep.title[locale]);
   const lessonCompleted = completedLessonIds.includes(lesson.id);
+  const lessonSaveStatus = progressSaveStatusByLesson[lesson.id] ?? 'idle';
   const nextLesson = availableLessons.find(
     (candidate) => candidate.id !== lesson.id && !completedLessonIds.includes(candidate.id),
   );
@@ -468,10 +471,17 @@ export function LearnPage() {
           locale={locale}
           lessonTitle={lesson.title[locale]}
           completed={lessonCompleted}
+          saveStatus={lessonSaveStatus}
           nextLesson={
             nextLesson ? { id: nextLesson.id, title: nextLesson.title[locale] } : undefined
           }
-          onComplete={() => completeLesson(lesson.id)}
+          onComplete={() =>
+            completeLesson(lesson.id, {
+              title: lesson.title,
+              completionStepIndex: lesson.steps.length - 1,
+            })
+          }
+          onRetry={() => retryProgressSave(lesson.id)}
           onRestart={restartLesson}
         />
       )}

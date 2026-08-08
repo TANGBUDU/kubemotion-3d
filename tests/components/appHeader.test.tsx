@@ -38,7 +38,7 @@ describe('AppHeader locale and progress reset', () => {
     expect(screen.getByRole('button', { name: '学習進捗をリセット' })).toBeEnabled();
   });
 
-  it('requires confirmation, preserves progress on cancel, and announces a successful reset', () => {
+  it('requires confirmation, preserves progress on cancel, and announces a successful reset', async () => {
     const confirm = vi
       .spyOn(window, 'confirm')
       .mockReturnValueOnce(false)
@@ -58,6 +58,23 @@ describe('AppHeader locale and progress reset', () => {
       stepIndex: 0,
       completedLessonIds: [],
     });
-    expect(screen.getByRole('status')).toHaveTextContent('Learning progress reset.');
+    expect(await screen.findByRole('status')).toHaveTextContent('Learning progress reset.');
+  });
+
+  it('does not claim a persisted Reset when browser storage rejects the write', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const originalSetItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+      if (key === 'kubemotion:v1:progress') throw new DOMException('Denied', 'SecurityError');
+      originalSetItem.call(this, key, value);
+    });
+    renderHeader();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset learning progress' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Progress reset in this tab, but browser storage could not be updated.',
+    );
+    expect(screen.queryByText('Learning progress reset.')).not.toBeInTheDocument();
   });
 });

@@ -5,7 +5,21 @@ import { HomePage } from '../../src/pages/HomePage';
 import { useAppStore } from '../../src/state/appStore';
 
 vi.mock('../../src/components/SceneViewport', () => ({
-  SceneViewport: () => <div data-testid="scene-preview" />,
+  SceneViewport: ({
+    'aria-label': ariaLabel,
+    step,
+  }: {
+    'aria-label'?: string;
+    step: { lessonId: string; index: number };
+  }) => (
+    <div
+      role="img"
+      aria-label={ariaLabel}
+      data-testid="scene-preview"
+      data-lesson-id={step.lessonId}
+      data-step-index={step.index}
+    />
+  ),
 }));
 
 function renderHome() {
@@ -44,6 +58,15 @@ describe('HomePage orientation', () => {
       'href',
       '/learn/service-routes-to-pods/0',
     );
+    expect(screen.getByTestId('scene-preview')).toHaveAttribute(
+      'data-lesson-id',
+      'service-routes-to-pods',
+    );
+    expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
+    expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
+      'Interactive lesson preview: How a Service routes to ready Pods',
+    );
+    expect(screen.getByText('CURRENT LESSON · How a Service routes to ready Pods')).toBeVisible();
     expect(screen.queryByRole('link', { name: /explore/i })).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'View orientation again' }),
@@ -92,6 +115,14 @@ describe('HomePage orientation', () => {
       'href',
       '/learn/container-restart-vs-pod-replacement/3',
     );
+    expect(screen.getByTestId('scene-preview')).toHaveAttribute(
+      'data-lesson-id',
+      'container-restart-vs-pod-replacement',
+    );
+    expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
+    expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
+      'Interactive lesson preview: Container restart is not Pod replacement',
+    );
 
     view.unmount();
     useAppStore.setState({ lessonId: 'planned-or-missing', stepIndex: 99 });
@@ -116,6 +147,14 @@ describe('HomePage orientation', () => {
       'href',
       '/learn/container-restart-vs-pod-replacement/0',
     );
+    expect(screen.getByTestId('scene-preview')).toHaveAttribute(
+      'data-lesson-id',
+      'container-restart-vs-pod-replacement',
+    );
+    expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
+    expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
+      'Interactive lesson preview: Container restart is not Pod replacement',
+    );
   });
 
   it('changes the Home primary action to Explore after every available lesson is complete', () => {
@@ -133,6 +172,39 @@ describe('HomePage orientation', () => {
       '/explore',
     );
     expect(screen.queryByRole('link', { name: 'Continue learning' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('scene-preview')).toHaveAttribute(
+      'data-lesson-id',
+      'container-restart-vs-pod-replacement',
+    );
+    expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
+    expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
+      'Showcase preview: Container restart is not Pod replacement',
+    );
+    expect(screen.getByText('SHOWCASE · Container restart is not Pod replacement')).toBeVisible();
+  });
+
+  it.each([
+    [
+      'en',
+      'Interactive lesson preview: How a Service routes to ready Pods',
+      'CURRENT LESSON · How a Service routes to ready Pods',
+    ],
+    [
+      'ja',
+      'インタラクティブなレッスンプレビュー: Service が ready な Pod へルーティングする仕組み',
+      '現在のレッスン · Service が ready な Pod へルーティングする仕組み',
+    ],
+    [
+      'zh-CN',
+      '交互式课程预览: Service 如何将流量路由到 Ready Pod',
+      '当前课程 · Service 如何将流量路由到 Ready Pod',
+    ],
+  ] as const)('localizes the %s hero preview title', (locale, ariaLabel, caption) => {
+    useAppStore.setState({ locale });
+    renderHome();
+
+    expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(ariaLabel);
+    expect(screen.getByText(caption)).toBeVisible();
   });
 
   it('localizes the three orientation concepts', () => {

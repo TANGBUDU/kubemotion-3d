@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ui } from '../app/i18n';
 import type { Locale } from '../app/types';
 import { SceneViewport } from '../components/SceneViewport';
-import { course, lessonById, scenario } from '../content/loader';
+import { course, lessonById, scenarioById } from '../content/loader';
 import { courseEngine } from '../course/CourseEngine';
 import { orderedAvailableLessons, resolveLessonEntry, useAppStore } from '../state/appStore';
 import '../styles/home.css';
@@ -28,8 +28,10 @@ const homeCopy: Record<
     exploreCompleted: string;
     revisitOrientation: string;
     continueHome: string;
-    previewLabel: string;
-    sceneCaption: string;
+    lessonPreviewLabel: string;
+    showcasePreviewLabel: string;
+    lessonSceneCaption: string;
+    showcaseSceneCaption: string;
     benefitsLabel: string;
     benefitDescriptions: readonly [string, string, string];
   }
@@ -54,12 +56,14 @@ const homeCopy: Record<
     exploreCompleted: 'Explore completed lessons',
     revisitOrientation: 'View orientation again',
     continueHome: 'Continue without review',
-    previewLabel: 'Verified Kubernetes lifecycle preview',
-    sceneCaption: 'SYNTHETIC WORLD · VERIFIED GOLDEN LESSON',
+    lessonPreviewLabel: 'Interactive lesson preview',
+    showcasePreviewLabel: 'Showcase preview',
+    lessonSceneCaption: 'CURRENT LESSON',
+    showcaseSceneCaption: 'SHOWCASE',
     benefitsLabel: 'KubeMotion benefits',
     benefitDescriptions: [
       'Every step has an immutable WorldSnapshot plus a separate ViewProjection.',
-      'See Pod identity, Node placement, Container ID, and replica counts change.',
+      'Trace object relationships, workload placement, and Service traffic paths across lessons.',
       'Conceptual animations cite official Kubernetes documentation and use synthetic data.',
     ],
   },
@@ -83,12 +87,14 @@ const homeCopy: Record<
     exploreCompleted: '完了したレッスンを探索する',
     revisitOrientation: 'ガイドをもう一度見る',
     continueHome: '確認せずに続ける',
-    previewLabel: '検証済み Kubernetes ライフサイクルのプレビュー',
-    sceneCaption: '合成 WORLD · 検証済みゴールデンレッスン',
+    lessonPreviewLabel: 'インタラクティブなレッスンプレビュー',
+    showcasePreviewLabel: 'ショーケースプレビュー',
+    lessonSceneCaption: '現在のレッスン',
+    showcaseSceneCaption: 'ショーケース',
     benefitsLabel: 'KubeMotion の特長',
     benefitDescriptions: [
       '各ステップは、不変の WorldSnapshot と独立した ViewProjection を持ちます。',
-      'Pod の ID、Node 配置、Container ID、レプリカ数の変化を確認できます。',
+      'レッスンを通して、オブジェクトの関係、ワークロード配置、Service のトラフィック経路を追えます。',
       '概念アニメーションは Kubernetes 公式ドキュメントを参照し、合成データを使用します。',
     ],
   },
@@ -112,12 +118,14 @@ const homeCopy: Record<
     exploreCompleted: '探索已完成课程',
     revisitOrientation: '再次查看导览',
     continueHome: '跳过回顾并继续',
-    previewLabel: '已验证的 Kubernetes 生命周期预览',
-    sceneCaption: '合成 WORLD · 已验证黄金课程',
+    lessonPreviewLabel: '交互式课程预览',
+    showcasePreviewLabel: '展示预览',
+    lessonSceneCaption: '当前课程',
+    showcaseSceneCaption: '展示',
     benefitsLabel: 'KubeMotion 的优势',
     benefitDescriptions: [
       '每一步都有不可变的 WorldSnapshot，并使用独立的 ViewProjection。',
-      '直观看到 Pod 身份、Node 调度位置、Container ID 和副本计数的变化。',
+      '跨课程跟踪对象关系、工作负载放置位置和 Service 流量路径。',
       '概念动画引用 Kubernetes 官方文档，并且只使用合成数据。',
     ],
   },
@@ -142,11 +150,15 @@ export function HomePage() {
     stepIndex: savedStepIndex,
     completedLessonIds,
   });
-  const previewLesson = lessonById.get('container-restart-vs-pod-replacement');
+  const previewLessonId = entry?.lessonId ?? 'container-restart-vs-pod-replacement';
+  const previewLesson = lessonById.get(previewLessonId);
+  const previewScenario = previewLesson ? scenarioById.get(previewLesson.scenarioId) : undefined;
   const step = useMemo(
     () =>
-      previewLesson ? courseEngine.compileLesson(previewLesson, scenario).steps[0] : undefined,
-    [previewLesson],
+      previewLesson && previewScenario
+        ? courseEngine.compileLesson(previewLesson, previewScenario).steps[0]
+        : undefined,
+    [previewLesson, previewScenario],
   );
 
   useEffect(() => {
@@ -160,7 +172,10 @@ export function HomePage() {
     }
   }, [orientationOpen]);
 
-  if (!previewLesson) throw new Error('Verified lesson is missing');
+  if (!previewLesson) throw new Error(`Preview lesson is missing: ${previewLessonId}`);
+  if (!previewScenario) {
+    throw new Error(`Preview scenario is missing: ${previewLesson.scenarioId}`);
+  }
   if (availableLessons.length === 0) throw new Error('No verified lesson is available');
   if (!step) return null;
 
@@ -176,6 +191,9 @@ export function HomePage() {
       ? copy.continueLesson
       : copy.startLesson
     : copy.exploreCompleted;
+  const localizedPreviewTitle = previewLesson.title[locale];
+  const previewLabel = `${entry ? copy.lessonPreviewLabel : copy.showcasePreviewLabel}: ${localizedPreviewTitle}`;
+  const sceneCaption = `${entry ? copy.lessonSceneCaption : copy.showcaseSceneCaption} · ${localizedPreviewTitle}`;
 
   const rememberOrientation = () => setOrientationSeen(true);
   const closeOrientation = () => {
@@ -264,16 +282,20 @@ export function HomePage() {
         <div className="hero-scene">
           <SceneViewport
             role="img"
-            aria-label={copy.previewLabel}
+            aria-label={previewLabel}
             step={step}
-            playback={{ stepKey: 'home-preview', playbackId: 0, transition: { cues: [] } }}
+            playback={{
+              stepKey: `home-preview:${previewLesson.id}:0`,
+              playbackId: 0,
+              transition: { cues: [] },
+            }}
             locale={locale}
             reducedMotion={reducedMotion}
             onSelectEntity={() => undefined}
           />
           <div className="scene-caption">
             <span className="live-dot" />
-            {copy.sceneCaption}
+            {sceneCaption}
           </div>
         </div>
       </section>

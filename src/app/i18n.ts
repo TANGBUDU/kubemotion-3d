@@ -32,6 +32,7 @@ const text = {
     resetProgressConfirm:
       'Reset all lesson progress and completion history stored in this browser?',
     resetProgressDone: 'Learning progress reset.',
+    resetProgressFailed: 'Progress reset in this tab, but browser storage could not be updated.',
     reducedMotion: 'Reduced motion',
     language: 'Language',
     roadmap: 'Roadmap',
@@ -73,6 +74,8 @@ const text = {
     resetProgress: '学習進捗をリセット',
     resetProgressConfirm: 'このブラウザーに保存された進捗と完了履歴をすべてリセットしますか？',
     resetProgressDone: '学習進捗をリセットしました。',
+    resetProgressFailed:
+      'このタブの進捗はリセットされましたが、ブラウザーストレージを更新できませんでした。',
     reducedMotion: '動きを抑える',
     language: '言語',
     roadmap: 'ロードマップ',
@@ -114,6 +117,7 @@ const text = {
     resetProgress: '重置学习进度',
     resetProgressConfirm: '要重置此浏览器中保存的全部学习进度和完成记录吗？',
     resetProgressDone: '学习进度已重置。',
+    resetProgressFailed: '当前标签页已重置，但未能更新浏览器存储。',
     reducedMotion: '减少动态效果',
     language: '语言',
     roadmap: '路线图',

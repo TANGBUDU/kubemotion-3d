@@ -256,16 +256,45 @@ const finalPrDescription = read('docs/review/PR_FINAL_DESCRIPTION.md');
 check(!/PENDING_/.test(finalPrDescription), 'final PR description: validation placeholders remain');
 for (const requiredClaim of [
   'two verified lessons',
+  'manifest-driven `/learn` continuation',
+  'normalized lesson deep links',
+  'explicit completion',
+  'first-unfinished next-lesson routing',
+  'serialized cross-tab completion merges',
+  'Reset-generation guard',
+  'visible saving/saved/failed states',
+  'local WebGL fallback and Retry',
   'SPEC / OBSERVED / READY',
   '`containerID`',
   '`restartCount`',
   '`lastState`',
-  '66 passed, 39 skipped, 0 failed',
+  `${scannedFiles.length} current-public text files`,
+  '32 files, 229 tests',
+  '132 passed, 45 skipped, 0 failed',
+  'forced-lock contention tests reconcile both writer tabs',
+  'pending completion → later Reset',
+  'injected `localStorage.setItem` failure',
+  'Home preview / CTA coherence',
+  '20-cycle dual-lesson renderer resource pressure gate',
   '38 full-page + 5 focused = 43 screenshots',
 ]) {
   check(
     finalPrDescription.includes(requiredClaim),
     `final PR description: missing required claim ${requiredClaim}`,
+  );
+}
+for (const obsoleteClaim of [
+  '174 current-public text files',
+  '23 files, 176 tests',
+  '31 files, 212 tests',
+  '32 files, 226 tests',
+  '123 passed, 45 skipped, 0 failed',
+  '102 passed, 45 skipped, 0 failed',
+  '66 passed, 39 skipped, 0 failed',
+]) {
+  check(
+    !finalPrDescription.includes(obsoleteClaim),
+    `final PR description: obsolete validation count ${obsoleteClaim}`,
   );
 }
 

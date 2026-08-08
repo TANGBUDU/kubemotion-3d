@@ -17,6 +17,17 @@ const copy = {
     restartLesson: 'Restart lesson',
     finalStepReady: 'Final step ready',
     completeLesson: 'Complete lesson',
+    savingProgress: 'Saving progress…',
+    savingMessage: (lessonTitle: string) =>
+      `Saving ${lessonTitle} in this browser. You can keep navigating while this finishes.`,
+    progressSaved: 'Progress saved',
+    saveFailed: 'Progress was not saved',
+    saveFailedMessage:
+      'Your completion is kept for this session, but may be lost if you reload. Check browser storage access, then retry.',
+    backgroundSaveFailed: (lessonTitle: string) =>
+      `${lessonTitle} was not saved and may be lost if you reload.`,
+    retrySave: 'Retry save',
+    retrySaveFor: (lessonTitle: string) => `Retry saving ${lessonTitle}`,
     completionPrompt: (lessonTitle: string) =>
       `Complete ${lessonTitle} to save it in your learning progress.`,
     lessonComplete: 'Lesson complete',
@@ -65,6 +76,17 @@ const copy = {
     restartLesson: 'レッスンを最初から見る',
     finalStepReady: '最終ステップ',
     completeLesson: 'レッスンを完了',
+    savingProgress: '進捗を保存中…',
+    savingMessage: (lessonTitle: string) =>
+      `${lessonTitle} をこのブラウザーに保存しています。保存中も移動できます。`,
+    progressSaved: '進捗を保存しました',
+    saveFailed: '進捗を保存できませんでした',
+    saveFailedMessage:
+      '完了状態はこのセッションに保持されますが、再読み込み後に失われる可能性があります。ブラウザーのストレージ設定を確認して再試行してください。',
+    backgroundSaveFailed: (lessonTitle: string) =>
+      `${lessonTitle} を保存できず、再読み込み後に失われる可能性があります。`,
+    retrySave: '保存を再試行',
+    retrySaveFor: (lessonTitle: string) => `${lessonTitle} の保存を再試行`,
     completionPrompt: (lessonTitle: string) => `${lessonTitle} を完了として学習進捗に保存します。`,
     lessonComplete: 'レッスン完了',
     completionMessage: (lessonTitle: string) =>
@@ -112,6 +134,17 @@ const copy = {
     restartLesson: '重新开始课程',
     finalStepReady: '已到最后一步',
     completeLesson: '完成课程',
+    savingProgress: '正在保存进度…',
+    savingMessage: (lessonTitle: string) =>
+      `正在将《${lessonTitle}》保存到此浏览器，保存期间仍可继续导航。`,
+    progressSaved: '进度已保存',
+    saveFailed: '进度未能保存',
+    saveFailedMessage:
+      '本次完成状态会在当前会话中保留，但重新加载后可能丢失。请检查浏览器存储权限后重试。',
+    backgroundSaveFailed: (lessonTitle: string) =>
+      `《${lessonTitle}》未能保存，重新加载后可能丢失。`,
+    retrySave: '重试保存',
+    retrySaveFor: (lessonTitle: string) => `重试保存《${lessonTitle}》`,
     completionPrompt: (lessonTitle: string) => `将《${lessonTitle}》标记为已完成并保存到学习进度。`,
     lessonComplete: '课程已完成',
     completionMessage: (lessonTitle: string) =>

@@ -58,6 +58,7 @@ export function installDebugBridge(): void {
         lessonId: state.lessonId,
         stepIndex: state.stepIndex,
         completedLessonIds: state.completedLessonIds,
+        progressSaveStatusByLesson: state.progressSaveStatusByLesson,
         view: state.view,
         selectedEntityId: state.selectedEntityId,
       };

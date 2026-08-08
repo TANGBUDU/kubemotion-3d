@@ -26,7 +26,7 @@ function uniqueLessonIds(value: unknown): string[] {
   ];
 }
 
-function normalizedProgress(progress: Progress): Progress {
+export function normalizeProgress(progress: Progress): Progress {
   return {
     completedLessonIds: uniqueLessonIds(progress.completedLessonIds),
     ...(progress.lessonId ? { lessonId: progress.lessonId } : {}),
@@ -97,15 +97,25 @@ export function progressFromStorageValue(raw: string | null): Progress {
 
 export function loadProgress(storage: Pick<Storage, 'getItem'> = localStorage): Progress {
   try {
-    return progressFromStorageValue(storage.getItem(progressStorageKey));
+    return readProgress(storage);
   } catch {
     return { completedLessonIds: [], stepIndex: 0 };
   }
 }
 
+/**
+ * Reads progress without hiding storage failures. Mutating transactions use this
+ * variant so a denied or exhausted storage backend can surface a retryable error.
+ */
+export function readProgress(storage: Pick<Storage, 'getItem'> = localStorage): Progress {
+  return progressFromStorageValue(storage.getItem(progressStorageKey));
+}
+
 export function saveProgress(
   progress: Progress,
   storage: Pick<Storage, 'setItem'> = localStorage,
-): void {
-  storage.setItem(progressStorageKey, JSON.stringify(normalizedProgress(progress)));
+): Progress {
+  const normalized = normalizeProgress(progress);
+  storage.setItem(progressStorageKey, JSON.stringify(normalized));
+  return normalized;
 }

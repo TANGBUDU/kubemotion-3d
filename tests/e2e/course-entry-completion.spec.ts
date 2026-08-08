@@ -21,6 +21,7 @@ async function appProgress(page: Page): Promise<{
   completedLessonIds: string[];
   lessonId?: string;
   stepIndex: number;
+  progressSaveStatusByLesson: Record<string, string>;
 }> {
   return page.evaluate(() => {
     const state = window.__KUBEMOTION_TEST__?.getAppState();
@@ -30,8 +31,75 @@ async function appProgress(page: Page): Promise<{
         : [],
       ...(typeof state?.lessonId === 'string' ? { lessonId: state.lessonId } : {}),
       stepIndex: typeof state?.stepIndex === 'number' ? state.stepIndex : -1,
+      progressSaveStatusByLesson:
+        state?.progressSaveStatusByLesson &&
+        typeof state.progressSaveStatusByLesson === 'object' &&
+        !Array.isArray(state.progressSaveStatusByLesson)
+          ? (state.progressSaveStatusByLesson as Record<string, string>)
+          : {},
     };
   });
+}
+
+async function holdProgressLock(page: Page): Promise<() => Promise<void>> {
+  await page.evaluate((key) => {
+    const testWindow = window as typeof window & {
+      __KUBEMOTION_PROGRESS_LOCK__?: { acquired: boolean; release?: () => void };
+    };
+    const control: { acquired: boolean; release?: () => void } = { acquired: false };
+    testWindow.__KUBEMOTION_PROGRESS_LOCK__ = control;
+    void navigator.locks.request(key, async () => {
+      control.acquired = true;
+      await new Promise<void>((resolve) => {
+        control.release = resolve;
+      });
+    });
+  }, progressKey);
+  await page.waitForFunction(
+    () =>
+      (
+        window as typeof window & {
+          __KUBEMOTION_PROGRESS_LOCK__?: { acquired: boolean };
+        }
+      ).__KUBEMOTION_PROGRESS_LOCK__?.acquired === true,
+  );
+  return async () => {
+    await page.evaluate(() => {
+      (
+        window as typeof window & {
+          __KUBEMOTION_PROGRESS_LOCK__?: { release?: () => void };
+        }
+      ).__KUBEMOTION_PROGRESS_LOCK__?.release?.();
+    });
+  };
+}
+
+async function failProgressWritesUntilReleased(page: Page): Promise<() => Promise<void>> {
+  await page.evaluate((key) => {
+    const testWindow = window as typeof window & {
+      __KUBEMOTION_ALLOW_PROGRESS_WRITES__?: () => void;
+    };
+    const originalSetItem = Storage.prototype.setItem;
+    let fail = true;
+    Storage.prototype.setItem = function (storageKey, value) {
+      if (fail && storageKey === key) {
+        throw new DOMException('Storage denied by test', 'QuotaExceededError');
+      }
+      originalSetItem.call(this, storageKey, value);
+    };
+    testWindow.__KUBEMOTION_ALLOW_PROGRESS_WRITES__ = () => {
+      fail = false;
+    };
+  }, progressKey);
+  return async () => {
+    await page.evaluate(() => {
+      (
+        window as typeof window & {
+          __KUBEMOTION_ALLOW_PROGRESS_WRITES__?: () => void;
+        }
+      ).__KUBEMOTION_ALLOW_PROGRESS_WRITES__?.();
+    });
+  };
 }
 
 test('bare Learn follows manifest order and valid progress resumes', async ({ page }) => {
@@ -226,6 +294,364 @@ test('simultaneous cross-tab completions preserve both lessons', async ({ contex
 
   const expected = [POD_LESSON, SERVICE_LESSON].sort();
   await expect.poll(async () => (await completedLessonIds(page)).sort()).toEqual(expected);
+  await expect
+    .poll(async () => (await appProgress(otherPage)).completedLessonIds.sort())
+    .toEqual(expected);
+  await otherPage.close();
+});
+
+for (const completionOrder of ['service-first', 'pod-first'] as const) {
+  test(`forced lock order ${completionOrder} converges both completion writers`, async ({
+    context,
+    page,
+  }) => {
+    const otherPage = await context.newPage();
+    const holderPage = await context.newPage();
+    await Promise.all([
+      page.goto(`/#/learn/${SERVICE_LESSON}/5`),
+      otherPage.goto(`/#/learn/${POD_LESSON}/9`),
+      holderPage.goto('/#/about'),
+    ]);
+    const releaseLock = await holdProgressLock(holderPage);
+    const serviceComplete = page.getByRole('button', {
+      name: 'Complete lesson',
+      exact: true,
+    });
+    const podComplete = otherPage.getByRole('button', {
+      name: 'Complete lesson',
+      exact: true,
+    });
+    const [first, second] =
+      completionOrder === 'service-first'
+        ? [serviceComplete, podComplete]
+        : [podComplete, serviceComplete];
+
+    await first.click();
+    await expect(first).toHaveCount(0);
+    await second.click();
+    await expect
+      .poll(async () => (await appProgress(page)).progressSaveStatusByLesson[SERVICE_LESSON])
+      .toBe('saving');
+    await expect
+      .poll(async () => (await appProgress(otherPage)).progressSaveStatusByLesson[POD_LESSON])
+      .toBe('saving');
+
+    await releaseLock();
+
+    const expected = [POD_LESSON, SERVICE_LESSON].sort();
+    await expect.poll(async () => (await completedLessonIds(page)).sort()).toEqual(expected);
+    await expect
+      .poll(async () => (await appProgress(page)).completedLessonIds.sort())
+      .toEqual(expected);
+    await expect
+      .poll(async () => (await appProgress(otherPage)).completedLessonIds.sort())
+      .toEqual(expected);
+    await expect
+      .poll(async () => (await appProgress(holderPage)).completedLessonIds.sort())
+      .toEqual(expected);
+    await expect
+      .poll(async () => (await appProgress(page)).progressSaveStatusByLesson[SERVICE_LESSON])
+      .toBe('saved');
+    await expect
+      .poll(async () => (await appProgress(otherPage)).progressSaveStatusByLesson[POD_LESSON])
+      .toBe('saved');
+    await Promise.all([otherPage.close(), holderPage.close()]);
+  });
+}
+
+test('a held completion reports saving, then converges before Complete to Next', async ({
+  context,
+  page,
+}) => {
+  const otherPage = await context.newPage();
+  await Promise.all([page.goto(`/#/learn/${SERVICE_LESSON}/5`), otherPage.goto('/#/about')]);
+  const releaseLock = await holdProgressLock(otherPage);
+  const completion = page.getByTestId('lesson-completion-card');
+
+  await completion.getByRole('button', { name: 'Complete lesson', exact: true }).click();
+
+  await expect(completion).toHaveAttribute('data-save-status', 'saving');
+  await expect(completion.getByRole('status')).toContainText('Saving');
+  await expect(completion.getByRole('link', { name: /Next lesson:/i })).toHaveCount(0);
+  await expect
+    .poll(async () => (await appProgress(page)).progressSaveStatusByLesson[SERVICE_LESSON])
+    .toBe('saving');
+
+  await page.getByRole('button', { name: 'Open course contents', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: 'Kubernetes Foundations' })
+    .getByRole('link', { name: /Container restart is not Pod replacement/ })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`${POD_LESSON}/0$`));
+  await expect
+    .poll(() => appProgress(page))
+    .toMatchObject({
+      lessonId: POD_LESSON,
+      stepIndex: 0,
+      completedLessonIds: [SERVICE_LESSON],
+      progressSaveStatusByLesson: { [SERVICE_LESSON]: 'saving' },
+    });
+
+  await releaseLock();
+
+  await expect.poll(() => completedLessonIds(page)).toEqual([SERVICE_LESSON]);
+  await expect
+    .poll(() => appProgress(page))
+    .toMatchObject({
+      lessonId: POD_LESSON,
+      stepIndex: 0,
+      completedLessonIds: [SERVICE_LESSON],
+      progressSaveStatusByLesson: { [SERVICE_LESSON]: 'saved' },
+    });
+  await expect
+    .poll(async () => (await appProgress(otherPage)).completedLessonIds)
+    .toEqual([SERVICE_LESSON]);
+  await otherPage.close();
+});
+
+test('same-tab A to B to A completion cards keep independent held-lock status', async ({
+  context,
+  page,
+}) => {
+  const holderPage = await context.newPage();
+  await Promise.all([page.goto(`/#/learn/${SERVICE_LESSON}/5`), holderPage.goto('/#/about')]);
+  const releaseLock = await holdProgressLock(holderPage);
+  const completion = page.getByTestId('lesson-completion-card');
+
+  await completion.getByRole('button', { name: 'Complete lesson', exact: true }).click();
+  await expect(completion).toHaveAttribute('data-save-status', 'saving');
+  await page.evaluate(
+    ([lessonId, stepIndex]) => {
+      window.__KUBEMOTION_TEST__?.goToLessonStep(lessonId, stepIndex);
+    },
+    [POD_LESSON, 9] as const,
+  );
+  await expect(page).toHaveURL(new RegExp(`${POD_LESSON}/9$`));
+  await completion.getByRole('button', { name: 'Complete lesson', exact: true }).click();
+  await expect(completion).toHaveAttribute('data-save-status', 'saving');
+  await expect(completion.getByText('Lesson complete')).toHaveCount(0);
+
+  await page.evaluate(
+    ([lessonId, stepIndex]) => {
+      window.__KUBEMOTION_TEST__?.goToLessonStep(lessonId, stepIndex);
+    },
+    [SERVICE_LESSON, 5] as const,
+  );
+  await expect(page).toHaveURL(new RegExp(`${SERVICE_LESSON}/5$`));
+  await expect(completion).toHaveAttribute('data-save-status', 'saving');
+  await expect(completion.getByText('Lesson complete')).toHaveCount(0);
+  await expect(completion.getByRole('link', { name: /Next lesson:/i })).toHaveCount(0);
+
+  await page.evaluate(
+    ([lessonId, stepIndex]) => {
+      window.__KUBEMOTION_TEST__?.goToLessonStep(lessonId, stepIndex);
+    },
+    [POD_LESSON, 9] as const,
+  );
+  await expect(page).toHaveURL(new RegExp(`${POD_LESSON}/9$`));
+  await expect(completion).toHaveAttribute('data-save-status', 'saving');
+  await expect
+    .poll(async () => (await appProgress(page)).progressSaveStatusByLesson)
+    .toMatchObject({
+      [SERVICE_LESSON]: 'saving',
+      [POD_LESSON]: 'saving',
+    });
+
+  await releaseLock();
+
+  await expect(completion).toHaveAttribute('data-save-status', 'saved');
+  await expect
+    .poll(async () => (await appProgress(page)).progressSaveStatusByLesson)
+    .toMatchObject({
+      [SERVICE_LESSON]: 'saved',
+      [POD_LESSON]: 'saved',
+    });
+  await page.evaluate(
+    ([lessonId, stepIndex]) => {
+      window.__KUBEMOTION_TEST__?.goToLessonStep(lessonId, stepIndex);
+    },
+    [SERVICE_LESSON, 5] as const,
+  );
+  await expect(page).toHaveURL(new RegExp(`${SERVICE_LESSON}/5$`));
+  await expect(completion).toHaveAttribute('data-save-status', 'saved');
+  const expected = [POD_LESSON, SERVICE_LESSON].sort();
+  await expect.poll(async () => (await completedLessonIds(page)).sort()).toEqual(expected);
+  await expect
+    .poll(async () => (await appProgress(holderPage)).completedLessonIds.sort())
+    .toEqual(expected);
+  await holderPage.close();
+});
+
+test('a held save failure stays visible with Retry after navigating to another lesson', async ({
+  context,
+  page,
+}) => {
+  const holderPage = await context.newPage();
+  await Promise.all([page.goto(`/#/learn/${SERVICE_LESSON}/5`), holderPage.goto('/#/about')]);
+  const releaseLock = await holdProgressLock(holderPage);
+  const allowProgressWrites = await failProgressWritesUntilReleased(page);
+  await page.getByRole('button', { name: 'Complete lesson', exact: true }).click();
+
+  await page.evaluate(
+    ([lessonId, stepIndex]) => {
+      window.__KUBEMOTION_TEST__?.goToLessonStep(lessonId, stepIndex);
+    },
+    [POD_LESSON, 0] as const,
+  );
+  await expect(page).toHaveURL(new RegExp(`${POD_LESSON}/0$`));
+  await releaseLock();
+
+  const alerts = page.getByTestId('progress-save-alerts');
+  await expect(alerts.getByRole('alert')).toContainText('may be lost if you reload');
+  await expect
+    .poll(async () => (await appProgress(page)).progressSaveStatusByLesson)
+    .toMatchObject({
+      [SERVICE_LESSON]: 'failed',
+    });
+
+  await allowProgressWrites();
+  await alerts
+    .getByRole('button', { name: /Retry saving How a Service routes to ready Pods/ })
+    .click();
+
+  await expect(alerts).toHaveCount(0);
+  await expect
+    .poll(async () => (await appProgress(page)).progressSaveStatusByLesson[SERVICE_LESSON])
+    .toBe('saved');
+  await expect.poll(() => completedLessonIds(page)).toEqual([SERVICE_LESSON]);
+  await expect
+    .poll(async () => (await appProgress(holderPage)).completedLessonIds)
+    .toEqual([SERVICE_LESSON]);
+  await holderPage.close();
+});
+
+test('a held completion failure remains retryable after returning Home', async ({
+  context,
+  page,
+}, testInfo) => {
+  if (testInfo.project.name === 'mobile-chromium') {
+    await page.setViewportSize({ width: 320, height: 568 });
+  }
+  const holderPage = await context.newPage();
+  await Promise.all([page.goto(`/#/learn/${SERVICE_LESSON}/5`), holderPage.goto('/#/about')]);
+  const releaseLock = await holdProgressLock(holderPage);
+  const allowProgressWrites = await failProgressWritesUntilReleased(page);
+  const completion = page.getByTestId('lesson-completion-card');
+
+  await completion.getByRole('button', { name: 'Complete lesson', exact: true }).click();
+  await expect(completion).toHaveAttribute('data-save-status', 'saving');
+  await completion.getByRole('link', { name: 'Back to home', exact: true }).click();
+  await expect(page).toHaveURL(/\/#\/$/);
+
+  await releaseLock();
+
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText('may be lost if you reload');
+  await expect(alert).toContainText('How a Service routes to ready Pods');
+  const alertBox = await alert.boundingBox();
+  const viewport = page.viewportSize();
+  expect(alertBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  if (alertBox && viewport) {
+    expect(alertBox.x).toBeGreaterThanOrEqual(0);
+    expect(alertBox.x + alertBox.width).toBeLessThanOrEqual(viewport.width);
+  }
+  await expect
+    .poll(async () => (await appProgress(page)).progressSaveStatusByLesson[SERVICE_LESSON])
+    .toBe('failed');
+
+  await allowProgressWrites();
+  await page
+    .getByRole('button', { name: /Retry saving How a Service routes to ready Pods/ })
+    .click();
+
+  await expect(alert).toHaveCount(0);
+  await expect.poll(() => completedLessonIds(page)).toEqual([SERVICE_LESSON]);
+  await expect
+    .poll(async () => (await appProgress(page)).progressSaveStatusByLesson[SERVICE_LESSON])
+    .toBe('saved');
+  await expect
+    .poll(async () => (await appProgress(holderPage)).completedLessonIds)
+    .toEqual([SERVICE_LESSON]);
+  await holderPage.close();
+});
+
+test('a later Reset invalidates a completion queued behind a held lock', async ({
+  context,
+  page,
+}) => {
+  const otherPage = await context.newPage();
+  await Promise.all([page.goto(`/#/learn/${SERVICE_LESSON}/5`), otherPage.goto('/#/about')]);
+  const releaseLock = await holdProgressLock(otherPage);
+  const completion = page.getByTestId('lesson-completion-card');
+  await completion.getByRole('button', { name: 'Complete lesson', exact: true }).click();
+  await expect(completion).toHaveAttribute('data-save-status', 'saving');
+
+  await page.evaluate(() => {
+    void window.__KUBEMOTION_TEST__?.reset();
+  });
+
+  await expect(completion).toHaveAttribute('data-save-status', 'idle');
+  await expect(completion).toContainText('Final step ready');
+  await expect.poll(async () => (await appProgress(page)).completedLessonIds).toEqual([]);
+
+  await releaseLock();
+
+  await expect.poll(() => completedLessonIds(page)).toEqual([]);
+  await expect
+    .poll(() => appProgress(page))
+    .toMatchObject({
+      completedLessonIds: [],
+      progressSaveStatusByLesson: {},
+      stepIndex: 0,
+    });
+  await expect
+    .poll(() => appProgress(otherPage))
+    .toMatchObject({
+      completedLessonIds: [],
+      progressSaveStatusByLesson: {},
+      stepIndex: 0,
+    });
+  await otherPage.close();
+});
+
+test('a storage failure keeps session intent and Retry converges both tabs', async ({
+  context,
+  page,
+}) => {
+  const otherPage = await context.newPage();
+  await Promise.all([
+    page.goto(`/#/learn/${SERVICE_LESSON}/5`),
+    otherPage.goto(`/#/learn/${POD_LESSON}/9`),
+  ]);
+  await otherPage.getByRole('button', { name: 'Complete lesson', exact: true }).click();
+  await expect.poll(() => completedLessonIds(otherPage)).toEqual([POD_LESSON]);
+  await expect.poll(async () => (await appProgress(page)).completedLessonIds).toEqual([POD_LESSON]);
+
+  const allowProgressWrites = await failProgressWritesUntilReleased(page);
+  const completion = page.getByTestId('lesson-completion-card');
+  await completion.getByRole('button', { name: 'Complete lesson', exact: true }).click();
+
+  await expect(completion).toHaveAttribute('data-save-status', 'failed');
+  await expect(completion.getByRole('alert')).toContainText('kept for this session');
+  await expect(page.getByRole('alert')).toHaveCount(1);
+  await expect(completion.getByRole('link', { name: /Next lesson:/i })).toHaveCount(0);
+  await expect
+    .poll(() => appProgress(page))
+    .toMatchObject({
+      completedLessonIds: [POD_LESSON, SERVICE_LESSON],
+      progressSaveStatusByLesson: { [SERVICE_LESSON]: 'failed' },
+    });
+
+  await allowProgressWrites();
+  await completion.getByRole('button', { name: 'Retry save', exact: true }).click();
+
+  await expect(completion).toHaveAttribute('data-save-status', 'saved');
+  const expected = [POD_LESSON, SERVICE_LESSON].sort();
+  await expect.poll(async () => (await completedLessonIds(page)).sort()).toEqual(expected);
+  await expect
+    .poll(async () => (await appProgress(page)).completedLessonIds.sort())
+    .toEqual(expected);
   await expect
     .poll(async () => (await appProgress(otherPage)).completedLessonIds.sort())
     .toEqual(expected);

@@ -41,6 +41,7 @@ describe('course entry and completion flow', () => {
       lessonId: undefined,
       stepIndex: 0,
       completedLessonIds: [],
+      progressSaveStatusByLesson: {},
       selectedEntityId: undefined,
     });
   });
@@ -203,7 +204,7 @@ describe('course entry and completion flow', () => {
       within(completion).queryByRole('link', { name: /Next lesson: Container restart/i }),
     ).not.toBeInTheDocument();
     expect(
-      within(completion).getByRole('link', { name: 'Explore the verified world' }),
+      await within(completion).findByRole('link', { name: 'Explore the verified world' }),
     ).toHaveAttribute('href', '/explore');
     await waitFor(() =>
       expect(useAppStore.getState().completedLessonIds).toEqual([

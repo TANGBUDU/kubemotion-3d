@@ -24,10 +24,10 @@ export function AppHeader() {
     return () => window.clearTimeout(timeout);
   }, [resetNotice]);
 
-  const confirmReset = (): void => {
+  const confirmReset = async (): Promise<void> => {
     if (!window.confirm(t.resetProgressConfirm)) return;
-    reset();
-    setResetNotice(t.resetProgressDone);
+    const result = await reset();
+    setResetNotice(result.status === 'saved' ? t.resetProgressDone : t.resetProgressFailed);
   };
 
   return (
@@ -68,7 +68,7 @@ export function AppHeader() {
         <button
           className="icon-button"
           type="button"
-          onClick={confirmReset}
+          onClick={() => void confirmReset()}
           aria-label={t.resetProgress}
           title={t.resetProgress}
         >

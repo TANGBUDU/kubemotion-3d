@@ -3,6 +3,7 @@ import {
   loadPreferences,
   loadProgress,
   localeFromNavigator,
+  readProgress,
   saveProgress,
 } from '../../src/state/persistence';
 
@@ -20,6 +21,18 @@ describe('persistence helpers', () => {
       orientationSeen: false,
     });
     expect(loadProgress(broken)).toEqual({ completedLessonIds: [], stepIndex: 0 });
+  });
+
+  it('keeps tolerant reads separate from transaction reads that surface storage errors', () => {
+    const error = new DOMException('Storage denied', 'SecurityError');
+    const denied = {
+      getItem: () => {
+        throw error;
+      },
+    };
+
+    expect(loadProgress(denied)).toEqual({ completedLessonIds: [], stepIndex: 0 });
+    expect(() => readProgress(denied)).toThrow(error);
   });
 
   it('migrates old preferences and persists the orientation flag', () => {
@@ -58,7 +71,7 @@ describe('persistence helpers', () => {
     expect(loadProgress(duplicateProgress).completedLessonIds).toEqual(['service-routes-to-pods']);
 
     let saved = '';
-    saveProgress(
+    const normalized = saveProgress(
       {
         completedLessonIds: [
           'service-routes-to-pods',
@@ -75,5 +88,6 @@ describe('persistence helpers', () => {
       lessonId: 'container-restart-vs-pod-replacement',
       stepIndex: 9,
     });
+    expect(normalized).toEqual(JSON.parse(saved));
   });
 });
