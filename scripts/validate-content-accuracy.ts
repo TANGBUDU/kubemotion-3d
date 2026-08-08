@@ -285,6 +285,7 @@ for (const requiredClaim of [
 }
 for (const obsoleteClaim of [
   '174 current-public text files',
+  '190 current-public text files',
   '23 files, 176 tests',
   '31 files, 212 tests',
   '32 files, 226 tests',

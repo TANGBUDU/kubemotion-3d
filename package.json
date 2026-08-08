@@ -18,6 +18,7 @@
     "content:validate": "tsx scripts/validate-content.ts",
     "content:accuracy": "tsx scripts/validate-content-accuracy.ts",
     "content:index": "tsx scripts/generate-content-index.ts",
+    "visual:baseline": "tsx scripts/capture-foundation-baseline.ts",
     "visual:capture": "tsx scripts/capture-visual-acceptance.ts",
     "test": "vitest",
     "test:unit": "vitest",

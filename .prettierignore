@@ -3,3 +3,7 @@ coverage
 playwright-report
 test-results
 deploy/helm/kubemotion/templates
+
+# Imported review authority files are kept byte-for-byte identical to the supplied originals.
+KUBEMOTION_FOUNDATION_FIRST_REBUILD_DIRECTIVE.md
+CODEX_START_PROMPT.txt

@@ -1,5 +1,8 @@
 ## Summary
 
+> Foundation-first rebuild note: this document records the accepted pre-rebuild release baseline.
+> Milestones 0–10 replace its visual and curriculum completion claims as they are delivered.
+
 - immutable `WorldSnapshot` / `WorldPatch` / `WorldDiff` plus a separate `ViewProjection`;
 - two verified lessons:
   - Container restart vs Pod replacement;
@@ -49,7 +52,7 @@
 - `pnpm typecheck` — PASS;
 - `pnpm content:validate` — PASS (2 v2 scenarios, 25 entities, 28 relations, 2 verified v2
   lessons, 20 planned lessons, 26 terms, 29 official sources);
-- `pnpm content:accuracy` — PASS (190 current-public text files, 30 forbidden patterns, 22 local
+- `pnpm content:accuracy` — PASS (194 current-public text files, 30 forbidden patterns, 22 local
   links, and all README, visualization, lifecycle, and Service invariants);
 - `pnpm test:unit -- --run` — PASS (32 files, 229 tests);
 - `pnpm build` — PASS;

@@ -1,147 +1,104 @@
-# Visual acceptance checklist
+# Foundation-first visual acceptance checklist
 
-This is the final human review record for the Kubernetes accuracy correction. Every PNG recorded
-in [`screenshots/manifest.json`](./screenshots/manifest.json) was opened after the final build and
-checked for factual consistency as well as layout. Result: **43/43 screenshots PASS** — 38
-full-page captures and 5 focused captures.
+This checklist supersedes the earlier release-specific screenshot approval when judging the new
+foundation-first rebuild. The earlier 43 screenshots remain useful factual regression evidence, but
+they are not visual targets for this directive.
 
-The manifest inspection also passed every deterministic composition gate:
+## Milestone 0 baseline review
 
-- teaching text visible: 43/43;
-- entity labels outside the scene: 0;
-- maximum label-to-label overlap: 0.000 (limit: 0.120);
-- maximum desktop entity labels: 7 (limit: 7);
-- maximum mobile entity labels: 3 (limit: 3).
+| Capture                         | Objective                                  | Visible / hidden scope                                                    | Focus / route                              | Labels / relations                                      | Safe frame and collision                                               | Five-second result                                                             | Status      |
+| ------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------- |
+| Supplied `current-overview.png` | Record the rejected all-object composition | Many orthogonal dimensions visible together; no meaningful default hiding | No single focus; no dominant traffic route | Dense label and relation field                          | Visible overlaps and ambiguous containment                             | Cannot identify one mental model                                               | REJECTED    |
+| Branch Explore Overview         | Measure current Explore default            | 17 entity handles and 17 relation handles                                 | No primary focus; no active route          | 7 entity + 4 layout labels; 0 measured label overlap    | Labels stay in frame, but relation and model density remains excessive | Cluster zones are visible, hierarchy is not immediate                          | FAIL        |
+| Service entry                   | Orient the existing traffic lesson         | Client, Service, EndpointSlice, three backends; control plane hidden      | Traffic objects; no route yet              | 5 entity + 3 layout labels; 7 relations                 | 0 measured label overlap; in frame                                     | Entry, inventory, and backends are identifiable                                | LEGACY PASS |
+| Service Request A settled       | Verify current persistent route            | Same traffic subset                                                       | Client → Service → selected backend        | 6 entity + 3 layout labels; 8 relations; 2 route labels | 0 measured label overlap; in frame                                     | Static direction and backend are traceable                                     | LEGACY PASS |
+| Restart/replacement entry       | Orient the existing lifecycle lesson       | Control, workload, unscheduled, and worker zones                          | Architecture orientation; no active route  | 7 entity + 4 layout labels; 10 relations                | 0 measured label overlap; in frame                                     | Zones are identifiable; 16 entities lack formal primary/context classification | PARTIAL     |
+| Explicit-delete route settled   | Verify current API-mediated route          | Lifecycle subset                                                          | Developer/API deletion route               | 7 entity + 4 layout labels; 6 relations; 2 route labels | 0 measured label overlap; in frame                                     | The delete request and target are traceable                                    | LEGACY PASS |
 
-`Label count` means entity labels. Zone titles and separately capped relation verbs are not counted
-as entity labels. A layout-only pass is insufficient: each critical row below also records the
-Kubernetes fact that was visibly verified.
+Milestone 0 passes when these starting conditions are faithfully recorded. A failed baseline image
+does not block M0; it blocks any claim that the final foundation-first visual gate has passed.
 
-## Capture inventory
+## Foundation gate
 
-| Capture group            | Files                                                                         |  Count | Manual result        |
-| ------------------------ | ----------------------------------------------------------------------------- | -----: | -------------------- |
-| Golden desktop 1440×900  | `golden-step-00-1440x900.png` through `golden-step-09-1440x900.png`           |     10 | PASS                 |
-| Golden desktop 1280×720  | `golden-step-00-1280x720.png` through `golden-step-09-1280x720.png`           |     10 | PASS                 |
-| Golden mobile 390×844    | Steps 00, 02, 03, 06, 08, and 09                                              |      6 | PASS                 |
-| Service desktop 1440×900 | Steps 00, 03, 04, and 05                                                      |      4 | PASS                 |
-| Service desktop 1280×720 | Steps 03, 04, and 05                                                          |      3 | PASS                 |
-| Service mobile 390×844   | Steps 03 and 05                                                               |      2 | PASS                 |
-| Reduced motion 1280×720  | Golden local restart, Golden startup, and Service Request B                   |      3 | PASS                 |
-| Focused factual crops    | Golden Evidence Steps 02/03, Service Evidence Steps 04/05, comparison Step 09 |      5 | PASS                 |
-| **Total**                |                                                                               | **43** | **43 PASS / 0 FAIL** |
+- [ ] The cluster boundary is immediately clear.
+- [ ] Control Plane and Worker Nodes read as peer semantic islands.
+- [ ] The stage does not look like objects dropped on a debug grid.
+- [ ] An unscheduled/transit lane is clear when relevant.
+- [ ] No giant overlapping translucent regions remain.
+- [ ] The scene uses a bounded foundation with readable edge thickness and nameplate.
 
-## Golden lesson factual review
+Baseline result: **FAIL**. Target milestone: M2.
 
-The desktop assertions below were checked at both 1440×900 and 1280×720 unless a row says
-otherwise.
+## Hierarchy gate
 
-| Step | Learner-visible factual evidence                                                                                                                                                                                                    | Route and composition evidence                                                                                                           | Result |
-| ---: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-|    0 | Orientation has no factual mutation; the baseline scene separates control plane, unscheduled work, and Worker Nodes.                                                                                                                | Pod contains its named Container status slot; no active causal route.                                                                    | PASS   |
-|    1 | Pod phase `Running`, Pod Ready `true`, Container state `running`, Container ID suffix `-01`, restart count 0, and ReplicaSet `SPEC 3 / OBSERVED 3 / READY 3`.                                                                       | Healthy baseline is legible without floating long metadata.                                                                              | PASS   |
-|    2 | Container terminated inside intact Pod; Pod phase remains `Running`; `ContainersReady` and Pod Ready change `true → false`; ReplicaSet Ready changes `3 → 2`; UID and Node remain unchanged.                                        | Pod shows `NOT READY`, terminated Container remains contained, and the ReplicaSet plaque and Evidence both settle at `3 / 3 / 2`.        | PASS   |
-|    3 | Local kubelet restart; Container ID changes `-01 → -02`; restart count changes `0 → 1`; `lastState` shows `Error` and exit code 1; Pod UID/Node stay unchanged; Pod Ready changes `false → true`; ReplicaSet Ready changes `2 → 3`. | The only primary route is the green local `worker-a kubelet → Container` route. API/control relations remain context, not the initiator. | PASS   |
-|    4 | Explicit deletion removes the old Pod and status slot; ReplicaSet becomes `SPEC 3 / OBSERVED 2 / READY 2`.                                                                                                                          | The delete request reaches the API Server; this is distinct from a Container process exit.                                               | PASS   |
-|    5 | Controller creates a new Pod UID in `Pending` phase with no Node and a waiting Container; ReplicaSet becomes `3 / 3 / 2`.                                                                                                           | API-mediated controller action is visible; the Pod starts in the unscheduled tray.                                                       | PASS   |
-|    6 | The replacement Pod remains Pending, unscheduled, and NotReady.                                                                                                                                                                     | The Pod is visibly outside every Node; no startup route is claimed.                                                                      | PASS   |
-|    7 | Scheduler assigns `worker-c`; phase remains `Pending`, `PodScheduled=true`, Pod Ready remains false, and ReplicaSet remains `3 / 3 / 2`.                                                                                            | Scheduling is shown separately from kubelet startup.                                                                                     | PASS   |
-|    8 | Kubelet starts the first runtime Container for the replacement Pod; phase becomes `Running`, readiness becomes true, and ReplicaSet becomes `3 / 3 / 3`.                                                                            | The startup route and final plaque agree with Evidence.                                                                                  | PASS   |
-|    9 | Snapshot-derived comparison contains exactly six properties: Pod name, Pod UID, Node, Container ID, Container restart count, and Pod object. It makes no local-storage persistence claim.                                           | Dedicated comparison replaces the 3D scene and remains readable at desktop and mobile widths.                                            | PASS   |
+- [ ] Node chassis has visible mass, name, status rail, local modules, and deterministic Pod bays.
+- [ ] Every scheduled Pod visibly occupies exactly one Node bay.
+- [ ] Every Container is visibly inside its Pod shell.
+- [ ] Pending Pods remain outside all Nodes.
+- [ ] Namespace never looks like a physical Node container.
+- [ ] Logical ownership and physical placement are separate projections.
 
-### Golden mobile and reduced-motion checks
+Baseline result: **FAIL**. Target milestones: M3–M4.
 
-| Screenshot                                                 | Visible acceptance evidence                                                                                                        | Result |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| `golden-step-02-390x844.png`                               | Phase `Running`, NotReady state, Container termination, and ReplicaSet `3/3/2` Evidence are visible above the timeline.            | PASS   |
-| `golden-step-03-390x844.png`                               | Local restart route and Container ID/restart/readiness Evidence are visible; no control-plane route is presented as the initiator. | PASS   |
-| `golden-step-08-390x844.png`                               | Replacement Container startup and final `3/3/3` state are visible.                                                                 | PASS   |
-| `golden-step-09-390x844.png`                               | Both identity histories remain readable without covering an active 3D scene.                                                       | PASS   |
-| `golden-step-03-local-restart-reduced-motion-1280x720.png` | Static green local-runtime route retains direction and `restart locally` label without token motion.                               | PASS   |
-| `golden-step-08-reduced-motion-1280x720.png`               | Static startup route retains causal direction and final readiness.                                                                 | PASS   |
+## Model gate
 
-## Service lesson factual review
+- [ ] API server, etcd, scheduler, and controller manager have distinct silhouettes.
+- [ ] Scheduler reads as a decision module rather than a generic primitive.
+- [ ] Controller manager reads as reconciliation without a novelty mesh.
+- [ ] Deployment, ReplicaSet, Service, and EndpointSlice are visually distinct.
+- [ ] External actors cannot be mistaken for Pods.
+- [ ] Neutral surfaces dominate; semantic accents do not create an all-green field.
+- [ ] Every primary kind has a dedicated visual module; generic fallback is future-only.
 
-| Step | Learner-visible factual evidence                                                                                                 | Route and composition evidence                                                                                                 | Result |
-| ---: | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------ |
-|    0 | ClusterIP Service, EndpointSlice, and three Ready Pod-backed endpoints establish the baseline.                                   | EndpointSlice is adjacent API state, not a packet hop.                                                                         | PASS   |
-|    3 | Request A begins at the client, enters the unchanged Service, and reaches Ready backend api-a.                                   | Route labels identify Request A and selected api-a; Evidence uses api-a's UID.                                                 | PASS   |
-|    4 | api-a remains in the EndpointSlice with `ready=false`, `serving=false`, and `terminating=false`; Endpoint readiness becomes 2/3. | No active ordinary traffic route targets api-a. Copy explicitly says Request A has already completed.                          | PASS   |
-|    5 | Distinct Request B begins at the client and selects api-c through the unchanged Service; api-a remains listed but ineligible.    | Route labels identify a new request and selected Ready api-c; Evidence uses api-c's UID. No migration or rerouting is implied. | PASS   |
+Baseline result: **FAIL**. Target milestone: M4.
 
-The Service facts above were checked at both desktop widths. Request A and Request B were also
-checked at 390×844. `service-step-05-request-b-reduced-motion-1280x720.png` preserves the complete
-static Request B route without relying on token motion.
+## Label gate
 
-## Focused factual crops
+- [x] Baseline branch screenshots keep entity-label overlap below the existing threshold.
+- [x] Baseline branch screenshots keep labels inside the scene frame.
+- [ ] No world label covers a primary object center at all required viewports.
+- [ ] Full metadata remains in fixed UI rather than the world.
+- [ ] English, Japanese, and Chinese pass the new grammar-specific label budgets.
+- [ ] Label stability is verified during camera, layout, and locale changes.
 
-The four EvidencePanel crops and the comparison crop use the tighter visual-regression settings
-(`threshold: 0.15`, `maxDiffPixelRatio: 0.01`).
+Baseline result: **PARTIAL**. Target milestone: M5.
 
-| Screenshot                               | Required fact visible                                                                                           | Result |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------ |
-| `evidence-golden-step-02-1280x720.png`   | Running phase, readiness false, ReplicaSet `3/3/2`, stable UID/Node.                                            | PASS   |
-| `evidence-golden-step-03-1280x720.png`   | Container ID `-01 → -02`, restart 1, last termination, readiness restored, ReplicaSet `3/3/3`, stable UID/Node. | PASS   |
-| `evidence-service-step-04-1280x720.png`  | Full `ready=false · serving=false · terminating=false` tuple with the endpoint still present.                   | PASS   |
-| `evidence-service-step-05-1280x720.png`  | Unchanged Service, 2/3 Ready, and selected api-c identity.                                                      | PASS   |
-| `comparison-golden-step-09-1280x720.png` | Both identity histories use the same six API-derived properties and make no local-storage persistence claim.    | PASS   |
+## Route gate
 
-## Mandatory directive checklist
+- [x] The two verified stories already expose persistent wide-line routes.
+- [x] Static route screenshots show direction and selected destinations.
+- [x] Routed tokens follow the persistent authored path.
+- [x] Reduced motion retains route meaning in existing tests.
+- [ ] Complete semantic anchors exist on every required model.
+- [ ] Routes avoid every unrelated primary model and protected label rectangle.
+- [ ] Endpoint inventory, DNS configuration, and Gateway rules remain supporting evidence rather
+      than packet hops in all new stories.
+- [ ] All eight flow stories pass static, animated, settled, and reduced-motion review.
 
-### ReplicaSet
+Baseline result: **PARTIAL**. Target milestones: M6 and M9.
 
-- [x] No forbidden ReplicaSet status alias remains.
-- [x] `.spec.replicas` meaning is represented.
-- [x] `.status.replicas` meaning is represented.
-- [x] `.status.readyReplicas` meaning is represented.
-- [x] UI uses `SPEC / OBSERVED / READY` and never a `Current` counter.
+## Teaching gate
 
-### Container restart
+- [x] Existing guided steps have What changed, Why, Evidence, Takeaway, sources, and navigation.
+- [x] Existing teaching text remains visible on mobile.
+- [ ] Every new step has one primary idea and at most two secondary focus objects.
+- [ ] Every lesson ends with concise conclusions and prerequisite-correct continuation.
+- [ ] Explore defaults to a mental-model view rather than a raw graph composition.
+- [ ] Twelve available lessons meet the complete content and screenshot contract.
 
-- [x] No synthetic restart-generation field remains.
-- [x] Old and new `containerID` values are different.
-- [x] `lastState` records the old termination.
-- [x] `restartCount` changes `0 → 1`.
-- [x] Copy says replacement runtime Container, not the same runtime instance.
+Baseline result: **PARTIAL**. Target milestones: M7–M10.
 
-### Pod readiness
+## Required final screenshot inventory
 
-- [x] Terminated Container leaves Pod phase `Running`.
-- [x] Terminated Container makes `ContainersReady=False`.
-- [x] Terminated Container makes `Ready=False`.
-- [x] ReplicaSet Ready changes `3 → 2`.
-- [x] Restart returns readiness `2 → 3`.
+The final gate requires all directive captures with a per-image record of objective, visible and
+hidden entities, focus, active route, labels, relations, safe frame, collisions, five-second result,
+and limitations:
 
-### Causal route
+- 1440×900: Overview; Pod/Container; Logical; Placement; Control Flow; Service route before,
+  during, and settled; readiness reroute; Container restart; replacement Pending; replacement
+  scheduled; rolling-update traffic shift.
+- 1280×720: Overview; Service traffic; Control Flow.
+- 390×844: Overview; Pod/Container; Service traffic; Container restart; Pending scheduling.
 
-- [x] Same-Pod restart active route is local to worker-a.
-- [x] API Server is not the active restart initiator.
-- [x] Scheduler and ReplicaSet are absent from the restart route.
-- [x] API relation remains only dim context.
-
-### EndpointSlice
-
-- [x] `publishNotReadyAddresses=false` is explicit.
-- [x] api-a endpoint remains listed.
-- [x] api-a has `ready=false`.
-- [x] api-a has `serving=false`.
-- [x] api-a has `terminating=false`.
-- [x] Active ordinary route does not target api-a.
-
-### Request identity
-
-- [x] Request A reaches api-a before readiness changes.
-- [x] Request A is not migrated.
-- [x] Request B starts later.
-- [x] Request B reaches api-c.
-- [x] Forbidden migration-style route copy is absent.
-
-### Regression
-
-- [x] Desktop screenshots pass factual manual review.
-- [x] Mobile screenshots pass factual manual review.
-- [x] Reduced-motion screenshots retain meaning.
-- [x] Tight EvidencePanel and comparison screenshot checks pass.
-- [x] The 20-cycle dual-lesson resource stress remains bounded.
-
-**Mandatory result: 35/35 PASS; failed items: 0.**
+No final PASS may be recorded while any Foundation, Hierarchy, Model, Label, Route, or Teaching item
+above remains unchecked.
