@@ -5,6 +5,7 @@ import {
   AnimationCoordinator,
   type AnimationContext,
 } from '../../src/renderer/AnimationCoordinator';
+import { SceneController } from '../../src/renderer/SceneController';
 import type { AnchorKind, EntityVisualHandle } from '../../src/renderer/VisualHandles';
 import type { WorldEntity } from '../../src/world/types';
 
@@ -50,7 +51,12 @@ const createHandle = (id: string, x: number): TestHandle => {
     setSelected: () => undefined,
     getAnchor: (anchor: AnchorKind) => {
       root.updateWorldMatrix(true, false);
-      const offset = anchor === 'data-path' ? new THREE.Vector3(0, 0.7, 0) : new THREE.Vector3();
+      const offset =
+        anchor === 'network-in'
+          ? new THREE.Vector3(-0.5, 0.7, 0)
+          : anchor === 'network-out'
+            ? new THREE.Vector3(0.5, 0.7, 0)
+            : new THREE.Vector3();
       return root.localToWorld(offset);
     },
     dispose: () => undefined,
@@ -88,6 +94,11 @@ interface Harness {
   readonly relationMaterial: THREE.LineBasicMaterial;
   readonly routeRoot: THREE.Group;
   readonly routeProgress: number[];
+  readonly routeEvents: Array<{
+    readonly progress: number;
+    readonly direction: 'forward' | 'reverse' | undefined;
+    readonly flowPhase: 'request' | 'response' | undefined;
+  }>;
   readonly routeFinishes: { value: number };
   readonly phases: string[];
   readonly counterValues: number[];
@@ -124,6 +135,7 @@ const createHarness = (reducedMotion = false): Harness => {
   routeRoot.name = 'teaching-route:main';
   scene.add(routeRoot);
   const routeProgress: number[] = [];
+  const routeEvents: Harness['routeEvents'] = [];
   const routeFinishes = { value: 0 };
 
   const phases: string[] = [];
@@ -138,7 +150,10 @@ const createHarness = (reducedMotion = false): Harness => {
       routeId === 'route:main'
         ? {
             root: routeRoot,
-            setFlowProgress: (progress) => routeProgress.push(progress),
+            setFlowProgress: (progress, direction, flowPhase) => {
+              routeProgress.push(progress);
+              routeEvents.push({ progress, direction, flowPhase });
+            },
             finishFlow: () => {
               routeFinishes.value += 1;
             },
@@ -165,6 +180,7 @@ const createHarness = (reducedMotion = false): Harness => {
     relationMaterial,
     routeRoot,
     routeProgress,
+    routeEvents,
     routeFinishes,
     phases,
     counterValues,
@@ -276,6 +292,38 @@ describe('AnimationCoordinator cue lifecycle', () => {
     expect(harness.routeFinishes.value).toBe(1);
     expect(snapshot(harness.handles.a)).toEqual(baseline);
     harness.dispose();
+  });
+
+  it('drives a response backward over the persistent request route and fails if the route is absent', () => {
+    const harness = createHarness();
+    const response: TransitionCue = {
+      type: 'data-packet',
+      routeId: 'route:main',
+      label: localized,
+      flowPhase: 'response',
+      direction: 'reverse',
+      durationMs: 1_000,
+    };
+    harness.coordinator.play(request(response));
+    expect(harness.routeEvents[0]).toEqual({
+      progress: 0,
+      direction: 'reverse',
+      flowPhase: 'response',
+    });
+    harness.coordinator.update(500);
+    expect(harness.routeEvents.at(-1)).toEqual({
+      progress: 0.5,
+      direction: 'reverse',
+      flowPhase: 'response',
+    });
+    harness.dispose();
+
+    const missingHarness = createHarness();
+    expect(() =>
+      missingHarness.coordinator.play(request({ ...response, routeId: 'route:missing' })),
+    ).toThrow(/missing persistent teaching route/);
+    expect(missingHarness.coordinator.activeCount).toBe(0);
+    missingHarness.dispose();
   });
 
   it('reports start, update, finish and committed numeric values through host callbacks', () => {
@@ -586,5 +634,36 @@ describe('AnimationCoordinator reduced motion', () => {
     coordinator.cancel();
     expect(markDirty).toHaveBeenCalled();
     coordinator.dispose();
+  });
+});
+
+describe('SceneController reduced-motion transition', () => {
+  it('settles an active normal-motion route immediately when reduced motion is enabled', () => {
+    const finish = vi.fn();
+    const cleanupPendingExits = vi.fn();
+    const removeReason = vi.fn();
+    const markDirty = vi.fn();
+    const resyncActiveRouteGeometry = vi.fn();
+    const setRouteReducedMotion = vi.fn();
+    const controller = Object.create(SceneController.prototype) as SceneController;
+
+    Object.assign(controller as unknown as Record<string, unknown>, {
+      reducedMotion: false,
+      cameraTransition: undefined,
+      animations: { activeCount: 1, finish },
+      activeRoutes: { size: 1, setReducedMotion: setRouteReducedMotion },
+      scheduler: { removeReason, markDirty },
+      cleanupPendingExits,
+      resyncActiveRouteGeometry,
+    });
+
+    controller.setReducedMotion(true);
+
+    expect(setRouteReducedMotion).toHaveBeenCalledWith(true);
+    expect(finish).toHaveBeenCalledOnce();
+    expect(cleanupPendingExits).toHaveBeenCalledOnce();
+    expect(removeReason).toHaveBeenCalledWith('animations');
+    expect(resyncActiveRouteGeometry).toHaveBeenCalledOnce();
+    expect(markDirty).toHaveBeenCalledOnce();
   });
 });

@@ -363,7 +363,9 @@ export class PodVisualHandle extends BaseVisualHandle {
     if (anchor === 'placement') return new THREE.Vector3(0.88, 0.5, 0);
     if (anchor === 'composition') return new THREE.Vector3(0, 0.63, 0);
     if (anchor === 'control') return new THREE.Vector3(0, 1.16, -0.67);
-    if (anchor === 'data-path') return new THREE.Vector3(0, 0.78, 0.68);
+    if (anchor === 'network-in') return new THREE.Vector3(-0.88, 0.78, 0.68);
+    if (anchor === 'network-out') return new THREE.Vector3(0.88, 0.78, 0.68);
+    if (anchor === 'local-runtime') return new THREE.Vector3(0, 0.63, -0.68);
     return super.anchorOffset(anchor);
   }
 

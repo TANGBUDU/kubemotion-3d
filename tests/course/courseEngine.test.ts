@@ -344,7 +344,6 @@ describe('CourseEngine v2 factual timeline', () => {
     );
     expect(route?.hops.map((hop) => [hop.fromEntityId, hop.toEntityId])).toEqual([
       [KUBECTL, API_SERVER],
-      [API_SERVER, OLD_POD],
     ]);
     expect(deleted.transition.cues).toContainEqual(
       expect.objectContaining({ type: 'api-request', routeId: 'route-kubectl-delete' }),
@@ -714,6 +713,37 @@ describe('CourseEngine v2 factual timeline', () => {
         scenario,
       ),
     ).toThrow('requires a scheduling route');
+
+    expect(() =>
+      courseEngine.compileLesson(
+        lessonWithSchedulerRoutes([
+          {
+            ...authoredSchedulerRoute,
+            hops: [
+              {
+                ...firstHop,
+                toEntityId: firstHop.fromEntityId,
+                toAnchor: firstHop.fromAnchor,
+              },
+              ...remainingHops,
+            ],
+          },
+        ]),
+        scenario,
+      ),
+    ).toThrow('has coincident anchors');
+
+    expect(() =>
+      courseEngine.compileLesson(
+        lessonWithSchedulerRoutes([
+          {
+            ...authoredSchedulerRoute,
+            persistAfterAnimation: false,
+          } as unknown as ActiveTeachingRoute,
+        ]),
+        scenario,
+      ),
+    ).toThrow(/must remain persistent|must remain visible/);
   });
 
   it('rejects concurrent cue ownership of the same teaching route', () => {

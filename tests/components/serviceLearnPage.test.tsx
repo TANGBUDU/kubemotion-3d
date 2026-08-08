@@ -34,10 +34,10 @@ describe('LearnPage Service lesson routing summary', () => {
     const summary = document.querySelector('#scene-accessible-summary');
     expect(summary).toHaveTextContent('Request A · Ready api-a route');
     expect(summary).toHaveTextContent(
-      'hop 1 (Request A enters Service): source traffic-client at data-path, target api at data-path',
+      'hop 1 (Request A enters Service): source traffic-client at network-out, target api at network-in',
     );
     expect(summary).toHaveTextContent(
-      'hop 2 (select Ready api-a): source api at data-path, target api-a at data-path',
+      'hop 2 (select Ready api-a): source api at network-out, target api-a at network-in',
     );
   });
 
@@ -70,7 +70,7 @@ describe('LearnPage Service lesson routing summary', () => {
     expect(summary).toHaveTextContent(
       'api-a endpoint ready=false, serving=false, terminating=false',
     );
-    expect(summary).not.toHaveTextContent('target api-c at data-path');
+    expect(summary).not.toHaveTextContent('target api-c at network-in');
 
     act(() => useAppStore.getState().selectEntity(SLICE));
     const inspector = screen.getByTestId('world-inspector');
@@ -93,10 +93,10 @@ describe('LearnPage Service lesson routing summary', () => {
     const summary = document.querySelector('#scene-accessible-summary');
     expect(summary).toHaveTextContent('Request B · New request route');
     expect(summary).toHaveTextContent(
-      'hop 1 (New request enters same Service): source traffic-client at data-path, target api at data-path',
+      'hop 1 (New request enters same Service): source traffic-client at network-out, target api at network-in',
     );
     expect(summary).toHaveTextContent(
-      'hop 2 (select Ready api-c): source api at data-path, target api-c at data-path',
+      'hop 2 (select Ready api-c): source api at network-out, target api-c at network-in',
     );
   });
 });

@@ -5,6 +5,7 @@ import { courseEngine } from '../../src/course/CourseEngine';
 import type { CompiledStep, ViewMode } from '../../src/course/types';
 import { calculateLayout, type LayoutResult } from '../../src/renderer/LayoutEngine';
 import { RelationLayer } from '../../src/renderer/relations/RelationLayer';
+import { RouteObstacleMap } from '../../src/renderer/relations/RouteObstacleMap';
 import { RoutePlanner } from '../../src/renderer/relations/RoutePlanner';
 import { RouteSceneAdapter } from '../../src/renderer/relations/RouteSceneAdapter';
 import { getTeachingRouteStyle } from '../../src/renderer/relations/RelationStyleCatalog';
@@ -111,9 +112,10 @@ function sceneFor(step: CompiledStep, layout: LayoutResult) {
   const routeRoot = new THREE.Group();
   root.add(routeRoot);
   const adapter = new RouteSceneAdapter(registry);
+  const obstacleMap = new RouteObstacleMap(registry);
   const routes = new RelationLayer(
     routeRoot,
-    new RoutePlanner(adapter, adapter, {
+    new RoutePlanner(adapter, obstacleMap, {
       preferredLaneX: [-9.4, -6.4, 0, 6.4, 9.4],
       preferredLaneZ: [-6.7, -3.3, 3.3, 6.7],
     }),

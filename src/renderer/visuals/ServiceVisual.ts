@@ -121,7 +121,8 @@ export class ServiceVisualHandle extends BaseVisualHandle {
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
     if (anchor === 'label') return new THREE.Vector3(0, 1.48, 0);
-    if (anchor === 'data-path') return new THREE.Vector3(0, 0.72, 0);
+    if (anchor === 'network-in') return new THREE.Vector3(-1.32, 0.72, 0);
+    if (anchor === 'network-out') return new THREE.Vector3(1.32, 0.72, 0);
     if (anchor === 'control') return new THREE.Vector3(0, 0.75, -1.04);
     return super.anchorOffset(anchor);
   }

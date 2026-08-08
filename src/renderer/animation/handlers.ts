@@ -6,6 +6,7 @@ import type {
   CueHandler,
   CueOfType,
   ResolvedAnimationContext,
+  TeachingRouteAnimationTarget,
 } from './contracts';
 import { NoopActiveCue, TimedActiveCue, VisualBaseline } from './runtime';
 
@@ -23,31 +24,41 @@ const getLiveEntity = (
 type RouteFlowCue = CueOfType<'data-packet' | 'dns-query' | 'api-request'>;
 
 class RouteFlowMotion {
-  private readonly target;
+  private readonly target: TeachingRouteAnimationTarget;
   private started = false;
   private released = false;
 
   public constructor(
     routeId: string,
     private readonly context: ResolvedAnimationContext,
+    private readonly direction: 'forward' | 'reverse' = 'forward',
+    private readonly flowPhase: 'request' | 'response' = 'request',
   ) {
-    this.target = context.getRoute?.(routeId);
+    const target = context.getRoute?.(routeId);
+    if (!target) {
+      throw new Error(`Cannot animate missing persistent teaching route "${routeId}".`);
+    }
+    this.target = target;
   }
 
   public start(): void {
     if (this.started) return;
     this.started = true;
-    this.target?.setFlowProgress(this.context.reducedMotion ? 1 : 0);
+    this.target.setFlowProgress(this.context.reducedMotion ? 1 : 0, this.direction, this.flowPhase);
   }
 
   public update(progress: number): void {
-    this.target?.setFlowProgress(this.context.reducedMotion ? 1 : progress);
+    this.target.setFlowProgress(
+      this.context.reducedMotion ? 1 : progress,
+      this.direction,
+      this.flowPhase,
+    );
   }
 
   public release(): void {
     if (!this.started || this.released) return;
     this.released = true;
-    this.target?.finishFlow();
+    this.target.finishFlow();
   }
 }
 
@@ -56,7 +67,7 @@ class DataPathActiveCue extends TimedActiveCue {
 
   public constructor(cue: RouteFlowCue, context: ResolvedAnimationContext) {
     super(cue.durationMs, context, cue.delayMs);
-    this.motion = new RouteFlowMotion(cue.routeId, context);
+    this.motion = new RouteFlowMotion(cue.routeId, context, cue.direction, cue.flowPhase);
   }
 
   protected override onStart(): void {

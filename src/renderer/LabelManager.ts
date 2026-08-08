@@ -370,7 +370,9 @@ export class LabelManager {
         anchor.kind === 'zone-title'
           ? ZONE_HEADING_PRIORITY
           : anchor.kind === 'tray-title' && hasVisiblePendingPod
-            ? ACTIVE_PENDING_TRAY_PRIORITY
+            ? view.activeRoutes.length > 0
+              ? ACTIVE_ROUTE_PRIORITY - 10
+              : ACTIVE_PENDING_TRAY_PRIORITY
             : 64;
       record.element.className = `scene-label scene-layout-label scene-${anchor.kind}`;
       record.element.lang = locale;

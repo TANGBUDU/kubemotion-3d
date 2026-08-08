@@ -24,6 +24,7 @@ import { PostProcessingPipeline } from './postprocessing/PostProcessingPipeline'
 import { RelationRegistry } from './RelationRegistry';
 import { RelationLayer } from './relations/RelationLayer';
 import { RoutePlanner } from './relations/RoutePlanner';
+import { RouteObstacleMap } from './relations/RouteObstacleMap';
 import { RouteSceneAdapter } from './relations/RouteSceneAdapter';
 import { RenderScheduler } from './RenderScheduler';
 import { SceneEnvironment } from './scene/SceneEnvironment';
@@ -49,6 +50,15 @@ export interface SceneDiagnostics {
   readonly subjectScreenWidthRatio: number;
   readonly subjectScreenHeightRatio: number;
   readonly routesOutsideSafeRect: number;
+  readonly arrowheadsOutsideSafeRect: number;
+  readonly routeMarkersOutsideSafeRect: number;
+  readonly routeObstacleIntersections: number;
+  readonly routeEndpointDriftCount: number;
+  readonly activeRouteWidthsBelowMinimum: number;
+  readonly visibleRoutesWithoutArrowheads: number;
+  readonly flowTokensOffRoute: number;
+  readonly maximumFlowTokenRouteDistance: number;
+  readonly routeReplanFailures: number;
   readonly focusedEntitiesOutsideSafeRect: number;
   readonly sceneBoundsOutsideContentRect: number;
   readonly entityHandles: number;
@@ -86,8 +96,11 @@ export interface SceneDiagnostics {
   readonly retainedExitHandles: number;
   readonly routeHandles: number;
   readonly arrowheads: number;
+  readonly pooledArrowheads: number;
   readonly flowTokens: number;
+  readonly pooledFlowTokens: number;
   readonly routeMarkers: number;
+  readonly pooledRouteMarkers: number;
   readonly wideLineGeometries: number;
   readonly wideLineMaterials: number;
   readonly renderTargets: number;
@@ -289,9 +302,10 @@ export class SceneController {
   });
   private readonly relations = new RelationRegistry(this.layers.settledRelations);
   private readonly routeAdapter = new RouteSceneAdapter(this.registry);
+  private readonly routeObstacleMap = new RouteObstacleMap(this.registry);
   private readonly activeRoutes = new RelationLayer(
     this.layers.activeRoutes,
-    new RoutePlanner(this.routeAdapter, this.routeAdapter, {
+    new RoutePlanner(this.routeAdapter, this.routeObstacleMap, {
       preferredLaneX: [-9.4, -6.4, 0, 6.4, 9.4],
       preferredLaneZ: [-6.7, -3.3, 3.3, 6.7],
     }),
@@ -757,6 +771,7 @@ export class SceneController {
           )
         : undefined;
     this.pendingLayoutTransition?.apply(0);
+    if (this.pendingLayoutTransition) this.resyncActiveRouteGeometry(false);
     this.layout = nextLayout;
     this.labels.sync(this.registry, step.view, this.locale, this.activeRoutes);
     this.callouts.sync(step.view.callouts, this.locale);
@@ -765,6 +780,23 @@ export class SceneController {
     const selectedHandle = this.selected ? this.registry.get(this.selected) : undefined;
     if (selectedHandle) this.focusHandle(selectedHandle);
     this.scheduler.markDirty();
+  }
+
+  /** Keep semantic route endpoints attached while a Pod or another participant changes layout. */
+  private resyncActiveRouteGeometry(strict = true): boolean {
+    const step = this.currentStep;
+    if (!step) return true;
+    try {
+      this.activeRoutes.syncActiveRoutes(step.view.activeRoutes);
+      this.labels.sync(this.registry, step.view, this.locale, this.activeRoutes);
+      delete this.activeRoutes.root.userData.replanError;
+      return true;
+    } catch (error: unknown) {
+      this.activeRoutes.root.userData.replanError =
+        error instanceof Error ? error.message : String(error);
+      if (strict) throw error;
+      return false;
+    }
   }
 
   private prepareExitHandles(step: CompiledStep): void {
@@ -799,26 +831,36 @@ export class SceneController {
     this.reducedMotion = reducedMotion;
     this.activeRoutes.setReducedMotion(reducedMotion);
     if (reducedMotion && this.cameraTransition) this.finishCameraTransition();
+    if (reducedMotion && reducedMotionChanged && this.animations.activeCount > 0) {
+      // SceneViewport applies this prop before it replays the same playback command. Settle the
+      // old normal-motion context here, where the state change is still observable, so effect
+      // ordering cannot leave layout/entity cues running after tokens have been removed.
+      this.animations.finish();
+      this.cleanupPendingExits();
+      this.scheduler.removeReason('animations');
+      if (this.activeRoutes.size > 0) this.resyncActiveRouteGeometry();
+    }
     if (reducedMotionChanged) this.scheduler.markDirty();
   }
 
   public playTransition(request: PlaybackRequest, reducedMotion: boolean): void {
-    const reducedMotionChanged = this.reducedMotion !== reducedMotion;
     this.setReducedMotion(reducedMotion);
     const previousPlaybackId = this.animations.lastPlaybackId(request.stepKey);
     if (previousPlaybackId !== undefined && request.playbackId <= previousPlaybackId) {
-      if (reducedMotionChanged && this.animations.activeCount > 0) {
-        this.animations.finish();
-        this.cleanupPendingExits();
-        this.scheduler.removeReason('animations');
-      }
       this.scheduler.markDirty();
       return;
     }
     this.animations.cancel();
     if (this.currentStep) this.prepareExitHandles(this.currentStep);
     const accepted = this.animations.play(request, reducedMotion);
-    if (accepted && this.animations.activeCount > 0) this.scheduler.addReason('animations');
+    if (accepted && this.animations.activeCount > 0) {
+      this.scheduler.addReason('animations');
+    } else if (accepted && this.activeRoutes.size > 0) {
+      // Reduced-motion playback finishes synchronously, before the next render can observe an
+      // active animation. Re-plan once here so an instant layout transition cannot leave the
+      // persistent route attached to the authored "before" anchors.
+      this.resyncActiveRouteGeometry();
+    }
     this.scheduler.markDirty();
   }
 
@@ -880,7 +922,12 @@ export class SceneController {
       this.activeRoutes.advanceDash(Math.min(64, time - this.lastRenderTime) * 0.0012);
     }
     this.lastRenderTime = time;
-    if (!this.animations.update(time)) this.scheduler.removeReason('animations');
+    const hadActiveAnimations = this.animations.activeCount > 0;
+    const animationsRemainActive = this.animations.update(time);
+    if (hadActiveAnimations && this.activeRoutes.size > 0) {
+      this.resyncActiveRouteGeometry(!animationsRemainActive);
+    }
+    if (!animationsRemainActive) this.scheduler.removeReason('animations');
     const calloutRects = this.callouts.update(
       this.registry,
       this.camera,
@@ -939,6 +986,31 @@ export class SceneController {
         4,
       );
     }).length;
+    const countRouteArtifactsOutsideSafeRect = (roles: ReadonlySet<string>): number => {
+      let outside = 0;
+      const artifactBounds = new THREE.Box3();
+      this.activeRoutes.root.traverseVisible((object) => {
+        if (!roles.has(String(object.userData.role ?? ''))) return;
+        artifactBounds.setFromObject(object, true);
+        if (artifactBounds.isEmpty()) return;
+        if (
+          !projectedRectInside(
+            projectedBounds(artifactBounds, this.camera, viewportWidth, viewportHeight),
+            safeRect,
+            2,
+          )
+        ) {
+          outside += 1;
+        }
+      });
+      return outside;
+    };
+    const arrowheadsOutsideSafeRect = countRouteArtifactsOutsideSafeRect(
+      new Set(['route-arrowhead', 'route-chevron']),
+    );
+    const routeMarkersOutsideSafeRect = countRouteArtifactsOutsideSafeRect(
+      new Set(['route-step-marker']),
+    );
     const focusScratch = new THREE.Box3();
     const focusedEntitiesOutsideSafeRect = [...this.registry.values()].filter((handle) => {
       const state = this.currentStep?.view.entityStates[handle.entityId];
@@ -970,6 +1042,15 @@ export class SceneController {
       subjectScreenHeightRatio:
         subjectRect && safeRect && safeRect.height > 0 ? subjectRect.height / safeRect.height : 0,
       routesOutsideSafeRect,
+      arrowheadsOutsideSafeRect,
+      routeMarkersOutsideSafeRect,
+      routeObstacleIntersections: routeDiagnostics.routeObstacleIntersections,
+      routeEndpointDriftCount: routeDiagnostics.routeEndpointDriftCount,
+      activeRouteWidthsBelowMinimum: routeDiagnostics.activeRouteWidthsBelowMinimum,
+      visibleRoutesWithoutArrowheads: routeDiagnostics.visibleRoutesWithoutArrowheads,
+      flowTokensOffRoute: routeDiagnostics.flowTokensOffRoute,
+      maximumFlowTokenRouteDistance: routeDiagnostics.maximumFlowTokenRouteDistance,
+      routeReplanFailures: this.activeRoutes.root.userData.replanError ? 1 : 0,
       focusedEntitiesOutsideSafeRect,
       sceneBoundsOutsideContentRect:
         sceneRect && !projectedRectInside(sceneRect, contentRect, 3) ? 1 : 0,
@@ -992,9 +1073,12 @@ export class SceneController {
       pooledTokens: this.animations.pooledCount + routeDiagnostics.pooledFlowTokens,
       retainedExitHandles: this.pendingExitIds.size,
       routeHandles: routeDiagnostics.routeHandles,
-      arrowheads: routeDiagnostics.leasedArrowheads + routeDiagnostics.pooledArrowheads,
-      flowTokens: routeDiagnostics.leasedFlowTokens + routeDiagnostics.pooledFlowTokens,
-      routeMarkers: routeDiagnostics.leasedRouteMarkers + routeDiagnostics.pooledRouteMarkers,
+      arrowheads: routeDiagnostics.leasedArrowheads,
+      pooledArrowheads: routeDiagnostics.pooledArrowheads,
+      flowTokens: routeDiagnostics.leasedFlowTokens,
+      pooledFlowTokens: routeDiagnostics.pooledFlowTokens,
+      routeMarkers: routeDiagnostics.leasedRouteMarkers,
+      pooledRouteMarkers: routeDiagnostics.pooledRouteMarkers,
       wideLineGeometries: routeDiagnostics.wideLineGeometries,
       wideLineMaterials: routeDiagnostics.wideLineMaterials,
       renderTargets: this.postProcessing.diagnostics.renderTargets,

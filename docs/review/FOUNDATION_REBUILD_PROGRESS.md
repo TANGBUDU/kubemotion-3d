@@ -18,7 +18,7 @@
 | 3 — Runtime hierarchy models          | COMPLETE    | `feat: make runtime containment visually self-evident`                  | One Node dimension source, four bays, embedded system modules, strict containment diagnostics, desktop screenshots  |
 | 4 — Logical object models             | COMPLETE    | `feat: establish distinct logical Kubernetes object visuals`            | Namespace workspace, Deployment blueprint, dynamic EndpointSlice rows, external actors, six reviewed captures       |
 | 5 — Camera, labels, responsive layout | COMPLETE    | `feat: make teaching scenes readable across viewport sizes`             | Responsive grammar runtime, safe viewport, two camera modes, unified mobile label budget, fifteen reviewed captures |
-| 6 — Persistent route engine           | NOT STARTED | `feat: replace free-flying tokens with persistent semantic routes`      | —                                                                                                                   |
+| 6 — Persistent route engine           | COMPLETE    | `feat: replace free-flying tokens with persistent semantic routes`      | Canonical anchors, persistent wide routes, sparse obstacle planning, 9-case / 36-screenshot browser acceptance      |
 | 7 — Migrate existing authored lessons | NOT STARTED | `feat: migrate the original lessons to the foundation-first system`     | —                                                                                                                   |
 | 8 — Twelve complete lessons           | NOT STARTED | `feat: expand the interactive foundations curriculum to twelve lessons` | —                                                                                                                   |
 | 9 — Eight flow stories                | NOT STARTED | `feat: deliver readable control and application flow stories`           | —                                                                                                                   |
@@ -364,8 +364,62 @@ traceable; restart and Pending states retain the focused object beside an expand
 The historical M2/M3/M4 390×844 risk captures are superseded by this passing matrix without being
 rewritten or deleted.
 
+## Milestone 6 checklist
+
+- [x] Replaced route-like free coordinates and entity-path cues with authored `activeRoutes` whose
+      hops reference canonical semantic anchors only.
+- [x] Defined one shared anchor contract: `api-in`, `api-out`, `control`, `network-in`,
+      `network-out`, `storage`, `ownership`, `placement`, `local-runtime`, `top`, `bottom`, `left`,
+      and `right`.
+- [x] Added distinct ingress/egress anchors to the API Server, Service, Pod, Container, Node,
+      external actors, etcd, Scheduler, kubelet, runtime, Controller Manager, and EndpointSlice
+      visuals instead of silently routing through model centers.
+- [x] Made `persistAfterAnimation: true` a schema-level invariant and made a missing renderer route
+      fail instead of degrading to a free-flying token.
+- [x] Kept primary routes visible before, during, and after motion as `Line2` wide lines with
+      arrowheads and numbered hop markers; reduced motion retains the same static evidence with no
+      moving tokens.
+- [x] Added explicit request/response phase and direction validation, including a required pause
+      between paired phases and a reversed physical path for a separately authored response route.
+- [x] Kept EndpointSlice out of the packet path while requiring its Service identity, selected
+      Ready/serving/non-terminating row, and final physical backend to agree.
+- [x] Rejected packet paths through Deployment, ReplicaSet, Namespace, EndpointSlice, HTTPRoute,
+      ConfigMap, or Secret.
+- [x] Added an explicit obstacle map for rendered model and visible-label AABBs, including real
+      containment ancestry so endpoint-owned children are not treated as unrelated blockers.
+- [x] Replaced the dense all-pairs route graph with deterministic sparse rectilinear neighbors and
+      a stable minimum heap, preserving obstacle clearance without stalling the render thread.
+- [x] Replanned active geometry when semantic anchors move and re-sampled active tokens against the
+      new route instead of allowing endpoint drift or detached animation.
+- [x] Split active and pooled route resources in diagnostics and added hard gates for obstacle
+      intersection, endpoint drift, route-replan failures, off-route tokens, sub-4-CSS-pixel lines,
+      missing arrows, and clipped routes/arrows/markers.
+- [x] Added a raw-content contract that rejects packet-like cues without a schema-v2 persistent
+      route and rejects route coordinates, waypoints, and entity paths before schema parsing.
+- [x] Captured Request A, Request B, and Scheduler binding at all three required viewports and
+      rotated EN/JA/zh-CN through the nine-case matrix, with four temporal phases per case.
+
+## Milestone 6 automated checks
+
+| Check                                       | Result                                                                                                                                 |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm visual:m6`                            | PASS — 9 cases / 36 screenshots, 3 stories, 3 viewports, 3 locales, and 4 phases per case                                              |
+| Persistent route lifecycle                  | PASS — route/arrow/marker evidence exists before, during, after, and in reduced motion; settled/reduced active token count is 0        |
+| Normal-motion sampling                      | PASS — at least 16 samples per case; moving tokens observed on every replay                                                            |
+| Obstacle, drift, and replanning diagnostics | PASS — 0 intersections, 0 endpoint drift, 0 off-route tokens, and 0 route-replan failures                                              |
+| Flow-token route distance                   | PASS — measured maximum `4.44e-16`, below the `0.02` browser gate                                                                      |
+| Reduced motion                              | PASS — maximum active tokens 0 while persistent route, arrows, markers, selected endpoint evidence, and mobile `worker-c` label remain |
+| Route widths and safe rectangle             | PASS — no sub-4-CSS-pixel active route, arrowless route, or clipped route/arrow/marker                                                 |
+| `pnpm test:unit -- --run`                   | PASS — 43 files, 314 tests                                                                                                             |
+| `pnpm test:e2e`                             | PASS — 136 passed, 53 intentional skips, 0 failed                                                                                      |
+
+Manifest: [`evidence/m6/m6-route-visual-manifest.json`](./evidence/m6/m6-route-visual-manifest.json)
+
+Human M6 result: PASS. The static screenshots remain traceable without animation, normal replay
+adds moving tokens without replacing the route, and reduced motion removes those tokens without
+removing the route or EndpointSlice selection evidence.
+
 ## Next coherent task
 
-Milestone 6 must finish the persistent route engine contract: route definitions and anchors,
-obstacle-safe planning, wide route handles, clipped-arrow detection, pooled direction markers and
-tokens, and hard failures whenever a packet-like cue lacks a persistent route.
+Milestone 7 must migrate every remaining authored lesson interaction onto the foundation-first
+world, grammar, model, and persistent-route contracts before curriculum expansion begins.

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { course, lessonById, scenarioById } from '../../src/content/loader';
 import { courseEngine } from '../../src/course/CourseEngine';
 import { snapshotEvidence } from '../../src/course/diff/evidenceRules';
+import type { ActiveTeachingRoute, LessonV2, TransitionCue } from '../../src/course/types';
 
 const LESSON_ID = 'service-routes-to-pods';
 const SERVICE = 'api-object:namespaced:shop:Service:api';
@@ -11,8 +12,9 @@ const API_C = 'api-object:namespaced:shop:Pod:api-c';
 const CLIENT = 'api-object:namespaced:shop:Pod:traffic-client';
 const API_A_MEMBERSHIP = 'endpoint-slice-references-api-a';
 
-const lesson = lessonById.get(LESSON_ID);
-if (!lesson) throw new Error('Service lesson is missing');
+const loadedLesson = lessonById.get(LESSON_ID);
+if (!loadedLesson) throw new Error('Service lesson is missing');
+const lesson: LessonV2 = loadedLesson;
 const scenario = scenarioById.get(lesson.scenarioId);
 if (!scenario) throw new Error('Service scenario is missing');
 const compiled = courseEngine.compileLesson(lesson, scenario);
@@ -43,6 +45,24 @@ function endpointFor(entity: unknown, targetRef: string): Readonly<Record<string
   );
   if (!endpoint || Array.isArray(endpoint)) throw new Error(`Missing endpoint for ${targetRef}`);
   return endpoint as Readonly<Record<string, unknown>>;
+}
+
+function lessonWithRequestStep(
+  route: ActiveTeachingRoute,
+  cues?: readonly TransitionCue[],
+): LessonV2 {
+  return {
+    ...lesson,
+    steps: lesson.steps.map((candidate) =>
+      candidate.id === 'request-ready-backend'
+        ? {
+            ...candidate,
+            viewPatch: { ...candidate.viewPatch, activeRoutes: [route] },
+            ...(cues ? { transition: { cues } } : {}),
+          }
+        : candidate,
+    ),
+  };
 }
 
 describe('service-routes-to-pods verified lesson', () => {
@@ -95,12 +115,21 @@ describe('service-routes-to-pods verified lesson', () => {
   it('models exact EndpointSlice conditions and two distinct requests without migrating Request A', () => {
     const requestA = step('request-ready-backend');
     const requestARoute = requestA.view.activeRoutes[0];
-    expect(requestARoute).toMatchObject({ id: 'client-service-api-a', semantic: 'data-flow' });
+    expect(requestARoute).toMatchObject({
+      id: 'client-service-api-a',
+      semantic: 'data-flow',
+      flowPhase: 'request',
+      support: { endpointSliceId: SLICE, serviceId: SERVICE, selectedEndpointTargetId: API_A },
+    });
     expect(requestIdOf(requestARoute)).toBe('request-a');
     expect(requestARoute?.persistAfterAnimation).toBe(true);
     expect(requestARoute?.hops.map((hop) => [hop.fromEntityId, hop.toEntityId])).toEqual([
       [CLIENT, SERVICE],
       [SERVICE, API_A],
+    ]);
+    expect(requestARoute?.hops.map((hop) => [hop.fromAnchor, hop.toAnchor])).toEqual([
+      ['network-out', 'network-in'],
+      ['network-out', 'network-in'],
     ]);
     expect(requestARoute?.hops.flatMap((hop) => [hop.fromEntityId, hop.toEntityId])).not.toContain(
       SLICE,
@@ -135,6 +164,10 @@ describe('service-routes-to-pods verified lesson', () => {
 
     const requestB = step('later-request-ready-backend');
     const requestBRoute = requestB.view.activeRoutes[0];
+    expect(requestBRoute).toMatchObject({
+      flowPhase: 'request',
+      support: { endpointSliceId: SLICE, serviceId: SERVICE, selectedEndpointTargetId: API_C },
+    });
     expect(requestIdOf(requestBRoute)).toBe('request-b');
     expect(requestIdOf(requestBRoute)).not.toBe(requestIdOf(requestARoute));
     expect(requestBRoute?.hops.map((hop) => hop.toEntityId)).toEqual([SERVICE, API_C]);
@@ -167,6 +200,112 @@ describe('service-routes-to-pods verified lesson', () => {
         }),
       ]),
     );
+  });
+
+  it('rejects configuration objects as packet hops and requires explicit support to match the backend', () => {
+    const route = step('request-ready-backend').view.activeRoutes[0];
+    if (!route) throw new Error('Request route is missing');
+    expect(() =>
+      courseEngine.compileLesson(
+        lessonWithRequestStep({
+          ...route,
+          hops: [
+            route.hops[0]!,
+            {
+              fromEntityId: SERVICE,
+              fromAnchor: 'network-out',
+              toEntityId: SLICE,
+              toAnchor: 'network-in',
+            },
+            {
+              fromEntityId: SLICE,
+              fromAnchor: 'network-out',
+              toEntityId: API_A,
+              toAnchor: 'network-in',
+            },
+          ],
+        }),
+        scenario,
+      ),
+    ).toThrow(/cannot physically pass through EndpointSlice/);
+
+    expect(() =>
+      courseEngine.compileLesson(
+        lessonWithRequestStep({
+          ...route,
+          support: {
+            endpointSliceId: SLICE,
+            serviceId: SERVICE,
+            selectedEndpointTargetId: API_C,
+          },
+        }),
+        scenario,
+      ),
+    ).toThrow(/final hop does not match selected endpoint support/);
+
+    expect(() =>
+      courseEngine.compileLesson(
+        lessonWithRequestStep({
+          ...route,
+          hops: [
+            {
+              fromEntityId: CLIENT,
+              fromAnchor: 'network-out',
+              toEntityId: API_A,
+              toAnchor: 'network-in',
+            },
+          ],
+        }),
+        scenario,
+      ),
+    ).toThrow(/must enter the selected backend through its supported Service/);
+  });
+
+  it('supports one request and a paused reverse response on the same persistent route', () => {
+    const authored = lesson.steps.find((candidate) => candidate.id === 'request-ready-backend');
+    const route = authored?.viewPatch.activeRoutes?.[0];
+    const request = authored?.transition?.cues.find(
+      (cue): cue is Extract<TransitionCue, { type: 'data-packet' }> => cue.type === 'data-packet',
+    );
+    if (!route || !request) throw new Error('Request authoring fixture is missing');
+    const { flowPhase: _authoredFlowPhase, ...bidirectionalRoute } = route;
+    expect(_authoredFlowPhase).toBe('request');
+    const response: Extract<TransitionCue, { type: 'data-packet' }> = {
+      ...request,
+      flowPhase: 'response',
+      direction: 'reverse',
+      delayMs: (request.delayMs ?? 0) + request.durationMs + 180,
+      label: { en: 'Response', ja: '応答', 'zh-CN': '响应' },
+    };
+    expect(() =>
+      courseEngine.compileLesson(
+        lessonWithRequestStep(bidirectionalRoute, [request, response]),
+        scenario,
+      ),
+    ).not.toThrow();
+
+    expect(() =>
+      courseEngine.compileLesson(
+        lessonWithRequestStep(bidirectionalRoute, [request, { ...response, direction: 'forward' }]),
+        scenario,
+      ),
+    ).toThrow(/must reverse the request route/);
+    expect(() =>
+      courseEngine.compileLesson(
+        lessonWithRequestStep(bidirectionalRoute, [
+          request,
+          { ...response, delayMs: request.durationMs },
+        ]),
+        scenario,
+      ),
+    ).toThrow(/must pause after the request completes/);
+
+    expect(() =>
+      courseEngine.compileLesson(
+        lessonWithRequestStep(bidirectionalRoute, [{ ...request, direction: 'reverse' }]),
+        scenario,
+      ),
+    ).toThrow(/request must play forward/);
   });
 
   it('treats omitted EndpointConditions.ready as Ready in factual evidence', () => {

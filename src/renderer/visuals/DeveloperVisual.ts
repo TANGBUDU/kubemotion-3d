@@ -139,8 +139,12 @@ export class DeveloperVisualHandle extends BaseVisualHandle {
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
     if (anchor === 'label') return new THREE.Vector3(0, 2.02, -0.28);
-    if (anchor === 'control') return new THREE.Vector3(1.43, 0.98, -0.48);
-    if (anchor === 'data-path') return new THREE.Vector3(1.43, 0.98, -0.48);
+    if (anchor === 'api-out' || anchor === 'network-out' || anchor === 'control') {
+      return new THREE.Vector3(1.43, 0.98, -0.48);
+    }
+    if (anchor === 'api-in' || anchor === 'network-in') {
+      return new THREE.Vector3(-1.43, 0.98, -0.48);
+    }
     return super.anchorOffset(anchor);
   }
 }

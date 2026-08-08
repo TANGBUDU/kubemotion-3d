@@ -22,10 +22,10 @@ for (let stepIndex = 0; stepIndex < SERVICE_STEP_TITLES.length; stepIndex += 1) 
         await expect(routeLabels).toContainText(['Request A enters Service', 'select Ready api-a']);
       }
       await expect(page.locator('#scene-accessible-summary')).toContainText(
-        'source traffic-client at data-path, target api at data-path',
+        'source traffic-client at network-out, target api at network-in',
       );
       await expect(page.locator('#scene-accessible-summary')).toContainText(
-        'source api at data-path, target api-a at data-path',
+        'source api at network-out, target api-a at network-in',
       );
     }
 
@@ -39,7 +39,7 @@ for (let stepIndex = 0; stepIndex < SERVICE_STEP_TITLES.length; stepIndex += 1) 
       );
       await expect(page.locator('.scene-route-label:not([hidden])')).toHaveCount(0);
       await expect(page.locator('#scene-accessible-summary')).not.toContainText(
-        'target api-c at data-path',
+        'target api-c at network-in',
       );
     }
 
@@ -55,7 +55,7 @@ for (let stepIndex = 0; stepIndex < SERVICE_STEP_TITLES.length; stepIndex += 1) 
         ]);
       }
       await expect(page.locator('#scene-accessible-summary')).toContainText(
-        'target api-c at data-path',
+        'target api-c at network-in',
       );
     }
 
@@ -108,7 +108,7 @@ test('Service identity stays stable while a later request selects another Ready 
   );
   await expect(page.locator('.scene-route-label:not([hidden])')).toHaveCount(0);
   await expect(page.locator('#scene-accessible-summary')).not.toContainText(
-    'target api-c at data-path',
+    'target api-c at network-in',
   );
 
   await gotoServiceStep(page, 5);
@@ -117,7 +117,7 @@ test('Service identity stays stable while a later request selects another Ready 
     'select Ready api-c',
   ]);
   await expect(page.locator('#scene-accessible-summary')).toContainText(
-    'source api at data-path, target api-c at data-path',
+    'source api at network-out, target api-c at network-in',
   );
   await expect(page.getByTestId('evidence-panel')).toContainText('198.51.100.42');
   await expect(page.getByTestId('evidence-panel')).toContainText('2/3 Ready');

@@ -10,7 +10,11 @@ export interface FlowTokenAppearance {
 
 export interface FlowTokenLease {
   readonly object: THREE.Mesh<THREE.OctahedronGeometry, THREE.MeshBasicMaterial>;
-  setProgress(points: readonly THREE.Vector3[], progress: number): void;
+  setProgress(
+    points: readonly THREE.Vector3[],
+    progress: number,
+    direction?: 'forward' | 'reverse',
+  ): void;
   setAppearance(appearance: FlowTokenAppearance): void;
   setVisible(visible: boolean): void;
   release(): void;
@@ -42,12 +46,13 @@ export class FlowTokenPool {
     let released = false;
     return {
       object: mesh,
-      setProgress: (points, progress) => {
+      setProgress: (points, progress, direction = 'forward') => {
         samplePolyline(points, progress, mesh.position);
-        const next = samplePolyline(points, Math.min(1, progress + 0.01));
-        const direction = next.sub(mesh.position);
-        if (direction.lengthSq() > Number.EPSILON) {
-          mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+        const sampleOffset = direction === 'reverse' ? -0.01 : 0.01;
+        const next = samplePolyline(points, Math.min(1, Math.max(0, progress + sampleOffset)));
+        const tangent = next.sub(mesh.position);
+        if (tangent.lengthSq() > Number.EPSILON) {
+          mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent.normalize());
         }
       },
       setAppearance: (next) => this.applyAppearance(mesh, next),
@@ -97,6 +102,7 @@ export class FlowTokenPool {
     mesh.scale.set(1, 1, 1);
     delete mesh.userData.routeId;
     delete mesh.userData.requestId;
+    delete mesh.userData.flowPhase;
     this.available.push(mesh);
   }
 

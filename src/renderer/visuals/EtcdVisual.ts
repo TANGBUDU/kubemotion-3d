@@ -96,8 +96,8 @@ export class EtcdVisualHandle extends BaseVisualHandle {
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
     if (anchor === 'label') return new THREE.Vector3(0, 1.22, 0);
-    if (anchor === 'control') return new THREE.Vector3(-1.31, 0.42, 0);
-    if (anchor === 'data-path') return new THREE.Vector3(1.31, 0.42, 0);
+    if (anchor === 'control' || anchor === 'api-in') return new THREE.Vector3(-1.31, 0.42, 0);
+    if (anchor === 'api-out' || anchor === 'storage') return new THREE.Vector3(1.31, 0.42, 0);
     return super.anchorOffset(anchor);
   }
 }

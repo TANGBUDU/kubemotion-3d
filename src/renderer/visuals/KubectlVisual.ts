@@ -87,8 +87,8 @@ export class KubectlVisualHandle extends BaseVisualHandle {
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
     if (anchor === 'label') return new THREE.Vector3(0, 0.83, 0);
-    if (anchor === 'control') return new THREE.Vector3(1.12, 0.38, 0);
-    if (anchor === 'data-path') return new THREE.Vector3(1.12, 0.38, 0);
+    if (anchor === 'control' || anchor === 'api-out') return new THREE.Vector3(1.12, 0.38, 0);
+    if (anchor === 'api-in') return new THREE.Vector3(-1.12, 0.38, 0);
     return super.anchorOffset(anchor);
   }
 }

@@ -104,7 +104,8 @@ export class ControllerManagerVisualHandle extends BaseVisualHandle {
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
     if (anchor === 'label') return new THREE.Vector3(0, 1.28, 0);
-    if (anchor === 'control') return new THREE.Vector3(-1.36, 0.5, 0);
+    if (anchor === 'control' || anchor === 'api-out') return new THREE.Vector3(-1.36, 0.5, 0);
+    if (anchor === 'api-in') return new THREE.Vector3(1.36, 0.5, 0);
     if (anchor === 'ownership') return new THREE.Vector3(1.36, 0.5, 0);
     return super.anchorOffset(anchor);
   }

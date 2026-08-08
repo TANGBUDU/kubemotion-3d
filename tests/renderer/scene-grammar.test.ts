@@ -251,19 +251,22 @@ describe('foundation-first scene grammars', () => {
     expect(() =>
       createEffectiveScenePlan(scenario, {
         ...authored,
-        activeRoutes: [
-          {
-            id: 'too-many-overview-tokens',
-            semantic: 'control',
-            persistAfterAnimation: true,
-            hops: ids.slice(1).map((toEntityId, index) => ({
-              fromEntityId: ids[index]!,
-              fromAnchor: 'control',
-              toEntityId,
-              toAnchor: 'control',
-            })),
-          },
-        ],
+        activeRoutes: ids.slice(1).map(
+          (toEntityId, index) =>
+            ({
+              id: `too-many-overview-tokens-${index + 1}`,
+              semantic: 'control',
+              persistAfterAnimation: true,
+              hops: [
+                {
+                  fromEntityId: ids[index]!,
+                  fromAnchor: 'control',
+                  toEntityId,
+                  toAnchor: 'control',
+                },
+              ],
+            }) as const,
+        ),
       }),
     ).toThrow(/requires 3 route tokens but its budget allows 2/);
   });

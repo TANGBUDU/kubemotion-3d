@@ -317,8 +317,8 @@ export class EndpointSliceVisualHandle extends BaseVisualHandle {
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
     if (anchor === 'label') return new THREE.Vector3(0, 1.23, 0);
-    if (anchor === 'control') return new THREE.Vector3(0, 0.56, -1.12);
-    if (anchor === 'data-path') return new THREE.Vector3(0, 0.56, 1.12);
+    if (anchor === 'control' || anchor === 'api-in') return new THREE.Vector3(-1.12, 0.56, 0);
+    if (anchor === 'api-out') return new THREE.Vector3(1.12, 0.56, 0);
     return super.anchorOffset(anchor);
   }
 }

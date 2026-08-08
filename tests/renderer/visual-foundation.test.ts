@@ -244,6 +244,19 @@ describe('visual factory foundation', () => {
     }
   });
 
+  it('keeps API ingress, API egress, and storage ports spatially distinct', () => {
+    const registry = new VisualFactoryRegistry();
+    const api = registry.create(apiServer, normal, { allowGeneric: false });
+    const store = registry.create(etcd, normal, { allowGeneric: false });
+
+    expect(api.getAnchor('api-in').equals(api.getAnchor('api-out'))).toBe(false);
+    expect(api.getAnchor('network-in').equals(api.getAnchor('network-out'))).toBe(false);
+    expect(store.getAnchor('api-in').equals(store.getAnchor('storage'))).toBe(false);
+
+    api.dispose();
+    store.dispose();
+  });
+
   it('uses a compact boundary marker for Cluster and replicated storage cells for etcd', () => {
     const registry = new VisualFactoryRegistry();
     const clusterHandle = registry.create(cluster, normal, { allowGeneric: false });

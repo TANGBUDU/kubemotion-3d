@@ -488,29 +488,21 @@ export class SceneRegistry {
   }
 
   private syncEndpointSelections(view: ViewProjection): void {
-    const routeParticipants = new Set<EntityId>();
+    const selectedBySlice = new Map<EntityId, EntityId>();
     for (const route of view.activeRoutes) {
-      for (const hop of route.hops) {
-        routeParticipants.add(hop.fromEntityId);
-        routeParticipants.add(hop.toEntityId);
+      const support = route.support;
+      if (!support?.endpointSliceId || !support.selectedEndpointTargetId) continue;
+      const current = selectedBySlice.get(support.endpointSliceId);
+      if (current && current !== support.selectedEndpointTargetId) {
+        throw new Error(
+          `Active routes select conflicting endpoints for ${support.endpointSliceId}`,
+        );
       }
+      selectedBySlice.set(support.endpointSliceId, support.selectedEndpointTargetId);
     }
     for (const handle of this.handles.values()) {
       if (!(handle instanceof EndpointSliceVisualHandle)) continue;
-      const endpoints = handle.root.userData.endpointStates;
-      const selected = Array.isArray(endpoints)
-        ? endpoints.find(
-            (endpoint) =>
-              endpoint &&
-              typeof endpoint === 'object' &&
-              !Array.isArray(endpoint) &&
-              typeof endpoint.targetRef === 'string' &&
-              routeParticipants.has(endpoint.targetRef),
-          )
-        : undefined;
-      handle.setSelectedEndpoint(
-        selected && typeof selected.targetRef === 'string' ? selected.targetRef : undefined,
-      );
+      handle.setSelectedEndpoint(selectedBySlice.get(handle.entityId));
     }
   }
 
@@ -549,6 +541,8 @@ export class SceneRegistry {
     for (const [entityId, entityLayout] of layout.entities) {
       const handle = this.handles.get(entityId);
       if (!handle) continue;
+      if (entityLayout.parentId) handle.root.userData.layoutParentId = entityLayout.parentId;
+      else delete handle.root.userData.layoutParentId;
       if (entityLayout.lane === 'composition' && handle instanceof ContainerVisualHandle) continue;
       if (
         entityLayout.lane === 'node-agent' &&

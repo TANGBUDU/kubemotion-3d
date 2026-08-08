@@ -8,6 +8,7 @@ import type {
   RouteAnchorResolver,
   RouteHop,
   RouteObstacle,
+  RouteObstacleIntersection,
   RouteObstacleProvider,
   RouteStepMarker,
 } from './relationTypes';
@@ -22,6 +23,7 @@ export interface RoutePlannerOptions {
 const DEFAULT_CLEARANCE = 0.32;
 const DEFAULT_GRID_MARGIN = 0.08;
 const COORDINATE_PRECISION = 5;
+const DEFAULT_ENDPOINT_DRIFT_TOLERANCE = 0.001;
 
 const rounded = (value: number): number => Number(value.toFixed(COORDINATE_PRECISION));
 const coordinateKey = (x: number, z: number): string => `${rounded(x)},${rounded(z)}`;
@@ -41,14 +43,12 @@ const expandFootprint = (obstacle: RouteObstacle, clearance: number): THREE.Box3
   return bounds;
 };
 
-/** Liang-Barsky intersection against an obstacle's X/Z footprint. */
-export const segmentIntersectsObstacle = (
+/** Liang-Barsky intersection against an X/Z footprint. */
+const segmentIntersectsFootprint = (
   start: THREE.Vector3,
   end: THREE.Vector3,
-  obstacle: RouteObstacle,
-  clearance = 0,
+  bounds: THREE.Box3,
 ): boolean => {
-  const bounds = expandFootprint(obstacle, clearance);
   const deltaX = end.x - start.x;
   const deltaZ = end.z - start.z;
   let minimum = 0;
@@ -72,6 +72,13 @@ export const segmentIntersectsObstacle = (
   }
   return maximum >= 0 && minimum <= 1;
 };
+
+export const segmentIntersectsObstacle = (
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  obstacle: RouteObstacle,
+  clearance = 0,
+): boolean => segmentIntersectsFootprint(start, end, expandFootprint(obstacle, clearance));
 
 export const routeIntersectsObstacle = (
   points: readonly THREE.Vector3[],
@@ -117,13 +124,75 @@ interface GridNode {
   readonly z: number;
 }
 
+interface GridNeighbor {
+  readonly key: string;
+  readonly distance: number;
+}
+
+interface GridQueueEntry {
+  readonly key: string;
+  readonly distance: number;
+}
+
+class GridMinHeap {
+  private readonly entries: GridQueueEntry[] = [];
+
+  private precedes(left: GridQueueEntry, right: GridQueueEntry): boolean {
+    return (
+      left.distance < right.distance || (left.distance === right.distance && left.key < right.key)
+    );
+  }
+
+  public push(entry: GridQueueEntry): void {
+    this.entries.push(entry);
+    let index = this.entries.length - 1;
+    while (index > 0) {
+      const parentIndex = Math.floor((index - 1) / 2);
+      const parent = this.entries[parentIndex];
+      const current = this.entries[index];
+      if (!parent || !current || !this.precedes(current, parent)) break;
+      this.entries[parentIndex] = current;
+      this.entries[index] = parent;
+      index = parentIndex;
+    }
+  }
+
+  public pop(): GridQueueEntry | undefined {
+    const first = this.entries[0];
+    const last = this.entries.pop();
+    if (!first || !last) return first;
+    if (this.entries.length === 0) return first;
+    this.entries[0] = last;
+    let index = 0;
+    while (true) {
+      const leftIndex = index * 2 + 1;
+      const rightIndex = leftIndex + 1;
+      let nextIndex = index;
+      const next = this.entries[nextIndex];
+      const left = this.entries[leftIndex];
+      const right = this.entries[rightIndex];
+      if (left && next && this.precedes(left, next)) nextIndex = leftIndex;
+      const candidate = this.entries[nextIndex];
+      if (right && candidate && this.precedes(right, candidate)) nextIndex = rightIndex;
+      if (nextIndex === index) break;
+      const current = this.entries[index];
+      const replacement = this.entries[nextIndex];
+      if (!current || !replacement) break;
+      this.entries[index] = replacement;
+      this.entries[nextIndex] = current;
+      index = nextIndex;
+    }
+    return first;
+  }
+}
+
 const pointInsideFootprint = (point: GridNode, bounds: THREE.Box3): boolean =>
   point.x > bounds.min.x &&
   point.x < bounds.max.x &&
   point.z > bounds.min.z &&
   point.z < bounds.max.z;
 
-const pointInsideExpandedFootprint = (
+const pointInsideExpandedObstacle = (
   point: THREE.Vector3,
   obstacle: RouteObstacle,
   clearance: number,
@@ -192,48 +261,60 @@ const gridRoute = (
     throw new Error('Route endpoint lies inside an unrelated obstacle footprint.');
   }
 
-  const neighbors = new Map<string, Array<{ readonly key: string; readonly distance: number }>>();
-  const nodeValues = [...nodes.values()].sort((left, right) => left.key.localeCompare(right.key));
-  for (let leftIndex = 0; leftIndex < nodeValues.length; leftIndex += 1) {
-    const left = nodeValues[leftIndex];
-    if (!left) continue;
-    for (let rightIndex = leftIndex + 1; rightIndex < nodeValues.length; rightIndex += 1) {
-      const right = nodeValues[rightIndex];
-      if (!right || (left.x !== right.x && left.z !== right.z)) continue;
-      const from = new THREE.Vector3(left.x, start.y, left.z);
-      const to = new THREE.Vector3(right.x, start.y, right.z);
-      if (obstacles.some((obstacle) => segmentIntersectsObstacle(from, to, obstacle, clearance))) {
-        continue;
-      }
-      const distance = Math.abs(left.x - right.x) + Math.abs(left.z - right.z);
-      const leftNeighbors = neighbors.get(left.key) ?? [];
-      const rightNeighbors = neighbors.get(right.key) ?? [];
-      leftNeighbors.push({ key: right.key, distance });
-      rightNeighbors.push({ key: left.key, distance });
-      neighbors.set(left.key, leftNeighbors);
-      neighbors.set(right.key, rightNeighbors);
+  const neighbors = new Map<string, GridNeighbor[]>();
+  const connectIfVisible = (left: GridNode, right: GridNode): void => {
+    const from = new THREE.Vector3(left.x, start.y, left.z);
+    const to = new THREE.Vector3(right.x, start.y, right.z);
+    if (expanded.some((bounds) => segmentIntersectsFootprint(from, to, bounds))) return;
+    const distance = Math.abs(left.x - right.x) + Math.abs(left.z - right.z);
+    const leftNeighbors = neighbors.get(left.key) ?? [];
+    const rightNeighbors = neighbors.get(right.key) ?? [];
+    leftNeighbors.push({ key: right.key, distance });
+    rightNeighbors.push({ key: left.key, distance });
+    neighbors.set(left.key, leftNeighbors);
+    neighbors.set(right.key, rightNeighbors);
+  };
+
+  // A rectilinear shortest path only needs the next visible node in each direction. Connecting
+  // every collinear pair produced a dense graph and repeatedly scanned every obstacle; with many
+  // Node/Pod/Container footprints that work dominated the render thread.
+  for (const x of xCoordinates) {
+    let previousVisible: GridNode | undefined;
+    for (const z of zCoordinates) {
+      const current = nodes.get(coordinateKey(x, z));
+      if (!current) continue;
+      if (previousVisible) connectIfVisible(previousVisible, current);
+      previousVisible = current;
+    }
+  }
+  for (const z of zCoordinates) {
+    let previousVisible: GridNode | undefined;
+    for (const x of xCoordinates) {
+      const current = nodes.get(coordinateKey(x, z));
+      if (!current) continue;
+      if (previousVisible) connectIfVisible(previousVisible, current);
+      previousVisible = current;
     }
   }
 
   const distances = new Map<string, number>([[startKey, 0]]);
   const previous = new Map<string, string>();
-  const remaining = new Set(nodes.keys());
-  while (remaining.size > 0) {
-    const currentKey = [...remaining].sort((left, right) => {
-      const difference =
-        (distances.get(left) ?? Number.POSITIVE_INFINITY) -
-        (distances.get(right) ?? Number.POSITIVE_INFINITY);
-      return difference || left.localeCompare(right);
-    })[0];
-    if (!currentKey || !Number.isFinite(distances.get(currentKey))) break;
-    remaining.delete(currentKey);
+  const visited = new Set<string>();
+  const queue = new GridMinHeap();
+  queue.push({ key: startKey, distance: 0 });
+  while (true) {
+    const current = queue.pop();
+    if (!current) break;
+    const currentKey = current.key;
+    if (visited.has(currentKey) || current.distance !== distances.get(currentKey)) continue;
+    visited.add(currentKey);
     if (currentKey === endKey) break;
-    const currentDistance = distances.get(currentKey) ?? Number.POSITIVE_INFINITY;
+    const currentDistance = current.distance;
     const adjacent = [...(neighbors.get(currentKey) ?? [])].sort((left, right) =>
       left.key.localeCompare(right.key),
     );
     for (const neighbor of adjacent) {
-      if (!remaining.has(neighbor.key)) continue;
+      if (visited.has(neighbor.key)) continue;
       const candidateDistance = currentDistance + neighbor.distance;
       const knownDistance = distances.get(neighbor.key) ?? Number.POSITIVE_INFINITY;
       const knownPrevious = previous.get(neighbor.key);
@@ -244,6 +325,7 @@ const gridRoute = (
       ) {
         distances.set(neighbor.key, candidateDistance);
         previous.set(neighbor.key, currentKey);
+        queue.push({ key: neighbor.key, distance: candidateDistance });
       }
     }
   }
@@ -276,21 +358,47 @@ export class RoutePlanner {
     }
   }
 
-  private obstaclesFor(
-    hop: RouteHop,
-    start: THREE.Vector3,
-    end: THREE.Vector3,
-  ): readonly RouteObstacle[] {
-    return [...(this.obstacleProvider?.getObstacles() ?? [])]
+  private obstaclesFor(hop: RouteHop): readonly RouteObstacle[] {
+    const obstacles = [...(this.obstacleProvider?.getObstacles() ?? [])];
+    const endpointIds = new Set([hop.fromEntityId, hop.toEntityId]);
+    const nestedEndpointEntityIds = new Set(
+      obstacles
+        .filter((obstacle) => endpointIds.has(obstacle.entityId))
+        .flatMap((obstacle) => obstacle.containedEntityIds ?? []),
+    );
+    const endpointAncestorEntityIds = new Set(
+      obstacles
+        .filter(
+          (obstacle) =>
+            obstacle.containedEntityIds?.includes(hop.fromEntityId) ||
+            obstacle.containedEntityIds?.includes(hop.toEntityId),
+        )
+        .map((obstacle) => obstacle.entityId),
+    );
+    return obstacles
       .filter(
         (obstacle) =>
           obstacle.entityId !== hop.fromEntityId &&
           obstacle.entityId !== hop.toEntityId &&
-          !pointInsideExpandedFootprint(start, obstacle, this.clearance) &&
-          !pointInsideExpandedFootprint(end, obstacle, this.clearance),
+          !endpointAncestorEntityIds.has(obstacle.entityId) &&
+          !nestedEndpointEntityIds.has(obstacle.entityId) &&
+          !obstacle.containedEntityIds?.includes(hop.fromEntityId) &&
+          !obstacle.containedEntityIds?.includes(hop.toEntityId),
       )
-      .sort((left, right) => left.entityId.localeCompare(right.entityId))
-      .map((obstacle) => ({ entityId: obstacle.entityId, bounds: obstacle.bounds.clone() }));
+      .sort(
+        (left, right) =>
+          left.obstacleId.localeCompare(right.obstacleId) ||
+          left.entityId.localeCompare(right.entityId),
+      )
+      .map((obstacle) => ({
+        obstacleId: obstacle.obstacleId,
+        entityId: obstacle.entityId,
+        kind: obstacle.kind,
+        ...(obstacle.containedEntityIds
+          ? { containedEntityIds: [...obstacle.containedEntityIds] }
+          : {}),
+        bounds: obstacle.bounds.clone(),
+      }));
   }
 
   private planHop(route: ActiveTeachingRoute, hop: RouteHop, index: number): PlannedRouteHop {
@@ -315,7 +423,17 @@ export class RoutePlanner {
     const liftedEnd = new THREE.Vector3(end.x, routeY, end.z);
     // A Pod or Container endpoint can legitimately sit inside its Node/Pod visual. Those
     // enclosing hierarchy shells are not blockers; unrelated footprints still are.
-    const obstacles = this.obstaclesFor(hop, start, end);
+    const obstacles = this.obstaclesFor(hop);
+    const containingEndpointObstacle = obstacles.find(
+      (obstacle) =>
+        pointInsideExpandedObstacle(start, obstacle, this.clearance) ||
+        pointInsideExpandedObstacle(end, obstacle, this.clearance),
+    );
+    if (containingEndpointObstacle) {
+      throw new Error(
+        `Route "${route.id}" hop ${index + 1} endpoint lies inside unrelated obstacle "${containingEndpointObstacle.obstacleId}".`,
+      );
+    }
     const direct =
       style.curve === 'bezier'
         ? bezierBetween(liftedStart, liftedEnd)
@@ -384,5 +502,73 @@ export class RoutePlanner {
       totalLength,
       stableKey: `${route.id}:${route.semantic}:${stablePointsKey(points)}`,
     });
+  }
+
+  /**
+   * Re-checks an existing plan against the provider's current obstacle map. This deliberately does
+   * not re-plan: callers can detect a stale route immediately after models or labels move.
+   */
+  public diagnoseObstacleIntersections(
+    plan: PlannedTeachingRoute,
+  ): readonly RouteObstacleIntersection[] {
+    const intersections: RouteObstacleIntersection[] = [];
+    for (const plannedHop of plan.hops) {
+      const start = plannedHop.points[0];
+      const end = plannedHop.points.at(-1);
+      if (!start || !end) continue;
+      for (const obstacle of this.obstaclesFor(plannedHop.hop)) {
+        if (!routeIntersectsObstacle(plannedHop.points, obstacle, this.clearance)) continue;
+        intersections.push(
+          Object.freeze({
+            routeId: plan.route.id,
+            hopIndex: plannedHop.index,
+            obstacleId: obstacle.obstacleId,
+            entityId: obstacle.entityId,
+            kind: obstacle.kind,
+          }),
+        );
+      }
+    }
+    return intersections.sort(
+      (left, right) =>
+        left.routeId.localeCompare(right.routeId) ||
+        left.hopIndex - right.hopIndex ||
+        left.obstacleId.localeCompare(right.obstacleId),
+    );
+  }
+
+  /** Counts planned hop endpoints whose live semantic anchor has moved since the plan was built. */
+  public countEndpointDrifts(
+    plan: PlannedTeachingRoute,
+    tolerance = DEFAULT_ENDPOINT_DRIFT_TOLERANCE,
+  ): number {
+    if (!Number.isFinite(tolerance) || tolerance < 0) {
+      throw new Error('Route endpoint drift tolerance must be a non-negative finite value.');
+    }
+    const toleranceSquared = tolerance * tolerance;
+    let driftCount = 0;
+    for (const plannedHop of plan.hops) {
+      const plannedStart = plannedHop.points[0];
+      const plannedEnd = plannedHop.points.at(-1);
+      const liveStart = this.anchors.resolveAnchor(
+        plannedHop.hop.fromEntityId,
+        plannedHop.hop.fromAnchor,
+      );
+      const liveEnd = this.anchors.resolveAnchor(
+        plannedHop.hop.toEntityId,
+        plannedHop.hop.toAnchor,
+      );
+      if (
+        !plannedStart ||
+        !liveStart ||
+        plannedStart.distanceToSquared(liveStart) > toleranceSquared
+      ) {
+        driftCount += 1;
+      }
+      if (!plannedEnd || !liveEnd || plannedEnd.distanceToSquared(liveEnd) > toleranceSquared) {
+        driftCount += 1;
+      }
+    }
+    return driftCount;
   }
 }

@@ -9,6 +9,7 @@ import {
   scenarioV2AuthorSchema,
   sourcesSchema,
 } from '../src/content/schemas';
+import { assertRawLessonRouteContract } from '../src/content/rawRouteContract';
 import { courseEngine } from '../src/course/CourseEngine';
 import type { LessonV2 } from '../src/course/types';
 import {
@@ -34,9 +35,19 @@ function check(condition: boolean, message: string): asserts condition {
 }
 
 const lessonDirectory = 'content/courses/kubernetes-foundations/lessons';
-const lessonFiles = readdirSync(resolve(root, lessonDirectory))
-  .filter((file) => file.endsWith('.yaml'))
-  .sort();
+function yamlFilesUnder(relativeDirectory: string): string[] {
+  const directory = resolve(root, relativeDirectory);
+  return readdirSync(directory, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.yaml'))
+    .map((entry) =>
+      resolve(entry.parentPath, entry.name)
+        .slice(directory.length + 1)
+        .replaceAll('\\', '/'),
+    )
+    .sort();
+}
+
+const lessonFiles = yamlFilesUnder(lessonDirectory);
 const scenarioDirectory = 'content/scenarios';
 const scenarioFiles = readdirSync(resolve(root, scenarioDirectory))
   .filter((file) => file.endsWith('.yaml'))
@@ -118,8 +129,10 @@ for (const entry of course.lessons) visit(entry.id);
 
 const v2Lessons = new Map<string, LessonV2>();
 for (const file of lessonFiles) {
-  const raw = yaml(`${lessonDirectory}/${file}`);
+  const path = `${lessonDirectory}/${file}`;
+  const raw = yaml(path);
   check(Boolean(raw && typeof raw === 'object'), `${file}: lesson must be an object`);
+  assertRawLessonRouteContract(raw, path);
   const schemaVersion = (raw as { schemaVersion?: unknown }).schemaVersion;
   if (schemaVersion === 2) {
     const lesson = lessonV2Schema.parse(raw) as unknown as LessonV2;

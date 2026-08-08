@@ -24,6 +24,7 @@
     "visual:m3": "tsx scripts/capture-runtime-hierarchy-review.ts",
     "visual:m4": "tsx scripts/capture-m4-visuals.mts",
     "visual:m5": "tsx scripts/capture-m5-responsive-review.mts",
+    "visual:m6": "tsx scripts/capture-m6-route-review.mts",
     "visual:capture": "tsx scripts/capture-visual-acceptance.ts",
     "test": "vitest",
     "test:unit": "vitest",

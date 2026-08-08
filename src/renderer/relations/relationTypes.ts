@@ -53,8 +53,15 @@ export interface ViewportResolution {
   readonly pixelRatio: number;
 }
 
+export type RouteObstacleKind = 'entity' | 'label' | 'reserved-lane';
+
 export interface RouteObstacle {
+  /** Stable identity used for deterministic planning and actionable diagnostics. */
+  readonly obstacleId: string;
   readonly entityId: EntityId;
+  readonly kind: RouteObstacleKind;
+  /** Explicit visual hierarchy membership; only these shells may contain a route endpoint. */
+  readonly containedEntityIds?: readonly EntityId[];
   readonly bounds: THREE.Box3;
 }
 
@@ -89,6 +96,14 @@ export interface PlannedTeachingRoute {
   readonly stableKey: string;
 }
 
+export interface RouteObstacleIntersection {
+  readonly routeId: string;
+  readonly hopIndex: number;
+  readonly obstacleId: string;
+  readonly entityId: EntityId;
+  readonly kind: RouteObstacleKind;
+}
+
 export interface RelationLayerDiagnostics {
   readonly routeHandles: number;
   readonly wideLineGeometries: number;
@@ -99,6 +114,15 @@ export interface RelationLayerDiagnostics {
   readonly pooledFlowTokens: number;
   readonly leasedRouteMarkers: number;
   readonly pooledRouteMarkers: number;
+  /** Number of currently rendered route hops intersecting current, unrelated obstacles. */
+  readonly routeObstacleIntersections: number;
+  readonly routeObstacleIntersectionDetails: readonly RouteObstacleIntersection[];
+  /** Number of hop endpoints no longer coincident with their current semantic anchor. */
+  readonly routeEndpointDriftCount: number;
+  readonly activeRouteWidthsBelowMinimum: number;
+  readonly visibleRoutesWithoutArrowheads: number;
+  readonly flowTokensOffRoute: number;
+  readonly maximumFlowTokenRouteDistance: number;
 }
 
 export interface RouteSyncResult {

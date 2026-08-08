@@ -83,6 +83,30 @@ describe('Service lesson specialized visuals', () => {
     }
   });
 
+  it('exposes distinct ingress and egress anchors for the physical traffic path', () => {
+    const registry = new VisualFactoryRegistry();
+    const client = registry.create(
+      baseline.world.entities[CLIENT]!,
+      baseline.view.entityStates[CLIENT]!,
+      { allowGeneric: false },
+    );
+    const service = registry.create(
+      baseline.world.entities[SERVICE]!,
+      baseline.view.entityStates[SERVICE]!,
+      { allowGeneric: false },
+    );
+    const backend = registry.create(
+      baseline.world.entities[API_A]!,
+      baseline.view.entityStates[API_A]!,
+      { allowGeneric: false },
+    );
+
+    for (const handle of [client, service, backend]) {
+      expect(handle.getAnchor('network-in').equals(handle.getAnchor('network-out'))).toBe(false);
+      handle.dispose();
+    }
+  });
+
   it('updates endpoint readiness in place and exposes a non-color NotReady mark', () => {
     const handle = new EndpointSliceVisualHandle(
       baseline.world.entities[SLICE]!,

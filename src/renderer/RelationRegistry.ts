@@ -152,25 +152,30 @@ export interface RelationVisualHandle {
   dispose(): void;
 }
 
-const anchorFor = (semantic: RelationSemantic): AnchorKind => {
-  switch (semantic) {
+const anchorsFor = (relation: WorldRelation): readonly [AnchorKind, AnchorKind] => {
+  if (relation.type === 'implemented-by') return ['local-runtime', 'local-runtime'];
+  if (relation.type === 'stores-in') return ['storage', 'storage'];
+
+  switch (relation.semantic) {
     case 'ownership':
-      return 'ownership';
+      return ['ownership', 'ownership'];
     case 'placement':
-      return 'placement';
+      return ['placement', 'placement'];
     case 'composition':
-      return 'composition';
+      return ['composition', 'composition'];
     case 'control-observation':
     case 'configuration':
-      return 'control';
+      return ['api-out', 'api-in'];
     case 'data-flow':
     case 'DNS-flow':
+      return ['network-out', 'network-in'];
     case 'selection':
     case 'endpoint-membership':
-      return 'data-path';
+      return ['api-out', 'api-in'];
     case 'scope':
+      return ['right', 'left'];
     case 'storage':
-      return 'center';
+      return ['storage', 'storage'];
   }
 };
 
@@ -185,9 +190,9 @@ const endpoints = (
   const fallbackEnd = route.points.at(-1)
     ? vectorFrom(route.points.at(-1) ?? [0, 0, 0])
     : fallbackStart.clone();
-  const anchor = anchorFor(relation.semantic);
-  const start = entities.get(relation.from)?.getAnchor(anchor) ?? fallbackStart;
-  const end = entities.get(relation.to)?.getAnchor(anchor) ?? fallbackEnd;
+  const [fromAnchor, toAnchor] = anchorsFor(relation);
+  const start = entities.get(relation.from)?.getAnchor(fromAnchor) ?? fallbackStart;
+  const end = entities.get(relation.to)?.getAnchor(toAnchor) ?? fallbackEnd;
   if (start.distanceToSquared(end) < 0.0001) end.add(new THREE.Vector3(0, 0.36, 0));
   return [start, end];
 };

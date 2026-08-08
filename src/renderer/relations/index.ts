@@ -4,6 +4,7 @@ export * from './RelationLayer';
 export * from './RelationStyleCatalog';
 export * from './RouteHandle';
 export * from './RouteMarkerPool';
+export * from './RouteObstacleMap';
 export * from './RoutePlanner';
 export * from './RouteSceneAdapter';
 export * from './WideLineHandle';

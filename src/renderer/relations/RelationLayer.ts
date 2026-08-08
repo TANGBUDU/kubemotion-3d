@@ -126,10 +126,15 @@ export class RelationLayer {
     return this.handles.get(routeId)?.sample(progress, target);
   }
 
-  public setFlowProgress(routeId: string, progress: number): void {
+  public setFlowProgress(
+    routeId: string,
+    progress: number,
+    direction: 'forward' | 'reverse' = 'forward',
+    flowPhase: 'request' | 'response' = 'request',
+  ): void {
     const handle = this.handles.get(routeId);
     if (!handle) throw new Error(`Cannot animate nonexistent teaching route "${routeId}".`);
-    handle.setFlowProgress(progress);
+    handle.setFlowProgress(progress, direction, flowPhase);
   }
 
   public finishFlow(routeId: string): void {
@@ -168,6 +173,15 @@ export class RelationLayer {
   }
 
   public get diagnostics(): RelationLayerDiagnostics {
+    const sortedHandles = [...this.handles.values()].sort((left, right) =>
+      left.id.localeCompare(right.id),
+    );
+    const routeObstacleIntersectionDetails = sortedHandles.flatMap((handle) =>
+      this.planner.diagnoseObstacleIntersections(handle.plan),
+    );
+    const flowTokenRouteDistances = sortedHandles.flatMap((handle) =>
+      handle.getFlowTokenRouteDistances(),
+    );
     return {
       routeHandles: this.handles.size,
       wideLineGeometries: this.handles.size,
@@ -178,6 +192,20 @@ export class RelationLayer {
       pooledFlowTokens: this.flowTokens.pooledCount,
       leasedRouteMarkers: this.routeMarkers.leasedCount,
       pooledRouteMarkers: this.routeMarkers.pooledCount,
+      routeObstacleIntersections: routeObstacleIntersectionDetails.length,
+      routeObstacleIntersectionDetails,
+      routeEndpointDriftCount: sortedHandles.reduce(
+        (count, handle) => count + this.planner.countEndpointDrifts(handle.plan),
+        0,
+      ),
+      activeRouteWidthsBelowMinimum: sortedHandles.filter(
+        (handle) => handle.root.visible && handle.line.material.linewidth < 4,
+      ).length,
+      visibleRoutesWithoutArrowheads: sortedHandles.filter(
+        (handle) => handle.root.visible && handle.arrowheadCount === 0,
+      ).length,
+      flowTokensOffRoute: flowTokenRouteDistances.filter((distance) => distance > 0.02).length,
+      maximumFlowTokenRouteDistance: Math.max(0, ...flowTokenRouteDistances),
     };
   }
 

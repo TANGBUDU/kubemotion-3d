@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import type { EntityViewState, ViewProjection } from '../../src/course/types';
+import type { ActiveTeachingRoute, EntityViewState, ViewProjection } from '../../src/course/types';
 import { LabelManager, type LabelSafeRect } from '../../src/renderer/LabelManager';
 import type { RelationLayer } from '../../src/renderer/relations/RelationLayer';
 import type { LayoutLabelAnchor, SceneRegistry } from '../../src/renderer/SceneRegistry';
@@ -368,7 +368,7 @@ describe('LabelManager deterministic screen-space layout', () => {
       points: [new THREE.Vector3(-0.3, 2, 0), new THREE.Vector3(0.3, 2, 0)],
       length: 0.6,
     };
-    const route = {
+    const route: ActiveTeachingRoute = {
       id: 'route:priority',
       semantic: 'control' as const,
       label: localized,
@@ -659,7 +659,7 @@ describe('LabelManager deterministic screen-space layout', () => {
       points: [new THREE.Vector3(-3 + index * 2, 2, 0), new THREE.Vector3(-2.4 + index * 2, 2, 0)],
       length: 0.6,
     }));
-    const route = {
+    const route: ActiveTeachingRoute = {
       id: 'route:verbs',
       semantic: 'control' as const,
       label: localized,
@@ -667,7 +667,7 @@ describe('LabelManager deterministic screen-space layout', () => {
       numbered: true,
       hops: hops.map((hop) => hop.hop),
     };
-    const view = {
+    const view: ViewProjection = {
       ...makeView([], () => ({ visible: true, emphasis: 'normal', labelMode: 'short' })),
       activeRoutes: [route],
     };

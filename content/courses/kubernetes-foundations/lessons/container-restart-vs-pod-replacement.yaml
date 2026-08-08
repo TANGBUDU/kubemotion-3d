@@ -381,9 +381,9 @@ steps:
           numbered: true
           hops:
             - fromEntityId: runtime-component:node:worker-a:Kubelet:kubelet
-              fromAnchor: control
+              fromAnchor: local-runtime
               toEntityId: container-status:shop:Pod:api-a-old:Container:api
-              toAnchor: control
+              toAnchor: local-runtime
               label: { en: restart locally, ja: ローカルで再起動, zh-CN: 在本机重启 }
     transition:
       cues:
@@ -483,15 +483,10 @@ steps:
           numbered: true
           hops:
             - fromEntityId: external:external:global:Kubectl:kubectl
-              fromAnchor: control
+              fromAnchor: api-out
               toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-              toAnchor: control
+              toAnchor: api-in
               label: { en: request delete, ja: 削除を要求, zh-CN: 请求删除 }
-            - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-              fromAnchor: control
-              toEntityId: api-object:namespaced:shop:Pod:api-a-old
-              toAnchor: control
-              label: { en: delete Pod object, ja: Pod を削除, zh-CN: 删除 Pod 对象 }
     transition:
       cues:
         - type: api-request
@@ -680,14 +675,14 @@ steps:
           numbered: true
           hops:
             - fromEntityId: runtime-component:cluster:global:ControllerManager:kube-controller-manager
-              fromAnchor: control
+              fromAnchor: api-out
               toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-              toAnchor: control
+              toAnchor: api-in
               label: { en: watch, ja: watch, zh-CN: 观察 }
             - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-              fromAnchor: control
+              fromAnchor: api-out
               toEntityId: api-object:namespaced:shop:Pod:api-d-new
-              toAnchor: control
+              toAnchor: api-in
               label:
                 { en: observe deficit and create, ja: 不足を観測して作成, zh-CN: 观察缺口并创建 }
     transition:
@@ -868,14 +863,14 @@ steps:
           numbered: true
           hops:
             - fromEntityId: runtime-component:cluster:global:Scheduler:kube-scheduler
-              fromAnchor: control
+              fromAnchor: api-out
               toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-              toAnchor: control
-              label: { en: choose Node, ja: Node を選択, zh-CN: 选择 Node }
+              toAnchor: api-in
+              label: { en: choose worker-c, ja: worker-c を選択, zh-CN: 选择 worker-c }
             - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-              fromAnchor: control
+              fromAnchor: api-out
               toEntityId: api-object:namespaced:shop:Pod:api-d-new
-              toAnchor: control
+              toAnchor: api-in
               label: { en: record binding, ja: binding を記録, zh-CN: 记录绑定 }
             - fromEntityId: api-object:namespaced:shop:Pod:api-d-new
               fromAnchor: placement
@@ -993,14 +988,14 @@ steps:
           numbered: true
           hops:
             - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-              fromAnchor: control
+              fromAnchor: api-out
               toEntityId: runtime-component:node:worker-c:Kubelet:kubelet
-              toAnchor: control
+              toAnchor: api-in
               label: { en: observe assignment, ja: 割り当てを監視, zh-CN: 观察分配 }
             - fromEntityId: runtime-component:node:worker-c:Kubelet:kubelet
-              fromAnchor: control
+              fromAnchor: local-runtime
               toEntityId: container-status:shop:Pod:api-d-new:Container:api
-              toAnchor: control
+              toAnchor: local-runtime
               label: { en: start locally, ja: ローカルで起動, zh-CN: 在本机启动 }
     transition:
       cues:

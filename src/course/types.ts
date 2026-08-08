@@ -33,9 +33,33 @@ export interface SceneCallout {
 }
 
 export type RouteAnchorKind =
-  'center' | 'label' | 'ownership' | 'placement' | 'control' | 'data-path' | 'composition';
+  | 'api-in'
+  | 'api-out'
+  | 'control'
+  | 'network-in'
+  | 'network-out'
+  | 'storage'
+  | 'ownership'
+  | 'placement'
+  | 'local-runtime'
+  | 'top'
+  | 'bottom'
+  | 'left'
+  | 'right';
 
-export type RouteSemantic = 'control' | 'scheduling' | 'data-flow' | 'dns' | 'node-runtime';
+export type RouteSemantic =
+  'control' | 'scheduling' | 'data-flow' | 'dns' | 'node-runtime' | 'storage';
+
+export type RouteFlowPhase = 'request' | 'response';
+
+export interface RouteSupport {
+  /** Configuration evidence used to select the physical backend; never a packet hop. */
+  readonly endpointSliceId: EntityId;
+  /** Stable logical entry whose selected backend is described by the EndpointSlice. */
+  readonly serviceId: EntityId;
+  /** Must match both the selected EndpointSlice row and the final physical route endpoint. */
+  readonly selectedEndpointTargetId: EntityId;
+}
 
 export interface RouteHop {
   readonly fromEntityId: EntityId;
@@ -49,9 +73,11 @@ export interface ActiveTeachingRoute {
   readonly id: string;
   readonly semantic: RouteSemantic;
   readonly requestId?: string;
+  readonly flowPhase?: RouteFlowPhase;
+  readonly support?: RouteSupport;
   readonly hops: readonly RouteHop[];
   readonly label?: LocalizedText;
-  readonly persistAfterAnimation: boolean;
+  readonly persistAfterAnimation: true;
   readonly numbered?: boolean;
 }
 
@@ -130,6 +156,9 @@ type RoutedFlowCue<TType extends 'data-packet' | 'dns-query' | 'api-request'> = 
   readonly type: TType;
   readonly routeId: string;
   readonly label: LocalizedText;
+  /** A response may reuse the request route while traversing it in reverse. */
+  readonly flowPhase?: RouteFlowPhase;
+  readonly direction?: 'forward' | 'reverse';
 } & TimedCue;
 
 export type TransitionCue =

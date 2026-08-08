@@ -174,7 +174,9 @@ export class ContainerVisualHandle extends BaseVisualHandle {
     if (anchor === 'composition') return new THREE.Vector3(0, 0.32, 0);
     if (anchor === 'label') return new THREE.Vector3(0, 0.82, 0);
     if (anchor === 'control') return new THREE.Vector3(0, 0.42, -0.34);
-    if (anchor === 'data-path') return new THREE.Vector3(0, 0.35, 0.34);
+    if (anchor === 'network-in') return new THREE.Vector3(-0.42, 0.35, 0.34);
+    if (anchor === 'network-out') return new THREE.Vector3(0.42, 0.35, 0.34);
+    if (anchor === 'local-runtime') return new THREE.Vector3(0, 0.32, -0.34);
     return super.anchorOffset(anchor);
   }
 

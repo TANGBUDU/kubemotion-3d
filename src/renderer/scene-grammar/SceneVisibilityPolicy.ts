@@ -12,6 +12,7 @@ import type {
   WorldRelation,
   WorldSnapshot,
 } from '../../world/types';
+import { getTeachingRouteStyle } from '../relations/RelationStyleCatalog';
 import { controlFlowGrammar } from './ControlFlowGrammar';
 import { logicalOwnershipGrammar } from './LogicalOwnershipGrammar';
 import { overviewGrammar } from './OverviewGrammar';
@@ -171,7 +172,7 @@ export function createEffectiveScenePlan(
     }
   }
   const animatedTokenDemand = authoredProjection.activeRoutes.reduce(
-    (total, route) => total + route.hops.length,
+    (total, route) => total + getTeachingRouteStyle(route.semantic).tokenCount,
     0,
   );
   if (animatedTokenDemand > budget.maxAnimatedTokens) {

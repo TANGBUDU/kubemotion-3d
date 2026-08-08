@@ -57,7 +57,7 @@ export const storageGrammar = Object.freeze({
   layoutAlgorithm: 'storage-chain',
   cameraType: 'orthographic-isometric',
   routeRules: {
-    allowedSemantics: ['data-flow', 'node-runtime'],
+    allowedSemantics: ['storage'],
     requirePersistentRoute: true,
     routeParticipantsHavePriority: true,
   },

@@ -73,6 +73,24 @@ export const directionAtProgress = (
   return target.lengthSq() > Number.EPSILON ? target.normalize() : directionAtEnd(points, target);
 };
 
+export const distanceToPolyline = (
+  points: readonly THREE.Vector3[],
+  point: THREE.Vector3,
+): number => {
+  assertRoutePoints(points);
+  let minimum = Number.POSITIVE_INFINITY;
+  const segment = new THREE.Line3();
+  const closest = new THREE.Vector3();
+  for (let index = 1; index < points.length; index += 1) {
+    const start = points[index - 1];
+    const end = points[index];
+    if (!start || !end) continue;
+    segment.set(start, end).closestPointToPoint(point, true, closest);
+    minimum = Math.min(minimum, closest.distanceTo(point));
+  }
+  return minimum;
+};
+
 export const stablePointsKey = (points: readonly THREE.Vector3[]): string =>
   points
     .map((point) => `${point.x.toFixed(5)},${point.y.toFixed(5)},${point.z.toFixed(5)}`)

@@ -128,8 +128,10 @@ export class SchedulerVisualHandle extends BaseVisualHandle {
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
     if (anchor === 'label') return new THREE.Vector3(0, 1.16, 0);
     if (anchor === 'control') return new THREE.Vector3(-1.4, 0.45, 0);
+    if (anchor === 'api-in') return new THREE.Vector3(-1.4, 0.45, 0);
+    if (anchor === 'api-out') return new THREE.Vector3(1.4, 0.45, 0);
     if (anchor === 'placement') return INPUT_OFFSET.clone();
-    if (anchor === 'data-path') return CANDIDATE_OFFSETS[1].clone();
+    if (anchor === 'local-runtime') return CANDIDATE_OFFSETS[1].clone();
     return super.anchorOffset(anchor);
   }
 }

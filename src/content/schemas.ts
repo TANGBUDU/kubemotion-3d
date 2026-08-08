@@ -177,13 +177,19 @@ const calloutSchema = z
   .strict();
 
 const routeAnchorKindSchema = z.enum([
-  'center',
-  'label',
+  'api-in',
+  'api-out',
+  'control',
+  'network-in',
+  'network-out',
+  'storage',
   'ownership',
   'placement',
-  'control',
-  'data-path',
-  'composition',
+  'local-runtime',
+  'top',
+  'bottom',
+  'left',
+  'right',
 ]);
 
 const routeHopSchema = z
@@ -199,11 +205,20 @@ const routeHopSchema = z
 const activeTeachingRouteSchema = z
   .object({
     id: z.string().min(1),
-    semantic: z.enum(['control', 'scheduling', 'data-flow', 'dns', 'node-runtime']),
+    semantic: z.enum(['control', 'scheduling', 'data-flow', 'dns', 'node-runtime', 'storage']),
     requestId: z.string().min(1).optional(),
+    flowPhase: z.enum(['request', 'response']).optional(),
+    support: z
+      .object({
+        endpointSliceId: entityIdSchema,
+        serviceId: entityIdSchema,
+        selectedEndpointTargetId: entityIdSchema,
+      })
+      .strict()
+      .optional(),
     hops: z.array(routeHopSchema).min(1),
     label: localizedTextSchema.optional(),
-    persistAfterAnimation: z.boolean(),
+    persistAfterAnimation: z.literal(true),
     numbered: z.boolean().optional(),
   })
   .strict();
@@ -239,6 +254,8 @@ const transitionCueSchema = z.discriminatedUnion('type', [
       type: z.literal('data-packet'),
       routeId: z.string().min(1),
       label: localizedTextSchema,
+      flowPhase: z.enum(['request', 'response']).optional(),
+      direction: z.enum(['forward', 'reverse']).optional(),
       durationMs,
       delayMs,
     })
@@ -248,6 +265,8 @@ const transitionCueSchema = z.discriminatedUnion('type', [
       type: z.literal('dns-query'),
       routeId: z.string().min(1),
       label: localizedTextSchema,
+      flowPhase: z.enum(['request', 'response']).optional(),
+      direction: z.enum(['forward', 'reverse']).optional(),
       durationMs,
       delayMs,
     })
@@ -257,6 +276,8 @@ const transitionCueSchema = z.discriminatedUnion('type', [
       type: z.literal('api-request'),
       routeId: z.string().min(1),
       label: localizedTextSchema,
+      flowPhase: z.enum(['request', 'response']).optional(),
+      direction: z.enum(['forward', 'reverse']).optional(),
       durationMs,
       delayMs,
     })

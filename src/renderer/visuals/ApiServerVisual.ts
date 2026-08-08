@@ -139,9 +139,11 @@ export class ApiServerVisualHandle extends BaseVisualHandle {
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
     if (anchor === 'label') return new THREE.Vector3(0, 1.58, 0);
+    if (anchor === 'api-in' || anchor === 'network-in') return PORT_OFFSETS.client.clone();
+    if (anchor === 'api-out') return PORT_OFFSETS['workload-state'].clone();
+    if (anchor === 'network-out') return PORT_OFFSETS.workers.clone();
     if (anchor === 'control') return PORT_OFFSETS.controller.clone();
     if (anchor === 'ownership') return PORT_OFFSETS['workload-state'].clone();
-    if (anchor === 'data-path') return PORT_OFFSETS.client.clone();
     return super.anchorOffset(anchor);
   }
 }

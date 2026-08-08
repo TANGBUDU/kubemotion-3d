@@ -93,14 +93,6 @@ steps:
             emphasis: normal,
             labelMode: short,
           }
-    transition:
-      [
-        {
-          type: reconcile-pulse,
-          entityId: runtime-component:cluster:global:ControllerManager:kube-controller-manager,
-          durationMs: 900,
-        },
-      ]
   - id: control-plane
     title:
       {

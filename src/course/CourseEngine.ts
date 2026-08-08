@@ -323,6 +323,16 @@ const routedCueSemantics = {
   'node-runtime-restart': 'node-runtime',
 } as const;
 
+const packetHopDenylist = new Set([
+  'Deployment',
+  'ReplicaSet',
+  'Namespace',
+  'EndpointSlice',
+  'HTTPRoute',
+  'ConfigMap',
+  'Secret',
+]);
+
 type RoutedCue = Extract<TransitionCue, { readonly routeId: string }>;
 
 function routeForCue(
@@ -442,6 +452,31 @@ function validateActiveRoutes(
   for (const route of routes) {
     if (byId.has(route.id)) throw new Error(`Duplicate active route ID: ${route.id}`);
     if (route.hops.length === 0) throw new Error(`Active route ${route.id} has no hops`);
+    if (route.flowPhase && route.semantic !== 'data-flow') {
+      throw new Error(
+        `Active route ${route.id} uses a traffic flow phase without data-flow semantic`,
+      );
+    }
+    if (route.flowPhase && !route.requestId) {
+      throw new Error(`Active route ${route.id} uses ${route.flowPhase} without requestId`);
+    }
+    const support = route.support;
+    if (
+      support &&
+      ![support.endpointSliceId, support.serviceId, support.selectedEndpointTargetId].every(Boolean)
+    ) {
+      throw new Error(
+        `Active route ${route.id} support must identify slice, Service, and endpoint`,
+      );
+    }
+    if (support && route.semantic !== 'data-flow') {
+      throw new Error(`Active route ${route.id} endpoint support requires data-flow semantic`);
+    }
+    for (const [index, hop] of route.hops.entries()) {
+      if (hop.fromEntityId === hop.toEntityId && hop.fromAnchor === hop.toAnchor) {
+        throw new Error(`Active route ${route.id} hop ${index + 1} has coincident anchors`);
+      }
+    }
     for (let index = 1; index < route.hops.length; index += 1) {
       const previous = route.hops[index - 1];
       const current = route.hops[index];
@@ -468,6 +503,83 @@ function validateActiveRoutes(
         if (world.entities[endpoint]) continue;
         if (allowBeforeEndpoint && beforeWorld.entities[endpoint]) continue;
         throw new Error(`Active route ${route.id} references missing entity: ${endpoint}`);
+      }
+    }
+    if (route.semantic === 'data-flow') {
+      for (const entityId of new Set(
+        route.hops.flatMap((hop) => [hop.fromEntityId, hop.toEntityId]),
+      )) {
+        const entity = world.entities[entityId] ?? beforeWorld.entities[entityId];
+        if (entity && packetHopDenylist.has(entity.kind)) {
+          throw new Error(
+            `Active data-flow route ${route.id} cannot physically pass through ${entity.kind} ${entityId}`,
+          );
+        }
+      }
+    }
+    const support = route.support;
+    if (support?.endpointSliceId && support.serviceId && support.selectedEndpointTargetId) {
+      const slice =
+        world.entities[support.endpointSliceId] ?? beforeWorld.entities[support.endpointSliceId];
+      if (!slice || slice.kind !== 'EndpointSlice') {
+        throw new Error(`Active route ${route.id} support references a non-EndpointSlice entity`);
+      }
+      const service = world.entities[support.serviceId] ?? beforeWorld.entities[support.serviceId];
+      if (!service || service.kind !== 'Service') {
+        throw new Error(`Active route ${route.id} support references a non-Service entry`);
+      }
+      const sliceServiceName = slice.data.serviceName;
+      const sliceServiceLabel = slice.labels?.['kubernetes.io/service-name'];
+      if (
+        (typeof sliceServiceName !== 'string' && typeof sliceServiceLabel !== 'string') ||
+        (typeof sliceServiceName === 'string' && sliceServiceName !== service.name) ||
+        (typeof sliceServiceLabel === 'string' && sliceServiceLabel !== service.name) ||
+        (slice.namespace && service.namespace && slice.namespace !== service.namespace)
+      ) {
+        throw new Error(`Active route ${route.id} EndpointSlice does not belong to its Service`);
+      }
+      const endpoints = Array.isArray(slice.data.endpoints) ? slice.data.endpoints : [];
+      const selected = endpoints.find((candidate): candidate is Record<string, unknown> =>
+        Boolean(
+          candidate &&
+          typeof candidate === 'object' &&
+          !Array.isArray(candidate) &&
+          (candidate as Record<string, unknown>).targetRef === support.selectedEndpointTargetId,
+        ),
+      );
+      if (!selected) {
+        throw new Error(
+          `Active route ${route.id} selected endpoint is absent from its EndpointSlice`,
+        );
+      }
+      const conditions =
+        selected.conditions &&
+        typeof selected.conditions === 'object' &&
+        !Array.isArray(selected.conditions)
+          ? (selected.conditions as Record<string, unknown>)
+          : {};
+      if (
+        conditions.ready !== true ||
+        conditions.serving === false ||
+        conditions.terminating === true
+      ) {
+        throw new Error(`Active route ${route.id} selected endpoint is not traffic eligible`);
+      }
+      const finalTarget = route.hops.at(-1)?.toEntityId;
+      if (finalTarget !== support.selectedEndpointTargetId) {
+        throw new Error(
+          `Active route ${route.id} final hop does not match selected endpoint support`,
+        );
+      }
+      const finalHop = route.hops.at(-1);
+      if (finalHop?.fromEntityId !== support.serviceId) {
+        throw new Error(
+          `Active route ${route.id} must enter the selected backend through its supported Service`,
+        );
+      }
+      const sequence = routeEntitySequence(route);
+      if (sequence.filter((entityId) => entityId === support.serviceId).length !== 1) {
+        throw new Error(`Active route ${route.id} must contain its supported Service exactly once`);
       }
     }
   }
@@ -574,6 +686,89 @@ function validateTransitionCue(
 
 const cueDelay = (cue: TransitionCue): number => cue.delayMs ?? 0;
 
+type TrafficCue = Extract<
+  TransitionCue,
+  { readonly type: 'data-packet' | 'dns-query' | 'api-request' }
+>;
+
+const isTrafficCue = (cue: TransitionCue): cue is TrafficCue =>
+  cue.type === 'data-packet' || cue.type === 'dns-query' || cue.type === 'api-request';
+
+const routeEntitySequence = (route: ActiveTeachingRoute): readonly EntityId[] => {
+  const first = route.hops[0];
+  return first ? [first.fromEntityId, ...route.hops.map((hop) => hop.toEntityId)] : [];
+};
+
+function validateRequestResponse(
+  transition: TransitionPlan,
+  routes: ReadonlyMap<string, ActiveTeachingRoute>,
+): void {
+  const traffic = transition.cues.filter(isTrafficCue);
+  const records = traffic.map((cue) => {
+    const route = routeForCue(cue, routes);
+    const phase = cue.flowPhase ?? route.flowPhase ?? 'request';
+    if (route.flowPhase && cue.flowPhase && route.flowPhase !== cue.flowPhase) {
+      throw new Error(`${route.id} route and cue disagree about flow phase`);
+    }
+    if (phase === 'response' && !route.requestId) {
+      throw new Error(`${route.id} response requires a requestId`);
+    }
+    return { cue, route, phase } as const;
+  });
+
+  for (const request of records.filter((record) => record.phase === 'request')) {
+    if ((request.cue.direction ?? 'forward') !== 'forward') {
+      throw new Error(`${request.route.id} request must play forward`);
+    }
+  }
+
+  const requestIds = new Set(
+    records.flatMap((record) => (record.route.requestId ? [record.route.requestId] : [])),
+  );
+  for (const requestId of requestIds) {
+    const related = records.filter((record) => record.route.requestId === requestId);
+    const requests = related.filter((record) => record.phase === 'request');
+    const responses = related.filter((record) => record.phase === 'response');
+    if (requests.length > 1 || responses.length > 1) {
+      throw new Error(`${requestId} may define at most one request and one response phase`);
+    }
+  }
+
+  for (const response of records.filter((record) => record.phase === 'response')) {
+    const matchingRequests = records.filter(
+      (record) => record.phase === 'request' && record.route.requestId === response.route.requestId,
+    );
+    const request = matchingRequests[0];
+    if (!request) {
+      throw new Error(`${response.route.id} response has no matching request phase`);
+    }
+    if (request.cue.type !== response.cue.type) {
+      throw new Error(`${response.route.id} response cue type must match its request`);
+    }
+    const requestEnd = cueDelay(request.cue) + request.cue.durationMs;
+    if (cueDelay(response.cue) < requestEnd + 120) {
+      throw new Error(`${response.route.id} response must pause after the request completes`);
+    }
+    if (request.route.id === response.route.id) {
+      if (
+        (request.cue.direction ?? 'forward') !== 'forward' ||
+        response.cue.direction !== 'reverse'
+      ) {
+        throw new Error(`A response reusing ${response.route.id} must reverse the request route`);
+      }
+      continue;
+    }
+    const requestPath = routeEntitySequence(request.route);
+    const responsePath = routeEntitySequence(response.route);
+    if (JSON.stringify(responsePath) !== JSON.stringify([...requestPath].reverse())) {
+      throw new Error(`${response.route.id} response route must reverse its matching request path`);
+    }
+    if ((response.cue.direction ?? 'forward') !== 'forward') {
+      throw new Error(`${response.route.id} is already reversed and must play forward`);
+    }
+  }
+}
+
 function requireCausalOffset(
   transition: TransitionPlan,
   causeType: TransitionCue['type'],
@@ -634,10 +829,47 @@ function validateTransition(
   const routedCueIds = transition.cues
     .filter((cue): cue is RoutedCue => 'routeId' in cue)
     .map((cue) => cue.routeId);
-  if (new Set(routedCueIds).size !== routedCueIds.length) {
-    throw new Error('A transition cannot animate the same active route more than once');
+  const duplicatedRouteIds = routedCueIds.filter(
+    (routeId, index) => routedCueIds.indexOf(routeId) !== index,
+  );
+  for (const routeId of new Set(duplicatedRouteIds)) {
+    const cues = transition.cues.filter(
+      (cue): cue is RoutedCue => 'routeId' in cue && cue.routeId === routeId,
+    );
+    const phases = cues.filter(isTrafficCue).map((cue) => cue.flowPhase ?? 'request');
+    if (
+      cues.length !== 2 ||
+      phases.length !== 2 ||
+      !phases.includes('request') ||
+      !phases.includes('response')
+    ) {
+      throw new Error('A transition cannot animate the same active route more than once');
+    }
   }
-  for (const cue of transition.cues) validateTransitionCue(cue, beforeWorld, world, routes);
+  for (const cue of transition.cues) {
+    validateTransitionCue(cue, beforeWorld, world, routes);
+    if ('routeId' in cue) {
+      const route = routeForCue(cue, routes);
+      if (!route.persistAfterAnimation) {
+        throw new Error(`${route.id} must remain visible after routed animation`);
+      }
+      for (const entityId of new Set(
+        route.hops.flatMap((hop) => [hop.fromEntityId, hop.toEntityId]),
+      )) {
+        const state = view.entityStates[entityId];
+        const retainedExitParticipant =
+          !world.entities[entityId] &&
+          Boolean(beforeWorld.entities[entityId]) &&
+          transition.cues.some(
+            (candidate) => candidate.type === 'entity-exit' && candidate.entityId === entityId,
+          );
+        if ((!state?.visible || state.emphasis === 'hidden') && !retainedExitParticipant) {
+          throw new Error(`${route.id} participant ${entityId} must be visible in its route step`);
+        }
+      }
+    }
+  }
+  validateRequestResponse(transition, routes);
   validateCausalTiming(transition);
   validateReplicaSetCounterCoverage(transition, beforeWorld, world);
 }

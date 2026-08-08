@@ -307,6 +307,11 @@ steps:
         - id: client-service-api-a
           semantic: data-flow
           requestId: request-a
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice
+            serviceId: api-object:namespaced:shop:Service:api
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-a
           label:
             {
               en: Request A · Ready api-a,
@@ -317,9 +322,9 @@ steps:
           numbered: true
           hops:
             - fromEntityId: api-object:namespaced:shop:Pod:traffic-client
-              fromAnchor: data-path
+              fromAnchor: network-out
               toEntityId: api-object:namespaced:shop:Service:api
-              toAnchor: data-path
+              toAnchor: network-in
               label:
                 {
                   en: Request A enters Service,
@@ -327,9 +332,9 @@ steps:
                   zh-CN: 请求 A 进入 Service,
                 }
             - fromEntityId: api-object:namespaced:shop:Service:api
-              fromAnchor: data-path
+              fromAnchor: network-out
               toEntityId: api-object:namespaced:shop:Pod:api-a
-              toAnchor: data-path
+              toAnchor: network-in
               label:
                 { en: select Ready api-a, ja: Ready な api-a を選択, zh-CN: 选择 Ready 的 api-a }
     transition:
@@ -509,6 +514,11 @@ steps:
         - id: client-service-api-c
           semantic: data-flow
           requestId: request-b
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice
+            serviceId: api-object:namespaced:shop:Service:api
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-c
           label:
             {
               en: Request B · New request,
@@ -519,9 +529,9 @@ steps:
           numbered: true
           hops:
             - fromEntityId: api-object:namespaced:shop:Pod:traffic-client
-              fromAnchor: data-path
+              fromAnchor: network-out
               toEntityId: api-object:namespaced:shop:Service:api
-              toAnchor: data-path
+              toAnchor: network-in
               label:
                 {
                   en: New request enters same Service,
@@ -529,9 +539,9 @@ steps:
                   zh-CN: 新的请求进入同一 Service,
                 }
             - fromEntityId: api-object:namespaced:shop:Service:api
-              fromAnchor: data-path
+              fromAnchor: network-out
               toEntityId: api-object:namespaced:shop:Pod:api-c
-              toAnchor: data-path
+              toAnchor: network-in
               label:
                 { en: select Ready api-c, ja: Ready な api-c を選択, zh-CN: 选择 Ready 的 api-c }
     transition:

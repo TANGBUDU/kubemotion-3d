@@ -12,7 +12,8 @@ export interface RouteVisualHandle {
   readonly entityId: EntityId;
   readonly root: THREE.Object3D;
   readonly isDisposed?: boolean;
-  getAnchor(anchor: RouteAnchorKind): THREE.Vector3;
+  /** `label` is renderer-only; authored course routes use the canonical RouteAnchorKind union. */
+  getAnchor(anchor: RouteAnchorKind | 'label'): THREE.Vector3;
   getWorldBounds?(target?: THREE.Box3): THREE.Box3;
 }
 
@@ -40,8 +41,13 @@ export class RouteSceneAdapter implements RouteAnchorResolver, RouteObstacleProv
         ? handle.getWorldBounds(target).clone()
         : target.setFromObject(handle.root, true);
       if (bounds.isEmpty()) continue;
-      obstacles.push({ entityId: handle.entityId, bounds });
+      obstacles.push({
+        obstacleId: `entity:${handle.entityId}`,
+        entityId: handle.entityId,
+        kind: 'entity',
+        bounds,
+      });
     }
-    return obstacles.sort((left, right) => left.entityId.localeCompare(right.entityId));
+    return obstacles.sort((left, right) => left.obstacleId.localeCompare(right.obstacleId));
   }
 }

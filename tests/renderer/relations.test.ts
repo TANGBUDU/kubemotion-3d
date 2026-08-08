@@ -12,6 +12,7 @@ import {
 } from '../../src/renderer/relations/RelationStyleCatalog';
 import { RoutePlanner, routeIntersectsObstacle } from '../../src/renderer/relations/RoutePlanner';
 import { RouteMarkerPool } from '../../src/renderer/relations/RouteMarkerPool';
+import { RouteObstacleMap } from '../../src/renderer/relations/RouteObstacleMap';
 import {
   RouteSceneAdapter,
   type RouteVisualHandle,
@@ -47,11 +48,10 @@ class TestObstacles implements RouteObstacleProvider {
 const oneHopRoute = (
   id = 'control-route',
   semantic: RouteSemantic = 'control',
-  persistAfterAnimation = true,
 ): ActiveTeachingRoute => ({
   id,
   semantic,
-  persistAfterAnimation,
+  persistAfterAnimation: true,
   hops: [
     {
       fromEntityId: 'a',
@@ -213,7 +213,9 @@ describe('WideLineHandle', () => {
 describe('RoutePlanner', () => {
   it('deterministically avoids unrelated AABB footprints', () => {
     const obstacle: RouteObstacle = {
+      obstacleId: 'entity:blocker',
       entityId: 'blocker',
+      kind: 'entity',
       bounds: new THREE.Box3(new THREE.Vector3(4, 0, -1), new THREE.Vector3(6, 3, 1)),
     };
     const planner = new RoutePlanner(basicAnchors(), new TestObstacles([obstacle]), {
@@ -228,6 +230,48 @@ describe('RoutePlanner', () => {
     expect(first.points[0]?.toArray()).toEqual([0, 0.5, 0]);
     expect(first.points.at(-1)?.toArray()).toEqual([10, 0.5, 0]);
   });
+
+  it('plans a large obstacle grid without rebuilding the former all-pairs visibility graph', () => {
+    const anchors = new TestAnchors()
+      .set('a', 'control', new THREE.Vector3(0, 0.5, 0))
+      .set('b', 'control', new THREE.Vector3(100, 0.5, 0));
+    const blocker: RouteObstacle = {
+      obstacleId: 'entity:blocker',
+      entityId: 'blocker',
+      kind: 'entity',
+      bounds: new THREE.Box3(new THREE.Vector3(49, 0, -1), new THREE.Vector3(51, 3, 1)),
+    };
+    const backgroundObstacles: RouteObstacle[] = Array.from({ length: 64 }, (_, index) => {
+      const x = 3 + index * 1.35;
+      const z = 4 + index * 0.31;
+      return {
+        obstacleId: `entity:background-${index.toString().padStart(2, '0')}`,
+        entityId: `background-${index}`,
+        kind: 'entity',
+        bounds: new THREE.Box3(
+          new THREE.Vector3(x - 0.12, 0, z - 0.12),
+          new THREE.Vector3(x + 0.12, 2, z + 0.12),
+        ),
+      };
+    });
+    const planner = new RoutePlanner(
+      anchors,
+      new TestObstacles([blocker, ...backgroundObstacles]),
+      { obstacleClearance: 0.2 },
+    );
+
+    const startedAt = performance.now();
+    const first = planner.plan(oneHopRoute('large-grid'));
+    const elapsedMilliseconds = performance.now() - startedAt;
+
+    // The former all-pairs graph blocks for tens of seconds at this density. Keep a generous
+    // headroom for shared CI/visual-test contention while still rejecting that complexity class.
+    expect(elapsedMilliseconds).toBeLessThan(3_000);
+    expect(routeIntersectsObstacle(first.points, blocker, 0.2)).toBe(false);
+    expect(serializePoints(planner.plan(oneHopRoute('large-grid')).points)).toEqual(
+      serializePoints(first.points),
+    );
+  }, 5_000);
 
   it('plans ordered multi-hop routes and stable numbered marker positions', () => {
     const planner = new RoutePlanner(basicAnchors());
@@ -244,7 +288,9 @@ describe('RoutePlanner', () => {
 
   it('ignores endpoint entities as obstacles but rejects missing anchors', () => {
     const endpointObstacle: RouteObstacle = {
+      obstacleId: 'entity:a',
       entityId: 'a',
+      kind: 'entity',
       bounds: new THREE.Box3(new THREE.Vector3(-1, 0, -1), new THREE.Vector3(1, 2, 1)),
     };
     const planner = new RoutePlanner(basicAnchors(), new TestObstacles([endpointObstacle]));
@@ -256,23 +302,49 @@ describe('RoutePlanner', () => {
 
   it('ignores hierarchy shells that enclose a nested route endpoint', () => {
     const enclosingNode: RouteObstacle = {
+      obstacleId: 'entity:node:worker-a',
       entityId: 'node:worker-a',
+      kind: 'entity',
+      containedEntityIds: ['b'],
       bounds: new THREE.Box3(new THREE.Vector3(8, 0, -2), new THREE.Vector3(12, 3, 2)),
     };
-    const planner = new RoutePlanner(basicAnchors(), new TestObstacles([enclosingNode]));
+    const enclosingNodeLabel: RouteObstacle = {
+      obstacleId: 'label:node:worker-a',
+      entityId: 'node:worker-a',
+      kind: 'label',
+      bounds: new THREE.Box3(new THREE.Vector3(9.5, 0, -0.5), new THREE.Vector3(10.5, 2, 0.5)),
+    };
+    const planner = new RoutePlanner(
+      basicAnchors(),
+      new TestObstacles([enclosingNode, enclosingNodeLabel]),
+    );
     expect(() => planner.plan(oneHopRoute())).not.toThrow();
     expect(planner.plan(oneHopRoute()).points.at(-1)?.toArray()).toEqual([10, 0.5, 0]);
   });
 
   it('ignores an enclosing shell when its nested anchor sits just outside the raw AABB', () => {
     const nearEndpointShell: RouteObstacle = {
+      obstacleId: 'entity:node:worker-a',
       entityId: 'node:worker-a',
+      kind: 'entity',
+      containedEntityIds: ['b'],
       bounds: new THREE.Box3(new THREE.Vector3(8, 0, -1), new THREE.Vector3(9.8, 3, 1)),
     };
     const planner = new RoutePlanner(basicAnchors(), new TestObstacles([nearEndpointShell]), {
       obstacleClearance: 0.32,
     });
     expect(() => planner.plan(oneHopRoute())).not.toThrow();
+  });
+
+  it('rejects an unrelated obstacle that covers an endpoint instead of granting a geometric exemption', () => {
+    const unrelated: RouteObstacle = {
+      obstacleId: 'entity:unrelated-shell',
+      entityId: 'unrelated-shell',
+      kind: 'entity',
+      bounds: new THREE.Box3(new THREE.Vector3(8, 0, -2), new THREE.Vector3(12, 3, 2)),
+    };
+    const planner = new RoutePlanner(basicAnchors(), new TestObstacles([unrelated]));
+    expect(() => planner.plan(oneHopRoute())).toThrow(/endpoint lies inside|still intersects/);
   });
 });
 
@@ -364,12 +436,223 @@ describe('RouteSceneAdapter', () => {
     expect(adapter.resolveAnchor('hidden', 'control')).toBeUndefined();
     const obstacles = adapter.getObstacles();
     expect(obstacles.map((obstacle) => obstacle.entityId)).toEqual(['first', 'second']);
+    expect(obstacles.map((obstacle) => obstacle.obstacleId)).toEqual([
+      'entity:first',
+      'entity:second',
+    ]);
+    expect(obstacles.every((obstacle) => obstacle.kind === 'entity')).toBe(true);
     expect(obstacles[0]?.bounds.min.toArray()).toEqual([2, -1, -1]);
     expect(obstacles[1]?.bounds.containsPoint(new THREE.Vector3(-3, 0, 0))).toBe(true);
   });
 });
 
+describe('RouteObstacleMap', () => {
+  it('emits deterministic entity and protected label footprints for visible handles', () => {
+    const firstRoot = new THREE.Group();
+    firstRoot.userData.domLabel = { text: 'A deliberately long label' };
+    const secondRoot = new THREE.Group();
+    secondRoot.userData.shortLabel = 'Short';
+    const hiddenRoot = new THREE.Group();
+    hiddenRoot.userData.shortLabel = 'Hidden';
+    hiddenRoot.visible = false;
+    const handles: RouteVisualHandle[] = [
+      {
+        entityId: 'second',
+        root: secondRoot,
+        getAnchor: (anchor) =>
+          anchor === 'label' ? new THREE.Vector3(-3, 2, 1) : new THREE.Vector3(-3, 0, 1),
+        getWorldBounds: (target = new THREE.Box3()) =>
+          target.set(new THREE.Vector3(-3.5, 0, 0.5), new THREE.Vector3(-2.5, 1, 1.5)),
+      },
+      {
+        entityId: 'first',
+        root: firstRoot,
+        getAnchor: (anchor) =>
+          anchor === 'label' ? new THREE.Vector3(3, 2, 0) : new THREE.Vector3(3, 0, 0),
+        getWorldBounds: (target = new THREE.Box3()) =>
+          target.set(new THREE.Vector3(2, 0, -1), new THREE.Vector3(4, 1, 1)),
+      },
+      {
+        entityId: 'hidden',
+        root: hiddenRoot,
+        getAnchor: () => new THREE.Vector3(),
+      },
+    ];
+    const registry = {
+      get: (entityId: string) => handles.find((handle) => handle.entityId === entityId),
+      values: () => handles.values(),
+    };
+    const map = new RouteObstacleMap(registry, {
+      labelCharacterWidth: 0.1,
+      labelMinimumWidth: 0.8,
+      labelMaximumWidth: 3,
+      labelDepth: 0.6,
+      labelHeight: 0.5,
+    });
+
+    const first = map.getObstacles();
+    const second = map.getObstacles();
+    expect(first.map((obstacle) => obstacle.obstacleId)).toEqual([
+      'entity:first',
+      'entity:second',
+      'label:first',
+      'label:second',
+    ]);
+    expect(
+      first
+        .find((obstacle) => obstacle.obstacleId === 'label:first')
+        ?.bounds.containsPoint(new THREE.Vector3(3, 2, 0)),
+    ).toBe(true);
+    expect(
+      first
+        .find((obstacle) => obstacle.obstacleId === 'label:first')
+        ?.bounds.getSize(new THREE.Vector3()).x,
+    ).toBeGreaterThan(
+      first
+        .find((obstacle) => obstacle.obstacleId === 'label:second')
+        ?.bounds.getSize(new THREE.Vector3()).x ?? Number.POSITIVE_INFINITY,
+    );
+    expect(
+      first.map((obstacle) => [obstacle.obstacleId, ...obstacle.bounds.min.toArray()]),
+    ).toEqual(second.map((obstacle) => [obstacle.obstacleId, ...obstacle.bounds.min.toArray()]));
+  });
+
+  it('makes unrelated label footprints participate in route avoidance', () => {
+    const entity = (
+      entityId: string,
+      control: THREE.Vector3,
+      label: THREE.Vector3,
+      bounds: THREE.Box3,
+      text?: string,
+    ): RouteVisualHandle => {
+      const root = new THREE.Group();
+      if (text) root.userData.domLabel = { text };
+      return {
+        entityId,
+        root,
+        getAnchor: (anchor) => (anchor === 'label' ? label : control).clone(),
+        getWorldBounds: (target = new THREE.Box3()) => target.copy(bounds),
+      };
+    };
+    const handles = [
+      entity(
+        'a',
+        new THREE.Vector3(0, 0.5, 0),
+        new THREE.Vector3(0, 2, 0),
+        new THREE.Box3(new THREE.Vector3(-1, 0, -1), new THREE.Vector3(1, 1, 1)),
+      ),
+      entity(
+        'b',
+        new THREE.Vector3(10, 0.5, 0),
+        new THREE.Vector3(10, 2, 0),
+        new THREE.Box3(new THREE.Vector3(9, 0, -1), new THREE.Vector3(11, 1, 1)),
+      ),
+      entity(
+        'blocker',
+        new THREE.Vector3(5, 0.5, 4),
+        new THREE.Vector3(5, 2, 0),
+        new THREE.Box3(new THREE.Vector3(4.5, 0, 3.5), new THREE.Vector3(5.5, 1, 4.5)),
+        'Protected blocker label',
+      ),
+    ];
+    const registry = {
+      get: (entityId: string) => handles.find((handle) => handle.entityId === entityId),
+      values: () => handles.values(),
+    };
+    const adapter = new RouteSceneAdapter(registry);
+    const obstacleMap = new RouteObstacleMap(registry);
+    const planner = new RoutePlanner(adapter, obstacleMap, { obstacleClearance: 0.2 });
+    const plan = planner.plan(oneHopRoute());
+    const labelObstacle = obstacleMap
+      .getObstacles()
+      .find((obstacle) => obstacle.obstacleId === 'label:blocker');
+
+    expect(labelObstacle).toBeDefined();
+    expect(routeIntersectsObstacle(plan.points, labelObstacle as RouteObstacle, 0.2)).toBe(false);
+    expect(plan.points.length).toBeGreaterThan(4);
+  });
+});
+
 describe('RelationLayer and RouteHandle', () => {
+  it('reports stale route intersections against the obstacle provider current state', () => {
+    const scene = new THREE.Scene();
+    const obstacles = new TestObstacles([]);
+    const planner = new RoutePlanner(basicAnchors(), obstacles);
+    const layer = new RelationLayer(scene, planner, {
+      width: 800,
+      height: 600,
+      pixelRatio: 1,
+    });
+    const route = oneHopRoute('live-diagnostic');
+    layer.syncActiveRoutes([route]);
+    expect(layer.diagnostics.routeObstacleIntersections).toBe(0);
+    expect(layer.diagnostics.routeEndpointDriftCount).toBe(0);
+
+    obstacles.values = [
+      {
+        obstacleId: 'label:moved-label',
+        entityId: 'moved-label',
+        kind: 'label',
+        bounds: new THREE.Box3(new THREE.Vector3(4, 0, -1), new THREE.Vector3(6, 3, 1)),
+      },
+    ];
+    expect(layer.diagnostics.routeObstacleIntersections).toBe(1);
+    expect(layer.diagnostics.routeObstacleIntersectionDetails).toEqual([
+      {
+        routeId: 'live-diagnostic',
+        hopIndex: 0,
+        obstacleId: 'label:moved-label',
+        entityId: 'moved-label',
+        kind: 'label',
+      },
+    ]);
+    layer.dispose();
+  });
+
+  it('reports route endpoint drift after a live semantic anchor moves', () => {
+    const scene = new THREE.Scene();
+    const anchors = basicAnchors();
+    const planner = new RoutePlanner(anchors);
+    const layer = new RelationLayer(scene, planner, {
+      width: 800,
+      height: 600,
+      pixelRatio: 1,
+    });
+    layer.syncActiveRoutes([oneHopRoute('drifting-route')]);
+    expect(layer.diagnostics.routeEndpointDriftCount).toBe(0);
+
+    anchors.set('b', 'control', new THREE.Vector3(10.01, 0.5, 0));
+    expect(layer.diagnostics.routeEndpointDriftCount).toBe(1);
+    const plan = layer.getRoute('drifting-route')?.plan;
+    expect(plan).toBeDefined();
+    expect(() => planner.countEndpointDrifts(plan!, -1)).toThrow(/tolerance/);
+    layer.dispose();
+  });
+
+  it('re-samples leased flow tokens immediately when a moving endpoint replans the route', () => {
+    const scene = new THREE.Scene();
+    const anchors = basicAnchors();
+    const layer = new RelationLayer(scene, new RoutePlanner(anchors), {
+      width: 800,
+      height: 600,
+      pixelRatio: 1,
+    });
+    const route = oneHopRoute('moving-endpoint-route', 'data-flow');
+    layer.syncActiveRoutes([route]);
+    layer.setFlowProgress(route.id, 0.5);
+    const handle = layer.getRoute(route.id);
+    const token = handle?.root.children.find((child) => child.name === 'route-flow-token');
+    const before = token?.position.clone();
+
+    anchors.set('b', 'control', new THREE.Vector3(10, 0.5, 4));
+    layer.syncActiveRoutes([route]);
+    expect(token?.position.equals(before ?? new THREE.Vector3())).toBe(false);
+    expect(layer.diagnostics.routeEndpointDriftCount).toBe(0);
+    expect(layer.diagnostics.flowTokensOffRoute).toBe(0);
+    expect(layer.diagnostics.maximumFlowTokenRouteDistance).toBeLessThanOrEqual(0.000_001);
+    layer.dispose();
+  });
+
   it('renders numbered multi-hop markers and preserves them across resize and reduced motion', () => {
     const scene = new THREE.Scene();
     const planner = new RoutePlanner(basicAnchors());
@@ -514,6 +797,54 @@ describe('RelationLayer and RouteHandle', () => {
     layer.dispose();
   });
 
+  it('moves response tokens once in the reverse direction without wrapping to the request start', () => {
+    const scene = new THREE.Scene();
+    const layer = new RelationLayer(scene, new RoutePlanner(basicAnchors()), {
+      width: 800,
+      height: 600,
+      pixelRatio: 1,
+    });
+    const route: ActiveTeachingRoute = {
+      ...oneHopRoute('request-response-route', 'data-flow'),
+      requestId: 'request-response-1',
+    };
+    layer.syncActiveRoutes([route]);
+    layer.setFlowProgress(route.id, 0, 'reverse', 'response');
+    const handle = layer.getRoute(route.id);
+    const tokens = handle?.root.children.filter((child) => child.name === 'route-flow-token') ?? [];
+    expect(tokens).toHaveLength(2);
+    expect(tokens[0]?.position.x).toBeCloseTo(10);
+    expect(tokens[0]?.visible).toBe(true);
+    expect(tokens[1]?.visible).toBe(false);
+    expect(tokens.every((token) => token.userData.flowPhase === 'response')).toBe(true);
+    expect(handle?.root.userData.flowDirection).toBe('reverse');
+    const reverseArrowhead = handle?.root.children.find(
+      (child) => child.userData.role === 'route-arrowhead',
+    );
+    expect(reverseArrowhead?.position.x).toBeCloseTo(0);
+    expect(layer.diagnostics.flowTokensOffRoute).toBe(0);
+    expect(layer.diagnostics.maximumFlowTokenRouteDistance).toBeLessThanOrEqual(0.000_001);
+
+    layer.setFlowProgress(route.id, 0.5, 'reverse', 'response');
+    expect(tokens[0]?.position.x).toBeCloseTo(5);
+    expect(tokens[1]?.position.x).toBeGreaterThan(
+      tokens[0]?.position.x ?? Number.POSITIVE_INFINITY,
+    );
+    expect(tokens[1]?.visible).toBe(true);
+    layer.setFlowProgress(route.id, 1, 'reverse', 'response');
+    expect(tokens[0]?.position.x).toBeCloseTo(0);
+    layer.finishFlow(route.id);
+    expect(handle?.flowTokenCount).toBe(0);
+    expect(handle?.root.visible).toBe(true);
+    expect(handle?.root.userData.flowDirection).toBe('forward');
+    expect(handle?.root.userData.flowPhase).toBeUndefined();
+    const restoredArrowhead = handle?.root.children.find(
+      (child) => child.userData.role === 'route-arrowhead',
+    );
+    expect(restoredArrowhead?.position.x).toBeCloseTo(10);
+    layer.dispose();
+  });
+
   it('reuses pooled arrows/tokens and does not replace a stable route material', () => {
     const scene = new THREE.Scene();
     const planner = new RoutePlanner(basicAnchors());
@@ -580,27 +911,22 @@ describe('RelationLayer and RouteHandle', () => {
     layer.dispose();
   });
 
-  it('honors persistAfterAnimation without ever removing settled reduced-motion meaning', () => {
+  it('keeps active story routes visible after animation and in reduced motion', () => {
     const scene = new THREE.Scene();
     const layer = new RelationLayer(scene, new RoutePlanner(basicAnchors()), {
       width: 800,
       height: 600,
       pixelRatio: 1,
     });
-    const persistent = oneHopRoute('persistent', 'control', true);
+    const persistent = oneHopRoute('persistent', 'control');
     layer.syncActiveRoutes([persistent]);
     layer.setFlowProgress('persistent', 0.8);
     layer.finishFlow('persistent');
     expect(layer.getRoute('persistent')?.root.visible).toBe(true);
 
-    const transient = oneHopRoute('transient', 'control', false);
-    layer.syncActiveRoutes([transient]);
-    layer.setFlowProgress('transient', 0.8);
-    layer.finishFlow('transient');
-    expect(layer.getRoute('transient')?.root.visible).toBe(false);
     layer.setReducedMotion(true);
-    expect(layer.getRoute('transient')?.root.visible).toBe(true);
-    expect(layer.getRoute('transient')?.arrowheadCount).toBeGreaterThan(0);
+    expect(layer.getRoute('persistent')?.root.visible).toBe(true);
+    expect(layer.getRoute('persistent')?.arrowheadCount).toBeGreaterThan(0);
     layer.dispose();
   });
 });

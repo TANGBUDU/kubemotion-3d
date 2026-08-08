@@ -28,13 +28,21 @@ Delivered rebuild milestones on this branch:
   mobile budget. Host-width recompilation does not replay settled cues; bounded mobile inspectors
   and recoverable hidden filters preserve the scene. Fifteen reviewed EN/JA/zh-CN captures close
   the historical M2/M3/M4 390 px risks.
+- M6 replaces route-by-token behavior with a formal persistent-route contract. Authored routes use
+  canonical semantic anchors, remain visible before/during/after motion, and render as CSS-pixel
+  `Line2` paths with arrowheads and numbered markers. Request/response phases carry independent
+  direction and timing. EndpointSlice stays selection evidence rather than a packet hop, while its
+  selected Ready endpoint must match the final physical backend. A deterministic sparse obstacle
+  planner routes around model and label AABBs and replans moving endpoints without allowing token
+  drift.
 
 - immutable `WorldSnapshot` / `WorldPatch` / `WorldDiff` plus a separate `ViewProjection`;
 - two verified lessons:
   - Container restart vs Pod replacement;
   - Service routes to Ready Pods;
-- premium teaching visuals, semantic zones, `Line2` routes, obstacle-aware route planning, label
-  collision handling, and desktop/mobile teaching shells;
+- premium teaching visuals, semantic zones, persistent `Line2` routes, canonical semantic anchors,
+  deterministic sparse obstacle-aware planning, label collision handling, and desktop/mobile
+  teaching shells;
 - deterministic direct navigation and replay, meaningful reduced motion, and bounded renderer
   resources;
 - manifest-driven `/learn` continuation with manifest-ordered first entry, resumable progress,
@@ -68,7 +76,14 @@ Delivered rebuild milestones on this branch:
   - stable Service address;
   - EndpointSlice conditions remain visible;
   - completed Request A and a distinct later Request B;
-  - the NotReady endpoint is not selected for ordinary traffic.
+  - the NotReady endpoint is not selected for ordinary traffic;
+  - EndpointSlice is evidence, never a physical packet hop, and its selected endpoint matches the
+    route's final backend;
+- route lifecycle:
+  - the persistent wide route, arrowheads, and numbered markers exist before, during, and after
+    token motion;
+  - normal request/response phases carry validated direction and timing;
+  - reduced motion removes moving tokens but retains the complete static path and endpoint evidence.
 
 ## Validation
 
@@ -78,9 +93,9 @@ Delivered rebuild milestones on this branch:
 - `pnpm typecheck` — PASS;
 - `pnpm content:validate` — PASS (2 v2 scenarios, 32 entities, 34 relations, 2 verified v2
   lessons, 20 planned lessons, 26 terms, 29 official sources);
-- `pnpm content:accuracy` — PASS (231 current-public text files, 30 forbidden patterns, 23 local
+- `pnpm content:accuracy` — PASS (235 current-public text files, 30 forbidden patterns, 23 local
   links, and all README, visualization, lifecycle, and Service invariants);
-- `pnpm test:unit -- --run` — PASS (42 files, 292 tests);
+- `pnpm test:unit -- --run` — PASS (43 files, 314 tests);
 - `pnpm build` — PASS;
 - `pnpm visual:m2` — PASS (four captures; desktop foundation/island gate passes with 0 measured
   entity-label overlap and 0 labels outside the stage; mobile risk recorded for M5);
@@ -94,7 +109,12 @@ Delivered rebuild milestones on this branch:
   Pending keeps its `UNSCHEDULED / TRANSIT` heading, “What changed” is fully unobscured, minimum
   scene text is 10 CSS px, the Overview subject fills 48–97% of the safe frame, and horizontal
   overflow / label-callout overlap / safe-frame / complete-foundation violations are 0);
-- `pnpm test:e2e` — PASS (135 passed, 51 skipped, 0 failed); skips are deliberate
+- `pnpm visual:m6` — PASS (9 cases / 36 screenshots; Request A, Request B, and Scheduler binding at
+  1440×900, 1280×800, and 390×844 with EN/JA/zh-CN rotation; persistent routes survive all four
+  temporal phases; reduced-motion active tokens, obstacle intersections, endpoint drift, off-route
+  tokens, route-replan failures, undersized routes, missing arrows, and clipped routes/arrows/markers
+  are all 0; maximum measured token-to-route distance is `4.44e-16`);
+- `pnpm test:e2e` — PASS (136 passed, 53 skipped, 0 failed); skips are deliberate
   project/viewport ownership selections;
 - 20-cycle dual-lesson renderer resource pressure gate — PASS;
 - screenshot gate / visual acceptance — PASS (38 full-page + 5 focused = 43 screenshots; 0 labels outside the
@@ -115,6 +135,7 @@ Delivered rebuild milestones on this branch:
 ## Review aids
 
 - current screenshot manifest: `docs/review/screenshots/manifest.json`;
+- M6 route manifest: `docs/review/evidence/m6/m6-route-visual-manifest.json`;
 - factual and visual checklist: `docs/review/VISUAL_ACCEPTANCE_CHECKLIST.md`;
 - Before/After: `docs/review/BEFORE_AFTER.md`;
 - architecture: `docs/architecture.md`;

@@ -10,15 +10,23 @@ import {
 } from '../design/effects';
 import { statusColor } from '../design/palette';
 
-export const ANCHOR_KINDS = [
-  'center',
-  'label',
+export const ROUTE_ANCHOR_KINDS = [
+  'api-in',
+  'api-out',
+  'control',
+  'network-in',
+  'network-out',
+  'storage',
   'ownership',
   'placement',
-  'control',
-  'data-path',
-  'composition',
+  'local-runtime',
+  'top',
+  'bottom',
+  'left',
+  'right',
 ] as const;
+
+export const ANCHOR_KINDS = ['center', 'label', 'composition', ...ROUTE_ANCHOR_KINDS] as const;
 
 export type AnchorKind = (typeof ANCHOR_KINDS)[number];
 
@@ -150,6 +158,7 @@ export abstract class BaseVisualHandle implements EntityVisualHandle {
     this.root.visible = visible;
     this.root.userData.selectable = visible;
     this.root.userData.emphasis = view.emphasis;
+    this.root.userData.labelMode = view.labelMode;
     this.root.userData.status = entity.status;
     this.root.scale.setScalar(emphasisScale(view.emphasis));
 
@@ -189,14 +198,32 @@ export abstract class BaseVisualHandle implements EntityVisualHandle {
     switch (anchor) {
       case 'label':
         return new THREE.Vector3(0, 1, 0);
+      case 'api-in':
+        return new THREE.Vector3(-0.55, 0.55, 0);
+      case 'api-out':
+        return new THREE.Vector3(0.55, 0.55, 0);
       case 'ownership':
         return new THREE.Vector3(-0.55, 0.5, 0);
       case 'placement':
         return new THREE.Vector3(0.55, 0.35, 0);
       case 'control':
         return new THREE.Vector3(0, 0.65, -0.35);
-      case 'data-path':
-        return new THREE.Vector3(0, 0.35, 0.55);
+      case 'network-in':
+        return new THREE.Vector3(-0.55, 0.35, 0.55);
+      case 'network-out':
+        return new THREE.Vector3(0.55, 0.35, 0.55);
+      case 'storage':
+        return new THREE.Vector3(0.55, 0.3, -0.25);
+      case 'local-runtime':
+        return new THREE.Vector3(0, 0.22, -0.55);
+      case 'top':
+        return new THREE.Vector3(0, 1, 0);
+      case 'bottom':
+        return new THREE.Vector3(0, 0, 0);
+      case 'left':
+        return new THREE.Vector3(-0.65, 0.4, 0);
+      case 'right':
+        return new THREE.Vector3(0.65, 0.4, 0);
       case 'composition':
         return new THREE.Vector3(0, 0.35, 0);
       case 'center':

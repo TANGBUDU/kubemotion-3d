@@ -295,6 +295,23 @@ const ACTIVE_ROUTE_STYLES: Readonly<Record<RouteSemantic, TeachingRouteStyle>> =
     renderOrder: 22,
     labelMode: 'always',
   }),
+  storage: route('storage', {
+    color: colors.storage,
+    tokenColor: 0xa7f3d0,
+    tokenCount: 1,
+    widthCssPx: 5,
+    opacity: 1,
+    dashed: false,
+    dashSize: 0,
+    gapSize: 0,
+    dashScale: 1,
+    arrowhead: true,
+    chevrons: false,
+    curve: 'orthogonal',
+    elevation: 0.4,
+    renderOrder: 23,
+    labelMode: 'always',
+  }),
 });
 
 const opacityFactor = (emphasis: RelationEmphasis): number => {
@@ -332,5 +349,6 @@ export const relationLegendStyles = Object.freeze({
   control: ACTIVE_ROUTE_STYLES.control,
   scheduling: ACTIVE_ROUTE_STYLES.scheduling,
   nodeRuntime: ACTIVE_ROUTE_STYLES['node-runtime'],
+  storage: ACTIVE_ROUTE_STYLES.storage,
   ownership: CONTEXT_STYLES.ownership,
 });

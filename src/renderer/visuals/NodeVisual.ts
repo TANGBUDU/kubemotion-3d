@@ -438,7 +438,11 @@ export class NodeVisualHandle extends BaseVisualHandle {
     if (anchor === 'control') {
       return new THREE.Vector3(...dimensions.node.kubeletMountOffset);
     }
-    if (anchor === 'data-path') return new THREE.Vector3(0, 0.72, -1.75);
+    if (anchor === 'network-in') return new THREE.Vector3(-2.34, 0.72, -1.75);
+    if (anchor === 'network-out') return new THREE.Vector3(2.34, 0.72, -1.75);
+    if (anchor === 'local-runtime') {
+      return new THREE.Vector3(...dimensions.node.runtimeMountOffset);
+    }
     return super.anchorOffset(anchor);
   }
 }

@@ -107,6 +107,7 @@ export class ContainerRuntimeVisualHandle extends BaseVisualHandle {
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
     if (anchor === 'label') return new THREE.Vector3(0, 0.72, 0);
     if (anchor === 'control') return new THREE.Vector3(-0.58, 0.2, 0);
+    if (anchor === 'local-runtime') return new THREE.Vector3(0.58, 0.2, 0);
     if (anchor === 'composition') return new THREE.Vector3(0.56, 0.2, 0);
     return super.anchorOffset(anchor);
   }

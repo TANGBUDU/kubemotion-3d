@@ -27,7 +27,11 @@ export interface RelationAnimationTarget {
 /** The animation layer drives the renderer-owned route that is already visible in the scene. */
 export interface TeachingRouteAnimationTarget {
   readonly root: THREE.Object3D;
-  setFlowProgress(progress: number): void;
+  setFlowProgress(
+    progress: number,
+    direction?: 'forward' | 'reverse',
+    flowPhase?: 'request' | 'response',
+  ): void;
   finishFlow(): void;
 }
 

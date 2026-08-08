@@ -3,7 +3,7 @@ import type { ArrowheadLease, ArrowheadPool } from './ArrowheadPool';
 import type { FlowTokenLease, FlowTokenPool } from './FlowTokenPool';
 import { getTeachingRouteStyle } from './RelationStyleCatalog';
 import type { RouteMarkerLease, RouteMarkerPool } from './RouteMarkerPool';
-import { directionAtProgress, samplePolyline } from './polyline';
+import { directionAtProgress, distanceToPolyline, samplePolyline } from './polyline';
 import type {
   ActiveTeachingRoute,
   PlannedTeachingRoute,
@@ -12,9 +12,9 @@ import type {
 } from './relationTypes';
 import { WideLineHandle } from './WideLineHandle';
 
-const wrappedProgress = (value: number): number => {
+const clampedProgress = (value: number): number => {
   if (!Number.isFinite(value)) return 0;
-  return ((value % 1) + 1) % 1;
+  return Math.min(1, Math.max(0, value));
 };
 
 type RequestAwareTeachingRoute = ActiveTeachingRoute & { readonly requestId?: string };
@@ -32,6 +32,14 @@ export class RouteHandle {
   private currentRoute: ActiveTeachingRoute;
   private currentPlan: PlannedTeachingRoute;
   private currentStyle: TeachingRouteStyle;
+  private flowDirection: 'forward' | 'reverse' = 'forward';
+  private activeFlowState:
+    | {
+        readonly progress: number;
+        readonly direction: 'forward' | 'reverse';
+        readonly flowPhase: 'request' | 'response';
+      }
+    | undefined;
   private reducedMotion = false;
   private disposed = false;
 
@@ -70,13 +78,23 @@ export class RouteHandle {
       readonly points: readonly THREE.Vector3[];
       readonly progress: number;
       readonly scale: number;
+      readonly terminal: boolean;
     }> = [];
     if (this.currentStyle.arrowhead) {
-      for (const hop of this.currentPlan.hops) {
+      const hops =
+        this.flowDirection === 'reverse'
+          ? [...this.currentPlan.hops].reverse()
+          : this.currentPlan.hops;
+      for (const hop of hops) {
         if (this.currentStyle.chevrons) {
-          descriptors.push({ points: hop.points, progress: 0.48, scale: 0.72 });
+          descriptors.push({ points: hop.points, progress: 0.5, scale: 0.72, terminal: false });
         }
-        descriptors.push({ points: hop.points, progress: 1, scale: 1 });
+        descriptors.push({
+          points: hop.points,
+          progress: this.flowDirection === 'reverse' ? 0 : 1,
+          scale: 1,
+          terminal: true,
+        });
       }
     }
     while (this.arrows.length > descriptors.length) this.arrows.pop()?.release();
@@ -96,7 +114,7 @@ export class RouteHandle {
       const lease = this.arrows[index];
       if (!lease) return;
       lease.object.userData.routeId = this.id;
-      lease.object.userData.role = descriptor.progress === 1 ? 'route-arrowhead' : 'route-chevron';
+      lease.object.userData.role = descriptor.terminal ? 'route-arrowhead' : 'route-chevron';
       lease.setAppearance({
         color: this.currentStyle.color,
         opacity: this.currentStyle.opacity,
@@ -105,6 +123,7 @@ export class RouteHandle {
       });
       const position = samplePolyline(descriptor.points, descriptor.progress);
       const direction = directionAtProgress(descriptor.points, descriptor.progress);
+      if (this.flowDirection === 'reverse') direction.multiplyScalar(-1);
       lease.place(position, direction);
       lease.setVisible(this.root.visible);
     });
@@ -141,9 +160,22 @@ export class RouteHandle {
     const requestId = requestIdFor(this.currentRoute);
     if (requestId) this.root.userData.requestId = requestId;
     else delete this.root.userData.requestId;
+    const authoredPhase = this.currentRoute.flowPhase;
+    if (authoredPhase) this.root.userData.flowPhase = authoredPhase;
+    else delete this.root.userData.flowPhase;
+    const support = this.currentRoute.support;
+    if (support?.endpointSliceId) this.root.userData.endpointSliceId = support.endpointSliceId;
+    else delete this.root.userData.endpointSliceId;
+    if (support?.serviceId) this.root.userData.serviceId = support.serviceId;
+    else delete this.root.userData.serviceId;
+    if (support?.selectedEndpointTargetId) {
+      this.root.userData.selectedEndpointTargetId = support.selectedEndpointTargetId;
+    } else delete this.root.userData.selectedEndpointTargetId;
     for (const token of this.tokens) {
       if (requestId) token.object.userData.requestId = requestId;
       else delete token.object.userData.requestId;
+      if (authoredPhase) token.object.userData.flowPhase = authoredPhase;
+      else delete token.object.userData.flowPhase;
     }
   }
 
@@ -163,6 +195,10 @@ export class RouteHandle {
     this.syncArrows();
     this.syncMarkers();
     if (this.reducedMotion) this.clearFlowTokens();
+    else if (this.activeFlowState) {
+      const { progress, direction, flowPhase } = this.activeFlowState;
+      this.setFlowProgress(progress, direction, flowPhase);
+    }
   }
 
   public setResolution(width: number, height: number, pixelRatio = 1): void {
@@ -205,36 +241,64 @@ export class RouteHandle {
       token.object.userData.routeId = this.id;
       const requestId = requestIdFor(this.currentRoute);
       if (requestId) token.object.userData.requestId = requestId;
+      if (this.currentRoute.flowPhase) {
+        token.object.userData.flowPhase = this.currentRoute.flowPhase;
+      }
       this.tokens.push(token);
     }
     while (this.tokens.length > this.currentStyle.tokenCount) this.tokens.pop()?.release();
   }
 
-  public setFlowProgress(progress: number): void {
+  public setFlowProgress(
+    progress: number,
+    direction: 'forward' | 'reverse' = 'forward',
+    flowPhase: 'request' | 'response' = this.currentRoute.flowPhase ?? 'request',
+  ): void {
     this.assertUsable();
     this.root.visible = true;
     this.line.setVisible(true);
     for (const arrow of this.arrows) arrow.setVisible(true);
     for (const marker of this.markers) marker.setVisible(true);
+    this.activeFlowState = { progress, direction, flowPhase };
+    if (this.flowDirection !== direction) {
+      this.flowDirection = direction;
+      this.syncArrows();
+    }
+    this.root.userData.flowPhase = flowPhase;
+    this.root.userData.flowDirection = direction;
     if (this.reducedMotion) {
       this.clearFlowTokens();
       return;
     }
     this.ensureFlowTokens();
-    const count = Math.max(1, this.tokens.length);
+    for (const token of this.tokens) token.object.userData.flowPhase = flowPhase;
+    const normalizedProgress = clampedProgress(progress);
     this.tokens.forEach((token, index) => {
-      token.setVisible(true);
-      token.setProgress(this.currentPlan.points, wrappedProgress(progress + index / count));
+      const rawProgress =
+        direction === 'reverse'
+          ? 1 - normalizedProgress + index * 0.14
+          : normalizedProgress - index * 0.14;
+      token.setVisible(rawProgress >= 0 && rawProgress <= 1);
+      const tokenProgress = clampedProgress(rawProgress);
+      token.setProgress(this.currentPlan.points, tokenProgress, direction);
     });
   }
 
   public finishFlow(): void {
     this.assertUsable();
     this.clearFlowTokens();
-    this.setVisible(this.currentRoute.persistAfterAnimation);
+    this.flowDirection = 'forward';
+    this.syncArrows();
+    this.root.userData.flowDirection = 'forward';
+    if (this.currentRoute.flowPhase) {
+      this.root.userData.flowPhase = this.currentRoute.flowPhase;
+    } else delete this.root.userData.flowPhase;
+    // An active story route is a persistent teaching fact. Only a step change may remove it.
+    this.setVisible(true);
   }
 
   public clearFlowTokens(): void {
+    this.activeFlowState = undefined;
     while (this.tokens.length > 0) this.tokens.pop()?.release();
   }
 
@@ -251,6 +315,16 @@ export class RouteHandle {
   public getPoints(): readonly THREE.Vector3[] {
     this.assertUsable();
     return this.line.getPoints();
+  }
+
+  public getFlowTokenRouteDistances(): readonly number[] {
+    this.assertUsable();
+    this.root.updateWorldMatrix(true, false);
+    const worldPosition = new THREE.Vector3();
+    return this.tokens.map((token) => {
+      token.object.getWorldPosition(worldPosition);
+      return distanceToPolyline(this.currentPlan.points, worldPosition);
+    });
   }
 
   public get id(): string {

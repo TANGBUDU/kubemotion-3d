@@ -140,8 +140,12 @@ export class ExternalClientVisualHandle extends BaseVisualHandle {
 
   protected override anchorOffset(anchor: AnchorKind): THREE.Vector3 {
     if (anchor === 'label') return new THREE.Vector3(0, 2.28, 0);
-    if (anchor === 'data-path') return new THREE.Vector3(1.42, 1.18, 0);
-    if (anchor === 'control') return new THREE.Vector3(1.42, 1.18, 0);
+    if (anchor === 'network-out' || anchor === 'api-out' || anchor === 'control') {
+      return new THREE.Vector3(1.42, 1.18, 0);
+    }
+    if (anchor === 'network-in' || anchor === 'api-in') {
+      return new THREE.Vector3(-1.42, 1.18, 0);
+    }
     return super.anchorOffset(anchor);
   }
 }
