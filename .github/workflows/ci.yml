@@ -31,6 +31,7 @@ jobs:
           tests/e2e/batch03-traffic-composition.spec.ts
           tests/e2e/explore-selection.spec.ts
           tests/e2e/golden-timeline.spec.ts
+          tests/e2e/flow-story-player.spec.ts
           --project=desktop-1280-chromium
       - name: Pack assistant source snapshot
         run: >-
