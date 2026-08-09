@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import '../../styles/lesson-visual-cleanup.css';
 
 export interface LessonShellProps {
   readonly header: ReactNode;
