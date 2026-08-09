@@ -62,7 +62,7 @@ export class PodVisualHandle extends BaseVisualHandle {
       new THREE.LineBasicMaterial({
         color: palette.dataFlow,
         transparent: true,
-        opacity: 0.72,
+        opacity: 0.88,
         depthWrite: false,
         toneMapped: false,
       }),
@@ -94,7 +94,13 @@ export class PodVisualHandle extends BaseVisualHandle {
 
     const bayGeometry = this.ownGeometry(createRoundedBoxGeometry(1.43, 0.075, 0.98, 0.08));
     const bayMaterial = this.ownMaterial(
-      createSurfaceMaterial({ tone: 'recessed', roughness: 0.72, metalness: 0.03 }),
+      createSurfaceMaterial({
+        color: palette.runtimeModule,
+        roughness: 0.68,
+        metalness: 0.03,
+        transparent: true,
+        opacity: 0.48,
+      }),
     );
     const bayFloor = new THREE.Mesh(bayGeometry, bayMaterial);
     bayFloor.position.y = 0.28;

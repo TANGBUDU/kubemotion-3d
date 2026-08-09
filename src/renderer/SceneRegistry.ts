@@ -302,10 +302,13 @@ const createLayoutGuide = (container: LayoutContainer): LayoutGuideHandle => {
     Math.max(0.05, container.bounds.size[1]),
     container.bounds.size[2],
   );
+  const subtleTrafficGuide =
+    container.kind === 'semantic-lane' &&
+    /^(traffic-|external-traffic-|rollout-traffic-|dns-|gateway-)/.test(container.id);
   const material = new THREE.MeshBasicMaterial({
     color: guideColor(container),
     transparent: true,
-    opacity: 0.045,
+    opacity: subtleTrafficGuide ? 0.018 : 0.045,
     depthWrite: false,
   });
   const surface = new THREE.Mesh(geometry, material);
@@ -316,9 +319,9 @@ const createLayoutGuide = (container: LayoutContainer): LayoutGuideHandle => {
   const edgeMaterial = new THREE.LineDashedMaterial({
     color: guideColor(container),
     transparent: true,
-    opacity: 0.72,
-    dashSize: 0.5,
-    gapSize: 0.22,
+    opacity: subtleTrafficGuide ? 0.24 : 0.72,
+    dashSize: subtleTrafficGuide ? 0.34 : 0.5,
+    gapSize: subtleTrafficGuide ? 0.34 : 0.22,
   });
   const border = new THREE.LineSegments(edgeGeometry, edgeMaterial);
   border.computeLineDistances();
