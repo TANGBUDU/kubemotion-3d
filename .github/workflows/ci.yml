@@ -4,79 +4,11 @@ on:
   push:
     branches: [main]
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  format-fix:
-    if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-      - name: Apply staged Story Player lint fix
-        run: |
-          if [ -f .github/assistant/story-lint.patch ]; then
-            python - <<'PY'
-          from pathlib import Path
-
-          path = Path('src/pages/FlowStoryPage.tsx')
-          text = path.read_text(encoding='utf-8')
-          replacements = [
-              (
-                  "import { useEffect, useMemo, useState } from 'react';",
-                  "import { useCallback, useEffect, useMemo, useState } from 'react';",
-              ),
-              (
-                  "function routeSummary(beat: CompiledFlowStoryBeat, locale: Locale): string | undefined {",
-                  "function routeSummary(beat: CompiledFlowStoryBeat): string | undefined {",
-              ),
-              (
-                  "const route = beat ? routeSummary(beat, locale) : undefined;",
-                  "const route = beat ? routeSummary(beat) : undefined;",
-              ),
-              (
-                  """  const go = (index: number, replay = true) => {\n    if (!compiled) return;\n    const next = Math.max(0, Math.min(index, compiled.beats.length - 1));\n    navigate(`/stories/${compiled.story.id}/${next}`);\n    if (replay) setPlaybackId((value) => value + 1);\n  };""",
-                  """  const go = useCallback(\n    (index: number, replay = true) => {\n      if (!compiled) return;\n      const next = Math.max(0, Math.min(index, compiled.beats.length - 1));\n      navigate(`/stories/${compiled.story.id}/${next}`);\n      if (replay) setPlaybackId((value) => value + 1);\n    },\n    [compiled, navigate],\n  );""",
-              ),
-              (
-                  "}, [beatIndex, compiled, playbackId, playing, reducedMotion, step]);",
-                  "}, [beatIndex, compiled, go, playbackId, playing, reducedMotion, step]);",
-              ),
-          ]
-          for old, new in replacements:
-              if old not in text:
-                  raise SystemExit(f'Missing expected Story Player text: {old[:80]!r}')
-              text = text.replace(old, new, 1)
-          path.write_text(text, encoding='utf-8')
-          PY
-            rm .github/assistant/story-lint.patch
-          fi
-      - uses: pnpm/action-setup@v4
-        with: { version: 11.16.0 }
-      - uses: actions/setup-node@v5
-        with: { node-version: 24, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm format
-      - name: Remove obsolete one-shot formatter files
-        run: |
-          rm -f .github/assistant/format-story.trigger
-          rm -f .github/workflows/assistant-format-story.yml
-      - name: Commit formatter changes when needed
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --check
-          if git diff --cached --quiet; then
-            echo "No formatter changes to commit."
-            exit 0
-          fi
-          git commit -m "fix: stabilize flow story playback hooks"
-          git push origin HEAD:${{ github.head_ref }}
   validate:
     runs-on: ubuntu-latest
     steps:
