@@ -13,7 +13,7 @@ const rows: readonly EvidenceRow[] = [
     label: localized('Pod phase'),
     before: localized('Pending'),
     after: localized('Running'),
-    path: 'data.phase',
+    path: '/data/phase',
   },
   {
     id: 'container-added',
@@ -35,6 +35,7 @@ const rows: readonly EvidenceRow[] = [
     change: 'unchanged',
     label: localized('Pod UID'),
     after: localized('uid-web'),
+    path: '/data/uid',
   },
 ];
 
@@ -55,12 +56,24 @@ describe('EvidencePanel', () => {
     expect(within(panel).getByText(/^changed:/i)).toHaveClass('sr-only');
   });
 
+  it('uses a beginner-first compact summary while retaining technical fields', () => {
+    render(<EvidencePanel rows={rows} locale="en" compact />);
+
+    const panel = screen.getByTestId('evidence-panel');
+    expect(within(panel).getByRole('heading', { name: 'Key evidence' })).toBeVisible();
+    expect(within(panel).getByText('Pod identity')).toBeVisible();
+    const details = within(panel).getByText('Kubernetes fields').closest('details');
+    expect(details).not.toBeNull();
+    expect(details).not.toHaveAttribute('open');
+    expect(panel).toHaveTextContent('Pod UID');
+  });
+
   it('localizes the fixed empty state without inventing evidence', () => {
     render(<EvidencePanel rows={[]} locale="zh-CN" compact />);
 
     const panel = screen.getByTestId('evidence-panel');
     expect(panel).toHaveClass('compact');
-    expect(within(panel).getByRole('heading', { name: '事实证据' })).toBeVisible();
-    expect(within(panel).getByText('本步没有事实状态变化。')).toBeVisible();
+    expect(within(panel).getByRole('heading', { name: '关键证据' })).toBeVisible();
+    expect(within(panel).getByText('本步只改变展示方式，Kubernetes 状态没有变化。')).toBeVisible();
   });
 });
