@@ -51,7 +51,9 @@ jobs:
         if: always()
         with:
           name: visual-review-${{ github.sha }}
-          path: docs/review/evidence/batch03/
+          path: |
+            docs/review/evidence/batch03/
+            docs/review/evidence/story-player/
           if-no-files-found: ignore
           retention-days: 7
       - uses: actions/upload-artifact@v4
