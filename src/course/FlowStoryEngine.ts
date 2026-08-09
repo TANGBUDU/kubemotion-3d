@@ -1,14 +1,17 @@
+import { deepFreeze } from '../world';
+import type { EntityId, WorldSnapshot } from '../world/types';
 import type { CourseCompilationOptions } from './CourseEngine';
 import { courseEngine } from './CourseEngine';
 import type {
+  ActiveTeachingRoute,
   CompiledFlowStory,
   CompiledFlowStoryBeat,
+  CompiledStep,
   FlowStory,
   LessonV2,
   SourceEntry,
+  TransitionCue,
 } from './types';
-import { deepFreeze } from '../world';
-import type { WorldSnapshot } from '../world/types';
 
 export interface FlowStoryCatalog {
   readonly lessons: ReadonlyMap<string, LessonV2>;
@@ -26,6 +29,139 @@ function duplicateIds(ids: readonly string[]): readonly string[] {
     seen.add(id);
   }
   return [...duplicates];
+}
+
+function addCueEntityIds(relevant: Set<EntityId>, cue: TransitionCue): void {
+  const add = (value: unknown) => {
+    if (typeof value === 'string') relevant.add(value);
+  };
+  if ('entityId' in cue) add(cue.entityId);
+  if ('fromEntityId' in cue) add(cue.fromEntityId);
+  if ('toEntityId' in cue) add(cue.toEntityId);
+  if ('schedulerId' in cue) add(cue.schedulerId);
+  if ('podId' in cue) add(cue.podId);
+  if ('nodeId' in cue) add(cue.nodeId);
+}
+
+/**
+ * A Story keeps the complete factual lesson history but reduces its visual projection to the
+ * current causal beat. The full lesson remains the place for surrounding architecture context.
+ */
+function focusStoryStep(
+  compiledStep: CompiledStep,
+  routes: readonly ActiveTeachingRoute[],
+): CompiledStep {
+  const relevant = new Set<EntityId>(compiledStep.evidence.map((row) => row.entityId));
+  const routeIds = new Set(routes.map((route) => route.id));
+
+  for (const route of routes) {
+    for (const hop of route.hops) {
+      relevant.add(hop.fromEntityId);
+      relevant.add(hop.toEntityId);
+    }
+    if (route.support) {
+      relevant.add(route.support.serviceId);
+      relevant.add(route.support.endpointSliceId);
+      relevant.add(route.support.selectedEndpointTargetId);
+    }
+  }
+
+  for (const [entityId, state] of Object.entries(compiledStep.view.entityStates)) {
+    if (state.visible && state.emphasis === 'focused') relevant.add(entityId);
+  }
+
+  for (const cue of compiledStep.transition.cues) {
+    if ('routeId' in cue && !routeIds.has(cue.routeId)) continue;
+    addCueEntityIds(relevant, cue);
+    if ('relationId' in cue) {
+      const relation = compiledStep.world.relations[cue.relationId];
+      if (relation) {
+        relevant.add(relation.from);
+        relevant.add(relation.to);
+      }
+    }
+  }
+
+  if (relevant.size === 0) {
+    for (const [entityId, state] of Object.entries(compiledStep.view.entityStates)) {
+      if (state.visible) relevant.add(entityId);
+    }
+  }
+
+  // Keep structural parents only when the focused visual cannot stand alone.
+  let expanded = true;
+  while (expanded) {
+    expanded = false;
+    for (const relation of Object.values(compiledStep.world.relations)) {
+      if (relation.semantic === 'composition' && relevant.has(relation.to)) {
+        const size = relevant.size;
+        relevant.add(relation.from);
+        expanded ||= relevant.size !== size;
+      }
+      if (
+        compiledStep.view.view === 'placement' &&
+        relation.type === 'scheduled-on' &&
+        relevant.has(relation.from)
+      ) {
+        const size = relevant.size;
+        relevant.add(relation.to);
+        expanded ||= relevant.size !== size;
+      }
+      if (relation.type === 'implemented-by') {
+        const from = compiledStep.world.entities[relation.from];
+        const to = compiledStep.world.entities[relation.to];
+        if (relevant.has(relation.from) && to?.kind === 'Node') {
+          const size = relevant.size;
+          relevant.add(relation.to);
+          expanded ||= relevant.size !== size;
+        }
+        if (relevant.has(relation.to) && from?.kind === 'Node') {
+          const size = relevant.size;
+          relevant.add(relation.from);
+          expanded ||= relevant.size !== size;
+        }
+      }
+    }
+  }
+
+  const entityStates = Object.fromEntries(
+    Object.entries(compiledStep.view.entityStates).map(([entityId, state]) => {
+      const visible = state.visible && relevant.has(entityId);
+      return [
+        entityId,
+        visible
+          ? state
+          : {
+              ...state,
+              visible: false,
+              emphasis: 'hidden' as const,
+              labelMode: 'none' as const,
+              inspectorMode: 'none' as const,
+            },
+      ];
+    }),
+  );
+
+  const relationStates = Object.fromEntries(
+    Object.entries(compiledStep.view.relationStates).map(([relationId, state]) => {
+      const relation = compiledStep.world.relations[relationId];
+      const visible = Boolean(
+        state.visible && relation && relevant.has(relation.from) && relevant.has(relation.to),
+      );
+      return [relationId, visible ? state : { ...state, visible: false }];
+    }),
+  );
+
+  return {
+    ...compiledStep,
+    view: {
+      ...compiledStep.view,
+      entityStates,
+      relationStates,
+      callouts: compiledStep.view.callouts.filter((callout) => relevant.has(callout.entityId)),
+      activeRoutes: routes,
+    },
+  };
 }
 
 /**
@@ -126,9 +262,10 @@ export class FlowStoryEngine {
           `Flow story ${story.id} beat ${beat.id} selects missing route ${beat.selectedRouteId}`,
         );
       }
+      const storyStep = focusStoryStep(compiledStep, routes);
       return selectedRoute
-        ? { beat, lessonStep, compiledStep, routes, selectedRoute }
-        : { beat, lessonStep, compiledStep, routes };
+        ? { beat, lessonStep, compiledStep: storyStep, routes, selectedRoute }
+        : { beat, lessonStep, compiledStep: storyStep, routes };
     });
 
     if (referencedRouteCount === 0) {
