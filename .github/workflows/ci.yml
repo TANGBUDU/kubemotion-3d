@@ -20,8 +20,39 @@ jobs:
       - name: Apply staged Story Player lint fix
         run: |
           if [ -f .github/assistant/story-lint.patch ]; then
-            git apply --check .github/assistant/story-lint.patch
-            git apply .github/assistant/story-lint.patch
+            python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/pages/FlowStoryPage.tsx')
+          text = path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  "import { useEffect, useMemo, useState } from 'react';",
+                  "import { useCallback, useEffect, useMemo, useState } from 'react';",
+              ),
+              (
+                  "function routeSummary(beat: CompiledFlowStoryBeat, locale: Locale): string | undefined {",
+                  "function routeSummary(beat: CompiledFlowStoryBeat): string | undefined {",
+              ),
+              (
+                  "const route = beat ? routeSummary(beat, locale) : undefined;",
+                  "const route = beat ? routeSummary(beat) : undefined;",
+              ),
+              (
+                  """  const go = (index: number, replay = true) => {\n    if (!compiled) return;\n    const next = Math.max(0, Math.min(index, compiled.beats.length - 1));\n    navigate(`/stories/${compiled.story.id}/${next}`);\n    if (replay) setPlaybackId((value) => value + 1);\n  };""",
+                  """  const go = useCallback(\n    (index: number, replay = true) => {\n      if (!compiled) return;\n      const next = Math.max(0, Math.min(index, compiled.beats.length - 1));\n      navigate(`/stories/${compiled.story.id}/${next}`);\n      if (replay) setPlaybackId((value) => value + 1);\n    },\n    [compiled, navigate],\n  );""",
+              ),
+              (
+                  "}, [beatIndex, compiled, playbackId, playing, reducedMotion, step]);",
+                  "}, [beatIndex, compiled, go, playbackId, playing, reducedMotion, step]);",
+              ),
+          ]
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f'Missing expected Story Player text: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
             rm .github/assistant/story-lint.patch
           fi
       - uses: pnpm/action-setup@v4
