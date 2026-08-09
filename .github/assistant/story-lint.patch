@@ -1,0 +1,50 @@
+--- a/src/pages/FlowStoryPage.tsx
++++ b/src/pages/FlowStoryPage.tsx
+@@ -8,7 +8,7 @@
+   Route,
+   ShieldCheck,
+ } from 'lucide-react';
+-import { useEffect, useMemo, useState } from 'react';
++import { useCallback, useEffect, useMemo, useState } from 'react';
+ import { Link, useNavigate, useParams } from 'react-router-dom';
+ import type { Locale } from '../app/types';
+ import { SceneViewport } from '../components/SceneViewport';
+@@ -124,7 +124,7 @@
+   return Math.max(1050, ...cues.map((cue) => (cue.delayMs ?? 0) + cue.durationMs + 420));
+ }
+ 
+-function routeSummary(beat: CompiledFlowStoryBeat, locale: Locale): string | undefined {
++function routeSummary(beat: CompiledFlowStoryBeat): string | undefined {
+   const route = beat.selectedRoute ?? beat.routes[0];
+   if (!route) return undefined;
+   const ids = [route.hops[0]?.fromEntityId, ...route.hops.map((hop) => hop.toEntityId)].filter(
+@@ -171,15 +171,18 @@
+       : 0;
+   const beat = compiled?.beats[beatIndex];
+   const step = useMemo(() => (beat ? stepForBeat(beat) : undefined), [beat]);
+-  const route = beat ? routeSummary(beat, locale) : undefined;
++  const route = beat ? routeSummary(beat) : undefined;
+ 
+-  const go = (index: number, replay = true) => {
+-    if (!compiled) return;
+-    const next = Math.max(0, Math.min(index, compiled.beats.length - 1));
+-    navigate(`/stories/${compiled.story.id}/${next}`);
+-    if (replay) setPlaybackId((value) => value + 1);
+-  };
++  const go = useCallback(
++    (index: number, replay = true) => {
++      if (!compiled) return;
++      const next = Math.max(0, Math.min(index, compiled.beats.length - 1));
++      navigate(`/stories/${compiled.story.id}/${next}`);
++      if (replay) setPlaybackId((value) => value + 1);
++    },
++    [compiled, navigate],
++  );
+@@ -196,7 +199,7 @@
+       playbackDuration(step.transition.cues, reducedMotion),
+     );
+     return () => window.clearTimeout(timeout);
+-  }, [beatIndex, compiled, playbackId, playing, reducedMotion, step]);
++  }, [beatIndex, compiled, go, playbackId, playing, reducedMotion, step]);
+ 
+   if (!compiled || !beat || !step) {
