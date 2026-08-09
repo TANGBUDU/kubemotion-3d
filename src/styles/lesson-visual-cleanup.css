@@ -1,3 +1,9 @@
 .lesson-shell .scene-callout {
   display: none !important;
 }
+
+@media (max-width: 720px) {
+  .lesson-shell .scene-route-label {
+    display: none !important;
+  }
+}
