@@ -121,6 +121,7 @@ function EvidenceCode({
       title={visible === value ? undefined : value}
     >
       {visible}
+      {visible !== value ? <span className="sr-only">{value}</span> : null}
     </code>
   );
 }
