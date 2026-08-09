@@ -89,6 +89,13 @@ export interface LayoutModule {
 
 const NODE_BAY_COUNT = dimensions.node.bayAnchors.length;
 const NODE_RACK_SPACING = dimensions.node.width + 0.2;
+const OCCUPIED_WORKER_LANE_HORIZONTAL_PADDING = 0.6;
+const OCCUPIED_WORKER_LANE_DEPTH_PADDING = 0.5;
+const occupiedWorkerLaneWidth = (nodeCount: number): number =>
+  Math.max(0, nodeCount - 1) * NODE_RACK_SPACING +
+  dimensions.node.width +
+  OCCUPIED_WORKER_LANE_HORIZONTAL_PADDING;
+const occupiedWorkerLaneDepth = dimensions.node.depth + OCCUPIED_WORKER_LANE_DEPTH_PADDING;
 
 const TEACHING_ZONES = Object.freeze({
   controlPlane: Object.freeze({ centerZ: -5.25, depth: 2.55 }),
@@ -308,15 +315,16 @@ export class PlacementLayout implements LayoutModule {
     });
 
     if (visibleNodes.length > 0) {
+      const workerLaneWidth = occupiedWorkerLaneWidth(visibleNodes.length);
       containers.push({
         id: 'worker-nodes-zone',
         kind: 'worker-lane',
         label: 'WORKER NODES',
         zoneId: 'worker-nodes',
-        labelAnchor: [-9.4, 0.12, 0.28],
+        labelAnchor: [-workerLaneWidth / 2 + 0.3, 0.12, 0.28],
         bounds: {
           center: [0, 0.025, TEACHING_ZONES.workerNodes.centerZ],
-          size: [20, 0.05, TEACHING_ZONES.workerNodes.depth],
+          size: [workerLaneWidth, 0.05, occupiedWorkerLaneDepth],
         },
         slots: visibleNodes.map((node, index) => ({
           id: `worker-nodes-zone:slot:${index}`,
@@ -734,6 +742,10 @@ export class OverviewLayout implements LayoutModule {
           overviewControlOrder(left) - overviewControlOrder(right) || byId(left, right),
       );
     const controlSpacing = 4.45;
+    const controlLaneWidth = Math.max(
+      4.8,
+      Math.max(0, controlEntities.length - 1) * controlSpacing + 3.2,
+    );
     controlEntities.forEach((entity, index) => {
       layouts.set(entity.id, {
         entityId: entity.id,
@@ -752,10 +764,10 @@ export class OverviewLayout implements LayoutModule {
       kind: 'control-lane',
       label: 'CONTROL PLANE ISLAND',
       zoneId: 'control-plane',
-      labelAnchor: [-9.35, 0.14, -6.25],
+      labelAnchor: [-controlLaneWidth / 2 + 0.5, 0.14, -6.25],
       bounds: {
         center: [0, 0.035, OVERVIEW_ZONES.controlPlane.centerZ],
-        size: [20, 0.07, OVERVIEW_ZONES.controlPlane.depth],
+        size: [controlLaneWidth, 0.07, OVERVIEW_ZONES.controlPlane.depth],
       },
       slots: controlEntities.map((entity, index) => ({
         id: `control-plane-island:slot:${index}`,
@@ -783,15 +795,16 @@ export class OverviewLayout implements LayoutModule {
         containerId: `node:${node.id}`,
       });
     });
+    const workerLaneWidth = occupiedWorkerLaneWidth(nodes.length);
     containers.push({
       id: 'worker-nodes-island',
       kind: 'worker-lane',
       label: 'WORKER NODES ISLAND',
       zoneId: 'worker-nodes',
-      labelAnchor: [-9.35, 0.14, 0.35],
+      labelAnchor: [-workerLaneWidth / 2 + 0.3, 0.14, 0.35],
       bounds: {
         center: [0, 0.035, OVERVIEW_ZONES.workers.centerZ],
-        size: [20, 0.07, OVERVIEW_ZONES.workers.depth],
+        size: [workerLaneWidth, 0.07, occupiedWorkerLaneDepth],
       },
       slots: nodes.map((node, index) => ({
         id: `worker-nodes-island:slot:${index}`,

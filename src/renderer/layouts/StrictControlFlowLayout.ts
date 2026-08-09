@@ -67,6 +67,8 @@ export class StrictControlFlowLayout implements LayoutModule {
     const controlSpacing = 3.8;
     const controlWidth =
       controlEntities.length > 0 ? Math.max(8.5, controlEntities.length * controlSpacing + 1.5) : 0;
+    const controlLabelX = -controlWidth / 2 + 0.4;
+    let controlContextRightEdge = controlEntities.length > 0 ? controlWidth / 2 : 0;
 
     if (controlEntities.length > 0) {
       const controlX = (index: number): number =>
@@ -87,7 +89,7 @@ export class StrictControlFlowLayout implements LayoutModule {
         zoneId: 'control-plane',
         center: [0, 0.025, controlZone.centerZ],
         size: [controlWidth, 0.05, controlZone.depth],
-        labelAnchor: [-9.4, 0.12, controlZone.centerZ - controlZone.depth / 2 + 0.145],
+        labelAnchor: [controlLabelX, 0.12, controlZone.centerZ - controlZone.depth / 2 + 0.145],
         slots: controlEntities.map((entity, index) => ({
           id: `control-flow-control-plane:slot:${index}`,
           index,
@@ -100,9 +102,13 @@ export class StrictControlFlowLayout implements LayoutModule {
     if (externalActors.length > 0) {
       const spacing = 1.9;
       const externalWidth = 2.9;
+      const externalDepth = Math.max(2.4, externalActors.length * spacing + 0.7);
       // Sits immediately left of the Control Plane plate so a wide control lane can never grow
       // underneath the external input plate.
       const externalX = -(controlWidth / 2 + LANE_GAP + externalWidth / 2);
+      if (controlEntities.length === 0) {
+        controlContextRightEdge = externalX + externalWidth / 2;
+      }
       const externalZ = (index: number): number =>
         controlZone.centerZ + (index - (externalActors.length - 1) / 2) * spacing;
       externalActors.forEach((entity, index) => {
@@ -119,7 +125,12 @@ export class StrictControlFlowLayout implements LayoutModule {
         kind: 'semantic-lane',
         label: 'EXTERNAL API INPUT',
         center: [externalX, 0.025, controlZone.centerZ],
-        size: [externalWidth, 0.05, Math.max(2.4, externalActors.length * spacing + 0.7)],
+        size: [externalWidth, 0.05, externalDepth],
+        labelAnchor: [
+          externalX - externalWidth / 2 + 0.35,
+          0.12,
+          controlZone.centerZ - externalDepth / 2 + 0.145,
+        ],
         slots: externalActors.map((entity, index) => ({
           id: `control-flow-external-input:slot:${index}`,
           index,
@@ -135,6 +146,8 @@ export class StrictControlFlowLayout implements LayoutModule {
     const nodeXById = new Map<EntityId, number>();
 
     const workerZone = CONTROL_FLOW_ZONES.workerNodes;
+    const workerWidth = Math.max(8.5, nodes.length * NODE_SPACING + 1.5);
+    const workerLabelX = -workerWidth / 2 + 0.4;
 
     nodes.forEach((node, index) => {
       const x = (index - (nodes.length - 1) / 2) * NODE_SPACING;
@@ -225,8 +238,8 @@ export class StrictControlFlowLayout implements LayoutModule {
         label: 'WORKER NODES',
         zoneId: 'worker-nodes',
         center: [0, 0.025, workerZone.centerZ],
-        size: [Math.max(8.5, nodes.length * NODE_SPACING + 1.5), 0.05, workerZone.depth],
-        labelAnchor: [-9.4, 0.12, workerZone.centerZ - workerZone.depth / 2 + 0.205],
+        size: [workerWidth, 0.05, workerZone.depth],
+        labelAnchor: [workerLabelX, 0.12, workerZone.centerZ - workerZone.depth / 2 + 0.205],
         slots: nodes.map((node, index) => ({
           id: `control-flow-worker-zone:slot:${index}`,
           index,
@@ -404,10 +417,12 @@ export class StrictControlFlowLayout implements LayoutModule {
     }
 
     const clusterContext = visible.filter((entity) => entity.kind === 'Cluster').sort(byEntityId);
+    const clusterContextHalfWidth = 2.8;
+    const clusterContextX = controlContextRightEdge + LANE_GAP + clusterContextHalfWidth;
     clusterContext.forEach((entity, index) => {
       layouts.set(entity.id, {
         entityId: entity.id,
-        position: [8.4, 0.03 + index * 0.02, controlZone.centerZ],
+        position: [clusterContextX, 0.03 + index * 0.02, controlZone.centerZ],
         lane: 'semantic',
         containerId: 'control-flow-scope-context',
         slotIndex: index,

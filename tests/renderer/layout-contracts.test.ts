@@ -356,6 +356,42 @@ describe('strict guided layout contracts', () => {
       }),
     ).toThrowError(/unassigned visible entities/);
   });
+
+  it('sizes occupied Overview and Placement lanes to their actual teaching content', () => {
+    const worker = entity('node:worker-a', 'Node', { rackOrder: 0 }, 'infrastructure');
+    const assignedPod = pod('pod:api-a', 'worker-a');
+    const controlEntities = [
+      entity('control:api-server', 'KubeAPIServer', {}, 'runtime-component'),
+      entity('control:etcd', 'Etcd', {}, 'runtime-component'),
+      entity('control:scheduler', 'Scheduler', {}, 'runtime-component'),
+      entity('control:manager', 'ControllerManager', {}, 'runtime-component'),
+    ];
+
+    const placementEntities = [worker, assignedPod];
+    const placement = calculateLayout({
+      world: world(placementEntities),
+      view: projection('placement', placementEntities),
+    });
+    const placementWorkers = placement.containers.find(
+      (container) => container.id === 'worker-nodes-zone',
+    );
+    expect(placementWorkers?.bounds.size).toEqual([6.8, 0.05, 4.3]);
+    expect(placementWorkers?.labelAnchor?.[0]).toBeCloseTo(-3.1);
+
+    const overviewEntities = [...controlEntities, worker, assignedPod];
+    const overview = calculateLayout({
+      world: world(overviewEntities),
+      view: projection('overview', overviewEntities),
+    });
+    const overviewControl = overview.containers.find(
+      (container) => container.id === 'control-plane-island',
+    );
+    const overviewWorkers = overview.containers.find(
+      (container) => container.id === 'worker-nodes-island',
+    );
+    expect(overviewControl?.bounds.size[0]).toBeCloseTo(16.55);
+    expect(overviewWorkers?.bounds.size).toEqual([6.8, 0.07, 4.3]);
+  });
 });
 
 interface Footprint {
@@ -513,5 +549,38 @@ describe('control-flow zone separation', () => {
     for (const container of containers) {
       expect(container.slots.some((slot) => slot.occupiedBy !== undefined)).toBe(true);
     }
+  });
+
+  it('derives control-flow headings and Cluster context from their actual bounds', () => {
+    const developer = entity('external:developer', 'Developer', {}, 'external');
+    const cluster = entity('cluster:teaching', 'Cluster', {}, 'infrastructure');
+    const entities = [cluster, developer, apiServer, scheduler, node('worker-a'), node('worker-b')];
+    const result = calculateLayout({
+      world: world(entities),
+      view: projection('control-flow', entities),
+    });
+    const container = (id: string): LayoutContainer => {
+      const match = result.containers.find((candidate) => candidate.id === id);
+      expect(match, `${id} must exist`).toBeDefined();
+      if (!match) throw new Error(`${id} is missing`);
+      return match;
+    };
+    const expectLeadingEdgeAnchor = (id: string, padding: number): void => {
+      const lane = container(id);
+      expect(lane.labelAnchor?.[0]).toBeCloseTo(
+        lane.bounds.center[0] - lane.bounds.size[0] / 2 + padding,
+      );
+    };
+
+    expectLeadingEdgeAnchor('control-flow-control-plane', 0.4);
+    expectLeadingEdgeAnchor('control-flow-worker-zone', 0.4);
+    expectLeadingEdgeAnchor('control-flow-external-input', 0.35);
+
+    const controlPlane = container('control-flow-control-plane');
+    const controlRightEdge = controlPlane.bounds.center[0] + controlPlane.bounds.size[0] / 2;
+    const clusterX = result.entities.get(cluster.id)?.position[0];
+    expect(clusterX).toBeDefined();
+    expect((clusterX ?? 0) - 2.8).toBeCloseTo(controlRightEdge + 0.45);
+    expect(clusterX).not.toBeCloseTo(8.4);
   });
 });

@@ -1,81 +1,69 @@
 import { Compass } from 'lucide-react';
 import type { Locale } from '../app/types';
-import type { ViewMode } from '../course/types';
+import type { LayoutContractError } from '../renderer/layouts/LayoutContractError';
 
 interface UnavailableCopy {
-  readonly title: (view: string) => string;
+  readonly title: string;
   readonly detail: string;
-  readonly action: string;
-  readonly viewLabels: Readonly<Record<ViewMode, string>>;
+  readonly guidance: string;
+  readonly trafficLesson: string;
 }
 
 const copyByLocale: Readonly<Record<Locale, UnavailableCopy>> = {
   en: {
-    title: (view) => `${view} is unavailable for this snapshot.`,
-    detail: 'This world has no Service/EndpointSlice or external traffic path.',
-    action: 'Open the Service and EndpointSlice lesson to explore traffic.',
-    viewLabels: {
-      overview: 'Overview',
-      logical: 'Logical',
-      placement: 'Placement',
-      'control-flow': 'Control Flow',
-      traffic: 'Traffic',
-      storage: 'Storage',
-    },
+    title: 'This view is unavailable for the current snapshot or filters.',
+    detail: 'The selected objects do not provide the topology required by this view.',
+    guidance: 'Reset filters or open the related guided lesson.',
+    trafficLesson: 'Open the Service and EndpointSlice lesson.',
   },
   ja: {
-    title: (view) => `このスナップショットでは${view}を表示できません。`,
-    detail: 'このワールドには Service/EndpointSlice も外部トラフィック経路もありません。',
-    action: 'Service と EndpointSlice のレッスンでトラフィックを確認してください。',
-    viewLabels: {
-      overview: '全体像',
-      logical: '論理',
-      placement: '配置',
-      'control-flow': '制御フロー',
-      traffic: 'トラフィック',
-      storage: 'ストレージ',
-    },
+    title: '現在のスナップショットまたはフィルターでは、このビューを表示できません。',
+    detail: '選択中のオブジェクトだけでは、このビューに必要なトポロジーが揃っていません。',
+    guidance: 'フィルターをリセットするか、関連するガイドレッスンを開いてください。',
+    trafficLesson: 'Service と EndpointSlice のレッスンを開く。',
   },
   'zh-CN': {
-    title: (view) => `当前快照无法显示${view}。`,
-    detail: '这个世界没有 Service/EndpointSlice，也没有外部流量路径。',
-    action: '打开 Service 与 EndpointSlice 课程查看请求路径。',
-    viewLabels: {
-      overview: '总览',
-      logical: '逻辑',
-      placement: '位置',
-      'control-flow': '控制流',
-      traffic: '流量',
-      storage: '存储',
-    },
+    title: '当前快照或筛选条件无法组成这个视图。',
+    detail: '当前可见对象不具备该视图所需的完整拓扑。',
+    guidance: '请重置筛选条件，或打开相关的引导课程。',
+    trafficLesson: '打开 Service 与 EndpointSlice 课程。',
   },
 };
 
 /**
  * Shown in Explore when the current snapshot cannot satisfy a view's teaching contract.
  *
- * Explore offers every view on one fixed world, so a missing topology is an expected state, not a
- * failure. Naming the missing topology keeps the strict contract visible instead of silently
- * drawing an unrelated projection.
+ * Explore offers every view on one filtered snapshot, so an incomplete topology is an expected
+ * state, not a failure. The structured error keeps the strict contract inspectable without
+ * assuming whether the world or the active filters removed the required objects.
  */
 export function ExploreUnavailableView({
-  view,
+  error,
   locale,
 }: {
-  readonly view: ViewMode;
+  readonly error: LayoutContractError;
   readonly locale: Locale;
 }) {
   const copy = copyByLocale[locale];
-  const viewLabel = copy.viewLabels[view];
+  const issueCodes = error.issues.map((issue) => issue.code).join(' ');
 
   return (
-    <div className="explore-unavailable" data-testid="explore-unavailable-view" data-view={view}>
+    <div
+      className="explore-unavailable"
+      data-testid="explore-unavailable-view"
+      data-view={error.view}
+      data-scenario-id={error.scenarioId}
+      data-layout-issues={issueCodes}
+    >
       <Compass size={28} aria-hidden="true" />
-      <p className="explore-unavailable-title">{copy.title(viewLabel)}</p>
+      <p className="explore-unavailable-title">{copy.title}</p>
       <p className="explore-unavailable-detail">{copy.detail}</p>
-      <a className="explore-unavailable-action" href="#/learn/service-routes-to-pods/0">
-        {copy.action}
-      </a>
+      <p className="explore-unavailable-detail">{copy.guidance}</p>
+      {error.view === 'traffic' ? (
+        <a className="explore-unavailable-action" href="#/learn/service-routes-to-pods/0">
+          {copy.trafficLesson}
+        </a>
+      ) : null}
     </div>
   );
 }

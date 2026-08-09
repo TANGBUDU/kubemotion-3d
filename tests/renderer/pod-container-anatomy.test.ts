@@ -137,8 +137,8 @@ describe('Pod and Container anatomy', () => {
     expect(rightFirst.root.userData.containerSlotIndex).toBe(1);
     expect(rightFirst.root.userData.containerSlotAnchor).toEqual([0.42, 0, 0]);
     expect(rightFirst.root.position.toArray()).toEqual([0.42, 0, 0]);
-    expect(leftSecond.root.scale.x).toBeCloseTo(1.16);
-    expect(rightFirst.root.scale.x).toBeCloseTo(1.16);
+    expect(leftSecond.root.scale.x).toBeCloseTo(1.04);
+    expect(rightFirst.root.scale.x).toBeCloseTo(1.04);
 
     const leftBounds = leftSecond.getWorldBounds();
     const rightBounds = rightFirst.getWorldBounds();

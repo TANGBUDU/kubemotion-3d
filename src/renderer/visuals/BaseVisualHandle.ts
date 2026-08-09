@@ -1,14 +1,8 @@
 import * as THREE from 'three';
 import type { EntityViewState } from '../../course/types';
 import type { EntityId, EntityStatus, WorldEntity } from '../../world/types';
-import {
-  createFocusRingGeometry,
-  createFocusRingMaterial,
-  emphasisEmissiveIntensity,
-  emphasisOpacity,
-  emphasisScale,
-} from '../design/effects';
-import { statusColor } from '../design/palette';
+import { emphasisEmissiveIntensity, emphasisOpacity, emphasisScale } from '../design/effects';
+import { palette, statusColor } from '../design/palette';
 
 export const ROUTE_ANCHOR_KINDS = [
   'api-in',
@@ -59,6 +53,11 @@ const materialEmissiveIntensity = (material: THREE.Material): number =>
     ? material.emissiveIntensity
     : 0;
 
+const MIN_FOCUS_HALO_RADIUS = 0.42;
+const MAX_FOCUS_HALO_RADIUS = 1.22;
+const FOCUS_HALO_RADIUS_FACTOR = 0.55;
+const FOCUS_HALO_RENDER_ORDER = 1;
+
 /**
  * Owns all per-entity GPU resources. The content group intentionally excludes focus effects so
  * camera framing and route obstacles use the teaching object rather than its selection halo.
@@ -71,7 +70,7 @@ export abstract class BaseVisualHandle implements EntityVisualHandle {
   private readonly ownedGeometries = new Set<THREE.BufferGeometry>();
   private readonly ownedMaterials = new Set<THREE.Material>();
   private readonly materialBaselines = new Map<THREE.Material, MaterialBaseline>();
-  private readonly focusRing: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
+  private readonly focusHalo: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial> | null;
   private currentEntity: WorldEntity;
   private currentView: EntityViewState;
   private disposed = false;
@@ -87,18 +86,37 @@ export abstract class BaseVisualHandle implements EntityVisualHandle {
     this.root.userData.selectable = true;
     this.root.add(this.content);
 
-    const focusGeometry = this.ownGeometry(createFocusRingGeometry(focusRadius));
-    const focusMaterial = this.ownMaterial(createFocusRingMaterial());
-    this.focusRing = new THREE.Mesh(focusGeometry, focusMaterial);
-    this.focusRing.name = 'focus-ring';
-    this.focusRing.rotation.x = -Math.PI / 2;
-    this.focusRing.position.y = 0.035;
-    this.focusRing.renderOrder = 16;
-    this.focusRing.visible = false;
-    this.focusRing.userData.role = 'focus-ring';
-    this.focusRing.userData.excludeFromBounds = true;
-    this.focusRing.userData.selectable = false;
-    this.root.add(this.focusRing);
+    if (focusRadius > 0) {
+      const haloRadius = THREE.MathUtils.clamp(
+        focusRadius * FOCUS_HALO_RADIUS_FACTOR,
+        MIN_FOCUS_HALO_RADIUS,
+        MAX_FOCUS_HALO_RADIUS,
+      );
+      const focusGeometry = this.ownGeometry(new THREE.CircleGeometry(haloRadius, 40));
+      const focusMaterial = this.ownMaterial(
+        new THREE.MeshBasicMaterial({
+          color: palette.focus,
+          transparent: true,
+          opacity: 0.18,
+          depthTest: true,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          toneMapped: false,
+        }),
+      );
+      this.focusHalo = new THREE.Mesh(focusGeometry, focusMaterial);
+      this.focusHalo.name = 'focus-halo';
+      this.focusHalo.rotation.x = -Math.PI / 2;
+      this.focusHalo.position.y = 0.035;
+      this.focusHalo.renderOrder = FOCUS_HALO_RENDER_ORDER;
+      this.focusHalo.visible = false;
+      this.focusHalo.userData.role = 'focus-halo';
+      this.focusHalo.userData.excludeFromBounds = true;
+      this.focusHalo.userData.selectable = false;
+      this.root.add(this.focusHalo);
+    } else {
+      this.focusHalo = null;
+    }
   }
 
   public get entity(): WorldEntity {
@@ -190,7 +208,8 @@ export abstract class BaseVisualHandle implements EntityVisualHandle {
   }
 
   private refreshFocus(): void {
-    this.focusRing.visible =
+    if (!this.focusHalo) return;
+    this.focusHalo.visible =
       this.root.visible && (this.selected || this.currentView.emphasis === 'focused');
   }
 

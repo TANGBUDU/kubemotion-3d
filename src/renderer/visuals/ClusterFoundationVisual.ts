@@ -18,7 +18,9 @@ export class ClusterFoundationVisualHandle extends BaseVisualHandle {
   private readonly statusMaterial: THREE.MeshBasicMaterial;
 
   public constructor(entity: WorldEntity, view: EntityViewState) {
-    super(entity, view, 2.75);
+    // The synthetic cluster boundary relies on its label and emissive lift for focus. A floor halo
+    // would incorrectly suggest that the plaque contains the physical and logical teaching model.
+    super(entity, view, 0);
     this.root.userData.visualKind = 'cluster-foundation-boundary';
     this.root.userData.boundarySemantic = 'cluster';
     this.root.userData.foundationOnly = true;

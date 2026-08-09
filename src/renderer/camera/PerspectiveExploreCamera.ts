@@ -46,6 +46,9 @@ export class PerspectiveExploreCamera {
     viewportInput: SafeViewportInput,
     options: CameraFrameOptions = {},
   ): ExploreCameraFrame {
+    // Every authored frame starts from a neutral lens. Per-view composition may apply a generic
+    // fill adjustment afterwards; stale fill from a previous view must never leak into this fit.
+    this.camera.zoom = 1;
     this.lastBounds = bounds.clone();
     this.lastViewportInput = {
       viewport: { ...viewportInput.viewport },

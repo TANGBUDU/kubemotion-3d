@@ -419,7 +419,7 @@ export function ExplorePage() {
               onSelectEntity={selectEntity}
             />
           ) : (
-            <ExploreUnavailableView view={activeView} locale={locale} />
+            <ExploreUnavailableView error={layoutAvailability.error} locale={locale} />
           )}
         </div>
         <SceneLegend locale={locale} view={projection.view} />

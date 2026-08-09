@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ExploreUnavailableView } from '../../src/components/ExploreUnavailableView';
 import { ExplorePage } from '../../src/pages/ExplorePage';
+import { LayoutContractError } from '../../src/renderer/layouts/LayoutContractError';
 import { useAppStore } from '../../src/state/appStore';
 
 const desktopMatchMedia = window.matchMedia;
@@ -135,5 +137,56 @@ describe('Explore view tabs', () => {
 
     render(<ExplorePage />);
     expect(screen.getByTestId('mock-scene-viewport')).toHaveAttribute('data-visible-labels', '3');
+  });
+
+  it('keeps an unavailable Traffic view neutral and exposes its structured layout context', () => {
+    render(<ExplorePage />);
+    fireEvent.click(screen.getByRole('tab', { name: 'traffic' }));
+
+    const unavailable = screen.getByTestId('explore-unavailable-view');
+    expect(unavailable).toHaveTextContent(
+      'This view is unavailable for the current snapshot or filters.',
+    );
+    expect(unavailable).toHaveTextContent(
+      'The selected objects do not provide the topology required by this view.',
+    );
+    expect(unavailable).toHaveTextContent('Reset filters or open the related guided lesson.');
+    expect(unavailable).toHaveAttribute('data-view', 'traffic');
+    expect(unavailable).toHaveAttribute(
+      'data-layout-issues',
+      expect.stringContaining('missing-role'),
+    );
+    expect(
+      screen.getByRole('link', { name: 'Open the Service and EndpointSlice lesson.' }),
+    ).toHaveAttribute('href', '#/learn/service-routes-to-pods/0');
+  });
+});
+
+describe('Explore unavailable translations', () => {
+  const error = new LayoutContractError({
+    view: 'control-flow',
+    scenarioId: 'filtered-snapshot',
+    issues: [{ code: 'missing-role', role: 'api-server' }],
+  });
+
+  it.each([
+    [
+      'ja' as const,
+      '現在のスナップショットまたはフィルターでは、このビューを表示できません。',
+      '選択中のオブジェクトだけでは、このビューに必要なトポロジーが揃っていません。',
+    ],
+    [
+      'zh-CN' as const,
+      '当前快照或筛选条件无法组成这个视图。',
+      '当前可见对象不具备该视图所需的完整拓扑。',
+    ],
+  ])('uses neutral snapshot-or-filter copy in %s', (locale, title, detail) => {
+    render(<ExploreUnavailableView error={error} locale={locale} />);
+
+    const unavailable = screen.getByTestId('explore-unavailable-view');
+    expect(unavailable).toHaveTextContent(title);
+    expect(unavailable).toHaveTextContent(detail);
+    expect(unavailable).toHaveAttribute('data-scenario-id', 'filtered-snapshot');
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

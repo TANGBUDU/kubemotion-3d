@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { EntityViewState, ViewProjection } from '../course/types';
 import type { EntityId, WorldEntity, WorldSnapshot } from '../world/types';
 import type { LayoutContainer, LayoutResult } from './LayoutEngine';
+import { layoutContainerFramingBounds } from './camera/TeachingBounds';
 import { VisualFactoryRegistry, type EntityVisualFactoryResolver } from './VisualFactoryRegistry';
 import { dimensions } from './design/dimensions';
 import { createRoundedBoxGeometry } from './design/geometry';
@@ -44,6 +45,7 @@ interface LayoutGuideHandle {
   readonly root: THREE.Group;
   readonly shapeKey: string;
   readonly labelAnchor?: THREE.Object3D;
+  container: LayoutContainer;
   dispose(): void;
 }
 
@@ -201,6 +203,7 @@ const createPendingTray = (container: LayoutContainer): LayoutGuideHandle => {
   return {
     root,
     shapeKey: layoutGuideShapeKey(container),
+    container,
     ...(labelAnchor ? { labelAnchor } : {}),
     dispose: () => {
       root.removeFromParent();
@@ -272,6 +275,7 @@ const createSemanticIsland = (container: LayoutContainer): LayoutGuideHandle => 
   return {
     root,
     shapeKey: layoutGuideShapeKey(container),
+    container,
     ...(labelAnchor ? { labelAnchor } : {}),
     dispose: () => {
       root.removeFromParent();
@@ -326,6 +330,7 @@ const createLayoutGuide = (container: LayoutContainer): LayoutGuideHandle => {
   return {
     root,
     shapeKey: layoutGuideShapeKey(container),
+    container,
     ...(labelAnchor ? { labelAnchor } : {}),
     dispose: () => {
       root.removeFromParent();
@@ -600,6 +605,7 @@ export class SceneRegistry {
       if (current && sameShape) {
         current.root.position.set(...container.bounds.center);
         current.root.userData.label = container.label;
+        current.container = container;
         continue;
       }
       if (current) current.dispose();
@@ -743,6 +749,35 @@ export class SceneRegistry {
 
   public values(): Iterable<EntityVisualHandle> {
     return this.handles.values();
+  }
+
+  /** Bounds for visible, occupied layout guides only; labels and the complete stage are excluded. */
+  public occupiedGuideBounds(target: THREE.Box3 = new THREE.Box3()): THREE.Box3 {
+    target.makeEmpty();
+    const scratch = new THREE.Box3();
+    const guides = [...this.guides.entries()].sort(([left], [right]) => left.localeCompare(right));
+    for (const [, guide] of guides) {
+      if (!guide.root.visible || guide.root.parent === null) continue;
+      const visibleOccupants = guide.container.slots.flatMap((slot) => {
+        if (!slot.occupiedBy) return [];
+        const handle = this.handles.get(slot.occupiedBy);
+        return handle &&
+          !handle.isDisposed &&
+          handle.root.visible &&
+          handle.root.userData.activeWorld === true
+          ? [handle]
+          : [];
+      });
+      const occupied =
+        guide.container.kind === 'pending-lane'
+          ? visibleOccupants.some(
+              (handle) => handle.entity.kind === 'Pod' && handle.entity.status === 'pending',
+            )
+          : visibleOccupants.length > 0;
+      if (!occupied) continue;
+      target.union(layoutContainerFramingBounds(guide.container, scratch));
+    }
+    return target;
   }
 
   /** Returns the rendered teaching object's bounds, excluding its selection halo. */

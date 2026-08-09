@@ -12,11 +12,12 @@ import type { EntityId, RelationId } from '../world/types';
 import { AnimationCoordinator } from './AnimationCoordinator';
 import { CalloutManager } from './CalloutManager';
 import { captureLayoutTransition, type CapturedLayoutTransition } from './animation/layoutMotion';
-import { boundsForHandles } from './camera/CameraFramer';
+import type { CameraFrameResult } from './camera/CameraFramer';
 import { applyCameraPose, cameraPose, CameraTransition } from './camera/CameraTransition';
 import { OrthographicLessonCamera } from './camera/OrthographicLessonCamera';
 import { PerspectiveExploreCamera } from './camera/PerspectiveExploreCamera';
 import { SafeViewport, type ViewportInsets, type ViewportRect } from './camera/SafeViewport';
+import { calculateTeachingBounds, targetMaxFill } from './camera/TeachingBounds';
 import { EventListenerTracker } from './diagnostics/EventListenerTracker';
 import { LabelManager, type LabelSafeRect } from './LabelManager';
 import { calculateLayout, type LayoutResult } from './LayoutEngine';
@@ -61,6 +62,8 @@ export interface SceneDiagnostics {
   readonly routeReplanFailures: number;
   readonly focusedEntitiesOutsideSafeRect: number;
   readonly sceneBoundsOutsideContentRect: number;
+  readonly framingUsedStageFallback: number;
+  readonly occupiedGuideBoundsEmpty: number;
   readonly entityHandles: number;
   readonly relationHandles: number;
   readonly labels: number;
@@ -142,13 +145,15 @@ const createWebGLRenderer = (): THREE.WebGLRenderer => {
 
 const cameraDirection = (presetId: string): THREE.Vector3 => {
   switch (presetId) {
+    case 'overview':
+      return new THREE.Vector3(0.4, 1.5, 1);
     case 'logical':
-      return new THREE.Vector3(0, 1.55, 1);
+      return new THREE.Vector3(0, 1.15, 1);
     case 'control-flow':
     case 'traffic':
       return new THREE.Vector3(0.15, 1.3, 1);
     case 'placement':
-      return new THREE.Vector3(1, 1.45, 1);
+      return new THREE.Vector3(0.85, 1.45, 1);
     default:
       return new THREE.Vector3(0.8, 1.5, 1);
   }
@@ -256,6 +261,100 @@ const constrainPerspectiveBounds = (
   }
 };
 
+const maximumProjectedFill = (
+  bounds: THREE.Box3,
+  camera: THREE.Camera,
+  safeRect: ViewportRect,
+  viewportWidth: number,
+  viewportHeight: number,
+): number => {
+  const rect = projectedBounds(bounds, camera, viewportWidth, viewportHeight);
+  if (!rect || safeRect.width <= 0 || safeRect.height <= 0) return 0;
+  return Math.max(rect.width / safeRect.width, rect.height / safeRect.height);
+};
+
+const applyOrthographicFill = (
+  camera: THREE.OrthographicCamera,
+  frame: CameraFrameResult,
+  bounds: THREE.Box3,
+  viewport: SafeViewport,
+  viewportWidth: number,
+  viewportHeight: number,
+  targetFill: number,
+): void => {
+  const currentFill = maximumProjectedFill(
+    bounds,
+    camera,
+    viewport.safeRect,
+    viewportWidth,
+    viewportHeight,
+  );
+  if (!Number.isFinite(currentFill) || currentFill <= 0) return;
+
+  const scale = targetFill / currentFill;
+  const halfWidth = (camera.right - camera.left) / (2 * scale * camera.zoom);
+  const halfHeight = (camera.top - camera.bottom) / (2 * scale * camera.zoom);
+  const directionOffset = camera.position.clone().sub(frame.viewCenter);
+  const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0).normalize();
+  const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+  const safeCenter = viewport.centerNdc;
+
+  frame.viewCenter
+    .copy(frame.target)
+    .addScaledVector(right, -safeCenter.x * halfWidth)
+    .addScaledVector(up, -safeCenter.y * halfHeight);
+  camera.left = -halfWidth;
+  camera.right = halfWidth;
+  camera.top = halfHeight;
+  camera.bottom = -halfHeight;
+  camera.zoom = 1;
+  camera.position.copy(frame.viewCenter).add(directionOffset);
+  camera.lookAt(frame.viewCenter);
+  camera.updateProjectionMatrix();
+  camera.updateMatrixWorld(true);
+};
+
+const applyPerspectiveFill = (
+  camera: THREE.PerspectiveCamera,
+  frame: CameraFrameResult,
+  bounds: THREE.Box3,
+  viewport: SafeViewport,
+  viewportWidth: number,
+  viewportHeight: number,
+  targetFill: number,
+): void => {
+  for (let iteration = 0; iteration < 4; iteration += 1) {
+    const currentFill = maximumProjectedFill(
+      bounds,
+      camera,
+      viewport.safeRect,
+      viewportWidth,
+      viewportHeight,
+    );
+    if (!Number.isFinite(currentFill) || currentFill <= 0) return;
+    const correction = targetFill / currentFill;
+    if (Math.abs(1 - correction) <= 0.002) return;
+
+    camera.zoom = THREE.MathUtils.clamp(camera.zoom * correction, 0.25, 8);
+    camera.updateProjectionMatrix();
+    const directionOffset = camera.position.clone().sub(frame.viewCenter);
+    const distance = Math.max(0.1, directionOffset.length());
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0).normalize();
+    const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+    const halfHeight =
+      (distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) / camera.zoom;
+    const halfWidth = halfHeight * camera.aspect;
+    const safeCenter = viewport.centerNdc;
+    frame.viewCenter
+      .copy(frame.target)
+      .addScaledVector(right, -safeCenter.x * halfWidth)
+      .addScaledVector(up, -safeCenter.y * halfHeight);
+    camera.position.copy(frame.viewCenter).add(directionOffset);
+    camera.lookAt(frame.viewCenter);
+    camera.updateMatrixWorld(true);
+  }
+};
+
 const exitProjection = (step: CompiledStep): ViewProjection => {
   const exitTargets = new Set(
     step.transition.cues.flatMap((cue) => (cue.type === 'entity-exit' ? [cue.entityId] : [])),
@@ -325,6 +424,7 @@ export class SceneController {
   private readonly resizeObserver: ResizeObserver;
   private readonly pendingExitIds = new Set<EntityId>();
   private readonly sceneBounds = new THREE.Box3();
+  private readonly teachingEntityBounds = new THREE.Box3();
   private safeInsets: Partial<ViewportInsets>;
   private safeExclusions: readonly ViewportRect[];
   private readonly allowPerspective: boolean;
@@ -341,6 +441,8 @@ export class SceneController {
   private cameraTransitionStartedAt = 0;
   private reducedMotion = false;
   private lastRenderTime = 0;
+  private framingUsedStageFallback = 1;
+  private occupiedGuideBoundsEmpty = 1;
   private destroyed = false;
 
   public constructor(
@@ -457,20 +559,25 @@ export class SceneController {
     animate = false,
   ): void {
     this.cancelCameraTransition(false);
-    boundsForHandles(this.registry.values(), this.sceneBounds);
-    const viewMode = this.currentStep?.view.view;
-    if (viewMode === 'overview' || viewMode === 'control-flow') {
-      const stageBounds = this.stage.getFramingBounds(new THREE.Box3());
-      if (!stageBounds.isEmpty()) this.sceneBounds.union(stageBounds);
-    }
-    const routeBounds = new THREE.Box3();
-    const routeScratch = new THREE.Box3();
-    for (const routeRoot of this.activeRoutes.root.children) {
-      if (!routeRoot.visible) continue;
-      routeScratch.setFromObject(routeRoot, true);
-      if (!routeScratch.isEmpty()) routeBounds.union(routeScratch);
-    }
-    if (!routeBounds.isEmpty()) this.sceneBounds.union(routeBounds);
+    const viewMode = this.currentStep?.view.view ?? 'overview';
+    const focusedEntityIds = this.currentStep
+      ? Object.entries(this.currentStep.view.entityStates).flatMap(([entityId, state]) =>
+          state.visible && state.emphasis === 'focused' ? [entityId] : [],
+        )
+      : [];
+    const teachingBounds = calculateTeachingBounds({
+      view: viewMode,
+      entityHandles: this.registry.values(),
+      occupiedGuideBounds: this.registry.occupiedGuideBounds(),
+      routeRoot: this.activeRoutes.root,
+      ...(this.selected ? { selectedEntityId: this.selected } : {}),
+      focusedEntityIds,
+      stageFallbackBounds: this.stage.getFramingBounds(new THREE.Box3()),
+    });
+    this.sceneBounds.copy(teachingBounds.primaryBounds);
+    this.teachingEntityBounds.copy(teachingBounds.entityBounds);
+    this.framingUsedStageFallback = teachingBounds.usedStageFallback ? 1 : 0;
+    this.occupiedGuideBoundsEmpty = teachingBounds.occupiedGuideBounds.isEmpty() ? 1 : 0;
     const viewportInput = this.viewportInput();
     const requestedViewport = new SafeViewport(viewportInput);
     if (!requestedViewport.hasUsableArea) {
@@ -486,96 +593,34 @@ export class SceneController {
     // frustum, or pre-resize safe frame.
     const orthographicResult = this.lessonCamera.fit(this.sceneBounds, viewportInput, frameOptions);
     const perspectiveResult = this.exploreCamera.fit(this.sceneBounds, viewportInput, frameOptions);
-    // The complete Overview foundation is intentionally sparse. Enlarge its desktop composition
-    // only up to a measured 94% safe-frame fill; this avoids both the previous thumbnail effect
-    // and the tempting but unsafe fixed zoom that can clip tall control-plane objects.
-    if (viewMode === 'overview' && this.host.clientWidth > 720) {
-      const subjectBounds = boundsForHandles(this.registry.values(), new THREE.Box3());
-      const safeFillScale = (
-        camera: THREE.Camera,
-        safeRect: ViewportRect,
-        contentRect: ViewportRect,
-      ): number => {
-        const rect = projectedBounds(
-          subjectBounds,
-          camera,
-          this.host.clientWidth,
-          this.host.clientHeight,
-        );
-        if (!rect || safeRect.width <= 0 || safeRect.height <= 0) return 1;
-        const maximumFill = Math.max(rect.width / safeRect.width, rect.height / safeRect.height);
-        const completeSceneRect = projectedBounds(
-          this.sceneBounds,
-          camera,
-          this.host.clientWidth,
-          this.host.clientHeight,
-        );
-        const completeSceneScale = completeSceneRect
-          ? Math.min(
-              (contentRect.width - 6) / completeSceneRect.width,
-              (contentRect.height - 6) / completeSceneRect.height,
-            )
-          : 1;
-        return maximumFill > 0
-          ? Math.max(1, Math.min(1.45, 0.94 / maximumFill, completeSceneScale))
-          : 1;
-      };
-      const orthographicFillScale = safeFillScale(
-        this.lessonCamera.camera,
-        orthographicResult.safeViewport.safeRect,
-        orthographicResult.safeViewport.contentRect,
-      );
-      this.lessonCamera.camera.zoom = orthographicFillScale;
-      this.lessonCamera.camera.updateProjectionMatrix();
-      const perspectiveFillScale = safeFillScale(
-        this.exploreCamera.camera,
-        perspectiveResult.safeViewport.safeRect,
-        perspectiveResult.safeViewport.contentRect,
-      );
-      const perspectiveOffset = this.exploreCamera.camera.position
-        .clone()
-        .sub(perspectiveResult.frame.viewCenter)
-        .divideScalar(perspectiveFillScale);
-      this.exploreCamera.camera.position
-        .copy(perspectiveResult.frame.viewCenter)
-        .add(perspectiveOffset);
-      this.exploreCamera.camera.lookAt(perspectiveResult.frame.viewCenter);
-      this.exploreCamera.camera.updateMatrixWorld(true);
-      const perspectiveRect = projectedBounds(
-        subjectBounds,
-        this.exploreCamera.camera,
-        this.host.clientWidth,
-        this.host.clientHeight,
-      );
-      if (perspectiveRect) {
-        const safeRect = perspectiveResult.safeViewport.safeRect;
-        const maximumFill = Math.max(
-          perspectiveRect.width / safeRect.width,
-          perspectiveRect.height / safeRect.height,
-        );
-        if (maximumFill > 0.96) {
-          const correction = maximumFill / 0.94;
-          const correctedOffset = this.exploreCamera.camera.position
-            .clone()
-            .sub(perspectiveResult.frame.viewCenter)
-            .multiplyScalar(correction);
-          this.exploreCamera.camera.position
-            .copy(perspectiveResult.frame.viewCenter)
-            .add(correctedOffset);
-          this.exploreCamera.camera.lookAt(perspectiveResult.frame.viewCenter);
-          this.exploreCamera.camera.updateMatrixWorld(true);
-        }
-      }
-      constrainPerspectiveBounds(
-        this.exploreCamera.camera,
-        this.sceneBounds,
-        perspectiveResult.frame.viewCenter,
-        perspectiveResult.safeViewport.contentRect,
-        this.host.clientWidth,
-        this.host.clientHeight,
-        3,
-      );
-    }
+    const targetFill = targetMaxFill(viewMode, this.host.clientWidth);
+    applyOrthographicFill(
+      this.lessonCamera.camera,
+      orthographicResult.frame,
+      this.sceneBounds,
+      orthographicResult.safeViewport,
+      this.host.clientWidth,
+      this.host.clientHeight,
+      targetFill,
+    );
+    applyPerspectiveFill(
+      this.exploreCamera.camera,
+      perspectiveResult.frame,
+      this.sceneBounds,
+      perspectiveResult.safeViewport,
+      this.host.clientWidth,
+      this.host.clientHeight,
+      targetFill,
+    );
+    constrainPerspectiveBounds(
+      this.exploreCamera.camera,
+      this.sceneBounds,
+      perspectiveResult.frame.viewCenter,
+      perspectiveResult.safeViewport.contentRect,
+      this.host.clientWidth,
+      this.host.clientHeight,
+      3,
+    );
     const result = this.cameraMode === 'perspective' ? perspectiveResult : orthographicResult;
     this.labelSafeRect = result.safeViewport.safeRect;
     this.sceneContentRect = result.safeViewport.contentRect;
@@ -971,7 +1016,7 @@ export class SceneController {
           };
     const viewportWidth = Math.max(1, this.host.clientWidth);
     const viewportHeight = Math.max(1, this.host.clientHeight);
-    const subjectBounds = boundsForHandles(this.registry.values(), new THREE.Box3());
+    const subjectBounds = this.teachingEntityBounds;
     const subjectRect = projectedBounds(subjectBounds, this.camera, viewportWidth, viewportHeight);
     const safeRect = this.labelSafeRect;
     const sceneRect = projectedBounds(this.sceneBounds, this.camera, viewportWidth, viewportHeight);
@@ -1054,6 +1099,8 @@ export class SceneController {
       focusedEntitiesOutsideSafeRect,
       sceneBoundsOutsideContentRect:
         sceneRect && !projectedRectInside(sceneRect, contentRect, 3) ? 1 : 0,
+      framingUsedStageFallback: this.framingUsedStageFallback,
+      occupiedGuideBoundsEmpty: this.occupiedGuideBoundsEmpty,
       entityHandles: this.registry.size,
       relationHandles: this.relations.size + routeDiagnostics.routeHandles,
       labels: this.labels.size,

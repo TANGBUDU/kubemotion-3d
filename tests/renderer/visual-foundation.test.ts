@@ -186,6 +186,59 @@ const viewFor = (world: WorldSnapshot): ViewProjection => {
 };
 
 describe('visual factory foundation', () => {
+  it('uses one compact, depth-tested focus halo and a restrained focused scale', () => {
+    const registry = new VisualFactoryRegistry();
+    const focused = { ...normal, emphasis: 'focused' } as const;
+    const nodeHandle = registry.create(node, focused, { allowGeneric: false });
+    const containerHandle = registry.create(container, focused, { allowGeneric: false });
+
+    const haloFor = (root: THREE.Object3D) => {
+      const halo = root.getObjectByName('focus-halo');
+      expect(halo).toBeInstanceOf(THREE.Mesh);
+      return halo as THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+    };
+    const nodeHalo = haloFor(nodeHandle.root);
+    const containerHalo = haloFor(containerHandle.root);
+
+    expect(nodeHandle.root.scale.toArray()).toEqual([1.04, 1.04, 1.04]);
+    expect(nodeHalo.geometry).toBeInstanceOf(THREE.CircleGeometry);
+    expect(nodeHalo.geometry.parameters.radius).toBeCloseTo(1.22);
+    expect(containerHalo.geometry.parameters.radius).toBeCloseTo(0.42);
+    expect(nodeHalo.material).toMatchObject({
+      opacity: 0.18,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false,
+    });
+    expect(nodeHalo.renderOrder).toBe(1);
+    expect(nodeHalo.visible).toBe(true);
+    expect(nodeHalo.userData).toMatchObject({
+      role: 'focus-halo',
+      excludeFromBounds: true,
+      selectable: false,
+    });
+    expect(nodeHandle.selectableObjects).not.toContain(nodeHalo);
+
+    nodeHandle.dispose();
+    containerHandle.dispose();
+  });
+
+  it('focuses the Cluster foundation without creating a floor halo', () => {
+    const registry = new VisualFactoryRegistry();
+    const clusterHandle = registry.create(
+      cluster,
+      { ...normal, emphasis: 'focused' },
+      { allowGeneric: false },
+    );
+
+    expect(clusterHandle.root.scale.toArray()).toEqual([1.04, 1.04, 1.04]);
+    expect(clusterHandle.root.getObjectByName('focus-halo')).toBeUndefined();
+    clusterHandle.setSelected(true);
+    expect(clusterHandle.root.getObjectByName('focus-halo')).toBeUndefined();
+
+    clusterHandle.dispose();
+  });
+
   it('keeps normal surfaces neutral while focused entities receive status emissive emphasis', () => {
     const registry = new VisualFactoryRegistry();
     const normalHandle = registry.create(
