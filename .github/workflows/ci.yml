@@ -4,11 +4,51 @@ on:
   push:
     branches: [main]
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  format-fix:
+    if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Detect one-shot format request
+        id: format_request
+        run: |
+          if [ -f .github/assistant/format-story.trigger ]; then
+            echo "requested=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "requested=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: pnpm/action-setup@v4
+        if: steps.format_request.outputs.requested == 'true'
+        with: { version: 11.16.0 }
+      - uses: actions/setup-node@v5
+        if: steps.format_request.outputs.requested == 'true'
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+        if: steps.format_request.outputs.requested == 'true'
+      - run: pnpm format
+        if: steps.format_request.outputs.requested == 'true'
+      - name: Remove one-shot formatter files
+        if: steps.format_request.outputs.requested == 'true'
+        run: |
+          rm -f .github/assistant/format-story.trigger
+          rm -f .github/workflows/assistant-format-story.yml
+      - name: Commit formatted Story Player
+        if: steps.format_request.outputs.requested == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "chore: format flow story player"
+          git push origin HEAD:${{ github.head_ref }}
   validate:
     runs-on: ubuntu-latest
     steps:
