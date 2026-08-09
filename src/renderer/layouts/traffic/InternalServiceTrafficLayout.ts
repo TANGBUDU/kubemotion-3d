@@ -13,11 +13,11 @@ import {
   type TrafficLayoutContext,
 } from './trafficShared';
 
-const CLIENT_X = -6.8;
-const SERVICE_X = -0.8;
-const BACKEND_X = 5.5;
+const CLIENT_X = -5.0;
+const SERVICE_X = -0.4;
+const BACKEND_X = 4.4;
 const MAIN_Z = 0.5;
-const ENDPOINT_SLICE_X = 1.65;
+const ENDPOINT_SLICE_X = 1.35;
 // The Traffic camera looks from positive Z, so foreground support projects below the corridor.
 const ENDPOINT_SLICE_Z = 3.8;
 
