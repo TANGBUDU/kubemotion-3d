@@ -5,6 +5,12 @@ import type { Locale } from '../app/types';
 import { ui } from '../app/i18n';
 import { useAppStore } from '../state/appStore';
 
+const storiesLabel: Readonly<Record<Locale, string>> = {
+  en: 'Stories',
+  ja: 'Story',
+  'zh-CN': '故事',
+};
+
 export function AppHeader() {
   const locale = useAppStore((state) => state.locale);
   const setLocale = useAppStore((state) => state.setLocale);
@@ -38,6 +44,7 @@ export function AppHeader() {
       </NavLink>
       <nav className="app-primary-nav" aria-label={t.primaryNavigation}>
         <NavLink to="/learn">{t.learn}</NavLink>
+        <NavLink to="/stories">{storiesLabel[locale]}</NavLink>
         <NavLink to="/explore">
           {t.explore}
           <small className="nav-beta">{t.beta}</small>
