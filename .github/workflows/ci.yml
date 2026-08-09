@@ -5,6 +5,9 @@ on:
     branches: [main]
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -29,6 +32,20 @@ jobs:
           tests/e2e/explore-selection.spec.ts
           tests/e2e/golden-timeline.spec.ts
           --project=desktop-1280-chromium
+      - name: Pack assistant source snapshot
+        run: >-
+          tar -czf assistant-source.tar.gz
+          src content tests
+          package.json pnpm-lock.yaml
+          tsconfig.json vite.config.ts playwright.config.ts
+          .github
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: assistant-source-${{ github.sha }}
+          path: assistant-source.tar.gz
+          if-no-files-found: error
+          retention-days: 3
       - uses: actions/upload-artifact@v4
         if: always()
         with:
