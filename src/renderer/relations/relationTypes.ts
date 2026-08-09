@@ -121,6 +121,8 @@ export interface RelationLayerDiagnostics {
   readonly routeEndpointDriftCount: number;
   readonly activeRouteWidthsBelowMinimum: number;
   readonly visibleRoutesWithoutArrowheads: number;
+  /** Meaningful route segments that turn back toward the source along the X reading axis. */
+  readonly strongXRouteReversals: number;
   readonly flowTokensOffRoute: number;
   readonly maximumFlowTokenRouteDistance: number;
 }

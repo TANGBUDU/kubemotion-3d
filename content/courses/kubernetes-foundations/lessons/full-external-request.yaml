@@ -484,9 +484,9 @@ steps:
           labelMode: full
           inspectorMode: none
         - selector: { byIds: [external:internet:global:PublicDNS:shop-example] }
-          visible: true
-          emphasis: dimmed
-          labelMode: short
+          visible: false
+          emphasis: hidden
+          labelMode: none
           inspectorMode: none
         - selector:
             byIds:
@@ -654,9 +654,9 @@ steps:
           labelMode: full
           inspectorMode: expanded
         - selector: { byIds: [external:internet:global:PublicDNS:shop-example] }
-          visible: true
-          emphasis: dimmed
-          labelMode: short
+          visible: false
+          emphasis: hidden
+          labelMode: none
           inspectorMode: none
         - selector:
             byIds:

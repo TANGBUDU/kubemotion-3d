@@ -547,30 +547,24 @@ describe('SceneRegistry lifecycle', () => {
     expect(registry.raycastTargets()).toEqual([]);
   });
 
-  it('owns and diffs pending/control layout guides without exposing them to raycasting', () => {
+  it('owns only occupied layout guides without exposing them to raycasting', () => {
     const scene = new THREE.Scene();
     const registry = new SceneRegistry(scene, new VisualFactoryRegistry(), { allowGeneric: false });
     const world = snapshot();
     const view = viewFor(world);
     registry.sync(world, view);
     registry.applyLayout(calculateLayout({ world, view }));
-    expect(registry.guideCount).toBe(4);
-    expect(registry.semanticIslandCount).toBe(4);
+    expect(registry.guideCount).toBe(3);
+    expect(registry.semanticIslandCount).toBe(3);
     const tray = scene.getObjectByName('layout-guide:pending-lane');
-    expect(tray?.userData.role).toBe('unscheduled-pods-tray');
-    expect(tray?.userData.empty).toBe(true);
+    expect(tray).toBeUndefined();
     const labels = registry.layoutLabels();
     expect(labels.map((label) => label.id)).toEqual([
       'layout:control-plane-zone',
       'layout:workload-state-zone',
-      'layout:pending-lane',
       'layout:worker-nodes-zone',
     ]);
-    expect(labels.find((label) => label.kind === 'tray-title')).toMatchObject({
-      text: 'UNSCHEDULED PODS',
-      zoneId: 'workload-state',
-      kind: 'tray-title',
-    });
+    expect(labels.find((label) => label.kind === 'tray-title')).toBeUndefined();
     expect(labels.filter((label) => label.kind === 'zone-title')).toHaveLength(3);
     expect(labels.every((label) => label.worldPosition.every(Number.isFinite))).toBe(true);
     expect(registry.raycastTargets().every((item) => item.userData.role !== 'layout-guide')).toBe(

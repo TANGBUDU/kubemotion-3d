@@ -20,7 +20,7 @@ import { SafeViewport, type ViewportInsets, type ViewportRect } from './camera/S
 import { calculateTeachingBounds, targetMaxFill } from './camera/TeachingBounds';
 import { EventListenerTracker } from './diagnostics/EventListenerTracker';
 import { LabelManager, type LabelSafeRect } from './LabelManager';
-import { calculateLayout, type LayoutResult } from './LayoutEngine';
+import { calculateLayout, type LayoutResult, type Position } from './LayoutEngine';
 import { PostProcessingPipeline } from './postprocessing/PostProcessingPipeline';
 import { RelationRegistry } from './RelationRegistry';
 import { RelationLayer } from './relations/RelationLayer';
@@ -57,6 +57,7 @@ export interface SceneDiagnostics {
   readonly routeEndpointDriftCount: number;
   readonly activeRouteWidthsBelowMinimum: number;
   readonly visibleRoutesWithoutArrowheads: number;
+  readonly strongXRouteReversals: number;
   readonly flowTokensOffRoute: number;
   readonly maximumFlowTokenRouteDistance: number;
   readonly routeReplanFailures: number;
@@ -1093,6 +1094,7 @@ export class SceneController {
       routeEndpointDriftCount: routeDiagnostics.routeEndpointDriftCount,
       activeRouteWidthsBelowMinimum: routeDiagnostics.activeRouteWidthsBelowMinimum,
       visibleRoutesWithoutArrowheads: routeDiagnostics.visibleRoutesWithoutArrowheads,
+      strongXRouteReversals: routeDiagnostics.strongXRouteReversals,
       flowTokensOffRoute: routeDiagnostics.flowTokensOffRoute,
       maximumFlowTokenRouteDistance: routeDiagnostics.maximumFlowTokenRouteDistance,
       routeReplanFailures: this.activeRoutes.root.userData.replanError ? 1 : 0,
@@ -1131,6 +1133,11 @@ export class SceneController {
       renderTargets: this.postProcessing.diagnostics.renderTargets,
       eventListeners: this.listenerTracker.size,
     };
+  }
+
+  /** Serializable test bridge for asserting authored reading order without pixel sampling. */
+  public getLayoutPositions(): Readonly<Record<EntityId, Position>> {
+    return Object.fromEntries(this.layout?.positions ?? []) as Readonly<Record<EntityId, Position>>;
   }
 
   public destroy(): void {

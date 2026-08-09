@@ -247,8 +247,9 @@ describe('Service lesson specialized visuals', () => {
     }
     expect(before.containers.map((container) => container.label)).toEqual([
       'CLIENT',
-      'STABLE ENTRY / ENDPOINT STATE',
-      'BACKEND PODS',
+      'SERVICE',
+      'BACKENDS',
+      'ENDPOINT STATE',
     ]);
   });
 });

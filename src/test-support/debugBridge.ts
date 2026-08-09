@@ -1,8 +1,10 @@
 import type { SceneDiagnostics } from '../renderer/SceneController';
+import type { Position } from '../renderer/LayoutEngine';
 import { useAppStore } from '../state/appStore';
 import type { EntityId } from '../world/types';
 
 let diagnosticsProvider: (() => SceneDiagnostics) | undefined;
+let layoutPositionsProvider: (() => Readonly<Record<EntityId, Position>>) | undefined;
 
 export interface SceneControllerLifecycleDiagnostics {
   readonly created: number;
@@ -38,8 +40,12 @@ export function getSceneControllerLifecycle(): SceneControllerLifecycleDiagnosti
   return { ...controllerLifecycle };
 }
 
-export function setDiagnosticsProvider(provider?: (() => SceneDiagnostics) | undefined): void {
+export function setDiagnosticsProvider(
+  provider?: (() => SceneDiagnostics) | undefined,
+  positionsProvider?: (() => Readonly<Record<EntityId, Position>>) | undefined,
+): void {
   diagnosticsProvider = provider;
+  layoutPositionsProvider = positionsProvider;
 }
 
 export function installDebugBridge(): void {
@@ -64,6 +70,7 @@ export function installDebugBridge(): void {
       };
     },
     getSceneDiagnostics: () => diagnosticsProvider?.(),
+    getSceneLayoutPositions: () => layoutPositionsProvider?.(),
     getSceneControllerLifecycle,
     selectEntity: (id?: string) => useAppStore.getState().selectEntity(id as EntityId | undefined),
     goToLessonStep: (lessonId: string, stepIndex: number) => {
@@ -78,6 +85,7 @@ declare global {
     __KUBEMOTION_TEST__?: {
       getAppState: () => Record<string, unknown>;
       getSceneDiagnostics: () => SceneDiagnostics | undefined;
+      getSceneLayoutPositions: () => Readonly<Record<EntityId, Position>> | undefined;
       getSceneControllerLifecycle: () => SceneControllerLifecycleDiagnostics;
       selectEntity: (id?: string) => void;
       goToLessonStep: (lessonId: string, stepIndex: number) => void;

@@ -4,6 +4,7 @@ import { FlowTokenPool } from './FlowTokenPool';
 import { RouteHandle } from './RouteHandle';
 import { RouteMarkerPool } from './RouteMarkerPool';
 import type { RoutePlanner } from './RoutePlanner';
+import { countStrongXReversals } from './polyline';
 import type {
   ActiveTeachingRoute,
   RelationLayerDiagnostics,
@@ -204,6 +205,10 @@ export class RelationLayer {
       visibleRoutesWithoutArrowheads: sortedHandles.filter(
         (handle) => handle.root.visible && handle.arrowheadCount === 0,
       ).length,
+      strongXRouteReversals: sortedHandles.reduce(
+        (count, handle) => count + countStrongXReversals(handle.plan.points),
+        0,
+      ),
       flowTokensOffRoute: flowTokenRouteDistances.filter((distance) => distance > 0.02).length,
       maximumFlowTokenRouteDistance: Math.max(0, ...flowTokenRouteDistances),
     };

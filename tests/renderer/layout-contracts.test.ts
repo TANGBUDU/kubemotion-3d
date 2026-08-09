@@ -339,6 +339,58 @@ describe('strict guided layout contracts', () => {
     expect(result.containers.map((container) => container.id)).toContain('dns-support-context');
   });
 
+  it('keeps the in-cluster DNS route monotonic and its EndpointSlice below the corridor', () => {
+    const client = pod('pod:dns-client', 'worker-client', 'client');
+    const kubeDns = entity('service:kube-dns', 'Service');
+    const coreDns = pod('pod:coredns-a', 'worker-dns', 'backend');
+    const endpointSlice = entity('endpoint-slice:kube-dns', 'EndpointSlice', {
+      serviceName: kubeDns.name,
+      endpoints: [{ targetRef: coreDns.id }],
+    });
+    const entities = [client, kubeDns, endpointSlice, coreDns];
+    const dnsRoute: ActiveTeachingRoute = {
+      id: 'dns-client-kube-dns-coredns',
+      semantic: 'dns',
+      persistAfterAnimation: true,
+      hops: [
+        {
+          fromEntityId: client.id,
+          fromAnchor: 'network-out',
+          toEntityId: kubeDns.id,
+          toAnchor: 'network-in',
+        },
+        {
+          fromEntityId: kubeDns.id,
+          fromAnchor: 'network-out',
+          toEntityId: coreDns.id,
+          toAnchor: 'network-in',
+        },
+      ],
+    };
+
+    const result = calculateLayout({
+      world: world(entities),
+      view: projection('traffic', entities, [dnsRoute]),
+    });
+    const clientPosition = result.entities.get(client.id)?.position;
+    const servicePosition = result.entities.get(kubeDns.id)?.position;
+    const coreDnsPosition = result.entities.get(coreDns.id)?.position;
+    const endpointPosition = result.entities.get(endpointSlice.id)?.position;
+    const endpointState = result.containers.find(
+      (container) => container.id === 'dns-endpoint-state',
+    );
+
+    expect(clientPosition?.[0]).toBeLessThan(servicePosition?.[0] ?? Number.NEGATIVE_INFINITY);
+    expect(servicePosition?.[0]).toBeLessThan(coreDnsPosition?.[0] ?? Number.NEGATIVE_INFINITY);
+    expect(clientPosition?.[2]).toBe(servicePosition?.[2]);
+    expect(servicePosition?.[2]).toBe(coreDnsPosition?.[2]);
+    expect(endpointPosition?.[2]).toBeGreaterThan(servicePosition?.[2] ?? Number.POSITIVE_INFINITY);
+    expect(endpointState?.label).toBe('DNS ENDPOINT STATE');
+    expect(result.containers.map((container) => container.label)).not.toContain(
+      'LATER REQUEST CONTEXT',
+    );
+  });
+
   it('rejects a visible Traffic entity that has no explicit semantic role', () => {
     const client = pod('pod:client', 'worker-client', 'client');
     const service = entity('service:api', 'Service');
@@ -391,6 +443,21 @@ describe('strict guided layout contracts', () => {
     );
     expect(overviewControl?.bounds.size[0]).toBeCloseTo(16.55);
     expect(overviewWorkers?.bounds.size).toEqual([6.8, 0.07, 4.3]);
+  });
+
+  it('omits empty Placement workload and pending guides', () => {
+    const worker = entity('node:worker-a', 'Node', { rackOrder: 0 }, 'infrastructure');
+    const assignedPod = pod('pod:api-a', 'worker-a');
+    const entities = [worker, assignedPod];
+
+    const result = calculateLayout({
+      world: world(entities),
+      view: projection('placement', entities),
+    });
+    const containerIds = result.containers.map((container) => container.id);
+
+    expect(containerIds).not.toContain('workload-state-zone');
+    expect(containerIds).not.toContain('pending-lane');
   });
 });
 

@@ -520,79 +520,83 @@ export class PlacementLayout implements LayoutModule {
         slotIndex: index,
       });
     });
-    const workloadBoundsWidth = Math.max(8.5, replicaSets.length * 3.9 + 1.2);
-    const workloadBoundsCenterX = -5.1 + Math.max(0, replicaSets.length - 1) * 1.95;
-    containers.push({
-      id: 'workload-state-zone',
-      kind: 'workload-lane',
-      label: 'WORKLOAD STATE',
-      zoneId: 'workload-state',
-      labelAnchor: [-9.4, 0.12, -3.12],
-      bounds: {
-        center: [workloadBoundsCenterX, 0.025, TEACHING_ZONES.workloadState.centerZ],
-        size: [workloadBoundsWidth, 0.05, TEACHING_ZONES.workloadState.depth],
-      },
-      slots: replicaSets.map((entity, index) => ({
-        id: `workload-state-zone:slot:${index}`,
-        index,
-        position: [-5.55 + index * 3.9, 0.08, TEACHING_ZONES.workloadState.centerZ],
-        occupiedBy: entity.id,
-      })),
-    });
-
-    const pendingSlotCount = Math.max(3, pendingPods.length);
-    const pendingSlotSpacing = 1.95;
-    const pendingSlotPositions: Position[] = Array.from(
-      { length: pendingSlotCount },
-      (_, index) => [
-        PENDING_TRAY_CENTER_X + (index - (pendingSlotCount - 1) / 2) * pendingSlotSpacing,
-        0.28,
-        TEACHING_ZONES.workloadState.centerZ,
-      ],
-    );
-    const assignedSlotIndices =
-      pendingPods.length === 1
-        ? [1]
-        : pendingPods.length === 2
-          ? [0, 2]
-          : pendingPods.map((_, index) => index);
-    const pendingOccupancy = new Map<number, EntityId>();
-    pendingPods.forEach((pod, index) => {
-      const slotIndex = assignedSlotIndices[index] ?? index;
-      const position = pendingSlotPositions[slotIndex] ?? [
-        PENDING_TRAY_CENTER_X,
-        0.28,
-        TEACHING_ZONES.workloadState.centerZ,
-      ];
-      pendingOccupancy.set(slotIndex, pod.id);
-      layouts.set(pod.id, {
-        entityId: pod.id,
-        position,
-        lane: 'pending',
-        containerId: 'pending-lane',
-        slotIndex,
-      });
-    });
-    containers.push({
-      id: 'pending-lane',
-      kind: 'pending-lane',
-      label: 'UNSCHEDULED PODS',
-      zoneId: 'workload-state',
-      labelAnchor: [1.4, 0.48, -3.02],
-      bounds: {
-        center: [PENDING_TRAY_CENTER_X, 0.1, TEACHING_ZONES.workloadState.centerZ],
-        size: [Math.max(6.45, pendingSlotCount * pendingSlotSpacing + 0.7), 0.2, 1.82],
-      },
-      slots: pendingSlotPositions.map((position, index) => {
-        const occupiedBy = pendingOccupancy.get(index);
-        return {
-          id: `pending-lane:slot:${index}`,
+    if (replicaSets.length > 0) {
+      const workloadBoundsWidth = Math.max(8.5, replicaSets.length * 3.9 + 1.2);
+      const workloadBoundsCenterX = -5.1 + (replicaSets.length - 1) * 1.95;
+      containers.push({
+        id: 'workload-state-zone',
+        kind: 'workload-lane',
+        label: 'WORKLOAD STATE',
+        zoneId: 'workload-state',
+        labelAnchor: [-9.4, 0.12, -3.12],
+        bounds: {
+          center: [workloadBoundsCenterX, 0.025, TEACHING_ZONES.workloadState.centerZ],
+          size: [workloadBoundsWidth, 0.05, TEACHING_ZONES.workloadState.depth],
+        },
+        slots: replicaSets.map((entity, index) => ({
+          id: `workload-state-zone:slot:${index}`,
           index,
+          position: [-5.55 + index * 3.9, 0.08, TEACHING_ZONES.workloadState.centerZ],
+          occupiedBy: entity.id,
+        })),
+      });
+    }
+
+    if (pendingPods.length > 0) {
+      const pendingSlotCount = Math.max(3, pendingPods.length);
+      const pendingSlotSpacing = 1.95;
+      const pendingSlotPositions: Position[] = Array.from(
+        { length: pendingSlotCount },
+        (_, index) => [
+          PENDING_TRAY_CENTER_X + (index - (pendingSlotCount - 1) / 2) * pendingSlotSpacing,
+          0.28,
+          TEACHING_ZONES.workloadState.centerZ,
+        ],
+      );
+      const assignedSlotIndices =
+        pendingPods.length === 1
+          ? [1]
+          : pendingPods.length === 2
+            ? [0, 2]
+            : pendingPods.map((_, index) => index);
+      const pendingOccupancy = new Map<number, EntityId>();
+      pendingPods.forEach((pod, index) => {
+        const slotIndex = assignedSlotIndices[index] ?? index;
+        const position = pendingSlotPositions[slotIndex] ?? [
+          PENDING_TRAY_CENTER_X,
+          0.28,
+          TEACHING_ZONES.workloadState.centerZ,
+        ];
+        pendingOccupancy.set(slotIndex, pod.id);
+        layouts.set(pod.id, {
+          entityId: pod.id,
           position,
-          ...(occupiedBy ? { occupiedBy } : {}),
-        };
-      }),
-    });
+          lane: 'pending',
+          containerId: 'pending-lane',
+          slotIndex,
+        });
+      });
+      containers.push({
+        id: 'pending-lane',
+        kind: 'pending-lane',
+        label: 'UNSCHEDULED PODS',
+        zoneId: 'workload-state',
+        labelAnchor: [1.4, 0.48, -3.02],
+        bounds: {
+          center: [PENDING_TRAY_CENTER_X, 0.1, TEACHING_ZONES.workloadState.centerZ],
+          size: [Math.max(6.45, pendingSlotCount * pendingSlotSpacing + 0.7), 0.2, 1.82],
+        },
+        slots: pendingSlotPositions.map((position, index) => {
+          const occupiedBy = pendingOccupancy.get(index);
+          return {
+            id: `pending-lane:slot:${index}`,
+            index,
+            position,
+            ...(occupiedBy ? { occupiedBy } : {}),
+          };
+        }),
+      });
+    }
 
     const containsRelations = allRelations
       .filter((relation) => relation.semantic === 'composition')

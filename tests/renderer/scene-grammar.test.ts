@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { scenario, scenarioById } from '../../src/content/loader';
+import { lessonById, scenario, scenarioById } from '../../src/content/loader';
+import { courseEngine } from '../../src/course/CourseEngine';
 import { createExploreProjection } from '../../src/course/exploreProjection';
 import type { EntityViewState, RelationViewState, ViewProjection } from '../../src/course/types';
+import { calculateLayout } from '../../src/renderer/LayoutEngine';
 import { SCENE_GRAMMARS, createEffectiveScenePlan } from '../../src/renderer/scene-grammar';
 import type { EntityId, RelationId, WorldSnapshot } from '../../src/world/types';
 
@@ -164,6 +166,43 @@ describe('foundation-first scene grammars', () => {
       ),
     });
     expect(focusedSelection.visibleRelationFamilies).toEqual(['selection', 'configuration']);
+  });
+
+  it('keeps explicitly authored rollout support bounded and out of ordinary Traffic defaults', () => {
+    const lesson = lessonById.get('probes-and-rolling-update');
+    const rolloutWorld = scenarioById.get('probes-and-rolling-update');
+    if (!lesson || !rolloutWorld) throw new Error('Rollout grammar fixtures are missing');
+    const summary = courseEngine
+      .compileLesson(lesson, rolloutWorld)
+      .steps.find((step) => step.stepId === 'rollout-evidence-summary');
+    if (!summary) throw new Error('Rollout summary step is missing');
+
+    const deploymentId = 'api-object:namespaced:shop:Deployment:api';
+    const replicaSetIds = [
+      'api-object:namespaced:shop:ReplicaSet:api-v1',
+      'api-object:namespaced:shop:ReplicaSet:api-v2',
+    ] as const;
+    const supportIds = [deploymentId, ...replicaSetIds];
+    const plan = createEffectiveScenePlan(summary.world, summary.view, {
+      viewport: 'desktop',
+      applyGrammarDefaults: false,
+    });
+
+    expect(plan.visibleEntityIds).toEqual(expect.arrayContaining(supportIds));
+    expect(plan.secondaryEntityIds.length).toBeLessThanOrEqual(
+      plan.densityBudget.maxSecondaryEntities,
+    );
+    expect(plan.visibleRelationFamilies).toContain('ownership');
+    const layout = calculateLayout({ world: summary.world, view: plan.projection });
+    for (const id of supportIds) {
+      expect(layout.entities.get(id)?.containerId).toBe('rollout-traffic-workload-support');
+    }
+
+    const defaulted = createEffectiveScenePlan(summary.world, summary.view, {
+      viewport: 'desktop',
+      applyGrammarDefaults: true,
+    });
+    expect(defaulted.visibleEntityIds).not.toEqual(expect.arrayContaining(supportIds));
   });
 
   it('rejects a route whose endpoint kind is outside the selected grammar', () => {

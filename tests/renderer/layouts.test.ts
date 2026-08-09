@@ -398,7 +398,7 @@ describe('PlacementLayout', () => {
     }
   });
 
-  it('orders semantic zones and keeps an empty unscheduled tray visible', () => {
+  it('orders occupied semantic zones and omits an empty unscheduled tray', () => {
     const view = projection(world);
     const layout = calculateLayout({ world, view });
     const control = layout.containers.find((container) => container.kind === 'control-lane');
@@ -420,9 +420,7 @@ describe('PlacementLayout', () => {
     };
     const withoutPending = calculateLayout({ world, view: hiddenPending });
     const tray = withoutPending.containers.find((container) => container.kind === 'pending-lane');
-    expect(tray?.label).toBe('UNSCHEDULED PODS');
-    expect(tray?.slots).toHaveLength(3);
-    expect(tray?.slots.every((slot) => slot.occupiedBy === undefined)).toBe(true);
+    expect(tray).toBeUndefined();
   });
 
   it('keeps every view deterministic without treating Placement geometry as the contract', () => {

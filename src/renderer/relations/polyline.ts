@@ -98,3 +98,30 @@ export const stablePointsKey = (points: readonly THREE.Vector3[]): string =>
 
 export const clonePoints = (points: readonly THREE.Vector3[]): readonly THREE.Vector3[] =>
   points.map((point) => point.clone());
+
+/**
+ * Counts meaningful X-axis reversals against the route's overall source-to-target direction.
+ * Tiny planner detours are tolerated so the diagnostic reports teaching-breaking hairpins rather
+ * than floating-point noise or a short obstacle-clearance jog.
+ */
+export const countStrongXReversals = (
+  points: readonly THREE.Vector3[],
+  tolerance = 0.18,
+  directionEpsilon = 0.05,
+): number => {
+  assertRoutePoints(points);
+  const first = points[0];
+  const last = points.at(-1);
+  if (!first || !last) return 0;
+  const overallDx = last.x - first.x;
+  if (Math.abs(overallDx) < directionEpsilon) return 0;
+  const direction = Math.sign(overallDx);
+  let reversals = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1];
+    const current = points[index];
+    if (!previous || !current) continue;
+    if ((current.x - previous.x) * direction < -tolerance) reversals += 1;
+  }
+  return reversals;
+};

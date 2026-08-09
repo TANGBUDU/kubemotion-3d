@@ -115,7 +115,10 @@ export function SceneViewport(props: SceneViewportProps) {
     }
     const recordDestroyed = recordSceneControllerCreated();
     controllerRef.current = controller;
-    setDiagnosticsProvider(() => controller.getDiagnostics());
+    setDiagnosticsProvider(
+      () => controller.getDiagnostics(),
+      () => controller.getLayoutPositions(),
+    );
     publishRendererState('ready');
     return () => {
       active = false;

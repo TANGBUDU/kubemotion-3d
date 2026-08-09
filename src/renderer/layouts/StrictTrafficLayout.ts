@@ -44,7 +44,7 @@ export class StrictTrafficLayout implements LayoutModule {
       input.view.activeRoutes.length > 0 &&
       input.view.activeRoutes.every((route) => route.semantic === 'dns');
 
-    if (!hasService && !hasEndpointSlice && allActiveRoutesAreDns) {
+    if (allActiveRoutesAreDns) {
       return this.dnsOnly.calculate(context);
     }
 

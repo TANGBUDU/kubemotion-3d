@@ -1,4 +1,5 @@
 import type { ActiveTeachingRoute } from '../../../course/types';
+import { isPlainRecord } from '../../../world/dataGuards';
 import type { EntityId, WorldEntity } from '../../../world/types';
 import type {
   EntityLayout,
@@ -45,6 +46,18 @@ export interface LaneOptions {
 
 export const trafficRole = (entity: WorldEntity): string | undefined =>
   dataString(entity, 'trafficRole');
+
+/** True when a namespaced workload satisfies the Service's complete equality selector. */
+export const matchesServiceSelector = (entity: WorldEntity, service: WorldEntity): boolean => {
+  const selector = service.data.selector;
+  if (!isPlainRecord(selector)) return false;
+  if (service.namespace && entity.namespace !== service.namespace) return false;
+  const entries = Object.entries(selector);
+  return (
+    entries.length > 0 &&
+    entries.every(([key, value]) => typeof value === 'string' && entity.labels?.[key] === value)
+  );
+};
 
 export const uniqueEntities = (entities: readonly WorldEntity[]): WorldEntity[] => {
   const seen = new Set<EntityId>();
