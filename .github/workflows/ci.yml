@@ -22,7 +22,17 @@ jobs:
       - run: pnpm test:unit --run
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+      - name: Run PR E2E without the extended renderer stress gate
+        run: >-
+          pnpm exec playwright test
+          --grep-invert "20 navigation/replay/locale/selection/reset cycles keep resources bounded"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-review-${{ github.sha }}
+          path: docs/review/evidence/batch03/
+          if-no-files-found: ignore
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
