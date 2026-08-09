@@ -5,7 +5,10 @@ test('flow stories have a dedicated catalog and beat-only player', async ({ page
 
   const cards = page.locator('.flow-story-card');
   await expect(cards).toHaveCount(8);
-  await cards.first().getByRole('link', { name: /Open story|Story を開く|打开故事/i }).click();
+  await cards
+    .first()
+    .getByRole('link', { name: /Open story|Story を開く|打开故事/i })
+    .click();
 
   await expect(page).toHaveURL(/#\/stories\/manifest-to-running-pod\/0$/);
   await expect(page.getByTestId('flow-story-player')).toBeVisible();

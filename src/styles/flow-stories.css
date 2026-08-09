@@ -153,7 +153,11 @@
   display: block;
   margin-top: 6px;
   color: #dceeff;
-  font: 650 11px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+  font:
+    650 11px/1.45 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
   overflow-wrap: anywhere;
 }
 
@@ -273,8 +277,7 @@
   border: 1px solid var(--border);
   border-radius: 18px;
   background:
-    radial-gradient(circle at 50% 32%, rgb(30 69 104 / 20%), transparent 54%),
-    rgb(5 14 25 / 90%);
+    radial-gradient(circle at 50% 32%, rgb(30 69 104 / 20%), transparent 54%), rgb(5 14 25 / 90%);
 }
 
 .flow-story-stage > .scene-viewport,
@@ -313,7 +316,11 @@
   gap: 5px;
   overflow: hidden;
   color: #bcd2e6;
-  font: 600 9px/1.25 ui-monospace, SFMono-Regular, Consolas, monospace;
+  font:
+    600 9px/1.25 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -13,12 +13,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { Locale } from '../app/types';
 import { SceneViewport } from '../components/SceneViewport';
-import {
-  flowStoryById,
-  lessonById,
-  scenarioById,
-  sources,
-} from '../content/loader';
+import { flowStoryById, lessonById, scenarioById, sources } from '../content/loader';
 import { flowStoryEngine } from '../course/FlowStoryEngine';
 import type {
   CompiledFlowStoryBeat,
@@ -131,10 +126,7 @@ function stepForBeat(beat: CompiledFlowStoryBeat): CompiledStep {
 
 function playbackDuration(cues: readonly TransitionCue[], reducedMotion: boolean): number {
   if (reducedMotion) return 900;
-  return Math.max(
-    1050,
-    ...cues.map((cue) => (cue.delayMs ?? 0) + cue.durationMs + 420),
-  );
+  return Math.max(1050, ...cues.map((cue) => (cue.delayMs ?? 0) + cue.durationMs + 420));
 }
 
 function routeSummary(beat: CompiledFlowStoryBeat, locale: Locale): string | undefined {
@@ -170,7 +162,10 @@ export function FlowStoryPage() {
 
   const parsedIndex = Number(beatIndexParam ?? 0);
   const beatIndex =
-    compiled && Number.isInteger(parsedIndex) && parsedIndex >= 0 && parsedIndex < compiled.beats.length
+    compiled &&
+    Number.isInteger(parsedIndex) &&
+    parsedIndex >= 0 &&
+    parsedIndex < compiled.beats.length
       ? parsedIndex
       : 0;
   const beat = compiled?.beats[beatIndex];
@@ -186,13 +181,16 @@ export function FlowStoryPage() {
 
   useEffect(() => {
     if (!playing || !compiled || !step) return undefined;
-    const timeout = window.setTimeout(() => {
-      if (beatIndex >= compiled.beats.length - 1) {
-        setPlaying(false);
-        return;
-      }
-      go(beatIndex + 1);
-    }, playbackDuration(step.transition.cues, reducedMotion));
+    const timeout = window.setTimeout(
+      () => {
+        if (beatIndex >= compiled.beats.length - 1) {
+          setPlaying(false);
+          return;
+        }
+        go(beatIndex + 1);
+      },
+      playbackDuration(step.transition.cues, reducedMotion),
+    );
     return () => window.clearTimeout(timeout);
   }, [beatIndex, compiled, playbackId, playing, reducedMotion, step]);
 
@@ -245,7 +243,11 @@ export function FlowStoryPage() {
             {t.restart}
           </button>
           <button type="button" className="primary" onClick={() => setPlaying((value) => !value)}>
-            {playing ? <Pause size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
+            {playing ? (
+              <Pause size={15} aria-hidden="true" />
+            ) : (
+              <Play size={15} aria-hidden="true" />
+            )}
             {playing ? t.pause : t.play}
           </button>
         </div>
@@ -317,7 +319,10 @@ export function FlowStoryPage() {
           <ChevronLeft size={17} aria-hidden="true" />
           {t.previous}
         </button>
-        <div className="flow-story-beat-timeline" aria-label={t.beat(beatIndex + 1, compiled.beats.length)}>
+        <div
+          className="flow-story-beat-timeline"
+          aria-label={t.beat(beatIndex + 1, compiled.beats.length)}
+        >
           {compiled.beats.map((candidate, index) => (
             <button
               type="button"
