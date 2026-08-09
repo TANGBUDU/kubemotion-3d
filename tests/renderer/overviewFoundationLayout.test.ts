@@ -243,13 +243,13 @@ describe('Overview foundation layout', () => {
     expect(overview.containers.map((container) => container.id)).toContain('control-plane-island');
   });
 
-  it('projects Control Flow onto the same three non-overlapping semantic island families', () => {
+  it('projects Control Flow onto its own three non-overlapping semantic islands', () => {
     const layout = calculateLayout({ world, view: projection('control-flow') });
     const islands = layout.containers.filter((container) => container.kind !== 'node-rack');
     expect(islands.map((container) => container.id)).toEqual([
-      'control-plane-island',
-      'unscheduled-transit-lane',
-      'worker-nodes-island',
+      'control-flow-control-plane',
+      'control-flow-worker-zone',
+      'control-flow-transit',
     ]);
     for (let leftIndex = 0; leftIndex < islands.length; leftIndex += 1) {
       for (let rightIndex = leftIndex + 1; rightIndex < islands.length; rightIndex += 1) {

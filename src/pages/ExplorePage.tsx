@@ -3,11 +3,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { ui } from '../app/i18n';
 import type { Locale } from '../app/types';
+import { ExploreUnavailableView } from '../components/ExploreUnavailableView';
 import { SceneViewport } from '../components/SceneViewport';
 import { lessonById, scenario, sources } from '../content/loader';
 import { courseEngine } from '../course/CourseEngine';
 import { createExploreProjection } from '../course/exploreProjection';
 import type { CompiledStep, ViewMode } from '../course/types';
+import { calculateLayout } from '../renderer/LayoutEngine';
+import { LayoutContractError } from '../renderer/layouts/LayoutContractError';
 import type { SceneCameraMode } from '../renderer/SceneController';
 import { useAppStore } from '../state/appStore';
 import { SceneLegend } from '../ui/lesson/SceneLegend';
@@ -22,6 +25,9 @@ const views: ViewMode[] = [
   'traffic',
   'storage',
 ];
+
+type LayoutAvailability =
+  { readonly supported: true } | { readonly supported: false; readonly error: LayoutContractError };
 
 const exploreSafeExclusionSelectors = [
   '.app-header',
@@ -173,6 +179,22 @@ export function ExplorePage() {
     const base = compiled?.steps[0];
     return base ? { ...base, view: projection, transition: { cues: [] } } : undefined;
   }, [compiled, projection]);
+  /**
+   * Explore lets the reader pick any view on a fixed snapshot, so a view whose teaching contract
+   * this world cannot satisfy is an expected outcome rather than a bug. Resolve it before mounting
+   * the scene: guided lessons still fail loudly, and the layout never falls back to Placement.
+   */
+  const layoutAvailability = useMemo((): LayoutAvailability => {
+    try {
+      calculateLayout({ world, view: projection });
+      return { supported: true };
+    } catch (error: unknown) {
+      if (error instanceof LayoutContractError) {
+        return { supported: false, error };
+      }
+      throw error;
+    }
+  }, [projection, world]);
   const entity = selected ? world.entities[selected] : undefined;
   const t = ui(locale);
   const copy = exploreCopy[locale];
@@ -374,23 +396,31 @@ export function ExplorePage() {
           aria-labelledby={`explore-view-tab-${activeView}`}
           tabIndex={0}
         >
-          <SceneViewport
-            role="img"
-            aria-label={copy.sceneLabel(copy.viewLabels[projection.view])}
-            step={sceneStep}
-            playback={{ stepKey: `explore-${activeView}`, playbackId: 0, transition: { cues: [] } }}
-            selectedEntityId={selected}
-            locale={locale}
-            reducedMotion={reducedMotion}
-            allowPerspective
-            cameraMode={cameraMode}
-            cameraResetId={cameraResetId}
-            safeInsets={{ top: 14, right: 14, bottom: 14, left: 14 }}
-            safeExclusionSelectors={exploreSafeExclusionSelectors}
-            safeViewportRevision={`${Boolean(entity)}:${activeView}`}
-            onViewportClassChange={setSceneViewportClass}
-            onSelectEntity={selectEntity}
-          />
+          {layoutAvailability.supported ? (
+            <SceneViewport
+              role="img"
+              aria-label={copy.sceneLabel(copy.viewLabels[projection.view])}
+              step={sceneStep}
+              playback={{
+                stepKey: `explore-${activeView}`,
+                playbackId: 0,
+                transition: { cues: [] },
+              }}
+              selectedEntityId={selected}
+              locale={locale}
+              reducedMotion={reducedMotion}
+              allowPerspective
+              cameraMode={cameraMode}
+              cameraResetId={cameraResetId}
+              safeInsets={{ top: 14, right: 14, bottom: 14, left: 14 }}
+              safeExclusionSelectors={exploreSafeExclusionSelectors}
+              safeViewportRevision={`${Boolean(entity)}:${activeView}`}
+              onViewportClassChange={setSceneViewportClass}
+              onSelectEntity={selectEntity}
+            />
+          ) : (
+            <ExploreUnavailableView view={activeView} locale={locale} />
+          )}
         </div>
         <SceneLegend locale={locale} view={projection.view} />
         <div className="scene-caption">

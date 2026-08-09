@@ -110,6 +110,28 @@ test.describe('M9 verified Flow Stories', () => {
     });
   });
 
+  test('HPA scale-target route stays clear of the Deployment model', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await gotoLessonStep(page, 'hpa', 1, 'HPA writes a new desired count');
+
+    // Regression guard: control-flow workload packing must leave enough room for
+    // route-hpa-api-scale-target, whose hop endpoint previously landed inside the Deployment.
+    // The fix belongs in the layout — never in RoutePlanner clearance or the obstacle map.
+    const routeSummary = await visibleRouteSummary(page);
+    expect(routeSummary).toContain('write scale target');
+    expect(routeSummary).toContain('source api at api-out, target kube-apiserver at api-in');
+    expect(routeSummary).toContain('source kube-apiserver at api-out, target api at control');
+    expect(
+      await page.evaluate(() => window.__KUBEMOTION_TEST__?.getSceneDiagnostics()),
+    ).toMatchObject({
+      routeHandles: 1,
+      routeObstacleIntersections: 0,
+      routeEndpointDriftCount: 0,
+      activeRouteWidthsBelowMinimum: 0,
+      visibleRoutesWithoutArrowheads: 0,
+    });
+  });
+
   test('HPA turns 78 over 60 into desired three, then controllers create one Ready Pod', async ({
     page,
   }) => {

@@ -172,6 +172,40 @@
   backdrop-filter: blur(8px);
 }
 
+.explore-unavailable {
+  display: flex;
+  height: 100%;
+  /* The scene panel is normally sized by its canvas; keep the empty state filling the same area. */
+  min-height: min(60vh, 520px);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 28px;
+  border: 1px dashed var(--border-soft);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  gap: 10px;
+  text-align: center;
+}
+
+.explore-unavailable-title {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.explore-unavailable-detail {
+  max-width: 46ch;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.explore-unavailable-action {
+  color: var(--accent-primary, #6cc7ff);
+  font-size: 13px;
+  text-decoration: underline;
+}
+
 .scene-legend {
   position: absolute;
   z-index: 8;

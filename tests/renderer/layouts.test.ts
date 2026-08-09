@@ -6,6 +6,7 @@ import type {
   ViewProjection,
 } from '../../src/course/types';
 import { calculateLayout } from '../../src/renderer/LayoutEngine';
+import { LayoutContractError } from '../../src/renderer/layouts/LayoutContractError';
 import { dimensions } from '../../src/renderer/design/dimensions';
 import { sceneGrammarFor } from '../../src/renderer/scene-grammar';
 import type {
@@ -430,7 +431,6 @@ describe('PlacementLayout', () => {
       'logical',
       'placement',
       'control-flow',
-      'traffic',
       'storage',
     ];
     const strategies = new Set<string>();
@@ -440,6 +440,14 @@ describe('PlacementLayout', () => {
       strategies.add(sceneGrammarFor(viewMode).layoutAlgorithm);
     }
     expect(strategies.size).toBe(viewModes.length);
+
+    // This world models placement only: it has no Client, Service, or EndpointSlice. Traffic must
+    // now refuse it instead of silently redrawing Placement geometry under a traffic camera.
+    const trafficView = projection(world, 'traffic');
+    expect(() => calculateLayout({ world, view: trafficView })).toThrow(LayoutContractError);
+    expect(sceneGrammarFor('traffic').layoutAlgorithm).not.toBe(
+      sceneGrammarFor('placement').layoutAlgorithm,
+    );
   });
 
   it('keeps slots stable across status/data-only updates and composes Containers in Pods', () => {
