@@ -82,36 +82,12 @@
         "eventListeners": 7
       },
       "positions": {
-        "api-object:namespaced:shop:Pod:traffic-client": [
-          -6.8,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Service:api": [
-          -0.8,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Pod:api-a": [
-          5.5,
-          0.18,
-          -1.85
-        ],
-        "api-object:namespaced:shop:Pod:api-b": [
-          5.5,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Pod:api-c": [
-          5.5,
-          0.18,
-          2.85
-        ],
-        "api-object:namespaced:shop:EndpointSlice:api-slice": [
-          1.65,
-          0.18,
-          3.8
-        ]
+        "api-object:namespaced:shop:Pod:traffic-client": [-6.8, 0.18, 0.5],
+        "api-object:namespaced:shop:Service:api": [-0.8, 0.18, 0.5],
+        "api-object:namespaced:shop:Pod:api-a": [5.5, 0.18, -1.85],
+        "api-object:namespaced:shop:Pod:api-b": [5.5, 0.18, 0.5],
+        "api-object:namespaced:shop:Pod:api-c": [5.5, 0.18, 2.85],
+        "api-object:namespaced:shop:EndpointSlice:api-slice": [1.65, 0.18, 3.8]
       }
     },
     {
@@ -194,36 +170,12 @@
         "eventListeners": 7
       },
       "positions": {
-        "api-object:namespaced:shop:Pod:traffic-client": [
-          -6.8,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Service:api": [
-          -0.8,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Pod:api-a": [
-          5.5,
-          0.18,
-          -1.85
-        ],
-        "api-object:namespaced:shop:Pod:api-b": [
-          5.5,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Pod:api-c": [
-          5.5,
-          0.18,
-          2.85
-        ],
-        "api-object:namespaced:shop:EndpointSlice:api-slice": [
-          1.65,
-          0.18,
-          3.8
-        ]
+        "api-object:namespaced:shop:Pod:traffic-client": [-6.8, 0.18, 0.5],
+        "api-object:namespaced:shop:Service:api": [-0.8, 0.18, 0.5],
+        "api-object:namespaced:shop:Pod:api-a": [5.5, 0.18, -1.85],
+        "api-object:namespaced:shop:Pod:api-b": [5.5, 0.18, 0.5],
+        "api-object:namespaced:shop:Pod:api-c": [5.5, 0.18, 2.85],
+        "api-object:namespaced:shop:EndpointSlice:api-slice": [1.65, 0.18, 3.8]
       }
     },
     {
@@ -306,36 +258,12 @@
         "eventListeners": 7
       },
       "positions": {
-        "api-object:namespaced:shop:Pod:traffic-client": [
-          -6.8,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Service:api": [
-          -0.8,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Pod:api-a": [
-          5.5,
-          0.18,
-          -1.85
-        ],
-        "api-object:namespaced:shop:Pod:api-b": [
-          5.5,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Pod:api-c": [
-          5.5,
-          0.18,
-          2.85
-        ],
-        "api-object:namespaced:shop:EndpointSlice:api-slice": [
-          1.65,
-          0.18,
-          3.8
-        ]
+        "api-object:namespaced:shop:Pod:traffic-client": [-6.8, 0.18, 0.5],
+        "api-object:namespaced:shop:Service:api": [-0.8, 0.18, 0.5],
+        "api-object:namespaced:shop:Pod:api-a": [5.5, 0.18, -1.85],
+        "api-object:namespaced:shop:Pod:api-b": [5.5, 0.18, 0.5],
+        "api-object:namespaced:shop:Pod:api-c": [5.5, 0.18, 2.85],
+        "api-object:namespaced:shop:EndpointSlice:api-slice": [1.65, 0.18, 3.8]
       }
     },
     {
@@ -418,26 +346,10 @@
         "eventListeners": 7
       },
       "positions": {
-        "api-object:namespaced:shop:Pod:dns-client": [
-          -6,
-          0.18,
-          0.4
-        ],
-        "api-object:namespaced:kube-system:Service:kube-dns": [
-          0,
-          0.18,
-          0.4
-        ],
-        "api-object:namespaced:kube-system:Pod:coredns-a": [
-          6,
-          0.18,
-          0.4
-        ],
-        "api-object:namespaced:kube-system:EndpointSlice:kube-dns-slice": [
-          3,
-          0.18,
-          3.2
-        ]
+        "api-object:namespaced:shop:Pod:dns-client": [-6, 0.18, 0.4],
+        "api-object:namespaced:kube-system:Service:kube-dns": [0, 0.18, 0.4],
+        "api-object:namespaced:kube-system:Pod:coredns-a": [6, 0.18, 0.4],
+        "api-object:namespaced:kube-system:EndpointSlice:kube-dns-slice": [3, 0.18, 3.2]
       }
     },
     {
@@ -520,46 +432,14 @@
         "eventListeners": 7
       },
       "positions": {
-        "external:internet:global:Browser:shopper": [
-          -8.2,
-          0.18,
-          0.5
-        ],
-        "infrastructure:cluster:global:GatewayDataPlane:edge-gateway": [
-          -4.2,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Service:web": [
-          0.2,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Pod:web-a": [
-          5.8,
-          0.18,
-          -0.7250000000000001
-        ],
-        "api-object:namespaced:shop:Pod:web-b": [
-          5.8,
-          0.18,
-          1.725
-        ],
-        "api-object:namespaced:shop:Gateway:public-gateway": [
-          -3.825,
-          0.18,
-          -3.25
-        ],
-        "api-object:namespaced:shop:HTTPRoute:shop-route": [
-          -0.5750000000000002,
-          0.18,
-          -3.25
-        ],
-        "api-object:namespaced:shop:EndpointSlice:web-slice": [
-          2.9,
-          0.18,
-          3.55
-        ]
+        "external:internet:global:Browser:shopper": [-8.2, 0.18, 0.5],
+        "infrastructure:cluster:global:GatewayDataPlane:edge-gateway": [-4.2, 0.18, 0.5],
+        "api-object:namespaced:shop:Service:web": [0.2, 0.18, 0.5],
+        "api-object:namespaced:shop:Pod:web-a": [5.8, 0.18, -0.7250000000000001],
+        "api-object:namespaced:shop:Pod:web-b": [5.8, 0.18, 1.725],
+        "api-object:namespaced:shop:Gateway:public-gateway": [-3.825, 0.18, -3.25],
+        "api-object:namespaced:shop:HTTPRoute:shop-route": [-0.5750000000000002, 0.18, -3.25],
+        "api-object:namespaced:shop:EndpointSlice:web-slice": [2.9, 0.18, 3.55]
       }
     },
     {
@@ -642,36 +522,12 @@
         "eventListeners": 7
       },
       "positions": {
-        "api-object:namespaced:shop:Pod:rollout-client": [
-          -6.8,
-          0.18,
-          0.45
-        ],
-        "api-object:namespaced:shop:Service:api": [
-          -0.8,
-          0.18,
-          0.45
-        ],
-        "api-object:namespaced:shop:Pod:api-v1-a": [
-          4.225,
-          0.18,
-          -0.35
-        ],
-        "api-object:namespaced:shop:Pod:api-v1-b": [
-          6.775,
-          0.18,
-          -0.35
-        ],
-        "api-object:namespaced:shop:Pod:api-v2-a": [
-          5.5,
-          0.18,
-          2
-        ],
-        "api-object:namespaced:shop:EndpointSlice:api-slice": [
-          2.25,
-          0.18,
-          4.25
-        ]
+        "api-object:namespaced:shop:Pod:rollout-client": [-6.8, 0.18, 0.45],
+        "api-object:namespaced:shop:Service:api": [-0.8, 0.18, 0.45],
+        "api-object:namespaced:shop:Pod:api-v1-a": [4.225, 0.18, -0.35],
+        "api-object:namespaced:shop:Pod:api-v1-b": [6.775, 0.18, -0.35],
+        "api-object:namespaced:shop:Pod:api-v2-a": [5.5, 0.18, 2],
+        "api-object:namespaced:shop:EndpointSlice:api-slice": [2.25, 0.18, 4.25]
       }
     },
     {
@@ -754,31 +610,11 @@
         "eventListeners": 7
       },
       "positions": {
-        "api-object:namespaced:shop:Pod:traffic-client": [
-          -6.8,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Service:api": [
-          -0.8,
-          0.18,
-          0.5
-        ],
-        "api-object:namespaced:shop:Pod:api-a": [
-          5.5,
-          0.18,
-          -0.675
-        ],
-        "api-object:namespaced:shop:Pod:api-b": [
-          5.5,
-          0.18,
-          1.675
-        ],
-        "api-object:namespaced:shop:EndpointSlice:api-slice": [
-          1.65,
-          0.18,
-          3.8
-        ]
+        "api-object:namespaced:shop:Pod:traffic-client": [-6.8, 0.18, 0.5],
+        "api-object:namespaced:shop:Service:api": [-0.8, 0.18, 0.5],
+        "api-object:namespaced:shop:Pod:api-a": [5.5, 0.18, -0.675],
+        "api-object:namespaced:shop:Pod:api-b": [5.5, 0.18, 1.675],
+        "api-object:namespaced:shop:EndpointSlice:api-slice": [1.65, 0.18, 3.8]
       }
     }
   ]
