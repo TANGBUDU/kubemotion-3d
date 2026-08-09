@@ -16,6 +16,12 @@ const HomePage = lazy(() =>
 const LearnPage = lazy(() =>
   import('../pages/LearnPage').then((module) => ({ default: module.LearnPage })),
 );
+const FlowStoriesPage = lazy(() =>
+  import('../pages/FlowStoriesPage').then((module) => ({ default: module.FlowStoriesPage })),
+);
+const FlowStoryPage = lazy(() =>
+  import('../pages/FlowStoryPage').then((module) => ({ default: module.FlowStoryPage })),
+);
 
 export function App() {
   const location = useLocation();
@@ -57,6 +63,9 @@ export function App() {
           <Route path="/learn" element={<LearnPage />} />
           <Route path="/learn/:lessonId" element={<LearnPage />} />
           <Route path="/learn/:lessonId/:stepIndex" element={<LearnPage />} />
+          <Route path="/stories" element={<FlowStoriesPage />} />
+          <Route path="/stories/:storyId" element={<FlowStoryPage />} />
+          <Route path="/stories/:storyId/:beatIndex" element={<FlowStoryPage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
