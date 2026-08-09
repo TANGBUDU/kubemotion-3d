@@ -19,7 +19,8 @@ const BACKEND_X = 4.4;
 const MAIN_Z = 0.5;
 const ENDPOINT_SLICE_X = 1.35;
 // The Traffic camera looks from positive Z, so foreground support projects below the corridor.
-const ENDPOINT_SLICE_Z = 3.8;
+const ENDPOINT_SLICE_Z = 3.0;
+const STACK_SPACING = 1.8;
 
 /** A stable Client -> Service -> backend corridor with EndpointSlice as supporting API state. */
 export class InternalServiceTrafficLayout {
@@ -68,21 +69,21 @@ export class InternalServiceTrafficLayout {
       position: (_entity, index, count) => [
         CLIENT_X,
         0.18,
-        MAIN_Z + (index - (count - 1) / 2) * 2.35,
+        MAIN_Z + (index - (count - 1) / 2) * STACK_SPACING,
       ],
       bounds: {
         center: [CLIENT_X, 0.025, MAIN_Z],
-        size: [2.8, 0.05, Math.max(3.4, clients.length * 2.35 + 0.9)],
+        size: [2.8, 0.05, Math.max(3.0, clients.length * STACK_SPACING + 0.8)],
       },
-      labelAnchor: [CLIENT_X - 1.3, 0.1, MAIN_Z - 1.6],
+      labelAnchor: [CLIENT_X - 1.3, 0.1, MAIN_Z - 1.45],
     });
     addLane(layouts, containers, {
       id: 'traffic-service-context',
       label: 'SERVICE',
       entities: [service],
       position: () => servicePosition,
-      bounds: { center: [SERVICE_X, 0.025, MAIN_Z], size: [3.2, 0.05, 3.4] },
-      labelAnchor: [SERVICE_X - 1.45, 0.1, MAIN_Z - 1.6],
+      bounds: { center: [SERVICE_X, 0.025, MAIN_Z], size: [3.2, 0.05, 3.0] },
+      labelAnchor: [SERVICE_X - 1.45, 0.1, MAIN_Z - 1.45],
     });
     addLane(layouts, containers, {
       id: 'traffic-backend-lane',
@@ -91,13 +92,13 @@ export class InternalServiceTrafficLayout {
       position: (_entity, index, count) => [
         BACKEND_X,
         0.18,
-        MAIN_Z + (index - (count - 1) / 2) * 2.35,
+        MAIN_Z + (index - (count - 1) / 2) * STACK_SPACING,
       ],
       bounds: {
         center: [BACKEND_X, 0.025, MAIN_Z],
-        size: [3.8, 0.05, Math.max(3.4, backends.length * 2.35 + 0.9)],
+        size: [3.8, 0.05, Math.max(3.0, backends.length * STACK_SPACING + 0.8)],
       },
-      labelAnchor: [BACKEND_X - 1.75, 0.1, MAIN_Z - Math.max(1.6, backends.length * 1.2)],
+      labelAnchor: [BACKEND_X - 1.75, 0.1, MAIN_Z - Math.max(1.45, backends.length * 0.92)],
     });
     addLane(layouts, containers, {
       id: 'traffic-endpoint-state',
@@ -106,9 +107,9 @@ export class InternalServiceTrafficLayout {
       position: () => endpointSlicePosition,
       bounds: {
         center: [ENDPOINT_SLICE_X, 0.025, ENDPOINT_SLICE_Z],
-        size: [4.1, 0.05, 2.35],
+        size: [4.1, 0.05, 2.15],
       },
-      labelAnchor: [ENDPOINT_SLICE_X - 1.9, 0.1, ENDPOINT_SLICE_Z - 1.05],
+      labelAnchor: [ENDPOINT_SLICE_X - 1.9, 0.1, ENDPOINT_SLICE_Z - 0.95],
     });
 
     placeComposedContainers(context, layouts);
