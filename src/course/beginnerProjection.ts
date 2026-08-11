@@ -85,7 +85,7 @@ const semanticContextIds = (step: CompiledStep, focusId: EntityId | undefined): 
         left.id.localeCompare(right.id),
     );
 
-  const maximum = step.view.view === 'placement' ? 4 : step.view.view === 'control-flow' ? 4 : 5;
+  const maximum = 3;
   for (const entity of visibleEntities) {
     if (ids.size >= maximum) break;
     const priority = kindPriorityForView(step.view.view, entity);
