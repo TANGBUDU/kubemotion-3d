@@ -30,8 +30,6 @@ jobs:
           git apply --check -p2 /tmp/beginner-rebuild.patch
           git apply -p2 /tmp/beginner-rebuild.patch
           git rm -f .github/assistant/beginner-rebuild.patch.gz.b64.part-*
-          git rm -f .github/workflows/apply-beginner-rebuild.yml
-          git show HEAD^:.github/workflows/ci.yml > .github/workflows/ci.yml
       - run: pnpm format
       - run: git diff --check
       - run: pnpm typecheck
