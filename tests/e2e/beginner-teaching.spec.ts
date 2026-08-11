@@ -97,9 +97,7 @@ test('beginner journey stays problem-first and visually focused', async ({ page 
     'controller-loop',
   );
   await expect(page.getByTestId('beginner-problem-stage')).toContainText(/Observe/i);
-  await expect(page.getByTestId('component-explanation')).toContainText(
-    /does not choose the Node/i,
-  );
+  await expect(page.getByTestId('component-explanation')).toContainText(/does not choose the Node/i);
   await page.screenshot({
     path: `${reviewDir}/06-controller-loop-explained.png`,
     fullPage: false,
@@ -153,8 +151,12 @@ test('beginner journey stays problem-first and visually focused', async ({ page 
   await page.goto('/#/learn/why-kubernetes-exists/6');
   await waitForSceneIdle(page);
   await expect(page.getByTestId('scene-orientation')).toContainText('应用运行层级');
-  await expect(page.locator('.scene-label')).not.toContainText(/api-7f8d9-a/i);
-  await expect(page.locator('.scene-label')).toContainText(/工作节点 C|api Pod D/i);
+  await expect(
+    page.locator('.scene-label').filter({ hasText: /api-7f8d9-a/i }),
+  ).toHaveCount(0);
+  await expect(
+    page.locator('.scene-label').filter({ hasText: /工作节点 C|api Pod D/i }).first(),
+  ).toBeVisible();
   await page.screenshot({
     path: `${reviewDir}/12-zh-placement-hierarchy.png`,
     fullPage: false,
