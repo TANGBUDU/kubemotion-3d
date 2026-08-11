@@ -18,5 +18,9 @@ Additional rules:
 - A region boundary must never resemble an active route.
 - Explain component responsibility, mechanism, and non-responsibility.
 - Keep Node → Pod → Container and Deployment → ReplicaSet → Pod as separate mental models.
+- Responsive scene grammar owns the density and label budget; beginner simplification may remove
+  more labels but must never restore a label hidden by that grammar.
+- On mobile, fewer than three labels is acceptable when the focused object and every route endpoint
+  remain identifiable without adding redundant context.
 - Provide a visible Home action on every lesson and story page.
 - Do not count automated overlap checks as proof that a scene is understandable.
