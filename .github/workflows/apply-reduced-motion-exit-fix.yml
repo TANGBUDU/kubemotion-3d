@@ -36,39 +36,43 @@ jobs:
           scene_path = Path('src/renderer/SceneController.ts')
           scene = scene_path.read_text(encoding='utf-8')
 
-          duplicate_old = """    if (previousPlaybackId !== undefined && request.playbackId <= previousPlaybackId) {
-              this.scheduler.markDirty();
-              return;
-            }
-          """
-          duplicate_new = """    if (previousPlaybackId !== undefined && request.playbackId <= previousPlaybackId) {
-              // React Strict Mode can apply the same reduced-motion step twice. applyStep() may
-              // reconstruct its retained exit handles before this duplicate playback is rejected.
-              if (reducedMotion && this.pendingExitIds.size > 0) this.cleanupPendingExits();
-              this.scheduler.markDirty();
-              return;
-            }
-          """
+          duplicate_old = '\n'.join([
+              '    if (previousPlaybackId !== undefined && request.playbackId <= previousPlaybackId) {',
+              '      this.scheduler.markDirty();',
+              '      return;',
+              '    }',
+          ])
+          duplicate_new = '\n'.join([
+              '    if (previousPlaybackId !== undefined && request.playbackId <= previousPlaybackId) {',
+              '      // React Strict Mode can apply the same reduced-motion step twice. applyStep() may',
+              '      // reconstruct its retained exit handles before this duplicate playback is rejected.',
+              '      if (reducedMotion && this.pendingExitIds.size > 0) this.cleanupPendingExits();',
+              '      this.scheduler.markDirty();',
+              '      return;',
+              '    }',
+          ])
           if duplicate_old not in scene:
               raise SystemExit('SceneController duplicate playback insertion point is missing')
           scene = scene.replace(duplicate_old, duplicate_new, 1)
 
-          playback_old = """    const accepted = this.animations.play(request, reducedMotion);
-              if (accepted && this.animations.activeCount > 0) {
-          """
-          playback_new = """    const accepted = this.animations.play(request, reducedMotion);
-              if (
-                accepted &&
-                reducedMotion &&
-                this.animations.activeCount === 0 &&
-                this.pendingExitIds.size > 0
-              ) {
-                // Reduced-motion playback settles synchronously. Remove any retained exit handles
-                // even when an authored exit cue resolves without a live visual handler.
-                this.cleanupPendingExits();
-              }
-              if (accepted && this.animations.activeCount > 0) {
-          """
+          playback_old = '\n'.join([
+              '    const accepted = this.animations.play(request, reducedMotion);',
+              '    if (accepted && this.animations.activeCount > 0) {',
+          ])
+          playback_new = '\n'.join([
+              '    const accepted = this.animations.play(request, reducedMotion);',
+              '    if (',
+              '      accepted &&',
+              '      reducedMotion &&',
+              '      this.animations.activeCount === 0 &&',
+              '      this.pendingExitIds.size > 0',
+              '    ) {',
+              '      // Reduced-motion playback settles synchronously. Remove any retained exit handles',
+              '      // even when an authored exit cue resolves without a live visual handler.',
+              '      this.cleanupPendingExits();',
+              '    }',
+              '    if (accepted && this.animations.activeCount > 0) {',
+          ])
           if playback_old not in scene:
               raise SystemExit('SceneController playback insertion point is missing')
           scene_path.write_text(scene.replace(playback_old, playback_new, 1), encoding='utf-8')
