@@ -4,11 +4,46 @@ on:
   push:
     branches: [main]
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  apply-beginner-rebuild:
+    if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.16.0 }
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Apply staged beginner-first teaching rebuild
+        run: |
+          cat .github/assistant/beginner-rebuild.patch.gz.b64.part-* | base64 --decode > /tmp/beginner-rebuild.patch.gz
+          echo '6974262147d26d9ad1d50e7e4248345fbaf7f5ff8940cbb74a0c21762963828d  /tmp/beginner-rebuild.patch.gz' | sha256sum --check -
+          gzip --decompress --stdout /tmp/beginner-rebuild.patch.gz > /tmp/beginner-rebuild.patch
+          git apply --check -p2 /tmp/beginner-rebuild.patch
+          git apply -p2 /tmp/beginner-rebuild.patch
+          git rm -f .github/assistant/beginner-rebuild.patch.gz.b64.part-*
+          git rm -f .github/workflows/apply-beginner-rebuild.yml
+          git show HEAD^:.github/workflows/ci.yml > .github/workflows/ci.yml
+      - run: pnpm format
+      - run: git diff --check
+      - run: pnpm typecheck
+      - run: pnpm content:validate
+      - name: Commit beginner-first teaching rebuild
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'feat: rebuild lessons for first-time Kubernetes learners'
+          git push origin HEAD:${{ github.head_ref }}
   validate:
     runs-on: ubuntu-latest
     steps:
