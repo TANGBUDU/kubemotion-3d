@@ -4,65 +4,11 @@ on:
   push:
     branches: [main]
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  apply-mobile-sheet-fix:
-    if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-        with: { version: 11.16.0 }
-      - uses: actions/setup-node@v5
-        with: { node-version: 24, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - name: Apply derived mobile teaching-sheet state
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('src/pages/LearnPage.tsx')
-          text = path.read_text(encoding='utf-8')
-          replacements = [
-              (
-                  "  const [sheetExpanded, setSheetExpanded] = useState(() => !isMobile);\n  const t = lessonUi(locale);",
-                  "  const [sheetExpandedOverride, setSheetExpandedOverride] = useState<boolean | null>(null);\n  const sheetExpanded = sheetExpandedOverride ?? !isMobile;\n  const t = lessonUi(locale);",
-              ),
-              (
-                  "      onExpandedChange={setSheetExpanded}",
-                  "      onExpandedChange={setSheetExpandedOverride}",
-              ),
-          ]
-          for old, new in replacements:
-              if old not in text:
-                  raise SystemExit(f'Missing expected LearnPage text: {old[:100]!r}')
-              text = text.replace(old, new, 1)
-          path.write_text(text, encoding='utf-8')
-          PY
-          rm -f .github/assistant/mobile-sheet.patch
-      - run: pnpm format
-      - run: git diff --check
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm exec vitest --run tests/components/learnPage.test.tsx
-      - name: Commit mobile teaching-sheet fix
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --check
-          if git diff --cached --quiet; then
-            echo "No mobile teaching-sheet changes to commit."
-            exit 0
-          fi
-          git commit -m "fix: derive mobile teaching sheet from viewport"
-          git push origin HEAD:${{ github.head_ref }}
   validate:
     runs-on: ubuntu-latest
     steps:
