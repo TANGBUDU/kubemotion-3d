@@ -1,0 +1,98 @@
+name: Capture next foundation lessons
+
+on:
+  push:
+    branches: [rebuild/world-state-engine]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: capture-next-foundation-lessons
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create focused visual review test
+        run: |
+          cat > tests/e2e/_capture-next-foundations.spec.ts <<'TEST'
+          import { mkdir } from 'node:fs/promises';
+          import { test } from '@playwright/test';
+          import { waitForSceneIdle } from './helpers';
+
+          const output = 'docs/review/evidence/foundations-next';
+          const lessons = [
+            { id: 'cluster-overview', steps: 5 },
+            { id: 'pod-and-container', steps: 5 },
+            { id: 'pod-and-placement', steps: 6 },
+          ] as const;
+
+          test('capture the next three beginner foundation lessons', async ({ page }) => {
+            await mkdir(output, { recursive: true });
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            await page.setViewportSize({ width: 1280, height: 800 });
+
+            for (const lesson of lessons) {
+              for (let step = 0; step < lesson.steps; step += 1) {
+                await page.goto(`/#/learn/${lesson.id}/${step}`);
+                await waitForSceneIdle(page);
+                await page.screenshot({
+                  path: `${output}/${lesson.id}-${String(step + 1).padStart(2, '0')}-desktop.png`,
+                  fullPage: false,
+                });
+              }
+            }
+
+            await page.setViewportSize({ width: 390, height: 844 });
+            for (const [lessonId, step] of [
+              ['cluster-overview', 0],
+              ['cluster-overview', 2],
+              ['pod-and-container', 0],
+              ['pod-and-container', 2],
+              ['pod-and-placement', 0],
+              ['pod-and-placement', 2],
+              ['pod-and-placement', 5],
+            ] as const) {
+              await page.goto(`/#/learn/${lessonId}/${step}`);
+              await waitForSceneIdle(page);
+              await page.screenshot({
+                path: `${output}/${lessonId}-${String(step + 1).padStart(2, '0')}-mobile.png`,
+                fullPage: false,
+              });
+            }
+
+            await page.getByLabel('Lesson language').selectOption('zh-CN');
+            for (const [lessonId, step] of [
+              ['cluster-overview', 2],
+              ['pod-and-container', 2],
+              ['pod-and-placement', 2],
+            ] as const) {
+              await page.goto(`/#/learn/${lessonId}/${step}`);
+              await waitForSceneIdle(page);
+              await page.screenshot({
+                path: `${output}/${lessonId}-${String(step + 1).padStart(2, '0')}-zh-mobile.png`,
+                fullPage: false,
+              });
+            }
+          });
+          TEST
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright test tests/e2e/_capture-next-foundations.spec.ts --project=desktop-1280-chromium
+      - uses: actions/upload-artifact@v4
+        with:
+          name: foundations-next-review-${{ github.sha }}
+          path: docs/review/evidence/foundations-next/
+          if-no-files-found: error
+          retention-days: 7
