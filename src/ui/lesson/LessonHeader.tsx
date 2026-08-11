@@ -45,6 +45,7 @@ export function LessonHeader({
           title={t.backHome}
         >
           <Home size={18} aria-hidden="true" />
+          <span className="lesson-home-text">{t.backHome}</span>
         </Link>
         <button
           className="lesson-header-icon course-trigger"
