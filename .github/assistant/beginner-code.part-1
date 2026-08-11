@@ -1,0 +1,193 @@
+diff --git a/src/pages/HomePage.tsx b/src/pages/HomePage.tsx
+index 5f861ea..d23967d 100644
+--- a/src/pages/HomePage.tsx
++++ b/src/pages/HomePage.tsx
+@@ -43,18 +43,18 @@ const homeCopy: Record<
+ > = {
+   en: {
+     eyebrow: 'WORLD STATE · VERIFIED TIMELINE · INTERACTIVE 3D',
+-    headlineLead: 'Learn Kubernetes',
+-    headlineEmphasis: 'by watching facts change.',
++    headlineLead: 'Why Kubernetes?',
++    headlineEmphasis: 'Start with the problem, not the jargon.',
+     description:
+-      'KubeMotion separates what is factually true in the teaching world from how that world is presented—so a Container restart cannot masquerade as a Pod replacement.',
++      'A container can run one app by itself. Kubernetes becomes useful when you need several copies, automatic recovery, placement, networking, and safe change. This course shows the problem first, then the Kubernetes concept that solves it.',
+     orientationLabel: 'Quick orientation',
+     orientationTime: '20–30 seconds',
+-    orientationTitle: 'Three ideas to find your way around',
+-    orientationIntro: 'Keep this map in mind while the lesson shows Kubernetes changing.',
++    orientationTitle: 'Three things to know before lesson 1',
++    orientationIntro: 'You do not need to memorize components yet. Start with these three ideas.',
+     orientationPoints: [
+-      'Control Plane decides.',
+-      'Worker Nodes run Pods.',
+-      'A Pod contains one or more Containers.',
++      'One app can run without Kubernetes.',
++      'Kubernetes keeps a declared result true over time.',
++      'Every highlighted line has one job: request, control, scheduling, or local runtime.',
+     ],
+     startLesson: 'Start lesson',
+     continueLesson: 'Continue learning',
+@@ -67,9 +67,9 @@ const homeCopy: Record<
+     showcaseSceneCaption: 'SHOWCASE',
+     benefitsLabel: 'KubeMotion benefits',
+     benefitDescriptions: [
+-      'Every step has an immutable WorldSnapshot plus a separate ViewProjection.',
+-      'Trace object relationships, workload placement, and Service traffic paths across lessons.',
+-      'Conceptual animations cite official Kubernetes documentation and use synthetic data.',
++      'See why each Kubernetes object exists before you are asked to remember its name.',
++      'Each step highlights one cause and one effect; background relationships stay quiet.',
++      'Begin with plain-language evidence, then open the raw Kubernetes fields only when you want them.',
+     ],
+     flowEyebrow: '8 VERIFIED FLOW STORIES',
+     flowTitle: 'Trace complete Kubernetes causes, not isolated animations',
+@@ -80,18 +80,18 @@ const homeCopy: Record<
+   },
+   ja: {
+     eyebrow: 'WORLD STATE · 検証済みタイムライン · インタラクティブ 3D',
+-    headlineLead: 'Kubernetes を',
+-    headlineEmphasis: '事実の変化を見ながら学ぶ。',
++    headlineLead: 'なぜ Kubernetes？',
++    headlineEmphasis: '用語ではなく、問題から学ぶ。',
+     description:
+-      'KubeMotion は、学習 world の事実とその見せ方を分離します。そのため、コンテナの再起動を Pod の置き換えとして誤って表現しません。',
++      '1つのアプリならコンテナだけでも動かせます。複数コピー、自動復旧、配置、ネットワーク、安全な変更が必要になったとき Kubernetes が役立ちます。このコースは、先に問題を見せ、その後で解決する Kubernetes の概念を紹介します。',
+     orientationLabel: 'クイックガイド',
+     orientationTime: '20〜30 秒',
+-    orientationTitle: '最初に覚える 3 つのこと',
+-    orientationIntro: 'レッスンで Kubernetes の変化を見る前に、この全体像を確認しましょう。',
++    orientationTitle: '第1課の前に知る 3 つのこと',
++    orientationIntro: 'まだコンポーネント名を暗記する必要はありません。まずこの3点だけ押さえます。',
+     orientationPoints: [
+-      'コントロールプレーンが判断します。',
+-      'ワーカーノードが Pod を実行します。',
+-      'Pod には 1 つ以上のコンテナが含まれます。',
++      'アプリを1つ動かすだけなら Kubernetes は不要な場合があります。',
++      'Kubernetes は宣言した結果を時間が経っても保ち続けます。',
++      '強調された線は、通信・制御・配置・Node 内処理のどれか1つの意味だけを持ちます。',
+     ],
+     startLesson: 'レッスンを始める',
+     continueLesson: '学習を続ける',
+@@ -104,9 +104,9 @@ const homeCopy: Record<
+     showcaseSceneCaption: 'ショーケース',
+     benefitsLabel: 'KubeMotion の特長',
+     benefitDescriptions: [
+-      '各ステップは、不変の WorldSnapshot と独立した ViewProjection を持ちます。',
+-      'レッスンを通して、オブジェクトの関係、ワークロード配置、Service のトラフィック経路を追えます。',
+-      '概念アニメーションは Kubernetes 公式ドキュメントを参照し、合成データを使用します。',
++      '名前を覚える前に、それぞれの Kubernetes オブジェクトがなぜ必要なのかを理解します。',
++      '各ステップは1つの原因と1つの結果を強調し、背景の関係線は控えめにします。',
++      'まず平易な Evidence を読み、必要なときだけ生の Kubernetes フィールドを開けます。',
+     ],
+     flowEyebrow: '検証済み FLOW STORY 8 本',
+     flowTitle: '孤立したアニメーションではなく、Kubernetes の因果を追う',
+@@ -117,18 +117,18 @@ const homeCopy: Record<
+   },
+   'zh-CN': {
+     eyebrow: 'WORLD STATE · 已验证时间线 · 交互式 3D',
+-    headlineLead: '观察事实如何变化，',
+-    headlineEmphasis: '学懂 Kubernetes。',
++    headlineLead: '为什么需要 Kubernetes？',
++    headlineEmphasis: '先讲问题，再讲名词。',
+     description:
+-      'KubeMotion 将教学世界中的事实与呈现方式分开，因此容器重启不会被错误表现成 Pod 替换。',
++      '一个应用，用容器自己就能跑。真正需要 Kubernetes，是当你开始面对多副本、自动恢复、放置、网络和安全变更。本课程先把问题讲清楚，再介绍解决它的 Kubernetes 概念。',
+     orientationLabel: '快速导览',
+     orientationTime: '20–30 秒',
+-    orientationTitle: '先记住这三个概念',
+-    orientationIntro: '课程会演示 Kubernetes 如何变化，请先用这张简图建立方向感。',
++    orientationTitle: '第一课前只记住这三件事',
++    orientationIntro: '先不要背组件名。只要带着这三个问题进入第一课。',
+     orientationPoints: [
+-      '控制平面负责决策。',
+-      '工作节点运行 Pod。',
+-      '一个 Pod 包含一个或多个容器。',
++      '只运行一个应用时，未必需要 Kubernetes。',
++      'Kubernetes 的价值是让你声明的结果长期自动成立。',
++      '每条高亮线只表达一种动作：请求、控制、调度或 Node 内执行。',
+     ],
+     startLesson: '开始课程',
+     continueLesson: '继续学习',
+@@ -141,9 +141,9 @@ const homeCopy: Record<
+     showcaseSceneCaption: '展示',
+     benefitsLabel: 'KubeMotion 的优势',
+     benefitDescriptions: [
+-      '每一步都有不可变的 WorldSnapshot，并使用独立的 ViewProjection。',
+-      '跨课程跟踪对象关系、工作负载放置位置和 Service 流量路径。',
+-      '概念动画引用 Kubernetes 官方文档，并且只使用合成数据。',
++      '先理解每个 Kubernetes 对象为什么存在，再记它叫什么。',
++      '每一步只突出一个原因和一个结果，背景关系线主动降噪。',
++      '默认读人话证据；只有想深挖时才展开原始 Kubernetes 字段。',
+     ],
+     flowEyebrow: '8 条已验证 FLOW STORY',
+     flowTitle: '追踪完整因果，而不是观看孤立动画',
+@@ -360,7 +360,7 @@ export function HomePage() {
+                 </div>
+                 <h3>{story.title[locale]}</h3>
+                 <p>{story.summary[locale]}</p>
+-                <Link to={`/learn/${story.lessonId}/${firstBeat.compiledStep.index}`}>
++                <Link to={`/stories/${story.id}/0`}>
+                   {copy.openFlow}
+                   <ArrowRight size={15} aria-hidden="true" />
+                 </Link>
+diff --git a/src/pages/LearnPage.tsx b/src/pages/LearnPage.tsx
+index 08981ff..cbee532 100644
+--- a/src/pages/LearnPage.tsx
++++ b/src/pages/LearnPage.tsx
+@@ -148,7 +148,7 @@ export function LearnPage() {
+   const [courseOpen, setCourseOpen] = useState(false);
+   const [detailsOpen, setDetailsOpen] = useState(false);
+   const [detailSection, setDetailSection] = useState<DetailSection>('inspector');
+-  const [sheetExpanded, setSheetExpanded] = useState(true);
++  const [sheetExpanded, setSheetExpanded] = useState(() => !isMobile);
+   const t = lessonUi(locale);
+   const valid = Boolean(
+     lesson &&
+@@ -358,6 +358,32 @@ export function LearnPage() {
+   const safeInsets = isMobile
+     ? { top: 12, right: 12, bottom: 12, left: 12 }
+     : { top: 18, right: 18, bottom: 18, left: 18 };
++  const firstActiveRoute = step.view.activeRoutes[0];
++  const focusHint = firstActiveRoute
++    ? (() => {
++        const firstHop = firstActiveRoute.hops[0];
++        const lastHop = firstActiveRoute.hops[firstActiveRoute.hops.length - 1];
++        const source = firstHop
++          ? (step.world.entities[firstHop.fromEntityId]?.name ?? firstHop.fromEntityId)
++          : firstActiveRoute.semantic;
++        const target = lastHop
++          ? (step.world.entities[lastHop.toEntityId]?.name ?? lastHop.toEntityId)
++          : firstActiveRoute.semantic;
++        return t.followPath(source, target);
++      })()
++    : focusedId
++      ? t.focusOn(step.world.entities[focusedId]?.name ?? focusedId)
++      : t.focusOn(authoredStep.title[locale]);
++  const visibleRelationSemantics = Array.from(
++    new Set(
++      Object.entries(step.view.relationStates)
++        .filter(([, state]) => state.visible)
++        .flatMap(([relationId]) => {
++          const relation = step.world.relations[relationId];
++          return relation ? [relation.semantic] : [];
++        }),
++    ),
++  );
+   const routeSummary = step.view.activeRoutes
+     .map((route) => {
+       const hops = route.hops
+@@ -463,7 +489,12 @@ export function LearnPage() {
+               onSelectEntity={handleSelectEntity}
+             />
+           </div>
+-          <SceneLegend locale={locale} view={step.view.view} />
++          <SceneLegend
++            locale={locale}
++            view={step.view.view}
++            activeRoutes={step.view.activeRoutes}
++            relationSemantics={visibleRelationSemantics}
++          />
+         </>
+       )}
+       {step.view.comparison && <CompareView model={step.view.comparison} locale={locale} />}
