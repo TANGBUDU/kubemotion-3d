@@ -894,12 +894,25 @@ export class SceneController {
     this.setReducedMotion(reducedMotion);
     const previousPlaybackId = this.animations.lastPlaybackId(request.stepKey);
     if (previousPlaybackId !== undefined && request.playbackId <= previousPlaybackId) {
+      // React Strict Mode can apply the same reduced-motion step twice. applyStep() may
+      // reconstruct its retained exit handles before this duplicate playback is rejected.
+      if (reducedMotion && this.pendingExitIds.size > 0) this.cleanupPendingExits();
       this.scheduler.markDirty();
       return;
     }
     this.animations.cancel();
     if (this.currentStep) this.prepareExitHandles(this.currentStep);
     const accepted = this.animations.play(request, reducedMotion);
+    if (
+      accepted &&
+      reducedMotion &&
+      this.animations.activeCount === 0 &&
+      this.pendingExitIds.size > 0
+    ) {
+      // Reduced-motion playback settles synchronously. Remove any retained exit handles
+      // even when an authored exit cue resolves without a live visual handler.
+      this.cleanupPendingExits();
+    }
     if (accepted && this.animations.activeCount > 0) {
       this.scheduler.addReason('animations');
     } else if (accepted && this.activeRoutes.size > 0) {

@@ -666,4 +666,82 @@ describe('SceneController reduced-motion transition', () => {
     expect(resyncActiveRouteGeometry).toHaveBeenCalledOnce();
     expect(markDirty).toHaveBeenCalledOnce();
   });
+
+  it('cleans retained exit handles after synchronous reduced-motion playback', () => {
+    const cleanupPendingExits = vi.fn();
+    const markDirty = vi.fn();
+    const setRouteReducedMotion = vi.fn();
+    const cancel = vi.fn();
+    const play = vi.fn(() => true);
+    const prepareExitHandles = vi.fn();
+    const controller = Object.create(SceneController.prototype) as SceneController;
+
+    Object.assign(controller as unknown as Record<string, unknown>, {
+      reducedMotion: true,
+      cameraTransition: undefined,
+      animations: {
+        activeCount: 0,
+        lastPlaybackId: () => undefined,
+        cancel,
+        play,
+      },
+      activeRoutes: { size: 0, setReducedMotion: setRouteReducedMotion },
+      scheduler: { addReason: vi.fn(), removeReason: vi.fn(), markDirty },
+      currentStep: {},
+      pendingExitIds: new Set(['a']),
+      prepareExitHandles,
+      cleanupPendingExits,
+    });
+
+    controller.playTransition(
+      request({ type: 'entity-exit', entityId: 'a', durationMs: 1_000 }),
+      true,
+    );
+
+    expect(setRouteReducedMotion).toHaveBeenCalledWith(true);
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(prepareExitHandles).toHaveBeenCalledOnce();
+    expect(play).toHaveBeenCalledOnce();
+    expect(cleanupPendingExits).toHaveBeenCalledOnce();
+    expect(markDirty).toHaveBeenCalledOnce();
+  });
+
+  it('cleans Strict Mode exit handles before rejecting duplicate reduced-motion playback', () => {
+    const cleanupPendingExits = vi.fn();
+    const markDirty = vi.fn();
+    const setRouteReducedMotion = vi.fn();
+    const cancel = vi.fn();
+    const play = vi.fn(() => true);
+    const controller = Object.create(SceneController.prototype) as SceneController;
+
+    Object.assign(controller as unknown as Record<string, unknown>, {
+      reducedMotion: true,
+      cameraTransition: undefined,
+      animations: {
+        activeCount: 0,
+        lastPlaybackId: () => 1,
+        cancel,
+        play,
+      },
+      activeRoutes: { size: 0, setReducedMotion: setRouteReducedMotion },
+      scheduler: { addReason: vi.fn(), removeReason: vi.fn(), markDirty },
+      pendingExitIds: new Set(['a']),
+      cleanupPendingExits,
+    });
+
+    controller.playTransition(
+      {
+        stepKey: 'lesson:step',
+        playbackId: 1,
+        transition: { cues: [] },
+      },
+      true,
+    );
+
+    expect(setRouteReducedMotion).toHaveBeenCalledWith(true);
+    expect(cleanupPendingExits).toHaveBeenCalledOnce();
+    expect(cancel).not.toHaveBeenCalled();
+    expect(play).not.toHaveBeenCalled();
+    expect(markDirty).toHaveBeenCalledOnce();
+  });
 });
