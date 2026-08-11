@@ -1,7 +1,6 @@
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { Locale } from '../../app/types';
-import { useAppStore } from '../../state/appStore';
 import { lessonUi } from './copy';
 
 export interface StepTimelineProps {
@@ -20,14 +19,8 @@ export function StepTimeline({
   onStepChange,
 }: StepTimelineProps) {
   const t = lessonUi(locale);
-  const reducedMotion = useAppStore((state) => state.reducedMotion);
-  const reducedMotionRef = useRef(reducedMotion);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeStepRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    reducedMotionRef.current = reducedMotion;
-  }, [reducedMotion]);
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -50,7 +43,7 @@ export function StepTimeline({
       const maximum = Math.max(0, container.scrollWidth - container.clientWidth);
       const left = Math.max(0, Math.min(maximum, container.scrollLeft + delta));
       if (typeof container.scrollTo === 'function') {
-        container.scrollTo({ left, behavior: reducedMotionRef.current ? 'auto' : 'smooth' });
+        container.scrollTo({ left, behavior: 'auto' });
       } else {
         container.scrollLeft = left;
       }

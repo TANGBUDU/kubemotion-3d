@@ -1,6 +1,5 @@
-import { act, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useAppStore } from '../../src/state/appStore';
 import { StepTimeline } from '../../src/ui/lesson/StepTimeline';
 
 const titles = Array.from({ length: 10 }, (_, index) => `Step ${index + 1}`);
@@ -35,7 +34,7 @@ afterEach(() => {
 });
 
 describe('StepTimeline active-step positioning', () => {
-  it('positions only when the lesson or step changes without stealing focus', () => {
+  it('positions immediately when the lesson or step changes without stealing focus', () => {
     const scrollTo = vi.fn();
     Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
       configurable: true,
@@ -62,8 +61,6 @@ describe('StepTimeline active-step positioning', () => {
       }
       return rect(0, 0);
     });
-    useAppStore.setState({ locale: 'en', reducedMotion: true });
-
     const { rerender } = render(
       <>
         <button type="button">Outside control</button>
@@ -112,9 +109,6 @@ describe('StepTimeline active-step positioning', () => {
     );
     expect(scrollTo).toHaveBeenCalledTimes(callCount);
 
-    act(() => useAppStore.setState({ reducedMotion: false }));
-    expect(scrollTo).toHaveBeenCalledTimes(callCount);
-
     rerender(
       <>
         <button type="button">Outside control</button>
@@ -128,12 +122,12 @@ describe('StepTimeline active-step positioning', () => {
       </>,
     );
     expect(scrollTo).toHaveBeenCalledTimes(callCount + 1);
-    expect(scrollTo).toHaveBeenLastCalledWith({ left: 140, behavior: 'smooth' });
+    expect(scrollTo).toHaveBeenLastCalledWith({ left: 140, behavior: 'auto' });
     expect(screen.getByRole('button', { name: 'Outside control' })).toHaveFocus();
 
     window.dispatchEvent(new Event('resize'));
     expect(scrollTo).toHaveBeenCalledTimes(callCount + 2);
-    expect(scrollTo).toHaveBeenLastCalledWith({ left: 140, behavior: 'smooth' });
+    expect(scrollTo).toHaveBeenLastCalledWith({ left: 140, behavior: 'auto' });
     expect(screen.getByRole('button', { name: 'Outside control' })).toHaveFocus();
   });
 });

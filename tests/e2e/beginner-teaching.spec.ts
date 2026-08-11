@@ -209,6 +209,16 @@ test('beginner journey stays problem-first and visually focused', async ({ page 
   await expect(page.getByTestId('beginner-problem-stage')).toBeVisible();
   await expect(page.getByTestId('teaching-sheet')).toHaveClass(/is-collapsed/);
   await expect(page.getByTestId('teaching-plain-language')).toBeVisible();
+  const activeTimelineStep = page.locator('.timeline-scroll button[aria-current="step"]');
+  await expect(activeTimelineStep).toHaveText('1');
+  const activeStepIsInsideScroller = await activeTimelineStep.evaluate((element) => {
+    const scroller = element.closest('.timeline-scroll');
+    if (!scroller) return false;
+    const elementRect = element.getBoundingClientRect();
+    const scrollerRect = scroller.getBoundingClientRect();
+    return elementRect.left >= scrollerRect.left && elementRect.right <= scrollerRect.right;
+  });
+  expect(activeStepIsInsideScroller).toBe(true);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `${reviewDir}/15-mobile-first-screen.png`, fullPage: false });
 });

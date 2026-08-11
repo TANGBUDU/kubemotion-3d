@@ -25,6 +25,7 @@ Additional rules:
 - On mobile, fewer than three labels is acceptable when the focused object and every route endpoint
   remain identifiable without adding redundant context.
 - Provide a visible Home action on every lesson and story page.
+- On mobile, the current step must be visible inside the timeline immediately after navigation.
 - Browser acceptance checks must scope an assertion to the intended label or Home action rather than
   treating a valid collection of visible elements as one strict locator.
 - Do not count automated overlap checks as proof that a scene is understandable.
