@@ -148,7 +148,8 @@ export function LearnPage() {
   const [courseOpen, setCourseOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailSection, setDetailSection] = useState<DetailSection>('inspector');
-  const [sheetExpanded, setSheetExpanded] = useState(() => !isMobile);
+  const [sheetExpandedOverride, setSheetExpandedOverride] = useState<boolean | null>(null);
+  const sheetExpanded = sheetExpandedOverride ?? !isMobile;
   const t = lessonUi(locale);
   const valid = Boolean(
     lesson &&
@@ -507,7 +508,7 @@ export function LearnPage() {
       stepLabel={t.stepOf(stepIndex + 1, lesson.steps.length)}
       title={authoredStep.title[locale]}
       expanded={sheetExpanded}
-      onExpandedChange={setSheetExpanded}
+      onExpandedChange={setSheetExpandedOverride}
     >
       {isFinalStep && (
         <LessonCompletionCard
