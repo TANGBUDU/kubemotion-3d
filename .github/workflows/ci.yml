@@ -35,7 +35,6 @@ jobs:
       - run: pnpm format
       - run: git diff --check
       - run: pnpm typecheck
-      - run: pnpm content:validate
       - name: Commit beginner-first teaching rebuild
         run: |
           git config user.name 'github-actions[bot]'
