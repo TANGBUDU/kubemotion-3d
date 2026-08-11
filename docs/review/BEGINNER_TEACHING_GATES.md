@@ -1,0 +1,22 @@
+# Beginner teaching acceptance gates
+
+The guided course is reviewed from the perspective of a learner who has never used Kubernetes.
+
+A step is acceptable only when the learner can answer, without opening the technical inspector:
+
+1. What problem is this step solving?
+2. Which one or two objects should I look at?
+3. What changed from the previous step?
+4. Which component made that change happen?
+5. What does the highlighted line mean?
+
+Additional rules:
+
+- Prefer human names such as `api Pod A`; keep generated names and UIDs in technical details.
+- Use sentence case for chapter, view, and zone titles.
+- Show no more than one primary causal route in a normal guided step.
+- A region boundary must never resemble an active route.
+- Explain component responsibility, mechanism, and non-responsibility.
+- Keep Node → Pod → Container and Deployment → ReplicaSet → Pod as separate mental models.
+- Provide a visible Home action on every lesson and story page.
+- Do not count automated overlap checks as proof that a scene is understandable.
