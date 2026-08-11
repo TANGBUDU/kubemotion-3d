@@ -37,25 +37,8 @@ jobs:
           gzip --decompress --stdout /tmp/beginner-contract-fixes.patch.gz > /tmp/beginner-contract-fixes.patch
           git apply --check /tmp/beginner-contract-fixes.patch
           git apply /tmp/beginner-contract-fixes.patch
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('tests/components/learnPage.test.tsx')
-          text = path.read_text(encoding='utf-8')
-          old = """    expect(screen.getByRole('button', { name: 'Select focused Pod' })).toHaveAttribute(
-              'data-visible-labels',
-              '3',
-            );
-          """
-          new = """    expect(screen.getByRole('button', { name: 'Select focused Pod' })).toHaveAttribute(
-              'data-visible-labels',
-              '2',
-            );
-          """
-          if old not in text:
-              raise SystemExit('Mobile label assertion insertion point is missing')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
-          PY
+          perl -0pi -e "s/'data-visible-labels',\n      '3'/'data-visible-labels',\n      '2'/" tests/components/learnPage.test.tsx
+          grep -A2 "data-visible-labels" tests/components/learnPage.test.tsx | grep -q "'2'"
           rm -f .github/workflows/apply-beginner-contract-fixes.yml
           rm -f .github/workflows/retry-beginner-contract-fixes.yml
       - run: pnpm format
