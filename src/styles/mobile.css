@@ -21,7 +21,7 @@
   }
 
   .lesson-header {
-    grid-template-columns: 44px minmax(0, 1fr) auto;
+    grid-template-columns: 88px minmax(0, 1fr) auto;
     gap: 7px;
     padding: calc(2px + env(safe-area-inset-top, 0px)) max(6px, env(safe-area-inset-right, 0px)) 2px
       max(6px, env(safe-area-inset-left, 0px));
@@ -39,7 +39,7 @@
     position: absolute;
     right: calc(118px + env(safe-area-inset-right, 0px));
     bottom: 3px;
-    left: calc(57px + env(safe-area-inset-left, 0px));
+    left: calc(98px + env(safe-area-inset-left, 0px));
     display: block;
   }
 
@@ -56,6 +56,7 @@
   }
 
   .lesson-header button,
+  .lesson-header a.lesson-header-icon,
   .lesson-language {
     width: var(--touch-target);
     min-width: var(--touch-target);

@@ -80,12 +80,12 @@ describe('LearnPage lesson information architecture', () => {
     expect(screen.getByTestId('teaching-step-heading')).toHaveTextContent(
       'What you are looking at',
     );
-    expect(screen.getByTestId('teaching-what-changed')).toHaveTextContent('What changed');
-    expect(screen.getByTestId('teaching-why-it-happened')).toHaveTextContent('Why it happened');
+    expect(screen.getByTestId('teaching-what-changed')).toHaveTextContent('What is true now');
+    expect(screen.getByTestId('teaching-why-it-happened')).toHaveTextContent('Why this happened');
     expect(screen.getByTestId('evidence-panel')).toBeVisible();
-    expect(screen.getByTestId('teaching-takeaway')).toHaveTextContent('Takeaway');
+    expect(screen.getByTestId('teaching-takeaway')).toHaveTextContent('Remember this');
     expect(
-      within(screen.getByLabelText('Scene legend')).getByText('Local node runtime'),
+      within(screen.getByLabelText('Scene legend')).getByText(/Kubernetes control command/i),
     ).toBeVisible();
     expect(
       within(screen.getByTestId('step-timeline')).getAllByRole('button', {

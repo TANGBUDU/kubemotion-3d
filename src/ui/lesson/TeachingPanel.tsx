@@ -1,4 +1,4 @@
-import { BookOpen, ExternalLink } from 'lucide-react';
+import { BookOpen, Crosshair, ExternalLink, MessageCircle } from 'lucide-react';
 import type { Locale } from '../../app/types';
 import type { EvidenceRow } from '../../course/types';
 import { lessonUi } from './copy';
@@ -9,6 +9,8 @@ export interface TeachingPanelProps {
   readonly stepIndex: number;
   readonly stepCount: number;
   readonly title: string;
+  readonly narration: string;
+  readonly focusHint: string;
   readonly whatChanged: string;
   readonly whyItHappened: string;
   readonly takeaway: string;
@@ -24,6 +26,8 @@ export function TeachingPanel({
   stepIndex,
   stepCount,
   title,
+  narration,
+  focusHint,
   whatChanged,
   whyItHappened,
   takeaway,
@@ -41,6 +45,20 @@ export function TeachingPanel({
         <span>{t.stepOf(stepIndex + 1, stepCount)}</span>
         <h2>{title}</h2>
       </div>
+      <section className="teaching-plain-language" data-testid="teaching-plain-language">
+        <div>
+          <MessageCircle size={15} aria-hidden="true" />
+          <h3>{t.plainLanguage}</h3>
+        </div>
+        <p>{narration}</p>
+      </section>
+      <section className="teaching-focus-hint" data-testid="teaching-focus-hint">
+        <Crosshair size={15} aria-hidden="true" />
+        <div>
+          <span>{t.lookHere}</span>
+          <strong>{focusHint}</strong>
+        </div>
+      </section>
       <section
         className="teaching-section teaching-section-change"
         data-testid="teaching-what-changed"

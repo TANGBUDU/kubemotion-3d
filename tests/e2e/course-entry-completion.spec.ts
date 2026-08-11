@@ -144,7 +144,7 @@ test('bare Learn follows manifest order and valid progress resumes', async ({ pa
   await page.goto('/#/learn');
   await expect(page).toHaveURL(/why-kubernetes-exists\/0$/);
   await expect(page.getByTestId('teaching-step-heading')).toContainText(
-    'An image packages the application',
+    'Start simple: one container can run the app',
   );
 
   await page.goto('/#/learn/container-restart-vs-pod-replacement/3');
@@ -287,7 +287,9 @@ test('an out-of-order final lesson points to the first unfinished manifest lesso
   await completion.getByRole('button', { name: 'Complete lesson', exact: true }).click();
 
   await expect(
-    completion.getByRole('link', { name: /Next lesson: Why Kubernetes exists/i }),
+    completion.getByRole('link', {
+      name: /Next lesson: Why Kubernetes? From one container to self-healing/i,
+    }),
   ).toHaveAttribute('href', `#/learn/${WHY_LESSON}/0`);
   await expect.poll(() => completedLessonIds(page)).toEqual([RESTART_LESSON]);
 });

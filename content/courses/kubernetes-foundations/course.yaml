@@ -1,10 +1,14 @@
 schemaVersion: 1
 id: kubernetes-foundations
-title: { en: Kubernetes Foundations, ja: Kubernetes 基礎, zh-CN: Kubernetes 基础 }
+title:
+  en: Kubernetes Foundations
+  ja: Kubernetes 基礎
+  zh-CN: Kubernetes 基础
 summary:
-  en: Build an accurate mental model by watching factual system state change.
-  ja: 事実に基づくシステム状態の変化を観察し、正確なメンタルモデルを作ります。
-  zh-CN: 通过观察事实性的系统状态变化，建立准确的心智模型。
+  en: Start with the problems Kubernetes solves, then introduce one concept at a
+    time through visible cause-and-effect.
+  ja: Kubernetes が解決する問題から始め、目に見える因果関係を通して概念を一つずつ学びます。
+  zh-CN: 先从 Kubernetes 要解决的问题出发，再通过清晰的因果变化逐个学习概念。
 lessonOrder:
   - why-kubernetes-exists
   - cluster-overview
@@ -34,266 +38,312 @@ lessons:
     status: available
     prerequisites: []
     title:
-      { en: Why Kubernetes exists, ja: Kubernetes が存在する理由, zh-CN: 为什么需要 Kubernetes }
+      en: Why Kubernetes? From one container to self-healing
+      ja: なぜ Kubernetes が必要？ 1つのコンテナから自己修復まで
+      zh-CN: 为什么需要 Kubernetes？从一个容器到自动恢复
     learningOutcome:
-      en: Distinguish container packaging from orchestration, then explain desired-state recovery.
-      ja: コンテナのパッケージ化とオーケストレーションを区別し、望ましい状態による復旧を説明する。
-      zh-CN: 区分容器打包与编排，并解释基于期望状态的故障恢复。
-    estimatedMinutes: 6
+      en: Explain when Kubernetes becomes useful and how desired state enables
+        automatic recovery.
+      ja: Kubernetes が役立つ場面と、望ましい状態が自動復旧につながる仕組みを説明する。
+      zh-CN: 解释 Kubernetes 什么时候真正有用，以及期望状态如何带来自动恢复。
+    estimatedMinutes: 8
   - id: cluster-overview
     chapterId: foundations
     status: available
-    prerequisites: [why-kubernetes-exists]
+    prerequisites:
+      - why-kubernetes-exists
     title:
-      {
-        en: What a Kubernetes cluster contains,
-        ja: Kubernetes クラスターの構成,
-        zh-CN: Kubernetes 集群包含什么,
-      }
+      en: What a Kubernetes cluster contains
+      ja: Kubernetes クラスターの構成
+      zh-CN: Kubernetes 集群包含什么
     learningOutcome:
-      {
-        en: Identify the control plane and worker Nodes.,
-        ja: コントロールプレーンと worker Node を区別する。,
-        zh-CN: 区分控制面与工作 Node。,
-      }
+      en: Identify the control plane and worker Nodes.
+      ja: コントロールプレーンと worker Node を区別する。
+      zh-CN: 区分控制面与工作 Node。
     estimatedMinutes: 5
   - id: pod-and-container
     chapterId: foundations
     status: available
-    prerequisites: [cluster-overview]
-    title: { en: Pod and Container, ja: Pod と Container, zh-CN: Pod 与容器 }
+    prerequisites:
+      - cluster-overview
+    title:
+      en: Pod and Container
+      ja: Pod と Container
+      zh-CN: Pod 与容器
     learningOutcome:
-      {
-        en: Explain why containers run inside a Pod boundary.,
-        ja: コンテナが Pod 境界内で動く理由を説明する。,
-        zh-CN: 解释容器为何运行在 Pod 边界内。,
-      }
+      en: Explain why containers run inside a Pod boundary.
+      ja: コンテナが Pod 境界内で動く理由を説明する。
+      zh-CN: 解释容器为何运行在 Pod 边界内。
     estimatedMinutes: 5
   - id: pod-and-placement
     chapterId: foundations
     status: available
-    prerequisites: [pod-and-container]
+    prerequisites:
+      - pod-and-container
     title:
-      { en: 'Pods, Namespaces, and Nodes', ja: Pod・Namespace・Node, zh-CN: Pod、Namespace 与 Node }
+      en: Pods, Namespaces, and Nodes
+      ja: Pod・Namespace・Node
+      zh-CN: Pod、Namespace 与 Node
     learningOutcome:
-      {
-        en: Separate logical scope from physical placement.,
-        ja: 論理スコープと物理配置を区別する。,
-        zh-CN: 区分逻辑作用域与物理放置。,
-      }
+      en: Separate logical scope from physical placement.
+      ja: 論理スコープと物理配置を区別する。
+      zh-CN: 区分逻辑作用域与物理放置。
     estimatedMinutes: 6
   - id: deployment-replicaset-and-pods
     chapterId: workloads-self-healing
     status: available
-    prerequisites: [pod-and-placement]
+    prerequisites:
+      - pod-and-placement
     title:
-      {
-        en: 'Deployment, ReplicaSet, and Pods',
-        ja: Deployment・ReplicaSet・Pod,
-        zh-CN: Deployment、ReplicaSet 与 Pod,
-      }
+      en: Deployment, ReplicaSet, and Pods
+      ja: Deployment・ReplicaSet・Pod
+      zh-CN: Deployment、ReplicaSet 与 Pod
     learningOutcome:
-      {
-        en: Trace ownership from a Deployment blueprint to ReplicaSet-controlled Pod replicas.,
-        ja: Deployment の設計図から ReplicaSet 管理の Pod レプリカまで所有関係を追う。,
-        zh-CN: 从 Deployment 蓝图追踪到 ReplicaSet 管理的 Pod 副本。,
-      }
+      en: Trace ownership from a Deployment blueprint to ReplicaSet-controlled Pod
+        replicas.
+      ja: Deployment の設計図から ReplicaSet 管理の Pod レプリカまで所有関係を追う。
+      zh-CN: 从 Deployment 蓝图追踪到 ReplicaSet 管理的 Pod 副本。
     estimatedMinutes: 6
   - id: manifest-to-running-pod
     chapterId: workloads-self-healing
     status: available
-    prerequisites: [deployment-replicaset-and-pods]
+    prerequisites:
+      - deployment-replicaset-and-pods
     title:
-      {
-        en: From a Deployment manifest to a Ready Pod,
-        ja: Deployment manifest から Ready な Pod まで,
-        zh-CN: 从 Deployment 清单到 Ready Pod,
-      }
+      en: From a Deployment manifest to a Ready Pod
+      ja: Deployment manifest から Ready な Pod まで
+      zh-CN: 从 Deployment 清单到 Ready Pod
     learningOutcome:
-      {
-        en: Explain each component's responsibility from API submission through startup.,
-        ja: API への送信から起動まで各コンポーネントの責務を説明する。,
-        zh-CN: 说明从提交 API 到启动过程中各组件的职责。,
-      }
+      en: Explain each component's responsibility from API submission through startup.
+      ja: API への送信から起動まで各コンポーネントの責務を説明する。
+      zh-CN: 说明从提交 API 到启动过程中各组件的职责。
     estimatedMinutes: 8
   - id: pending-and-scheduling
     chapterId: workloads-self-healing
     status: available
-    prerequisites: [manifest-to-running-pod]
+    prerequisites:
+      - manifest-to-running-pod
     title:
-      { en: Pending Pod and scheduling, ja: Pending Pod と scheduling, zh-CN: Pending Pod 与调度 }
+      en: Pending Pod and scheduling
+      ja: Pending Pod と scheduling
+      zh-CN: Pending Pod 与调度
     learningOutcome:
-      {
-        en: 'Separate Pod creation, Node selection, binding, and container startup.',
-        ja: Pod 作成、Node 選択、binding、コンテナ起動を区別する。,
-        zh-CN: 区分 Pod 创建、Node 选择、绑定与容器启动。,
-      }
+      en: Separate Pod creation, Node selection, binding, and container startup.
+      ja: Pod 作成、Node 選択、binding、コンテナ起動を区別する。
+      zh-CN: 区分 Pod 创建、Node 选择、绑定与容器启动。
     estimatedMinutes: 6
   - id: container-restart-vs-pod-replacement
     chapterId: workloads-self-healing
     status: available
-    prerequisites: [pending-and-scheduling]
+    prerequisites:
+      - pending-and-scheduling
     title:
-      {
-        en: Container restart is not Pod replacement,
-        ja: コンテナ再起動と Pod 置換の違い,
-        zh-CN: 容器重启不等于 Pod 替换,
-      }
+      en: Container restart is not Pod replacement
+      ja: コンテナ再起動と Pod 置換の違い
+      zh-CN: 容器重启不等于 Pod 替换
     learningOutcome:
-      {
-        en: Distinguish a restart inside one Pod from a new replacement Pod.,
-        ja: 同じ Pod 内の再起動と新しい置換 Pod を区別する。,
-        zh-CN: 区分同一 Pod 内重启与新替换 Pod。,
-      }
+      en: Distinguish a restart inside one Pod from a new replacement Pod.
+      ja: 同じ Pod 内の再起動と新しい置換 Pod を区別する。
+      zh-CN: 区分同一 Pod 内重启与新替换 Pod。
     estimatedMinutes: 8
   - id: labels-and-selectors
     chapterId: networking-resilience
     status: available
-    prerequisites: [container-restart-vs-pod-replacement]
-    title: { en: Labels and selectors, ja: Label と Selector, zh-CN: Label 与 Selector }
+    prerequisites:
+      - container-restart-vs-pod-replacement
+    title:
+      en: Labels and selectors
+      ja: Label と Selector
+      zh-CN: Label 与 Selector
     learningOutcome:
-      {
-        en: Predict which objects match a selector after label changes.,
-        ja: Label の変化後に selector と一致するオブジェクトを予測する。,
-        zh-CN: 预测 Label 变化后哪些对象匹配 Selector。,
-      }
+      en: Predict which objects match a selector after label changes.
+      ja: Label の変化後に selector と一致するオブジェクトを予測する。
+      zh-CN: 预测 Label 变化后哪些对象匹配 Selector。
     estimatedMinutes: 5
   - id: service-routes-to-pods
     chapterId: networking-resilience
     status: available
-    prerequisites: [labels-and-selectors]
+    prerequisites:
+      - labels-and-selectors
     title:
-      {
-        en: How a Service routes to ready Pods,
-        ja: Service が ready な Pod へルーティングする仕組み,
-        zh-CN: Service 如何将流量路由到 Ready Pod,
-      }
+      en: How a Service routes to ready Pods
+      ja: Service が ready な Pod へルーティングする仕組み
+      zh-CN: Service 如何将流量路由到 Ready Pod
     learningOutcome:
-      {
-        en: 'Distinguish stable Service access, endpoint readiness, and backend selection.',
-        ja: 安定した Service 入口、endpoint readiness、backend 選択を区別する。,
-        zh-CN: 区分稳定 Service 访问、Endpoint 就绪与后端选择。,
-      }
+      en: Distinguish stable Service access, endpoint readiness, and backend
+        selection.
+      ja: 安定した Service 入口、endpoint readiness、backend 選択を区別する。
+      zh-CN: 区分稳定 Service 访问、Endpoint 就绪与后端选择。
     estimatedMinutes: 6
   - id: dns-and-service-discovery
     chapterId: networking-resilience
     status: available
-    prerequisites: [service-routes-to-pods]
+    prerequisites:
+      - service-routes-to-pods
     title:
-      { en: DNS and Service discovery, ja: DNS と Service discovery, zh-CN: DNS 与 Service 发现 }
+      en: DNS and Service discovery
+      ja: DNS と Service discovery
+      zh-CN: DNS 与 Service 发现
     learningOutcome:
-      {
-        en: Separate Service-name resolution from the later application request route.,
-        ja: Service 名の解決と、その後のアプリケーションリクエスト経路を区別する。,
-        zh-CN: 区分 Service 名称解析与后续应用请求路线。,
-      }
+      en: Separate Service-name resolution from the later application request route.
+      ja: Service 名の解決と、その後のアプリケーションリクエスト経路を区別する。
+      zh-CN: 区分 Service 名称解析与后续应用请求路线。
     estimatedMinutes: 6
   - id: probes-and-rolling-update
     chapterId: resources-scaling
     status: available
-    prerequisites: [dns-and-service-discovery]
-    title: { en: Probes and a rolling update, ja: Probe とローリング更新, zh-CN: 探针与滚动更新 }
+    prerequisites:
+      - dns-and-service-discovery
+    title:
+      en: Probes and a rolling update
+      ja: Probe とローリング更新
+      zh-CN: 探针与滚动更新
     learningOutcome:
-      {
-        en: Distinguish probe effects and explain readiness-gated rollout progress.,
-        ja: probe の効果を区別し、readiness によるロールアウト進行を説明する。,
-        zh-CN: 区分探针作用并解释由就绪状态门控的滚动进度。,
-      }
+      en: Distinguish probe effects and explain readiness-gated rollout progress.
+      ja: probe の効果を区別し、readiness によるロールアウト進行を説明する。
+      zh-CN: 区分探针作用并解释由就绪状态门控的滚动进度。
     estimatedMinutes: 8
   - id: pod-network-and-cni
     chapterId: networking-resilience
     status: planned
-    prerequisites: [hpa]
-    title: { en: Pod network and CNI, ja: Pod ネットワークと CNI, zh-CN: Pod 网络与 CNI }
-    learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
+    prerequisites:
+      - hpa
+    title:
+      en: Pod network and CNI
+      ja: Pod ネットワークと CNI
+      zh-CN: Pod 网络与 CNI
+    learningOutcome:
+      en: Planned lesson
+      ja: 今後のレッスン
+      zh-CN: 规划课程
     estimatedMinutes: 8
   - id: service-types
     chapterId: external-traffic
     status: planned
-    prerequisites: [pod-network-and-cni]
-    title: { en: Service types, ja: Service タイプ, zh-CN: Service 类型 }
-    learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
+    prerequisites:
+      - pod-network-and-cni
+    title:
+      en: Service types
+      ja: Service タイプ
+      zh-CN: Service 类型
+    learningOutcome:
+      en: Planned lesson
+      ja: 今後のレッスン
+      zh-CN: 规划课程
     estimatedMinutes: 6
   - id: ingress-and-gateway
     chapterId: external-traffic
     status: planned
-    prerequisites: [service-types]
+    prerequisites:
+      - service-types
     title:
-      { en: Ingress and Gateway API, ja: Ingress と Gateway API, zh-CN: Ingress 与 Gateway API }
-    learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
+      en: Ingress and Gateway API
+      ja: Ingress と Gateway API
+      zh-CN: Ingress 与 Gateway API
+    learningOutcome:
+      en: Planned lesson
+      ja: 今後のレッスン
+      zh-CN: 规划课程
     estimatedMinutes: 8
   - id: full-external-request
     chapterId: external-traffic
     status: available
-    prerequisites: [probes-and-rolling-update]
+    prerequisites:
+      - probes-and-rolling-update
     title:
-      {
-        en: Complete external browser request,
-        ja: 完全な外部 Browser request,
-        zh-CN: 完整的外部浏览器请求,
-      }
+      en: Complete external browser request
+      ja: 完全な外部 Browser request
+      zh-CN: 完整的外部浏览器请求
     learningOutcome:
-      {
-        en: Separate public DNS from the application data path and distinguish Gateway API configuration from packet-processing infrastructure.,
-        ja: Public DNS と application data path を分け、Gateway API 設定と packet-processing infrastructure を区別する。,
-        zh-CN: 区分公共 DNS 与应用数据路径，并区分 Gateway API 配置和数据包处理基础设施。,
-      }
+      en: Separate public DNS from the application data path and distinguish Gateway
+        API configuration from packet-processing infrastructure.
+      ja: Public DNS と application data path を分け、Gateway API 設定と packet-processing
+        infrastructure を区別する。
+      zh-CN: 区分公共 DNS 与应用数据路径，并区分 Gateway API 配置和数据包处理基础设施。
     estimatedMinutes: 8
   - id: configmap-and-secret
     chapterId: configuration-storage
     status: planned
-    prerequisites: [ingress-and-gateway]
-    title: { en: ConfigMap and Secret, ja: ConfigMap と Secret, zh-CN: ConfigMap 与 Secret }
-    learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
+    prerequisites:
+      - ingress-and-gateway
+    title:
+      en: ConfigMap and Secret
+      ja: ConfigMap と Secret
+      zh-CN: ConfigMap 与 Secret
+    learningOutcome:
+      en: Planned lesson
+      ja: 今後のレッスン
+      zh-CN: 规划课程
     estimatedMinutes: 7
   - id: pvc-pv-storageclass
     chapterId: configuration-storage
     status: planned
-    prerequisites: [configmap-and-secret]
+    prerequisites:
+      - configmap-and-secret
     title:
-      {
-        en: 'PVC, PV, StorageClass, and ephemeral storage',
-        ja: PVC、PV、StorageClass、一時ストレージ,
-        zh-CN: PVC、PV、StorageClass 与临时存储,
-      }
-    learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
+      en: PVC, PV, StorageClass, and ephemeral storage
+      ja: PVC、PV、StorageClass、一時ストレージ
+      zh-CN: PVC、PV、StorageClass 与临时存储
+    learningOutcome:
+      en: Planned lesson
+      ja: 今後のレッスン
+      zh-CN: 规划课程
     estimatedMinutes: 9
   - id: statefulset
     chapterId: configuration-storage
     status: planned
-    prerequisites: [pvc-pv-storageclass]
-    title: { en: StatefulSet, ja: StatefulSet, zh-CN: StatefulSet }
-    learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
+    prerequisites:
+      - pvc-pv-storageclass
+    title:
+      en: StatefulSet
+      ja: StatefulSet
+      zh-CN: StatefulSet
+    learningOutcome:
+      en: Planned lesson
+      ja: 今後のレッスン
+      zh-CN: 规划课程
     estimatedMinutes: 8
   - id: requests-and-limits
     chapterId: resources-scaling
     status: planned
-    prerequisites: [statefulset]
-    title: { en: Requests and limits, ja: request と limit, zh-CN: Requests 与 Limits }
-    learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
+    prerequisites:
+      - statefulset
+    title:
+      en: Requests and limits
+      ja: request と limit
+      zh-CN: Requests 与 Limits
+    learningOutcome:
+      en: Planned lesson
+      ja: 今後のレッスン
+      zh-CN: 规划课程
     estimatedMinutes: 8
   - id: hpa
     chapterId: resources-scaling
     status: available
-    prerequisites: [full-external-request]
+    prerequisites:
+      - full-external-request
     title:
-      { en: Horizontal Pod Autoscaling, ja: Horizontal Pod Autoscaling, zh-CN: 水平 Pod 自动扩缩 }
+      en: Horizontal Pod Autoscaling
+      ja: Horizontal Pod Autoscaling
+      zh-CN: 水平 Pod 自动扩缩
     learningOutcome:
-      {
-        en: Explain that HPA changes desired replicas and trace the independent controllers and Node runtime that create a new Ready backend.,
-        ja: HPA が desired replicas を変更し、独立した controller と Node runtime が新しい Ready backend を作る流れを説明する。,
-        zh-CN: 解释 HPA 修改期望副本数，并追踪独立控制器与 Node 运行时如何创建新的 Ready 后端。,
-      }
+      en: Explain that HPA changes desired replicas and trace the independent
+        controllers and Node runtime that create a new Ready backend.
+      ja: HPA が desired replicas を変更し、独立した controller と Node runtime が新しい Ready
+        backend を作る流れを説明する。
+      zh-CN: 解释 HPA 修改期望副本数，并追踪独立控制器与 Node 运行时如何创建新的 Ready 后端。
     estimatedMinutes: 8
   - id: final-503-challenge
     chapterId: resources-scaling
     status: planned
-    prerequisites: [requests-and-limits]
+    prerequisites:
+      - requests-and-limits
     title:
-      {
-        en: Common failures and the final 503 challenge,
-        ja: よくある障害と最終 503 チャレンジ,
-        zh-CN: 常见故障与最终 503 挑战,
-      }
-    learningOutcome: { en: Planned lesson, ja: 今後のレッスン, zh-CN: 规划课程 }
+      en: Common failures and the final 503 challenge
+      ja: よくある障害と最終 503 チャレンジ
+      zh-CN: 常见故障与最终 503 挑战
+    learningOutcome:
+      en: Planned lesson
+      ja: 今後のレッスン
+      zh-CN: 规划课程
     estimatedMinutes: 10

@@ -327,60 +327,63 @@ describe('M8 foundations curriculum with M9 flow-story expansion', () => {
     }
   }, 15_000);
 
-  it('opens by separating image packaging from Kubernetes orchestration', () => {
+  it('opens with the operational problem before introducing Kubernetes object names', () => {
     const compiled = compiledLesson('why-kubernetes-exists');
     const authored = lessonById.get('why-kubernetes-exists');
     if (!authored) throw new Error('Missing why-kubernetes-exists lesson');
 
-    expect(authored.learningOutcome.en).toContain('container packaging');
-    expect(authored.learningOutcome.en).toContain('orchestration');
+    expect(authored.learningOutcome.en).toContain('Kubernetes becomes useful');
+    expect(authored.learningOutcome.en).toContain('desired state');
     expect(authored.sourceIds).toEqual(
-      expect.arrayContaining(['k8s-container-images', 'k8s-cluster-architecture']),
+      expect.arrayContaining(['k8s-container-images', 'k8s-objects', 'k8s-deployments']),
     );
-    expect(authored.steps.map((candidate) => candidate.id)).toEqual(
+    expect(authored.steps.map((candidate) => candidate.id)).toEqual([
+      'image-packages-the-app',
+      'declare-three-replicas',
+      'three-replaceable-pods',
+      'one-pod-is-lost',
+      'controller-restores-count',
+      'replacement-becomes-ready',
+    ]);
+
+    const startSimple = step(compiled, 'image-packages-the-app');
+    const authoredStart = authored.steps.find(
+      (candidate) => candidate.id === 'image-packages-the-app',
+    );
+    if (!authoredStart) throw new Error('Missing image-packages-the-app step');
+    expect(authoredStart.title.en).toContain('one container');
+    expect(authoredStart.narration.en).toContain('container runtime can be enough');
+    expect(authoredStart.teaching.takeaway.en).toContain('without Kubernetes');
+    expect(authoredStart.introducesTerms).toEqual(['container-image', 'container']);
+
+    const containerId = 'container-status:shop:Pod:api-a-old:Container:api';
+    expect(startSimple.world.entities[containerId]).toMatchObject({ kind: 'Container' });
+    expect(startSimple.evidence.map((item) => item.entityId)).toContain(containerId);
+
+    const threeCopies = authored.steps.find(
+      (candidate) => candidate.id === 'declare-three-replicas',
+    );
+    if (!threeCopies) throw new Error('Missing declare-three-replicas step');
+    expect(threeCopies.evidence.entityIds).toEqual(
       expect.arrayContaining([
-        'image-packages-the-app',
-        'one-pod-is-lost',
-        'controller-restores-count',
-        'replacement-becomes-ready',
+        'api-object:namespaced:shop:Pod:api-a-old',
+        'api-object:namespaced:shop:Pod:api-b',
+        'api-object:namespaced:shop:Pod:api-c',
       ]),
     );
 
-    const packaging = step(compiled, 'image-packages-the-app');
-    const authoredPackaging = authored.steps.find(
-      (candidate) => candidate.id === 'image-packages-the-app',
+    const desiredState = authored.steps.find(
+      (candidate) => candidate.id === 'three-replaceable-pods',
     );
-    if (!authoredPackaging) throw new Error('Missing image-packages-the-app step');
-    expect(authoredPackaging.introducesTerms).toEqual([
-      'container-image',
-      'container',
-      'orchestration',
-    ]);
-    expect(authoredPackaging.sourceIds).toEqual(
-      expect.arrayContaining(['k8s-container-images', 'k8s-cluster-architecture']),
-    );
+    if (!desiredState) throw new Error('Missing three-replaceable-pods step');
+    expect(desiredState.narration.en).toContain('desired state');
+    expect(desiredState.introducesTerms).toEqual(['desired-state', 'deployment', 'replicaset']);
 
-    const containerId = 'container-status:shop:Pod:api-a-old:Container:api';
-    const container = packaging.world.entities[containerId];
-    expect(container?.kind).toBe('Container');
-    expect(container?.data.image).toBe('registry.example.invalid/shop/api:v1');
-    expect(packaging.evidence.map((item) => item.entityId)).toContain(containerId);
-    expect(packaging.evidence).toContainEqual(
-      expect.objectContaining({
-        entityId: containerId,
-        path: '/data/image',
-        after: {
-          en: 'registry.example.invalid/shop/api:v1',
-          ja: 'registry.example.invalid/shop/api:v1',
-          'zh-CN': 'registry.example.invalid/shop/api:v1',
-        },
-      }),
-    );
-    expect(packaging.view.entityStates[containerId]).toMatchObject({
-      visible: true,
-      emphasis: 'focused',
-      inspectorMode: 'expanded',
-    });
+    const lost = step(compiled, 'one-pod-is-lost');
+    const recovered = step(compiled, 'replacement-becomes-ready');
+    const replicaSetId = 'api-object:namespaced:shop:ReplicaSet:api-rs';
+    expect(lost.world.entities[replicaSetId]?.data).toMatchObject({ readyReplicas: 2 });
+    expect(recovered.world.entities[replicaSetId]?.data).toMatchObject({ readyReplicas: 3 });
   });
 
   it('separates DNS resolution from the later application route', () => {

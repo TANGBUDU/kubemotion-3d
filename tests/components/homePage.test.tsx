@@ -68,9 +68,13 @@ describe('HomePage orientation', () => {
     renderHome();
 
     expect(screen.getByTestId('orientation-card')).toBeVisible();
-    expect(screen.getByText('Control Plane decides.')).toBeVisible();
-    expect(screen.getByText('Worker Nodes run Pods.')).toBeVisible();
-    expect(screen.getByText('A Pod contains one or more Containers.')).toBeVisible();
+    expect(screen.getByText('One app can run without Kubernetes.')).toBeVisible();
+    expect(screen.getByText('Kubernetes keeps a declared result true over time.')).toBeVisible();
+    expect(
+      screen.getByText(
+        'Every highlighted line has one job: request, control, scheduling, or local runtime.',
+      ),
+    ).toBeVisible();
     expect(screen.getAllByRole('link', { name: 'Start lesson' })).toHaveLength(1);
     expect(screen.getByRole('link', { name: 'Start lesson' })).toHaveAttribute(
       'href',
@@ -82,9 +86,11 @@ describe('HomePage orientation', () => {
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
     expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
-      'Interactive lesson preview: Why Kubernetes exists',
+      'Interactive lesson preview: Why Kubernetes? From one container to self-healing',
     );
-    expect(screen.getByText('CURRENT LESSON · Why Kubernetes exists')).toBeVisible();
+    expect(
+      screen.getByText('CURRENT LESSON · Why Kubernetes? From one container to self-healing'),
+    ).toBeVisible();
     expect(screen.queryByRole('link', { name: /explore/i })).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'View orientation again' }),
@@ -102,9 +108,9 @@ describe('HomePage orientation', () => {
     const hpaStory = document.querySelector('[data-flow-story-id="hpa-scale-out"]');
     expect(externalStory?.querySelector('a')).toHaveAttribute(
       'href',
-      '/learn/full-external-request/0',
+      '/stories/external-browser-request/0',
     );
-    expect(hpaStory?.querySelector('a')).toHaveAttribute('href', '/learn/hpa/0');
+    expect(hpaStory?.querySelector('a')).toHaveAttribute('href', '/stories/hpa-scale-out/0');
   });
 
   it('remembers orientation when the learner starts the lesson', () => {
@@ -128,7 +134,7 @@ describe('HomePage orientation', () => {
 
     fireEvent.click(reopen);
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /Three ideas/i })).toHaveFocus(),
+      expect(screen.getByRole('heading', { name: /Three things to know/i })).toHaveFocus(),
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Continue without review' }));
@@ -220,15 +226,19 @@ describe('HomePage orientation', () => {
   it.each([
     [
       'en',
-      'Interactive lesson preview: Why Kubernetes exists',
-      'CURRENT LESSON · Why Kubernetes exists',
+      'Interactive lesson preview: Why Kubernetes? From one container to self-healing',
+      'CURRENT LESSON · Why Kubernetes? From one container to self-healing',
     ],
     [
       'ja',
-      'インタラクティブなレッスンプレビュー: Kubernetes が存在する理由',
-      '現在のレッスン · Kubernetes が存在する理由',
+      'インタラクティブなレッスンプレビュー: なぜ Kubernetes が必要？ 1つのコンテナから自己修復まで',
+      '現在のレッスン · なぜ Kubernetes が必要？ 1つのコンテナから自己修復まで',
     ],
-    ['zh-CN', '交互式课程预览: 为什么需要 Kubernetes', '当前课程 · 为什么需要 Kubernetes'],
+    [
+      'zh-CN',
+      '交互式课程预览: 为什么需要 Kubernetes？从一个容器到自动恢复',
+      '当前课程 · 为什么需要 Kubernetes？从一个容器到自动恢复',
+    ],
   ] as const)('localizes the %s hero preview title', (locale, ariaLabel, caption) => {
     useAppStore.setState({ locale });
     renderHome();
@@ -241,9 +251,11 @@ describe('HomePage orientation', () => {
     useAppStore.setState({ locale: 'zh-CN' });
     renderHome();
 
-    expect(screen.getByText('控制平面负责决策。')).toBeVisible();
-    expect(screen.getByText('工作节点运行 Pod。')).toBeVisible();
-    expect(screen.getByText('一个 Pod 包含一个或多个容器。')).toBeVisible();
+    expect(screen.getByText('只运行一个应用时，未必需要 Kubernetes。')).toBeVisible();
+    expect(screen.getByText('Kubernetes 的价值是让你声明的结果长期自动成立。')).toBeVisible();
+    expect(
+      screen.getByText('每条高亮线只表达一种动作：请求、控制、调度或 Node 内执行。'),
+    ).toBeVisible();
     expect(screen.getByRole('link', { name: '开始课程' })).toBeVisible();
   });
 });

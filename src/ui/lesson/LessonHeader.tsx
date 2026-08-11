@@ -1,4 +1,5 @@
-import { Camera, Languages, List, Play, RotateCcw } from 'lucide-react';
+import { Camera, Home, Languages, List, Play, RotateCcw } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { Locale } from '../../app/types';
 import { lessonUi } from './copy';
 
@@ -36,16 +37,26 @@ export function LessonHeader({
 
   return (
     <header className="lesson-header">
-      <button
-        className="lesson-header-icon course-trigger"
-        type="button"
-        aria-label={t.openCourse}
-        aria-expanded={courseOpen}
-        aria-controls="course-drawer"
-        onClick={onOpenCourse}
-      >
-        <List size={19} aria-hidden="true" />
-      </button>
+      <div className="lesson-header-nav">
+        <Link
+          className="lesson-header-icon lesson-home-link"
+          to="/"
+          aria-label={t.backHome}
+          title={t.backHome}
+        >
+          <Home size={18} aria-hidden="true" />
+        </Link>
+        <button
+          className="lesson-header-icon course-trigger"
+          type="button"
+          aria-label={t.openCourse}
+          aria-expanded={courseOpen}
+          aria-controls="course-drawer"
+          onClick={onOpenCourse}
+        >
+          <List size={19} aria-hidden="true" />
+        </button>
+      </div>
       <div className="lesson-heading">
         <p>{chapter}</p>
         <h1>{lessonTitle}</h1>

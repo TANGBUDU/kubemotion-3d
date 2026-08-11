@@ -2,23 +2,23 @@ import { expect, test } from '@playwright/test';
 
 test('home to first lesson', async ({ page }) => {
   await page.goto('/#/');
-  await expect(page.getByText('Control Plane decides.')).toBeVisible();
+  await expect(page.getByText('One app can run without Kubernetes.')).toBeVisible();
   await expect(
     page.getByRole('img', {
-      name: 'Interactive lesson preview: Why Kubernetes exists',
+      name: 'Interactive lesson preview: Why Kubernetes? From one container to self-healing',
     }),
   ).toBeVisible();
   await expect(page.locator('.scene-caption')).toContainText(
-    'CURRENT LESSON · Why Kubernetes exists',
+    'CURRENT LESSON · Why Kubernetes? From one container to self-healing',
   );
   await page.getByRole('link', { name: /^Start lesson$/i }).click();
   await expect(page.getByTestId('teaching-step-heading')).toContainText(
-    'An image packages the application',
+    'Start simple: one container can run the app',
   );
   await page.getByRole('button', { name: /Next/i }).click();
   await expect(page).toHaveURL(/why-kubernetes-exists\/1$/);
   await expect(page.getByTestId('teaching-step-heading')).toContainText(
-    'Declare the target, not a one-time action',
+    'The real problem: keep three copies running',
   );
 });
 
@@ -28,16 +28,20 @@ test('localized home preview and entry stay on the same lesson', async ({ page }
 
   await expect(
     page.getByRole('img', {
-      name: '交互式课程预览: 为什么需要 Kubernetes',
+      name: '交互式课程预览: 为什么需要 Kubernetes？从一个容器到自动恢复',
     }),
   ).toBeVisible();
-  await expect(page.locator('.scene-caption')).toContainText('当前课程 · 为什么需要 Kubernetes');
+  await expect(page.locator('.scene-caption')).toContainText(
+    '当前课程 · 为什么需要 Kubernetes？从一个容器到自动恢复',
+  );
 
   const startLesson = page.getByRole('link', { name: '开始课程' });
   await expect(startLesson).toHaveAttribute('href', '#/learn/why-kubernetes-exists/0');
   await startLesson.click();
   await expect(page).toHaveURL(/why-kubernetes-exists\/0$/);
-  await expect(page.getByTestId('teaching-step-heading')).toContainText('镜像负责打包应用');
+  await expect(page.getByTestId('teaching-step-heading')).toContainText(
+    '先从最简单开始：一个容器就能跑应用',
+  );
 });
 
 test('saved Pod progress previews step zero while the action resumes step three', async ({

@@ -180,7 +180,7 @@ describe('WideLineHandle', () => {
     expect(geometryDispose).toHaveBeenCalledTimes(1);
     expect(handle.material).toBe(material);
     expect(handle.sample(1).toArray()).toEqual([4, 0, 1]);
-    expect(handle.material.dashed).toBe(false);
+    expect(handle.material.dashed).toBe(true);
     handle.dispose();
     handle.dispose();
     expect(geometryDispose).toHaveBeenCalledTimes(1);

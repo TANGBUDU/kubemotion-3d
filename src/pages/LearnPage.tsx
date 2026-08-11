@@ -148,7 +148,7 @@ export function LearnPage() {
   const [courseOpen, setCourseOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailSection, setDetailSection] = useState<DetailSection>('inspector');
-  const [sheetExpanded, setSheetExpanded] = useState(true);
+  const [sheetExpanded, setSheetExpanded] = useState(() => !isMobile);
   const t = lessonUi(locale);
   const valid = Boolean(
     lesson &&
@@ -358,6 +358,32 @@ export function LearnPage() {
   const safeInsets = isMobile
     ? { top: 12, right: 12, bottom: 12, left: 12 }
     : { top: 18, right: 18, bottom: 18, left: 18 };
+  const firstActiveRoute = step.view.activeRoutes[0];
+  const focusHint = firstActiveRoute
+    ? (() => {
+        const firstHop = firstActiveRoute.hops[0];
+        const lastHop = firstActiveRoute.hops[firstActiveRoute.hops.length - 1];
+        const source = firstHop
+          ? (step.world.entities[firstHop.fromEntityId]?.name ?? firstHop.fromEntityId)
+          : firstActiveRoute.semantic;
+        const target = lastHop
+          ? (step.world.entities[lastHop.toEntityId]?.name ?? lastHop.toEntityId)
+          : firstActiveRoute.semantic;
+        return t.followPath(source, target);
+      })()
+    : focusedId
+      ? t.focusOn(step.world.entities[focusedId]?.name ?? focusedId)
+      : t.focusOn(authoredStep.title[locale]);
+  const visibleRelationSemantics = Array.from(
+    new Set(
+      Object.entries(step.view.relationStates)
+        .filter(([, state]) => state.visible)
+        .flatMap(([relationId]) => {
+          const relation = step.world.relations[relationId];
+          return relation ? [relation.semantic] : [];
+        }),
+    ),
+  );
   const routeSummary = step.view.activeRoutes
     .map((route) => {
       const hops = route.hops
@@ -463,7 +489,12 @@ export function LearnPage() {
               onSelectEntity={handleSelectEntity}
             />
           </div>
-          <SceneLegend locale={locale} view={step.view.view} />
+          <SceneLegend
+            locale={locale}
+            view={step.view.view}
+            activeRoutes={step.view.activeRoutes}
+            relationSemantics={visibleRelationSemantics}
+          />
         </>
       )}
       {step.view.comparison && <CompareView model={step.view.comparison} locale={locale} />}
@@ -502,6 +533,8 @@ export function LearnPage() {
         stepIndex={stepIndex}
         stepCount={lesson.steps.length}
         title={authoredStep.title[locale]}
+        narration={authoredStep.narration[locale]}
+        focusHint={focusHint}
         whatChanged={authoredStep.teaching.whatChanged[locale]}
         whyItHappened={authoredStep.teaching.whyItHappened[locale]}
         takeaway={authoredStep.teaching.takeaway[locale]}

@@ -14,6 +14,9 @@ interface RouteAnimationProbe {
 
 test('all ten steps expose the correct causal and factual timeline', async ({ page }) => {
   await gotoGoldenStep(page, 0);
+  await expect(page.getByRole('link', { name: 'Back to home' })).toHaveAttribute('href', '#/');
+  await expect(page.getByTestId('teaching-plain-language')).toBeVisible();
+  await expect(page.getByTestId('teaching-focus-hint')).toBeVisible();
   // Control Flow owns its zones now instead of borrowing the Overview islands, and a step with no
   // unscheduled Pod no longer emits an empty transit tray.
   await expect(page.locator('.scene-layout-label')).toContainText([

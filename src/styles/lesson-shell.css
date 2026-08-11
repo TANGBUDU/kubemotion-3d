@@ -18,7 +18,7 @@
   z-index: 15;
   display: grid;
   min-width: 0;
-  grid-template-columns: 42px minmax(210px, 1fr) minmax(180px, 0.65fr) auto;
+  grid-template-columns: 88px minmax(210px, 1fr) minmax(180px, 0.65fr) auto;
   align-items: center;
   gap: 12px;
   padding: 8px 14px;
@@ -28,6 +28,7 @@
 }
 
 .lesson-header button,
+.lesson-header a.lesson-header-icon,
 .lesson-language {
   display: inline-flex;
   min-width: 38px;
@@ -41,9 +42,24 @@
 }
 
 .lesson-header button:hover,
+.lesson-header a.lesson-header-icon:hover,
 .lesson-language:hover {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
   color: var(--text-primary);
+}
+
+.lesson-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lesson-header a.lesson-header-icon {
+  text-decoration: none;
+}
+
+.lesson-home-link {
+  color: var(--accent) !important;
 }
 
 .lesson-heading {
@@ -258,7 +274,9 @@
 
 .legend-line.data::after,
 .legend-line.scheduling::after,
-.legend-line.node-runtime::after {
+.legend-line.node-runtime::after,
+.legend-line.dns::after,
+.legend-line.storage::after {
   position: absolute;
   top: -5px;
   right: -1px;

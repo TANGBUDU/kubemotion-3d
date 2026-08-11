@@ -66,7 +66,7 @@ describe('course entry and completion flow', () => {
   it('starts the first available lesson from the manifest order', async () => {
     renderCourse('/learn');
     expect(await screen.findByTestId('teaching-step-heading')).toHaveTextContent(
-      'An image packages the application',
+      'Start simple: one container can run the app',
     );
   });
 
