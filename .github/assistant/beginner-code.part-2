@@ -1,0 +1,357 @@
+@@ -502,6 +533,8 @@ export function LearnPage() {
+         stepIndex={stepIndex}
+         stepCount={lesson.steps.length}
+         title={authoredStep.title[locale]}
++        narration={authoredStep.narration[locale]}
++        focusHint={focusHint}
+         whatChanged={authoredStep.teaching.whatChanged[locale]}
+         whyItHappened={authoredStep.teaching.whyItHappened[locale]}
+         takeaway={authoredStep.teaching.takeaway[locale]}
+diff --git a/src/renderer/relations/RelationStyleCatalog.ts b/src/renderer/relations/RelationStyleCatalog.ts
+index d50cfa9..070eb82 100644
+--- a/src/renderer/relations/RelationStyleCatalog.ts
++++ b/src/renderer/relations/RelationStyleCatalog.ts
+@@ -28,13 +28,13 @@ const context = (
+ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> = Object.freeze({
+   ownership: context('ownership', {
+     color: colors.control,
+-    widthCssPx: 1.75,
+-    opacity: 0.66,
++    widthCssPx: 1.35,
++    opacity: 0.34,
+     dashed: false,
+     dashSize: 0,
+     gapSize: 0,
+     dashScale: 1,
+-    arrowhead: true,
++    arrowhead: false,
+     chevrons: false,
+     curve: 'bezier',
+     elevation: 0.16,
+@@ -60,13 +60,13 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
+   }),
+   placement: context('placement', {
+     color: colors.placement,
+-    widthCssPx: 1.6,
+-    opacity: 0.62,
++    widthCssPx: 1.3,
++    opacity: 0.34,
+     dashed: false,
+     dashSize: 0,
+     gapSize: 0,
+     dashScale: 1,
+-    arrowhead: true,
++    arrowhead: false,
+     chevrons: false,
+     curve: 'orthogonal',
+     elevation: 0.12,
+@@ -92,13 +92,13 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
+   }),
+   'control-observation': context('control-observation', {
+     color: colors.control,
+-    widthCssPx: 2,
+-    opacity: 0.72,
++    widthCssPx: 1.45,
++    opacity: 0.38,
+     dashed: true,
+     dashSize: 0.34,
+     gapSize: 0.22,
+     dashScale: 1,
+-    arrowhead: true,
++    arrowhead: false,
+     chevrons: false,
+     curve: 'orthogonal',
+     elevation: 0.28,
+@@ -108,13 +108,13 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
+   }),
+   selection: context('selection', {
+     color: colors.endpoint,
+-    widthCssPx: 1.75,
+-    opacity: 0.64,
++    widthCssPx: 1.25,
++    opacity: 0.32,
+     dashed: true,
+     dashSize: 0.25,
+     gapSize: 0.14,
+     dashScale: 1,
+-    arrowhead: true,
++    arrowhead: false,
+     chevrons: false,
+     curve: 'bezier',
+     elevation: 0.2,
+@@ -124,13 +124,13 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
+   }),
+   'endpoint-membership': context('endpoint-membership', {
+     color: colors.endpoint,
+-    widthCssPx: 1.75,
+-    opacity: 0.72,
++    widthCssPx: 1.25,
++    opacity: 0.36,
+     dashed: false,
+     dashSize: 0,
+     gapSize: 0,
+     dashScale: 1,
+-    arrowhead: true,
++    arrowhead: false,
+     chevrons: false,
+     curve: 'bezier',
+     elevation: 0.18,
+@@ -140,14 +140,14 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
+   }),
+   'data-flow': context('data-flow', {
+     color: colors.dataFlow,
+-    widthCssPx: 2.25,
+-    opacity: 0.78,
++    widthCssPx: 1.4,
++    opacity: 0.34,
+     dashed: false,
+     dashSize: 0,
+     gapSize: 0,
+     dashScale: 1,
+-    arrowhead: true,
+-    chevrons: true,
++    arrowhead: false,
++    chevrons: false,
+     curve: 'bezier',
+     elevation: 0.3,
+     renderOrder: 5,
+@@ -156,13 +156,13 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
+   }),
+   'DNS-flow': context('DNS-flow', {
+     color: colors.dns,
+-    widthCssPx: 2,
+-    opacity: 0.76,
++    widthCssPx: 1.35,
++    opacity: 0.34,
+     dashed: true,
+     dashSize: 0.38,
+     gapSize: 0.18,
+     dashScale: 1,
+-    arrowhead: true,
++    arrowhead: false,
+     chevrons: false,
+     curve: 'bezier',
+     elevation: 0.3,
+@@ -172,13 +172,13 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
+   }),
+   storage: context('storage', {
+     color: colors.storage,
+-    widthCssPx: 2.25,
+-    opacity: 0.76,
++    widthCssPx: 1.4,
++    opacity: 0.36,
+     dashed: false,
+     dashSize: 0,
+     gapSize: 0,
+     dashScale: 1,
+-    arrowhead: true,
++    arrowhead: false,
+     chevrons: false,
+     curve: 'orthogonal',
+     elevation: 0.22,
+@@ -188,13 +188,13 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
+   }),
+   configuration: context('configuration', {
+     color: colors.configuration,
+-    widthCssPx: 1.5,
+-    opacity: 0.52,
++    widthCssPx: 1.15,
++    opacity: 0.26,
+     dashed: true,
+     dashSize: 0.2,
+     gapSize: 0.18,
+     dashScale: 1,
+-    arrowhead: true,
++    arrowhead: false,
+     chevrons: false,
+     curve: 'orthogonal',
+     elevation: 0.18,
+@@ -231,11 +231,11 @@ const ACTIVE_ROUTE_STYLES: Readonly<Record<RouteSemantic, TeachingRouteStyle>> =
+     color: colors.scheduling,
+     tokenColor: 0xffd27a,
+     tokenCount: 1,
+-    widthCssPx: 5,
++    widthCssPx: 4.75,
+     opacity: 1,
+-    dashed: false,
+-    dashSize: 0,
+-    gapSize: 0,
++    dashed: true,
++    dashSize: 0.18,
++    gapSize: 0.11,
+     dashScale: 1,
+     arrowhead: true,
+     chevrons: true,
+@@ -349,6 +349,11 @@ export const relationLegendStyles = Object.freeze({
+   control: ACTIVE_ROUTE_STYLES.control,
+   scheduling: ACTIVE_ROUTE_STYLES.scheduling,
+   nodeRuntime: ACTIVE_ROUTE_STYLES['node-runtime'],
++  dns: ACTIVE_ROUTE_STYLES.dns,
+   storage: ACTIVE_ROUTE_STYLES.storage,
+   ownership: CONTEXT_STYLES.ownership,
++  placement: CONTEXT_STYLES.placement,
++  controlContext: CONTEXT_STYLES['control-observation'],
++  endpointMembership: CONTEXT_STYLES['endpoint-membership'],
++  configuration: CONTEXT_STYLES.configuration,
+ });
+diff --git a/src/styles/lesson-shell.css b/src/styles/lesson-shell.css
+index 2077163..fb9a36e 100644
+--- a/src/styles/lesson-shell.css
++++ b/src/styles/lesson-shell.css
+@@ -18,7 +18,7 @@
+   z-index: 15;
+   display: grid;
+   min-width: 0;
+-  grid-template-columns: 42px minmax(210px, 1fr) minmax(180px, 0.65fr) auto;
++  grid-template-columns: 88px minmax(210px, 1fr) minmax(180px, 0.65fr) auto;
+   align-items: center;
+   gap: 12px;
+   padding: 8px 14px;
+@@ -28,6 +28,7 @@
+ }
+ 
+ .lesson-header button,
++.lesson-header a.lesson-header-icon,
+ .lesson-language {
+   display: inline-flex;
+   min-width: 38px;
+@@ -41,11 +42,26 @@
+ }
+ 
+ .lesson-header button:hover,
++.lesson-header a.lesson-header-icon:hover,
+ .lesson-language:hover {
+   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+   color: var(--text-primary);
+ }
+ 
++.lesson-header-nav {
++  display: flex;
++  align-items: center;
++  gap: 6px;
++}
++
++.lesson-header a.lesson-header-icon {
++  text-decoration: none;
++}
++
++.lesson-home-link {
++  color: var(--accent) !important;
++}
++
+ .lesson-heading {
+   min-width: 0;
+ }
+@@ -258,7 +274,9 @@
+ 
+ .legend-line.data::after,
+ .legend-line.scheduling::after,
+-.legend-line.node-runtime::after {
++.legend-line.node-runtime::after,
++.legend-line.dns::after,
++.legend-line.storage::after {
+   position: absolute;
+   top: -5px;
+   right: -1px;
+diff --git a/src/styles/mobile.css b/src/styles/mobile.css
+index 018aaa2..ad11856 100644
+--- a/src/styles/mobile.css
++++ b/src/styles/mobile.css
+@@ -21,7 +21,7 @@
+   }
+ 
+   .lesson-header {
+-    grid-template-columns: 44px minmax(0, 1fr) auto;
++    grid-template-columns: 88px minmax(0, 1fr) auto;
+     gap: 7px;
+     padding: calc(2px + env(safe-area-inset-top, 0px)) max(6px, env(safe-area-inset-right, 0px)) 2px
+       max(6px, env(safe-area-inset-left, 0px));
+@@ -39,7 +39,7 @@
+     position: absolute;
+     right: calc(118px + env(safe-area-inset-right, 0px));
+     bottom: 3px;
+-    left: calc(57px + env(safe-area-inset-left, 0px));
++    left: calc(98px + env(safe-area-inset-left, 0px));
+     display: block;
+   }
+ 
+@@ -56,6 +56,7 @@
+   }
+ 
+   .lesson-header button,
++  .lesson-header a.lesson-header-icon,
+   .lesson-language {
+     width: var(--touch-target);
+     min-width: var(--touch-target);
+diff --git a/src/styles/teaching-panel.css b/src/styles/teaching-panel.css
+index 10b2cb6..f48dbd6 100644
+--- a/src/styles/teaching-panel.css
++++ b/src/styles/teaching-panel.css
+@@ -33,6 +33,67 @@
+   letter-spacing: -0.025em;
+ }
+ 
++.teaching-plain-language {
++  padding: 11px 12px;
++  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
++  border-radius: 12px;
++  background: color-mix(in srgb, var(--accent) 8%, transparent);
++}
++
++.teaching-plain-language > div {
++  display: flex;
++  align-items: center;
++  gap: 7px;
++  margin-bottom: 6px;
++  color: var(--accent);
++}
++
++.teaching-plain-language h3 {
++  margin: 0;
++  font-size: 10px;
++  font-weight: 800;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++}
++
++.teaching-plain-language p {
++  margin: 0;
++  color: #eef7ff;
++  font-size: 13px;
++  font-weight: 560;
++  line-height: 1.52;
++}
++
++.teaching-focus-hint {
++  display: flex;
++  align-items: flex-start;
++  gap: 8px;
++  padding: 8px 10px;
++  border-radius: 10px;
++  background: rgb(8 20 34 / 58%);
++  color: var(--warning);
++}
++
++.teaching-focus-hint > div {
++  display: grid;
++  min-width: 0;
++  gap: 2px;
++}
++
++.teaching-focus-hint span {
++  color: var(--warning);
++  font-size: 9px;
++  font-weight: 800;
++  letter-spacing: 0.09em;
++  text-transform: uppercase;
++}
++
++.teaching-focus-hint strong {
++  color: var(--text-primary);
++  font-size: 11px;
++  line-height: 1.4;
++}
++
+ .teaching-section h3,
+ .teaching-takeaway h3 {
+   margin: 0 0 5px;
