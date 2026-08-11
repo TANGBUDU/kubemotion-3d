@@ -40,9 +40,15 @@ const copy: Record<
     singleQuestion: 'If this process stops tomorrow, who notices and restores it?',
     singleConclusion: 'Kubernetes is not needed just to start one process.',
     replicasTitle: 'Starting three copies is easy. Keeping three healthy is the hard part.',
-    replicasIntro: 'You can launch three copies by hand—but then someone must continuously manage them.',
+    replicasIntro:
+      'You can launch three copies by hand—but then someone must continuously manage them.',
     you: 'Without orchestration, that controller is you',
-    chores: ['Detect a failure', 'Count what remains', 'Choose where a replacement runs', 'Start it again'],
+    chores: [
+      'Detect a failure',
+      'Count what remains',
+      'Choose where a replacement runs',
+      'Start it again',
+    ],
     replicasConclusion: 'This continuing maintenance problem is where Kubernetes becomes useful.',
   },
   ja: {
@@ -55,7 +61,8 @@ const copy: Record<
     singleQuestion: '明日このプロセスが止まったら、誰が気づいて復旧しますか？',
     singleConclusion: '1つのプロセスを起動するだけなら Kubernetes は不要です。',
     replicasTitle: '3つ起動するのは簡単。3つを正常に保つのが難しい。',
-    replicasIntro: '手動で3つ起動できます。しかし、その後は誰かが継続して管理しなければなりません。',
+    replicasIntro:
+      '手動で3つ起動できます。しかし、その後は誰かが継続して管理しなければなりません。',
     you: 'オーケストレーションがなければ、その controller はあなたです',
     chores: ['障害を見つける', '残っている数を数える', '置換先を選ぶ', 'もう一度起動する'],
     replicasConclusion: 'この「継続して守る」問題で Kubernetes が役立ちます。',
