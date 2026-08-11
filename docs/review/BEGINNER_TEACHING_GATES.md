@@ -31,4 +31,5 @@ Additional rules:
 - Do not count automated overlap checks as proof that a scene is understandable.
 
 The focused browser gate now verifies the named scheduling decision, completion-card containment,
-and reduced-motion exit cleanup before the review screenshots are accepted.
+reduced-motion exit cleanup, and immediate active-step visibility before the review screenshots are
+accepted.
