@@ -24,9 +24,32 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Apply mobile teaching-sheet fix
         run: |
-          git apply --check .github/assistant/mobile-sheet.patch
-          git apply .github/assistant/mobile-sheet.patch
-          rm .github/assistant/mobile-sheet.patch
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/pages/LearnPage.tsx')
+          text = path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  "import { useCallback, useEffect, useMemo, useState } from 'react';",
+                  "import { useCallback, useEffect, useMemo, useRef, useState } from 'react';",
+              ),
+              (
+                  "  const [sheetExpanded, setSheetExpanded] = useState(() => !isMobile);\n  const t = lessonUi(locale);",
+                  "  const [sheetExpanded, setSheetExpanded] = useState(() => !isMobile);\n  const previousIsMobile = useRef(isMobile);\n  const t = lessonUi(locale);",
+              ),
+              (
+                  "  useEffect(() => {\n    if (valid && lesson) enterLesson(lesson.id, stepIndex);\n  }, [enterLesson, lesson, stepIndex, valid]);\n\n  useEffect(() => {\n    const onKey = (event: KeyboardEvent) => {",
+                  "  useEffect(() => {\n    if (valid && lesson) enterLesson(lesson.id, stepIndex);\n  }, [enterLesson, lesson, stepIndex, valid]);\n\n  useEffect(() => {\n    if (previousIsMobile.current === isMobile) return;\n    previousIsMobile.current = isMobile;\n    setSheetExpanded(!isMobile);\n  }, [isMobile]);\n\n  useEffect(() => {\n    const onKey = (event: KeyboardEvent) => {",
+              ),
+          ]
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f'Missing expected LearnPage text: {old[:100]!r}')
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+          rm -f .github/assistant/mobile-sheet.patch
       - run: pnpm format
       - run: git diff --check
       - run: pnpm lint
