@@ -24,16 +24,19 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Apply beginner-first teaching changes
         run: |
-          base64 -d .github/assistant/beginner-code.patch.gz.b64 | gzip -d > /tmp/beginner-code.patch
+          git show 161e57bee44fed0166e52ae2cc0077665b721571:.github/assistant/beginner-code.patch.gz.b64 | base64 -d | gzip -d > /tmp/beginner-code.patch
           base64 -d .github/assistant/beginner-content.mjs.gz.b64 | gzip -d > .beginner-content.mjs
           git apply --check /tmp/beginner-code.patch
           git apply /tmp/beginner-code.patch
+          git apply --check .github/assistant/beginner-tests.patch
+          git apply .github/assistant/beginner-tests.patch
           node ./.beginner-content.mjs
           rm -f .beginner-content.mjs
           rm -f .github/assistant/beginner-code.part-1
           rm -f .github/assistant/beginner-code.part-2
           rm -f .github/assistant/beginner-code.patch.gz.b64
           rm -f .github/assistant/beginner-content.mjs.gz.b64
+          rm -f .github/assistant/beginner-tests.patch
           rm -f .github/assistant/beginner-refactor.trigger
           rm -f .github/workflows/assistant-beginner-refactor.yml
       - run: pnpm format
