@@ -354,14 +354,14 @@ steps:
       ja: Request A の完了後も api-a が ready=false、serving=false、terminating=false で一覧に残ることを確認する。
       zh-CN: 观察请求 A 完成后，api-a 仍以 ready=false、serving=false、terminating=false 保留在列表中。
     narration:
-      en: The endpoint row remains present, but ready=false and serving=false, so ordinary Service traffic no longer selects it. Request A has completed; the persistent route now makes the next eligible path to Ready api-c readable before any new token moves.
-      ja: endpoint の行は残りますが、ready=false かつ serving=false のため、このレッスンの通常の Service 経路では選択されません。Request A はすでに完了しており、このステップではリクエストをアニメーションしません。
-      zh-CN: Endpoint 行仍然存在，但 ready=false 且 serving=false，因此本课程的普通 Service 路径不会选择它。请求 A 已经完成；此步骤不播放任何请求动画。
+      en: The endpoint row remains present, but ready=false and serving=false, so ordinary Service traffic no longer selects it. Request A has completed; a static route now shows the eligible path for a later request to Ready api-c, but no request token moves in this step.
+      ja: endpoint の行は残りますが、ready=false かつ serving=false のため、このレッスンの通常の Service 経路では選択されません。Request A はすでに完了しており、静的な線は後続リクエストが選択できる api-c への経路だけを示します。このステップではリクエストをアニメーションしません。
+      zh-CN: Endpoint 行仍然存在，但 ready=false 且 serving=false，因此本课程的普通 Service 路径不会选择它。请求 A 已经完成；静态路径只表示后续请求可选择的 api-c 路径，本步骤不会播放请求标记。
     teaching:
       whatChanged:
-        en: api-a changes from Ready to NotReady; its endpoint conditions change to ready=false and serving=false, the prior api-a route disappears, and the alternative route to Ready api-c becomes visible. The Service address stays unchanged.
-        ja: api-a は Ready から NotReady になり、endpoint 条件は ready=true・serving=true から ready=false・serving=false に変わります。Service アドレスは変わりません。
-        zh-CN: api-a 从 Ready 变为 NotReady；其 Endpoint 条件从 ready=true、serving=true 变为 ready=false、serving=false。Service 地址保持不变。
+        en: api-a changes from Ready to NotReady; the prior api-a path disappears, and a static eligible path to Ready api-c is shown for a later request. The Service address stays unchanged, and no request moves in this step.
+        ja: api-a は Ready から NotReady になり、以前の api-a 経路は消えます。後続リクエストが選択できる Ready な api-c への静的な経路を示しますが、このステップでは通信しません。Service アドレスは変わりません。
+        zh-CN: api-a 从 Ready 变为 NotReady；原来的 api-a 路径消失，并显示一条供后续请求选择 Ready api-c 的静态路径。Service 地址保持不变，本步骤没有请求移动。
       whyItHappened:
         en: The endpoint still exists, but with publishNotReadyAddresses=false it is not eligible for this lesson’s ordinary Service traffic.
         ja: endpoint 自体は残りますが、publishNotReadyAddresses=false のため、このレッスンの通常の Service トラフィックの対象外です。
@@ -457,9 +457,9 @@ steps:
             selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-c
           label:
             {
-              en: Next request shifts to Ready api-c,
-              ja: 次のリクエストは Ready な api-c へ移行,
-              zh-CN: 下一请求转向 Ready api-c,
+              en: Eligible path for a later request,
+              ja: 後続リクエストが選択できる経路,
+              zh-CN: 后续请求可选择的路径,
             }
           persistAfterAnimation: true
           numbered: true

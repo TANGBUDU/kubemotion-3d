@@ -165,7 +165,7 @@ describe('LabelManager deterministic screen-space layout', () => {
     manager.update(registry, camera(), 400, 300, { x: 150, y: 102, width: 100, height: 32 });
 
     expect(labelFor(container, 'selected').hidden).toBe(false);
-    expect(labelFor(container, 'selected').dataset.priority).toBe('100');
+    expect(labelFor(container, 'selected').dataset.priority).toBe('112');
     expect(labelFor(container, 'peer').hidden).toBe(true);
     expect(labelFor(container, 'peer').dataset.hiddenReason).toBe('collision');
     manager.clear();
@@ -367,14 +367,18 @@ describe('LabelManager deterministic screen-space layout', () => {
     const tray = container.querySelector<HTMLDivElement>(
       '[data-layout-label-id="layout:unscheduled-transit-lane"]',
     );
-    expect(tray?.dataset.priority).toBe('115');
+    const zone = container.querySelector<HTMLDivElement>(
+      '[data-layout-label-id="layout:worker-nodes-island"]',
+    );
+    const apiServerLabel = labelFor(container, apiServer.entityId);
+    expect(tray?.dataset.priority).toBe('78');
     expect(tray?.hidden).toBe(false);
     expect(labelFor(container, pending.entityId).hidden).toBe(false);
-    expect(labelFor(container, apiServer.entityId).dataset.hiddenReason).toBe('density');
+    expect([zone, apiServerLabel].filter((element) => element && !element.hidden)).toHaveLength(1);
     manager.clear();
   });
 
-  it('shares one mobile budget across zone, focus, route, selected, and context labels', () => {
+  it('shares one mobile budget across focus, route, selection, and context labels', () => {
     const container = document.createElement('div');
     const focused = makeHandle('focused-pod', 'Pod', new THREE.Vector3(-2, -2, 0), 0.8);
     const selected = makeHandle('selected-pod', 'Pod', new THREE.Vector3(3, -2, 0), 0.8, true);
@@ -456,13 +460,12 @@ describe('LabelManager deterministic screen-space layout', () => {
       (element) => !element.hidden,
     );
     expect(visible).toHaveLength(3);
-    expect(layoutLabels.filter((element) => !element.hidden)).toHaveLength(1);
-    expect(zone?.hidden).toBe(false);
+    expect(layoutLabels).toHaveLength(0);
+    expect(zone).toBeNull();
     expect(focusedLabel.hidden).toBe(false);
     expect(routeLabel?.hidden).toBe(false);
-    expect(selectedLabel.dataset.hiddenReason).toBe('density');
+    expect(selectedLabel.hidden).toBe(false);
     expect(contextLabel.dataset.hiddenReason).toBe('density');
-    expect(Number(zone?.dataset.priority)).toBeGreaterThan(Number(focusedLabel.dataset.priority));
     expect(Number(focusedLabel.dataset.priority)).toBeGreaterThan(
       Number(routeLabel?.dataset.priority),
     );
@@ -676,10 +679,10 @@ describe('LabelManager deterministic screen-space layout', () => {
     const tray = container.querySelector<HTMLDivElement>(
       '[data-layout-label-id="layout:pending-pods"]',
     );
-    expect(zone?.textContent).toBe('CONTROL PLANE');
+    expect(zone?.textContent).toBe('Control plane');
     expect(zone?.dataset.entityId).toBeUndefined();
     expect(zone?.dataset.layoutKind).toBe('zone-title');
-    expect(tray?.textContent).toBe('UNSCHEDULED PODS');
+    expect(tray?.textContent).toBe('Unscheduled Pods');
     expect(manager.size).toBe(3);
 
     for (const element of container.querySelectorAll<HTMLDivElement>('.scene-label')) {
@@ -691,7 +694,7 @@ describe('LabelManager deterministic screen-space layout', () => {
     manager.clear();
   });
 
-  it('shows at most three short route verbs on desktop and one on mobile', () => {
+  it('shows one short route verb on desktop and mobile', () => {
     const container = document.createElement('div');
     const registry = makeRegistry([]);
     const hops = Array.from({ length: 4 }, (_, index) => ({
@@ -733,11 +736,11 @@ describe('LabelManager deterministic screen-space layout', () => {
     const manager = new LabelManager(container);
     manager.sync(registry, view, 'en', routeLayer);
     const labels = [...container.querySelectorAll<HTMLDivElement>('.scene-route-label')];
-    expect(labels.map((element) => element.textContent)).toEqual(['verb-0', 'verb-1', 'verb-2']);
+    expect(labels.map((element) => element.textContent)).toEqual(['verb-0']);
     for (const element of labels) setLabelSize(element, 44, 20);
 
     manager.update(registry, camera(), 800, 500);
-    expect(labels.filter((element) => !element.hidden)).toHaveLength(3);
+    expect(labels.filter((element) => !element.hidden)).toHaveLength(1);
     manager.update(registry, camera(), 390, 844);
     expect(labels.filter((element) => !element.hidden)).toHaveLength(1);
     manager.clear();
@@ -788,12 +791,16 @@ describe('LabelManager deterministic screen-space layout', () => {
     const manager = new LabelManager(container);
     manager.sync(registry, view, 'en');
     const label = labelFor(container, handle.entityId);
-    expect(label).toHaveTextContent('SPEC 3 OBSERVED 3 READY 3');
+    expect(label).toHaveTextContent(
+      'api ReplicaSet · replica controller · desired 3 / current 3 / ready 3',
+    );
 
     handle.root.userData.counters = { spec: 3, observed: 3, ready: 2 };
     setLabelSize(label, 190, 24);
     manager.update(registry, camera(), 400, 300);
-    expect(label).toHaveTextContent('SPEC 3 OBSERVED 3 READY 2');
+    expect(label).toHaveTextContent(
+      'api ReplicaSet · replica controller · desired 3 / current 3 / ready 2',
+    );
     manager.clear();
   });
 

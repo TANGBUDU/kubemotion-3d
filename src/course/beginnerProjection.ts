@@ -141,11 +141,16 @@ const simplifiedEntities = (step: CompiledStep): Readonly<Record<EntityId, Entit
       const onRoute = routeIds.has(id);
       const isFocus = id === focusId || state.emphasis === 'focused';
       const shouldLabel = onRoute || isFocus || contextIds.has(id);
+      // Responsive scene grammar owns the hard label budget; this pass may only remove labels.
+      let labelMode: EntityViewState['labelMode'] = 'none';
+      if (state.labelMode !== 'none' && shouldLabel) {
+        labelMode = onRoute || isFocus ? 'full' : 'short';
+      }
       return [
         id,
         {
           ...state,
-          labelMode: shouldLabel ? (onRoute || isFocus ? 'full' : 'short') : 'none',
+          labelMode,
           emphasis:
             onRoute || isFocus
               ? 'focused'

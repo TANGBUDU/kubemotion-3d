@@ -34,14 +34,14 @@ describe('LearnPage Service lesson routing summary', () => {
     const summary = document.querySelector('#scene-accessible-summary');
     expect(summary).toHaveTextContent('Request A · Ready api-a route');
     expect(summary).toHaveTextContent(
-      'hop 1 (Request A enters Service): source traffic-client at network-out, target api at network-in',
+      'hop 1 (Request A enters Service): source traffic-client Pod at network-out, target api Service · stable entry at network-in',
     );
     expect(summary).toHaveTextContent(
-      'hop 2 (select Ready api-a): source api at network-out, target api-a at network-in',
+      'hop 2 (select Ready api-a): source api Service · stable entry at network-out, target api Pod A at network-in',
     );
   });
 
-  it('shows the readiness-only step without an active request route', () => {
+  it('shows the readiness change and a static eligible path for later traffic', () => {
     render(
       <MemoryRouter initialEntries={['/learn/service-routes-to-pods/4']}>
         <Routes>
@@ -64,17 +64,18 @@ describe('LearnPage Service lesson routing summary', () => {
     expect(evidence).not.toHaveTextContent('Pod status');
     const summary = document.querySelector('#scene-accessible-summary');
     expect(summary).toHaveTextContent(
-      'Pod api-a: phase Running; ContainersReady false; Ready false.',
+      'Pod api Pod A: phase Running; ContainersReady false; Ready false.',
     );
     expect(summary).not.toHaveTextContent('Pod status');
     expect(summary).toHaveTextContent(
-      'api-a endpoint ready=false, serving=false, terminating=false',
+      'api Pod A endpoint ready=false, serving=false, terminating=false',
     );
-    expect(summary).toHaveTextContent('target api-c at network-in');
+    expect(summary).toHaveTextContent('Eligible path for a later request route');
+    expect(summary).toHaveTextContent('target api Pod C at network-in');
 
     act(() => useAppStore.getState().selectEntity(SLICE));
     const inspector = screen.getByTestId('world-inspector');
-    expect(inspector).toHaveTextContent('api-a Endpoint conditions');
+    expect(inspector).toHaveTextContent('api Pod A Endpoint conditions');
     expect(inspector).toHaveTextContent('ready=false · serving=false · terminating=false');
   });
 
@@ -93,10 +94,10 @@ describe('LearnPage Service lesson routing summary', () => {
     const summary = document.querySelector('#scene-accessible-summary');
     expect(summary).toHaveTextContent('Request B · New request route');
     expect(summary).toHaveTextContent(
-      'hop 1 (New request enters same Service): source traffic-client at network-out, target api at network-in',
+      'hop 1 (New request enters same Service): source traffic-client Pod at network-out, target api Service · stable entry at network-in',
     );
     expect(summary).toHaveTextContent(
-      'hop 2 (select Ready api-c): source api at network-out, target api-c at network-in',
+      'hop 2 (select Ready api-c): source api Service · stable entry at network-out, target api Pod C at network-in',
     );
   });
 });

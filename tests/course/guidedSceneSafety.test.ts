@@ -63,8 +63,7 @@ describe('guided scene grammar safety', () => {
 
         for (const relation of Object.values(step.world.relations)) {
           const physicalPlacement =
-            (step.view.view === 'placement' || step.view.view === 'control-flow') &&
-            relation.semantic === 'placement';
+            step.view.view === 'placement' && relation.semantic === 'placement';
           if (relation.semantic === 'composition' && visible.has(relation.to)) {
             expect(visible.has(relation.from)).toBe(true);
           }

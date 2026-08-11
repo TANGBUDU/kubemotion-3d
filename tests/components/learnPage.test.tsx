@@ -64,8 +64,13 @@ describe('LearnPage lesson information architecture', () => {
 
   it('keeps course navigation closed and enables boundary-aware navigation', () => {
     renderLesson();
-    expect(screen.getByRole('button', { name: /previous/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /next/i })).toBeEnabled();
+    const timeline = screen.getByTestId('step-timeline');
+    expect(within(timeline).getByRole('link', { name: /back to home/i })).toHaveAttribute(
+      'href',
+      '#/',
+    );
+    expect(within(timeline).queryByRole('button', { name: /previous/i })).not.toBeInTheDocument();
+    expect(within(timeline).getByRole('button', { name: /next/i })).toBeEnabled();
     expect(screen.getByRole('button', { name: /open course contents/i })).toHaveAttribute(
       'aria-expanded',
       'false',
@@ -85,7 +90,7 @@ describe('LearnPage lesson information architecture', () => {
     expect(screen.getByTestId('evidence-panel')).toBeVisible();
     expect(screen.getByTestId('teaching-takeaway')).toHaveTextContent('Remember this');
     expect(
-      within(screen.getByLabelText('Scene legend')).getByText(/Kubernetes control command/i),
+      within(screen.getByLabelText('Scene legend')).getByText(/Thin violet — who manages whom/i),
     ).toBeVisible();
     expect(
       within(screen.getByTestId('step-timeline')).getAllByRole('button', {
@@ -138,7 +143,7 @@ describe('LearnPage lesson information architecture', () => {
     renderLesson();
     expect(screen.getByRole('button', { name: 'Select focused Pod' })).toHaveAttribute(
       'data-visible-labels',
-      '3',
+      '2',
     );
   });
 });
