@@ -2,8 +2,40 @@
   display: none !important;
 }
 
+.lesson-shell .lesson-header {
+  grid-template-columns: 154px minmax(210px, 1fr) minmax(180px, 0.65fr) auto;
+}
+
+.lesson-shell .lesson-home-link {
+  width: auto;
+  min-width: 96px !important;
+  gap: 7px;
+  padding: 0 11px;
+  font-size: 11px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.lesson-home-text {
+  display: inline;
+}
+
 @media (max-width: 720px) {
   .lesson-shell .scene-route-label {
     display: none !important;
+  }
+
+  .lesson-shell .lesson-header {
+    grid-template-columns: 88px minmax(0, 1fr) auto;
+  }
+
+  .lesson-shell .lesson-home-link {
+    width: var(--touch-target);
+    min-width: var(--touch-target) !important;
+    padding: 0;
+  }
+
+  .lesson-home-text {
+    display: none;
   }
 }
