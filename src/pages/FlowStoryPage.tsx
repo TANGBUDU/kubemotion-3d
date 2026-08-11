@@ -12,6 +12,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { Locale } from '../app/types';
+import { viewPresentation } from '../app/entityPresentation';
 import { SceneViewport } from '../components/SceneViewport';
 import { flowStoryById, lessonById, scenarioById, sources } from '../content/loader';
 import { flowStoryEngine } from '../course/FlowStoryEngine';
@@ -259,7 +260,7 @@ export function FlowStoryPage() {
       <div className="flow-story-workspace">
         <section className="flow-story-stage" aria-label={beat.lessonStep.title[locale]}>
           <div className="flow-story-stage-meta">
-            <span>{step.view.view.replace('-', ' ').toUpperCase()}</span>
+            <span>{viewPresentation(step.view.view, locale).title}</span>
             {route ? (
               <strong>
                 <Route size={13} aria-hidden="true" /> {route}

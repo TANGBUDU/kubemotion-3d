@@ -147,16 +147,17 @@ const createWebGLRenderer = (): THREE.WebGLRenderer => {
 const cameraDirection = (presetId: string): THREE.Vector3 => {
   switch (presetId) {
     case 'overview':
-      return new THREE.Vector3(0.4, 1.5, 1);
+      return new THREE.Vector3(0.25, 1.65, 0.8);
     case 'logical':
-      return new THREE.Vector3(0, 1.15, 1);
+      return new THREE.Vector3(0, 1.75, 0.75);
     case 'control-flow':
+      return new THREE.Vector3(0, 1.9, 0.72);
     case 'traffic':
-      return new THREE.Vector3(0.15, 1.3, 1);
+      return new THREE.Vector3(0, 1.75, 0.68);
     case 'placement':
-      return new THREE.Vector3(0.85, 1.45, 1);
+      return new THREE.Vector3(0.65, 1.75, 0.85);
     default:
-      return new THREE.Vector3(0.8, 1.5, 1);
+      return new THREE.Vector3(0.35, 1.7, 0.8);
   }
 };
 

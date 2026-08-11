@@ -1,5 +1,6 @@
 import { BookOpen, Crosshair, ExternalLink, MessageCircle } from 'lucide-react';
 import type { Locale } from '../../app/types';
+import type { ComponentExplanation } from '../../app/entityPresentation';
 import type { EvidenceRow } from '../../course/types';
 import { lessonUi } from './copy';
 import { EvidencePanel } from './EvidencePanel';
@@ -15,6 +16,7 @@ export interface TeachingPanelProps {
   readonly whyItHappened: string;
   readonly takeaway: string;
   readonly evidence: readonly EvidenceRow[];
+  readonly component?: ComponentExplanation | undefined;
   readonly termCount: number;
   readonly sourceCount: number;
   readonly onOpenTerms: () => void;
@@ -32,6 +34,7 @@ export function TeachingPanel({
   whyItHappened,
   takeaway,
   evidence,
+  component,
   termCount,
   sourceCount,
   onOpenTerms,
@@ -59,6 +62,30 @@ export function TeachingPanel({
           <strong>{focusHint}</strong>
         </div>
       </section>
+      {component ? (
+        <section className="component-explanation" data-testid="component-explanation">
+          <div className="component-explanation__title">
+            <span>{t.componentGuide}</span>
+            <strong>{component.heading}</strong>
+          </div>
+          <dl>
+            <div>
+              <dt>{t.responsibility}</dt>
+              <dd>{component.responsibility}</dd>
+            </div>
+            <div>
+              <dt>{t.mechanism}</dt>
+              <dd>{component.mechanism}</dd>
+            </div>
+            {component.notResponsible ? (
+              <div>
+                <dt>{t.notResponsible}</dt>
+                <dd>{component.notResponsible}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </section>
+      ) : null}
       <section
         className="teaching-section teaching-section-change"
         data-testid="teaching-what-changed"

@@ -102,7 +102,7 @@ export class SceneStage {
     frontRail.userData.selectable = false;
     this.root.add(frontRail);
 
-    const edgeMaterial = this.ownMaterial(createFlatAccentMaterial(palette.borderNeutral, 0.76));
+    const edgeMaterial = this.ownMaterial(createFlatAccentMaterial(palette.borderNeutral, 0.3));
     const edgeGeometry = this.ownGeometry(new THREE.EdgesGeometry(baseGeometry, 24));
     const edge = new THREE.LineSegments(edgeGeometry, edgeMaterial);
     edge.position.copy(base.position);
@@ -112,7 +112,7 @@ export class SceneStage {
   }
 
   private addAlignmentMarks(): void {
-    const material = this.ownMaterial(createFlatAccentMaterial(palette.floorGrid, 0.34));
+    const material = this.ownMaterial(createFlatAccentMaterial(palette.floorGrid, 0.14));
     const horizontalGeometry = this.ownGeometry(new THREE.BoxGeometry(0.72, 0.014, 0.028));
     const verticalGeometry = this.ownGeometry(new THREE.BoxGeometry(0.028, 0.014, 0.72));
     const frontZ = dimensions.stage.depth / 2 - 0.34;

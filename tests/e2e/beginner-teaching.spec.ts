@@ -8,9 +8,12 @@ async function gotoBeginnerLesson(page: Page, lessonId: string, stepIndex: numbe
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(`/#/learn/${lessonId}/${stepIndex}`);
   await expect(page.locator('.lesson-home-link')).toBeVisible();
+  if ((await page.viewportSize())?.width && (await page.viewportSize())!.width > 720) {
+    await expect(page.locator('.lesson-home-link')).toContainText(/Back to home/i);
+  }
   await expect(page.getByTestId('teaching-plain-language')).toBeVisible();
 
-  const isProblemStage = lessonId === 'why-kubernetes-exists' && stepIndex <= 1;
+  const isProblemStage = lessonId === 'why-kubernetes-exists' && stepIndex <= 4;
   if (isProblemStage) {
     await expect(page.getByTestId('beginner-problem-stage')).toBeVisible();
     await expect(page.locator('.scene-legend li')).toHaveCount(0);
@@ -66,28 +69,118 @@ test('beginner journey stays problem-first and visually focused', async ({ page 
     fullPage: false,
   });
 
+  await gotoBeginnerLesson(page, 'why-kubernetes-exists', 2);
+  await expect(page.getByTestId('beginner-problem-stage')).toHaveAttribute(
+    'data-concept',
+    'desired-state',
+  );
+  await expect(page.getByTestId('beginner-problem-stage')).toContainText(/Desired state/i);
+  await page.screenshot({
+    path: `${reviewDir}/04-desired-state-is-a-promise.png`,
+    fullPage: false,
+  });
+
   await gotoBeginnerLesson(page, 'why-kubernetes-exists', 3);
-  await expect(page.getByTestId('teaching-takeaway')).toContainText(/desired|reality|match/i);
-  await page.screenshot({ path: `${reviewDir}/04-one-copy-is-lost.png`, fullPage: false });
+  await expect(page.getByTestId('beginner-problem-stage')).toHaveAttribute(
+    'data-concept',
+    'replica-gap',
+  );
+  await expect(page.getByTestId('beginner-problem-stage')).toContainText(/Gap to repair/i);
+  await page.screenshot({
+    path: `${reviewDir}/05-one-copy-is-lost.png`,
+    fullPage: false,
+  });
 
   await gotoBeginnerLesson(page, 'why-kubernetes-exists', 4);
-  await expect(page.getByTestId('teaching-plain-language')).toContainText(/controller|gap/i);
+  await expect(page.getByTestId('beginner-problem-stage')).toHaveAttribute(
+    'data-concept',
+    'controller-loop',
+  );
+  await expect(page.getByTestId('beginner-problem-stage')).toContainText(/Observe/i);
+  await expect(page.getByTestId('component-explanation')).toContainText(
+    /does not choose the Node/i,
+  );
   await page.screenshot({
-    path: `${reviewDir}/05-controller-restores-the-gap.png`,
+    path: `${reviewDir}/06-controller-loop-explained.png`,
     fullPage: false,
   });
 
-  await gotoBeginnerLesson(page, 'pending-and-scheduling', 1);
-  const schedulerDiagnostics = await page.evaluate(() =>
-    window.__KUBEMOTION_TEST__?.getSceneDiagnostics(),
-  );
-  expect(schedulerDiagnostics?.routeHandles).toBe(1);
+  await gotoBeginnerLesson(page, 'why-kubernetes-exists', 5);
+  let diagnostics = await page.evaluate(() => window.__KUBEMOTION_TEST__?.getSceneDiagnostics());
+  expect(diagnostics?.routeHandles).toBe(1);
   await expect(page.locator('.scene-legend li')).toHaveCount(1);
   await expect(page.locator('.scene-legend')).toContainText(/control command/i);
+  await expect(page.getByTestId('component-explanation')).toContainText(/choose|Node/i);
   await page.screenshot({
-    path: `${reviewDir}/06-scheduler-one-control-line.png`,
+    path: `${reviewDir}/07-scheduler-records-node.png`,
     fullPage: false,
   });
+
+  await gotoBeginnerLesson(page, 'why-kubernetes-exists', 6);
+  diagnostics = await page.evaluate(() => window.__KUBEMOTION_TEST__?.getSceneDiagnostics());
+  expect(diagnostics?.routeHandles).toBe(1);
+  await expect(page.locator('.scene-legend')).toContainText(/choose a Node/i);
+  await page.screenshot({
+    path: `${reviewDir}/08-binding-places-pod.png`,
+    fullPage: false,
+  });
+
+  await gotoBeginnerLesson(page, 'why-kubernetes-exists', 7);
+  diagnostics = await page.evaluate(() => window.__KUBEMOTION_TEST__?.getSceneDiagnostics());
+  expect(diagnostics?.routeHandles).toBe(1);
+  await expect(page.locator('.scene-legend')).toContainText(/inside one Node/i);
+  await expect(page.getByTestId('component-explanation')).toContainText(/assigned to one Node/i);
+  await page.screenshot({
+    path: `${reviewDir}/09-kubelet-starts-container.png`,
+    fullPage: false,
+  });
+
+  await gotoBeginnerLesson(page, 'why-kubernetes-exists', 8);
+  await expect(page.getByTestId('teaching-takeaway')).toContainText(/declare|reality/i);
+  await page.screenshot({
+    path: `${reviewDir}/10-ready-restores-capacity.png`,
+    fullPage: false,
+  });
+
+  await page.getByLabel('Lesson language').selectOption('zh-CN');
+  await page.goto('/#/learn/why-kubernetes-exists/2');
+  await expect(page.getByTestId('beginner-problem-stage')).toContainText('期望状态');
+  await page.screenshot({
+    path: `${reviewDir}/11-zh-desired-state.png`,
+    fullPage: false,
+  });
+
+  await page.goto('/#/learn/why-kubernetes-exists/6');
+  await waitForSceneIdle(page);
+  await expect(page.getByTestId('scene-orientation')).toContainText('应用运行层级');
+  await expect(page.locator('.scene-label')).not.toContainText(/api-7f8d9-a/i);
+  await expect(page.locator('.scene-label')).toContainText(/工作节点 C|api Pod D/i);
+  await page.screenshot({
+    path: `${reviewDir}/12-zh-placement-hierarchy.png`,
+    fullPage: false,
+  });
+
+  await page.goto('/#/learn/why-kubernetes-exists/4');
+  await expect(page.getByTestId('beginner-problem-stage')).toContainText('观察');
+  await expect(page.getByTestId('component-explanation')).toContainText('期望的状态');
+  await expect(page.getByTestId('component-explanation')).toContainText('它不负责');
+  await page.screenshot({
+    path: `${reviewDir}/13-zh-controller-loop.png`,
+    fullPage: false,
+  });
+
+  await page.goto('/#/learn/why-kubernetes-exists/5');
+  await waitForSceneIdle(page);
+  diagnostics = await page.evaluate(() => window.__KUBEMOTION_TEST__?.getSceneDiagnostics());
+  expect(diagnostics?.routeHandles).toBe(1);
+  await expect(page.locator('.scene-legend li')).toHaveCount(1);
+  await page.screenshot({
+    path: `${reviewDir}/14-zh-scheduler-one-line.png`,
+    fullPage: false,
+  });
+
+  const homeLinks = page.locator('.lesson-home-link, .timeline-home-link');
+  await expect(homeLinks.first()).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/#/learn/why-kubernetes-exists/0');
@@ -96,5 +189,5 @@ test('beginner journey stays problem-first and visually focused', async ({ page 
   await expect(page.getByTestId('teaching-sheet')).toHaveClass(/is-collapsed/);
   await expect(page.getByTestId('teaching-plain-language')).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.screenshot({ path: `${reviewDir}/07-mobile-first-screen.png`, fullPage: false });
+  await page.screenshot({ path: `${reviewDir}/15-mobile-first-screen.png`, fullPage: false });
 });

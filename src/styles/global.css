@@ -324,16 +324,16 @@ button.secondary {
   color: #8ecdf2;
   font-size: 9px;
   font-weight: 720;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   text-shadow: 0 1px 8px rgb(0 0 0 / 68%);
 }
 .scene-layout-label.scene-zone-title {
   border-left: 2px solid rgb(139 211 255 / 46%);
 }
 .scene-layout-label.scene-tray-title {
-  border-color: rgb(240 180 77 / 44%);
-  color: #ffd990;
+  border-color: rgb(146 134 98 / 24%);
+  color: #b9b18f;
 }
 .scene-route-label {
   z-index: 5;

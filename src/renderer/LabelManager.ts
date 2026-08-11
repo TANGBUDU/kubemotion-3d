@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Locale } from '../app/types';
+import { friendlyEntityName, friendlyLayoutLabel } from '../app/entityPresentation';
 import type { EntityViewState, ViewProjection } from '../course/types';
 import type { EntityId } from '../world/types';
 import { samplePolyline } from './relations/polyline';
@@ -51,15 +52,15 @@ const VIEWPORT_PADDING = 4;
 const HORIZONTAL_GAP = 8;
 const VERTICAL_GAP = 5;
 const MOBILE_BREAKPOINT = 720;
-const ZONE_HEADING_PRIORITY = 120;
-const ACTIVE_PENDING_TRAY_PRIORITY = 115;
-const FOCUSED_ENTITY_PRIORITY = 110;
-const ACTIVE_ROUTE_PRIORITY = 105;
-const SELECTED_ENTITY_PRIORITY = 100;
+const FOCUSED_ENTITY_PRIORITY = 122;
+const ACTIVE_ROUTE_PRIORITY = 116;
+const SELECTED_ENTITY_PRIORITY = 112;
+const ACTIVE_PENDING_TRAY_PRIORITY = 78;
+const ZONE_HEADING_PRIORITY = 70;
 const CRITICAL_PRIORITY = SELECTED_ENTITY_PRIORITY;
 const DESKTOP_LABEL_LIMIT = 7;
 const MOBILE_LABEL_LIMIT = 3;
-const DESKTOP_ROUTE_LABEL_LIMIT = 3;
+const DESKTOP_ROUTE_LABEL_LIMIT = 1;
 const MOBILE_ROUTE_LABEL_LIMIT = 1;
 // Browser font metrics can resolve a fraction wider than offsetWidth after a locale/text update.
 // Reserve a few CSS pixels so a label accepted at the safe-rect edge remains inside it when
@@ -245,16 +246,13 @@ const hideRecord = (record: LabelRecord, reason: string): void => {
   delete record.element.dataset.screenHeight;
 };
 
-const entityLabelText = (handle: EntityVisualHandle, state: EntityViewState): string => {
+const entityLabelText = (
+  handle: EntityVisualHandle,
+  state: EntityViewState,
+  locale: Locale,
+): string => {
   const entity = handle.entity;
-  const domLabel = handle.root.userData.domLabel;
-  const semanticShortName =
-    domLabel &&
-    typeof domLabel === 'object' &&
-    'text' in domLabel &&
-    typeof domLabel.text === 'string'
-      ? domLabel.text
-      : entity.name;
+  const semanticShortName = friendlyEntityName(entity, locale);
   const counters = handle.root.userData.counters;
   const replicaCounterSuffix =
     entity.kind === 'ReplicaSet' &&
@@ -266,9 +264,11 @@ const entityLabelText = (handle: EntityVisualHandle, state: EntityViewState): st
     typeof counters.spec === 'number' &&
     typeof counters.observed === 'number' &&
     typeof counters.ready === 'number'
-      ? state.labelMode === 'full'
-        ? ` · SPEC ${counters.spec} OBSERVED ${counters.observed} READY ${counters.ready}`
-        : ` · S${counters.spec} O${counters.observed} R${counters.ready}`
+      ? locale === 'zh-CN'
+        ? ` · 期望 ${counters.spec} / 当前 ${counters.observed} / Ready ${counters.ready}`
+        : locale === 'ja'
+          ? ` · 期待 ${counters.spec} / 現在 ${counters.observed} / Ready ${counters.ready}`
+          : ` · desired ${counters.spec} / current ${counters.observed} / ready ${counters.ready}`
       : '';
   return `${semanticShortName}${replicaCounterSuffix}`;
 };
@@ -277,6 +277,7 @@ const entityLabelText = (handle: EntityVisualHandle, state: EntityViewState): st
 export class LabelManager {
   private readonly labels = new Map<string, LabelRecord>();
   private view: ViewProjection | undefined;
+  private locale: Locale = 'en';
 
   public constructor(private readonly container: HTMLElement) {}
 
@@ -287,7 +288,13 @@ export class LabelManager {
     routeLayer?: RelationLayer,
   ): void {
     this.view = view;
+    this.locale = locale;
     const active = new Set<EntityId>();
+    const activeRouteEntityIds = new Set<EntityId>(
+      view.activeRoutes.flatMap((route) =>
+        route.hops.flatMap((hop) => [hop.fromEntityId, hop.toEntityId]),
+      ),
+    );
     for (const handle of registry.values()) {
       const state = view.entityStates[handle.entityId];
       if (!state || !state.visible || state.emphasis === 'hidden' || state.labelMode === 'none') {
@@ -325,13 +332,12 @@ export class LabelManager {
       record.element.lang = locale;
       // Scene labels stay glanceable. Kind, status, UID, and counters belong to
       // Evidence/Inspector, not a metadata slab floating over the teaching object.
-      record.element.textContent = entityLabelText(handle, state);
+      record.element.textContent = entityLabelText(handle, state, locale);
       record.element.dataset.mode = state.labelMode;
       record.element.dataset.emphasis = state.emphasis;
-      record.priority = labelPriority(
-        entity.kind,
-        state.emphasis,
-        handle.root.userData.selected === true,
+      record.priority = Math.max(
+        labelPriority(entity.kind, state.emphasis, handle.root.userData.selected === true),
+        activeRouteEntityIds.has(entity.id) ? ACTIVE_ROUTE_PRIORITY + 4 : 0,
       );
       record.element.dataset.priority = String(record.priority);
       record.element.hidden = false;
@@ -348,6 +354,9 @@ export class LabelManager {
     });
     const layoutLabels = typeof registry.layoutLabels === 'function' ? registry.layoutLabels() : [];
     for (const anchor of layoutLabels) {
+      const activeRoutePresent = view.activeRoutes.length > 0;
+      if (activeRoutePresent && (anchor.kind === 'zone-title' || anchor.kind === 'tray-title'))
+        continue;
       active.add(anchor.id);
       let record = this.labels.get(anchor.id);
       if (!record) {
@@ -380,7 +389,7 @@ export class LabelManager {
             : 64;
       record.element.className = `scene-label scene-layout-label scene-${anchor.kind}`;
       record.element.lang = locale;
-      record.element.textContent = anchor.text;
+      record.element.textContent = friendlyLayoutLabel(anchor.text, locale);
       record.element.dataset.mode = 'short';
       record.element.dataset.emphasis = 'normal';
       record.element.dataset.layoutKind = anchor.kind;
@@ -491,7 +500,7 @@ export class LabelManager {
       if (record.source === 'entity' && handle && state) {
         // Counter cues update the visual handle after the projection sync. Refresh the DOM label
         // every frame so a settled screenshot cannot retain the cue's previous counter values.
-        record.element.textContent = entityLabelText(handle, state);
+        record.element.textContent = entityLabelText(handle, state, this.locale);
       }
       const worldPoint =
         record.source === 'entity' ? handle?.getAnchor('label') : record.worldPosition;

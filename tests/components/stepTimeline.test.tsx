@@ -76,6 +76,7 @@ describe('StepTimeline active-step positioning', () => {
         />
       </>,
     );
+    expect(screen.getByRole('link', { name: 'Back to home' })).toHaveAttribute('href', '#/');
     const outside = screen.getByRole('button', { name: 'Outside control' });
     outside.focus();
 

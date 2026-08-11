@@ -46,7 +46,7 @@ lessons:
         automatic recovery.
       ja: Kubernetes が役立つ場面と、望ましい状態が自動復旧につながる仕組みを説明する。
       zh-CN: 解释 Kubernetes 什么时候真正有用，以及期望状态如何带来自动恢复。
-    estimatedMinutes: 8
+    estimatedMinutes: 10
   - id: cluster-overview
     chapterId: foundations
     status: available

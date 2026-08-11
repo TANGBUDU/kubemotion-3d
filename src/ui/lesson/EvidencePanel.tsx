@@ -261,7 +261,14 @@ function EvidenceValue({ row, locale }: { readonly row: EvidenceRow; readonly lo
 }
 
 function beginnerRows(rows: readonly EvidenceRow[]): readonly EvidenceRow[] {
-  return rows
+  const eligible = rows.filter(
+    (row) =>
+      endpointConditionsPath.test(row.path ?? '') ||
+      row.path === undefined ||
+      row.path in beginnerPathPriority,
+  );
+  const source = eligible.length > 0 ? eligible : rows;
+  return source
     .map((row, index) => ({ row, index }))
     .sort((left, right) => {
       const leftPriority = endpointConditionsPath.test(left.row.path ?? '')

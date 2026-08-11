@@ -434,6 +434,7 @@ steps:
         - api-object:namespaced:shop:Pod:api-d-new
     introducesTerms:
       - controller
+      - pending
     usesTerms:
       - controller
       - desired-state
@@ -577,7 +578,7 @@ steps:
           visible: true
           emphasis: focused
           labelMode: full
-          inspectorMode: compact
+          inspectorMode: expanded
         - selector:
             byIds:
               - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
@@ -591,11 +592,42 @@ steps:
             - controller-watches-api-server
           visible: true
           emphasis: focused
-      activeRoutes: []
+      activeRoutes:
+        - id: route-controller-restores-missing-pod
+          semantic: control
+          label:
+            en: detect the gap and create a replacement Pod
+            ja: 差を検出して置換 Pod を作る
+            zh-CN: 发现副本缺口并创建替换 Pod
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:cluster:global:ControllerManager:kube-controller-manager
+              fromAnchor: api-out
+              toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              toAnchor: api-in
+              label:
+                en: compare desired 3 with current 2
+                ja: 期待3と現在2を比較
+                zh-CN: 比较期望 3 与当前 2
+            - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              fromAnchor: api-out
+              toEntityId: api-object:namespaced:shop:Pod:api-d-new
+              toAnchor: api-in
+              label:
+                en: create the Pending Pod object
+                ja: Pending Pod オブジェクトを作成
+                zh-CN: 创建 Pending Pod 对象
     transition:
       cues:
+        - type: reconcile-pulse
+          fromEntityId: runtime-component:cluster:global:ControllerManager:kube-controller-manager
+          toEntityId: api-object:namespaced:shop:Pod:api-d-new
+          routeId: route-controller-restores-missing-pod
+          durationMs: 760
         - type: entity-enter
           entityId: api-object:namespaced:shop:Pod:api-d-new
+          delayMs: 260
           durationMs: 700
         - type: counter-change
           entityId: api-object:namespaced:shop:ReplicaSet:api-rs
@@ -604,49 +636,397 @@ steps:
           to: 3
           delayMs: 700
           durationMs: 480
-  - id: replacement-becomes-ready
+  - id: scheduler-records-worker-c
     title:
-      en: Recovery finishes only when the new copy is Ready
-      ja: 新しいコピーが Ready になって初めて復旧完了
-      zh-CN: 新副本变成 Ready，恢复才算完成
+      en: Scheduler records worker-c as the chosen Node
+      ja: Scheduler が worker-c を選び、Pod に記録する
+      zh-CN: Scheduler 选择 worker-c，并把结果写入 Pod
     learningOutcome:
-      en: Separate “a replacement object exists” from “service capacity is healthy
-        again.”
-      ja: 「置換オブジェクトが存在する」と「サービス能力が回復した」を区別する。
-      zh-CN: 区分“替换对象已经创建”和“服务能力已经恢复”两件事。
+      en: Separate the Scheduler decision from the later act of starting the application.
+      ja: Scheduler の判断と、その後のアプリ起動を分けて理解する。
+      zh-CN: 区分 Scheduler 的放置决定与后续真正启动应用。
     narration:
-      en: Creating the replacement Pod is only the beginning. It must be assigned to a
-        Node, its container must start, and the Pod must become Ready. Only then
-        do all three counts return to 3. Kubernetes did not prevent failure; it
-        detected the gap and repaired it.
-      ja: 置換 Pod を作るだけでは終わりません。Node に割り当てられ、コンテナが起動し、Pod が Ready
-        になる必要があります。そこで初めて3つの数がすべて3へ戻ります。Kubernetes は障害を防いだのではなく、差を検出して修復しました。
-      zh-CN:
-        创建替换 Pod 只是开始。它还要被分配到某个 Node，容器要真正启动，Pod 还要变成 Ready。直到这时，三个计数才重新全部回到
-        3。Kubernetes 不是让故障永远不发生，而是发现缺口并把它修回来。
+      en: The replacement Pod exists but has no machine. Scheduler evaluates the available Nodes, chooses worker-c, and records that choice through the API Server. This changes the Pod object; it still does not start a Container.
+      ja: 置換 Pod は存在しますが、まだ実行先がありません。Scheduler は利用可能な Node を評価し、worker-c を選び、その結果を API Server 経由で Pod に記録します。Pod オブジェクトは変わりますが、Container はまだ起動しません。
+      zh-CN: 替换 Pod 已经存在，但还没有运行机器。Scheduler 会评估可用 Node，选择 worker-c，再通过 API Server 把结果写进 Pod 对象。这一步只改变放置信息，还没有启动 Container。
     teaching:
       whatChanged:
-        en: The replacement is placed, its container starts, and Ready replicas rise
-          from 2 back to 3.
-        ja: 置換 Pod が配置され、コンテナが起動し、Ready replicas が 2→3 に戻ります。
-        zh-CN: 替换 Pod 被放置、容器启动，Ready 副本从 2 回到 3。
+        en: The Pod now records nodeName=worker-c; its Container is still waiting and Ready is still false.
+        ja: Pod に nodeName=worker-c が記録されますが、Container は waiting、Ready は false のままです。
+        zh-CN: Pod 现在记录了 nodeName=worker-c，但 Container 仍在等待，Ready 仍然是 false。
       whyItHappened:
-        en: A replacement counts as healthy capacity only after scheduling and startup
-          succeed.
-        ja: 置換は scheduling と起動が成功して初めて正常な処理能力として数えられるからです。
-        zh-CN: 因为替换副本只有在调度和启动成功之后，才能真正算作健康的服务能力。
+        en: Scheduling is an API decision that records where the Pod should run.
+        ja: scheduling は Pod の実行先を記録する API 上の判断だからです。
+        zh-CN: 因为调度本质上是一个通过 API 记录“Pod 应该放在哪里”的决定。
       takeaway:
-        en: Why Kubernetes? You declare the result; Kubernetes keeps working until
-          reality matches it again.
-        ja: なぜ Kubernetes？ 結果を宣言すると、現実が再び一致するまで Kubernetes が働き続けるからです。
-        zh-CN: 为什么需要 Kubernetes？你声明想要的结果，它会持续工作，直到现实再次与目标一致。
+        en: Scheduler chooses and records the Node; it does not start the application.
+        ja: Scheduler は Node を選んで記録しますが、アプリは起動しません。
+        zh-CN: Scheduler 负责选择并记录 Node，不负责启动应用。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - runtime-component:cluster:global:Scheduler:kube-scheduler
+        - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+        - api-object:namespaced:shop:Pod:api-d-new
+    introducesTerms:
+      - scheduler
+      - node
+    usesTerms:
+      - scheduler
+      - node
+      - desired-state
+      - pod
+      - controller
+      - pending
+    sourceIds:
+      - k8s-components
+      - k8s-nodes
+      - k8s-pods
+      - k8s-api
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-d-new
+          patch:
+            data:
+              nodeName: worker-c
+              phase: Pending
+              conditions:
+                podScheduled: true
+                initialized: true
+                containersReady: false
+                ready: false
+        - op: add-relation
+          relation:
+            id: scheduled-api-d-new
+            type: scheduled-on
+            from: api-object:namespaced:shop:Pod:api-d-new
+            to: infrastructure:cluster:global:Node:worker-c
+            directed: true
+            semantic: placement
+            title:
+              en: scheduled on
+              ja: 配置先
+              zh-CN: 调度到
+            sourceIds:
+              - k8s-nodes
+              - k8s-pods
+    viewPatch:
+      view: control-flow
+      cameraPresetId: control-flow
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:Scheduler:kube-scheduler
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - api-object:namespaced:shop:Pod:api-d-new
+          visible: true
+          emphasis: normal
+          labelMode: full
+      relationRules: []
+      activeRoutes:
+        - id: route-scheduler-records-worker-c
+          semantic: control
+          label:
+            en: record worker-c on the Pending Pod
+            ja: Pending Pod に worker-c を記録
+            zh-CN: 把 worker-c 记录到 Pending Pod
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:cluster:global:Scheduler:kube-scheduler
+              fromAnchor: api-out
+              toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              toAnchor: api-in
+              label:
+                en: submit the selected Node
+                ja: 選択した Node を送信
+                zh-CN: 提交所选 Node
+            - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              fromAnchor: api-out
+              toEntityId: api-object:namespaced:shop:Pod:api-d-new
+              toAnchor: api-in
+              label:
+                en: write nodeName=worker-c
+                ja: nodeName=worker-c を記録
+                zh-CN: 写入 nodeName=worker-c
+    transition:
+      cues:
+        - type: api-request
+          routeId: route-scheduler-records-worker-c
+          label:
+            en: record the selected Node
+            ja: 選択した Node を記録
+            zh-CN: 记录所选 Node
+          durationMs: 760
+
+  - id: binding-places-pod-on-worker-c
+    title:
+      en: The binding places the Pod on worker-c
+      ja: binding により Pod が worker-c に置かれる
+      zh-CN: 绑定结果让 Pod 落到 worker-c 上
+    learningOutcome:
+      en: Read Node placement separately from Container startup.
+      ja: Node 配置と Container 起動を分けて読み取る。
+      zh-CN: 把 Node 放置与 Container 启动作为两个不同事实来理解。
+    narration:
+      en: nodeName=worker-c means this Pod now belongs in worker-c's Pod bay. The Container is still waiting and has no runtime identity. Placement is complete; startup is not.
+      ja: nodeName=worker-c は、この Pod が worker-c の Pod bay に属することを意味します。Container はまだ waiting で runtime identity もありません。配置は完了しましたが、起動はまだです。
+      zh-CN: nodeName=worker-c 表示这个 Pod 已被放进 worker-c 的 Pod 槽位。Container 仍在等待，也还没有运行时身份。放置已经完成，启动还没有。
+    teaching:
+      whatChanged:
+        en: The view now shows the already-recorded Pod-to-Node placement; no Container has started.
+        ja: 記録済みの Pod-to-Node 配置を表示しますが、Container はまだ起動していません。
+        zh-CN: 这一幕把已记录的 Pod 到 Node 放置关系画出来；Container 仍未启动。
+      whyItHappened:
+        en: A binding tells kubelet which Node owns the next execution step.
+        ja: binding によって、次の実行を担当する Node の kubelet が決まります。
+        zh-CN: 绑定结果明确了下一步由哪台 Node 上的 kubelet 负责执行。
+      takeaway:
+        en: nodeName proves placement; a running Container is a later fact.
+        ja: nodeName は配置を示し、running Container はその後の別の事実です。
+        zh-CN: nodeName 证明放置完成；Container 是否运行是后面的另一件事。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - infrastructure:cluster:global:Node:worker-c
+        - api-object:namespaced:shop:Pod:api-d-new
+        - container-status:shop:Pod:api-d-new:Container:api
+    introducesTerms:
+      - binding
+    usesTerms:
+      - binding
+      - scheduler
+      - node
+      - pod
+      - container
+      - pending
+    sourceIds:
+      - k8s-components
+      - k8s-nodes
+      - k8s-pods
+      - k8s-pod-lifecycle
+    worldPatch:
+      operations: []
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - infrastructure:cluster:global:Node:worker-c
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:api-d-new
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - container-status:shop:Pod:api-d-new:Container:api
+          visible: true
+          emphasis: normal
+          labelMode: full
+      relationRules: []
+      activeRoutes:
+        - id: route-pod-placed-on-worker-c
+          semantic: scheduling
+          label:
+            en: this Pod is assigned to worker-c
+            ja: この Pod は worker-c に配置される
+            zh-CN: 这个 Pod 已分配到 worker-c
+          persistAfterAnimation: true
+          numbered: false
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:api-d-new
+              fromAnchor: placement
+              toEntityId: infrastructure:cluster:global:Node:worker-c
+              toAnchor: placement
+              label:
+                en: placed on worker-c
+                ja: worker-c に配置
+                zh-CN: 放置到 worker-c
+    transition:
+      cues:
+        - type: layout-transition
+          entityIds:
+            - api-object:namespaced:shop:Pod:api-d-new
+          durationMs: 680
+
+  - id: kubelet-starts-replacement
+    title:
+      en: kubelet and the runtime start the Container
+      ja: kubelet と runtime が Container を起動する
+      zh-CN: kubelet 与容器运行时启动 Container
+    learningOutcome:
+      en: Identify the Node-local components that turn an assigned Pod into a running process.
+      ja: 割り当て済み Pod を実行中 process に変える Node 内コンポーネントを識別する。
+      zh-CN: 识别把已分配 Pod 变成实际进程的 Node 本地组件。
+    narration:
+      en: worker-c's kubelet notices the assigned Pod. It asks the container runtime to create the Container from the image. The process is now running, but readiness has not passed yet.
+      ja: worker-c の kubelet が割り当て済み Pod を確認し、container runtime に image から Container を作るよう依頼します。process は起動しましたが、readiness はまだ通っていません。
+      zh-CN: worker-c 上的 kubelet 发现这个已分配 Pod，并要求容器运行时根据镜像创建 Container。进程已经启动，但就绪检查还没有通过。
+    teaching:
+      whatChanged:
+        en: A real Container instance now exists and is running inside the Pod; Ready remains false.
+        ja: Pod 内に実際の Container instance が作られて running になりますが、Ready は false のままです。
+        zh-CN: Pod 内已经出现真正的 Container 实例并开始运行，但 Ready 仍然是 false。
+      whyItHappened:
+        en: kubelet and the container runtime execute the placement decision on the selected Node.
+        ja: kubelet と container runtime が、選択された Node 上で配置決定を実行するためです。
+        zh-CN: 因为 kubelet 与容器运行时会在选中的 Node 上真正执行调度结果。
+      takeaway:
+        en: Scheduler decides; kubelet and the runtime execute.
+        ja: Scheduler が判断し、kubelet と runtime が実行します。
+        zh-CN: Scheduler 负责决定，kubelet 与容器运行时负责执行。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - runtime-component:node:worker-c:Kubelet:kubelet
+        - runtime-component:node:worker-c:ContainerRuntime:runtime
+        - container-status:shop:Pod:api-d-new:Container:api
+        - api-object:namespaced:shop:Pod:api-d-new
+    introducesTerms: []
+    usesTerms:
+      - pod
+      - container
+      - node
+      - scheduler
+      - binding
+      - controller
+    sourceIds:
+      - k8s-components
+      - k8s-pods
+      - k8s-pod-lifecycle
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-d-new
+          patch:
+            status: starting
+            data:
+              nodeName: worker-c
+              phase: Running
+              conditions:
+                podScheduled: true
+                initialized: true
+                containersReady: false
+                ready: false
+        - op: patch-entity
+          entityId: container-status:shop:Pod:api-d-new:Container:api
+          patch:
+            status: running
+            data:
+              containerID: containerd://synthetic-api-d-01
+              restartCount: 0
+              ready: false
+              started: true
+              state:
+                kind: running
+                startedAt: 2026-08-08T00:01:00Z
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - infrastructure:cluster:global:Node:worker-c
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector:
+            byIds:
+              - runtime-component:node:worker-c:Kubelet:kubelet
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - runtime-component:node:worker-c:ContainerRuntime:runtime
+              - api-object:namespaced:shop:Pod:api-d-new
+              - container-status:shop:Pod:api-d-new:Container:api
+          visible: true
+          emphasis: normal
+          labelMode: full
+      relationRules: []
+      activeRoutes:
+        - id: route-worker-c-starts-container
+          semantic: node-runtime
+          label:
+            en: start the Container on worker-c
+            ja: worker-c 上で Container を起動
+            zh-CN: 在 worker-c 上启动 Container
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:node:worker-c:Kubelet:kubelet
+              fromAnchor: local-runtime
+              toEntityId: runtime-component:node:worker-c:ContainerRuntime:runtime
+              toAnchor: local-runtime
+              label:
+                en: ask runtime to create it
+                ja: runtime に作成を依頼
+                zh-CN: 要求运行时创建容器
+            - fromEntityId: runtime-component:node:worker-c:ContainerRuntime:runtime
+              fromAnchor: local-runtime
+              toEntityId: container-status:shop:Pod:api-d-new:Container:api
+              toAnchor: local-runtime
+              label:
+                en: start application process
+                ja: application process を起動
+                zh-CN: 启动应用进程
+    transition:
+      cues:
+        - type: container-start
+          entityId: container-status:shop:Pod:api-d-new:Container:api
+          durationMs: 680
+
+  - id: replacement-becomes-ready
+    title:
+      en: Readiness passes and service capacity returns to three
+      ja: Readiness が通り、処理能力が3つへ戻る
+      zh-CN: 就绪检查通过，服务能力恢复到三份
+    learningOutcome:
+      en: Separate a running process from a Pod that is Ready to receive traffic.
+      ja: 実行中 process と、traffic を受けられる Ready Pod を区別する。
+      zh-CN: 区分“进程已经运行”和“Pod 已能接收流量”。
+    narration:
+      en: The application is running, but Kubernetes counts it as healthy service capacity only after readiness succeeds. When the new Pod becomes Ready, the ReplicaSet returns to desired 3, current 3, ready 3.
+      ja: アプリは実行中でも、readiness が成功するまで正常な処理能力として数えません。新しい Pod が Ready になると、ReplicaSet は期待3・現在3・Ready3へ戻ります。
+      zh-CN: 应用进程已经运行，但只有就绪检查成功后，Kubernetes 才把它算作健康服务能力。新 Pod Ready 后，ReplicaSet 回到期望 3、当前 3、Ready 3。
+    teaching:
+      whatChanged:
+        en: Pod Ready changes false → true and Ready replicas rise 2 → 3.
+        ja: Pod Ready が false → true になり、Ready replicas が 2 → 3 へ戻ります。
+        zh-CN: Pod Ready 从 false 变为 true，Ready 副本从 2 回到 3。
+      whyItHappened:
+        en: A running Container becomes traffic-ready only after its readiness condition succeeds.
+        ja: 実行中 Container が traffic を受けられるのは readiness 条件が成功してからです。
+        zh-CN: 运行中的 Container 只有在就绪条件成功后，才可以接收流量。
+      takeaway:
+        en: You declare the result; Kubernetes keeps working until reality matches it again.
+        ja: 結果を宣言すると、現実が再び一致するまで Kubernetes が働き続けます。
+        zh-CN: 你声明想要的结果，Kubernetes 会持续工作，直到现实再次与目标一致。
     evidence:
       mode: diff-with-context
       entityIds:
         - api-object:namespaced:shop:ReplicaSet:api-rs
         - api-object:namespaced:shop:Pod:api-d-new
         - container-status:shop:Pod:api-d-new:Container:api
-        - infrastructure:cluster:global:Node:worker-c
     introducesTerms: []
     usesTerms:
       - desired-state
@@ -657,8 +1037,6 @@ steps:
       - k8s-pods
       - k8s-pod-lifecycle
       - k8s-replicasets
-      - k8s-nodes
-      - k8s-components
     worldPatch:
       operations:
         - op: patch-entity
@@ -685,21 +1063,6 @@ steps:
               state:
                 kind: running
                 startedAt: 2026-08-08T00:01:00Z
-        - op: add-relation
-          relation:
-            id: scheduled-api-d-new
-            type: scheduled-on
-            from: api-object:namespaced:shop:Pod:api-d-new
-            to: infrastructure:cluster:global:Node:worker-c
-            directed: true
-            semantic: placement
-            title:
-              en: scheduled on
-              ja: 配置先
-              zh-CN: 调度到
-            sourceIds:
-              - k8s-nodes
-              - k8s-pods
         - op: patch-entity
           entityId: api-object:namespaced:shop:ReplicaSet:api-rs
           patch:
@@ -708,60 +1071,40 @@ steps:
               statusReplicas: 3
               readyReplicas: 3
     viewPatch:
-      view: placement
-      cameraPresetId: placement
+      view: logical
+      cameraPresetId: logical
       resetEntities: true
       entityRules:
         - selector:
             byIds:
-              - infrastructure:cluster:global:Node:worker-c
-          visible: true
-          emphasis: normal
-          labelMode: full
-        - selector:
-            byIds:
-              - api-object:namespaced:shop:Pod:api-d-new
+              - api-object:namespaced:shop:ReplicaSet:api-rs
           visible: true
           emphasis: focused
           labelMode: full
           inspectorMode: expanded
         - selector:
             byIds:
-              - container-status:shop:Pod:api-d-new:Container:api
+              - api-object:namespaced:shop:Pod:api-b
+              - api-object:namespaced:shop:Pod:api-c
+              - api-object:namespaced:shop:Pod:api-d-new
           visible: true
           emphasis: normal
           labelMode: short
-        - selector:
-            byIds:
-              - api-object:namespaced:shop:ReplicaSet:api-rs
-          visible: true
-          emphasis: normal
-          labelMode: full
-          inspectorMode: compact
       relationRules:
         - byIds:
-            - scheduled-api-d-new
+            - owns-api-d-new
           visible: true
           emphasis: focused
       activeRoutes: []
     transition:
       cues:
-        - type: layout-transition
-          entityIds:
-            - api-object:namespaced:shop:Pod:api-d-new
-          durationMs: 900
-        - type: relation-reveal
-          relationId: scheduled-api-d-new
-          delayMs: 520
-          durationMs: 650
-        - type: container-start
-          entityId: container-status:shop:Pod:api-d-new:Container:api
-          delayMs: 620
-          durationMs: 650
         - type: counter-change
           entityId: api-object:namespaced:shop:ReplicaSet:api-rs
           field: data.readyReplicas
           from: 2
           to: 3
-          delayMs: 760
-          durationMs: 480
+          durationMs: 520
+        - type: focus-camera
+          entityId: api-object:namespaced:shop:ReplicaSet:api-rs
+          delayMs: 160
+          durationMs: 620

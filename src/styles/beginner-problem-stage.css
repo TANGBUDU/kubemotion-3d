@@ -76,7 +76,7 @@
   font-size: 12px;
   font-weight: 750;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .beginner-container-card {
@@ -286,6 +286,320 @@
 
   .beginner-human-controller__chores span {
     padding: 6px;
+    font-size: 9px;
+  }
+}
+
+.beginner-state-comparison,
+.beginner-gap-visual {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.8fr) minmax(220px, 1.25fr) minmax(160px, 0.8fr);
+  align-items: stretch;
+  gap: 16px;
+}
+
+.beginner-state-card {
+  display: grid;
+  min-height: 152px;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr;
+  align-items: center;
+  gap: 7px 10px;
+  border: 1px solid rgb(94 182 255 / 26%);
+  border-radius: 17px;
+  padding: 18px;
+  background: rgb(12 31 50 / 82%);
+  box-shadow: 0 18px 44px rgb(0 0 0 / 22%);
+}
+
+.beginner-state-card > svg:first-child {
+  color: #72c7ff;
+}
+
+.beginner-state-card > span {
+  color: #a9c2d8;
+  font-size: 12px;
+  font-weight: 730;
+}
+
+.beginner-state-card > strong {
+  grid-column: 1 / -1;
+  color: #eff7ff;
+  font-size: 55px;
+  line-height: 1;
+  text-align: center;
+}
+
+.beginner-state-card > svg:last-child {
+  position: absolute;
+  align-self: end;
+  justify-self: end;
+  color: #58d99b;
+}
+
+.beginner-state-card.is-target {
+  border-color: rgb(94 182 255 / 40%);
+  background: linear-gradient(145deg, rgb(22 58 88 / 86%), rgb(12 34 55 / 86%));
+}
+
+.beginner-state-card.is-current {
+  position: relative;
+  border-color: rgb(79 222 154 / 36%);
+}
+
+.beginner-state-card.has-gap {
+  border-color: rgb(240 180 77 / 46%);
+  background: linear-gradient(145deg, rgb(73 55 29 / 72%), rgb(35 34 32 / 72%));
+}
+
+.beginner-compare-bridge {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 11px;
+  border: 1px dashed rgb(94 182 255 / 25%);
+  border-radius: 17px;
+  padding: 17px;
+  color: #72c7ff;
+  text-align: center;
+}
+
+.beginner-compare-bridge span {
+  color: #c5d8e8;
+  font-size: 13px;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.beginner-gap-equation {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 15px;
+  border: 1px dashed rgb(240 180 77 / 32%);
+  border-radius: 17px;
+  padding: 16px;
+  background: rgb(61 45 24 / 24%);
+}
+
+.beginner-replica-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(62px, 1fr));
+  gap: 8px;
+}
+
+.beginner-replica-slots > span {
+  display: grid;
+  min-height: 70px;
+  place-items: center;
+  border: 1px solid rgb(79 222 154 / 35%);
+  border-radius: 12px;
+  background: rgb(19 74 59 / 46%);
+  color: #68e2a7;
+}
+
+.beginner-replica-slots > span.is-missing {
+  position: relative;
+  border-style: dashed;
+  border-color: rgb(240 180 77 / 55%);
+  background: rgb(77 54 23 / 25%);
+  color: #f0b44d;
+}
+
+.beginner-replica-slots small {
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.beginner-gap-equation > strong {
+  color: #f6cf82;
+  font-size: 14px;
+}
+
+.beginner-problem-conclusion.is-warning {
+  color: #f4d8a1;
+}
+
+.beginner-controller-card {
+  display: grid;
+  gap: 15px;
+  border: 1px solid rgb(183 146 255 / 34%);
+  border-radius: 19px;
+  padding: 18px;
+  background: linear-gradient(145deg, rgb(41 35 73 / 70%), rgb(17 31 52 / 84%));
+  box-shadow: 0 20px 56px rgb(0 0 0 / 23%);
+}
+
+.beginner-controller-card__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #c7adff;
+}
+
+.beginner-controller-card__title strong {
+  color: #f0eaff;
+  font-size: 17px;
+}
+
+.beginner-controller-phases {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.beginner-controller-phase {
+  position: relative;
+  display: grid;
+  min-height: 150px;
+  align-content: start;
+  gap: 7px;
+  border: 1px solid rgb(183 146 255 / 24%);
+  border-radius: 14px;
+  padding: 15px 14px;
+  background: rgb(11 23 40 / 68%);
+}
+
+.beginner-controller-phase:not(:last-child)::after {
+  position: absolute;
+  top: 50%;
+  right: -16px;
+  z-index: 2;
+  color: #a98be8;
+  font-size: 22px;
+  content: '→';
+  transform: translateY(-50%);
+}
+
+.beginner-controller-phase__number {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(183 146 255 / 16%);
+  color: #d8c6ff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.beginner-controller-phase__icon {
+  color: #b792ff;
+}
+
+.beginner-controller-phase strong {
+  color: #f0eaff;
+  font-size: 15px;
+}
+
+.beginner-controller-phase p {
+  margin: 0;
+  color: #b8c9d9;
+  font-size: 12px;
+  line-height: 1.52;
+}
+
+.beginner-controller-boundary {
+  margin: 0;
+  border-left: 3px solid rgb(240 180 77 / 72%);
+  padding: 7px 10px;
+  color: #e8c985;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 720px) {
+  .beginner-state-comparison,
+  .beginner-gap-visual {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .beginner-state-card {
+    min-height: 104px;
+    gap: 4px 7px;
+    padding: 10px;
+  }
+
+  .beginner-state-card > span {
+    font-size: 9px;
+  }
+
+  .beginner-state-card > strong {
+    font-size: 34px;
+  }
+
+  .beginner-compare-bridge,
+  .beginner-gap-equation {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-height: 78px;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .beginner-compare-bridge span,
+  .beginner-gap-equation > strong {
+    font-size: 10px;
+  }
+
+  .beginner-replica-slots {
+    width: min(260px, 100%);
+  }
+
+  .beginner-replica-slots > span {
+    min-height: 40px;
+  }
+
+  .beginner-controller-card {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .beginner-controller-card__title strong {
+    font-size: 13px;
+  }
+
+  .beginner-controller-phases {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .beginner-controller-phase {
+    min-height: 0;
+    grid-template-columns: 24px auto minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
+  .beginner-controller-phase:not(:last-child)::after {
+    display: none;
+  }
+
+  .beginner-controller-phase__number {
+    position: static;
+    width: 20px;
+    height: 20px;
+  }
+
+  .beginner-controller-phase__icon {
+    display: none;
+  }
+
+  .beginner-controller-phase strong {
+    font-size: 11px;
+  }
+
+  .beginner-controller-phase p {
+    font-size: 9px;
+    line-height: 1.35;
+  }
+
+  .beginner-controller-boundary {
     font-size: 9px;
   }
 }

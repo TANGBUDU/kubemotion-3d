@@ -158,8 +158,8 @@
     padding: 4px 10px;
     font-size: 10px;
     font-weight: 750;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    text-transform: none;
   }
 
   .teaching-sheet-mobile-title {
@@ -376,5 +376,24 @@
 @media (max-width: 380px) {
   .lesson-heading h1 {
     max-width: 116px;
+  }
+}
+
+@media (max-width: 720px) {
+  .mobile-teaching-sheet.is-collapsed .component-explanation {
+    padding: 7px 9px;
+  }
+
+  .mobile-teaching-sheet.is-collapsed .component-explanation__title span,
+  .mobile-teaching-sheet.is-collapsed .component-explanation dl > div:nth-child(n + 2) {
+    display: none;
+  }
+
+  .mobile-teaching-sheet.is-collapsed .component-explanation__title {
+    padding-bottom: 5px;
+  }
+
+  .mobile-teaching-sheet.is-collapsed .component-explanation dl {
+    margin-top: 5px;
   }
 }

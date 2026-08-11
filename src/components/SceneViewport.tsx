@@ -7,7 +7,7 @@ import { recordSceneControllerCreated, setDiagnosticsProvider } from '../test-su
 import type { EntityId } from '../world/types';
 import type { ViewportInsets, ViewportRect } from '../renderer/camera/SafeViewport';
 import type { SceneCameraMode } from '../renderer/SceneController';
-import { BeginnerProblemStage, type BeginnerProblemStageKind } from './BeginnerProblemStage';
+import { BeginnerProblemStage, beginnerProblemStageKindForStep } from './BeginnerProblemStage';
 import '../styles/scene-renderer-fallback.css';
 
 export interface SceneViewportProps {
@@ -68,15 +68,8 @@ const rendererFallbackCopy: Record<
   },
 };
 
-const beginnerProblemStageKind = (step: CompiledStep): BeginnerProblemStageKind | undefined => {
-  if (step.lessonId !== 'why-kubernetes-exists') return undefined;
-  if (step.stepId === 'image-packages-the-app') return 'single-container';
-  if (step.stepId === 'declare-three-replicas') return 'manual-replicas';
-  return undefined;
-};
-
 export function SceneViewport(props: SceneViewportProps) {
-  const conceptKind = beginnerProblemStageKind(props.step);
+  const conceptKind = beginnerProblemStageKindForStep(props.step);
   if (conceptKind) {
     return (
       <BeginnerProblemStage

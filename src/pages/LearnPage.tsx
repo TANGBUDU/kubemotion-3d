@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import type { Locale } from '../app/types';
+import {
+  chapterPresentation,
+  componentExplanation,
+  friendlyEntityName,
+} from '../app/entityPresentation';
+import { beginnerProblemStageKindForStep } from '../components/BeginnerProblemStage';
 import { SceneViewport } from '../components/SceneViewport';
 import { course, glossaryById, lessonById, scenarioById, sources } from '../content/loader';
 import { courseEngine } from '../course/CourseEngine';
+import { beginnerFocusedStep } from '../course/beginnerProjection';
 import type { PlaybackRequest } from '../course/types';
 import { orderedAvailableLessons, resolveLessonEntry, useAppStore } from '../state/appStore';
 import { CompareView } from '../ui/lesson/CompareView';
@@ -14,6 +21,7 @@ import { LessonHeader } from '../ui/lesson/LessonHeader';
 import { LessonShell } from '../ui/lesson/LessonShell';
 import { MobileTeachingSheet } from '../ui/lesson/MobileTeachingSheet';
 import { SceneLegend } from '../ui/lesson/SceneLegend';
+import { SceneOrientation } from '../ui/lesson/SceneOrientation';
 import { StepTimeline } from '../ui/lesson/StepTimeline';
 import { TeachingPanel } from '../ui/lesson/TeachingPanel';
 import { lessonUi } from '../ui/lesson/copy';
@@ -24,35 +32,11 @@ import type { EntityId, WorldEntity } from '../world/types';
 const availableLessons = orderedAvailableLessons(course, lessonById);
 const lessonSafeExclusionSelectors = [
   '.lesson-header',
+  '.scene-orientation',
   '.mobile-teaching-sheet',
   '.step-timeline',
   '.inspector-drawer:not([hidden])',
 ] as const;
-
-const chapterTitles: Readonly<Record<Locale, Readonly<Record<string, string>>>> = {
-  en: {
-    'workloads-self-healing': 'Workloads & Self-Healing',
-    'networking-resilience': 'Networking & Resilience',
-  },
-  ja: {
-    'workloads-self-healing': 'ワークロードと自己修復',
-    'networking-resilience': 'ネットワークと耐障害性',
-  },
-  'zh-CN': {
-    'workloads-self-healing': '工作负载与自愈',
-    'networking-resilience': '网络与韧性',
-  },
-};
-
-function chapterTitle(id: string, locale: Locale): string {
-  return (
-    chapterTitles[locale][id] ??
-    id
-      .split('-')
-      .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
-      .join(' ')
-  );
-}
 
 function podForEntity(
   world: Readonly<Record<EntityId, WorldEntity>>,
@@ -107,6 +91,93 @@ function endpointConditionText(conditions: EndpointConditionView, separator: str
   ].join(separator);
 }
 
+const inspectorCopy = (locale: Locale) => {
+  const copy = {
+    en: {
+      name: 'Teaching name',
+      technicalName: 'Kubernetes name',
+      kind: 'Object type',
+      namespace: 'Logical scope',
+      podUid: 'Pod identity (UID)',
+      node: 'Runs on Node',
+      unscheduled: 'Not assigned yet',
+      podPhase: 'Pod phase',
+      podScheduled: 'Node selected',
+      initialized: 'Initialization complete',
+      containersReady: 'All containers Ready',
+      podReady: 'Pod Ready',
+      containerState: 'Container state',
+      containerId: 'Runtime container ID',
+      notCreated: 'Not created yet',
+      containerReady: 'Container Ready',
+      started: 'Container started',
+      restartCount: 'Restart count',
+      lastTermination: 'Previous stop reason',
+      lastExitCode: 'Previous exit code',
+      image: 'Container image',
+      desired: 'Desired replicas',
+      current: 'Current replicas',
+      ready: 'Ready replicas',
+      owner: 'Managed by',
+    },
+    ja: {
+      name: '学習用の名前',
+      technicalName: 'Kubernetes 上の名前',
+      kind: 'オブジェクト種別',
+      namespace: '論理スコープ',
+      podUid: 'Pod の識別子 (UID)',
+      node: '実行先 Node',
+      unscheduled: 'まだ未割り当て',
+      podPhase: 'Pod phase',
+      podScheduled: 'Node 選択済み',
+      initialized: '初期化完了',
+      containersReady: '全 Container Ready',
+      podReady: 'Pod Ready',
+      containerState: 'Container 状態',
+      containerId: 'runtime Container ID',
+      notCreated: 'まだ作成されていない',
+      containerReady: 'Container Ready',
+      started: 'Container 起動済み',
+      restartCount: '再起動回数',
+      lastTermination: '直前の停止理由',
+      lastExitCode: '直前の exit code',
+      image: 'Container image',
+      desired: '目標レプリカ数',
+      current: '現在レプリカ数',
+      ready: 'Ready レプリカ数',
+      owner: '管理元',
+    },
+    'zh-CN': {
+      name: '教学名称',
+      technicalName: 'Kubernetes 原始名称',
+      kind: '对象类型',
+      namespace: '逻辑范围',
+      podUid: 'Pod 身份 (UID)',
+      node: '运行所在 Node',
+      unscheduled: '尚未分配',
+      podPhase: 'Pod 阶段',
+      podScheduled: '已经选择 Node',
+      initialized: '初始化完成',
+      containersReady: '全部容器 Ready',
+      podReady: 'Pod Ready',
+      containerState: '容器状态',
+      containerId: '运行时容器 ID',
+      notCreated: '尚未创建',
+      containerReady: '容器 Ready',
+      started: '容器已启动',
+      restartCount: '重启次数',
+      lastTermination: '上一次停止原因',
+      lastExitCode: '上一次退出码',
+      image: '容器镜像',
+      desired: '期望副本数',
+      current: '当前副本数',
+      ready: 'Ready 副本数',
+      owner: '由谁管理',
+    },
+  } as const;
+  return copy[locale];
+};
+
 export function LearnPage() {
   const params = useParams();
   const navigate = useNavigate();
@@ -151,6 +222,7 @@ export function LearnPage() {
   const [sheetExpandedOverride, setSheetExpandedOverride] = useState<boolean | null>(null);
   const sheetExpanded = sheetExpandedOverride ?? !isMobile;
   const t = lessonUi(locale);
+  const inspectorText = inspectorCopy(locale);
   const valid = Boolean(
     lesson &&
     compiled &&
@@ -233,17 +305,22 @@ export function LearnPage() {
   }
   if (!valid || !lesson || !compiled) return <Navigate to={resumePath} replace />;
   const authoredStep = lesson.steps[stepIndex];
-  const step = compiled.steps[stepIndex];
-  if (!authoredStep || !step) return null;
+  const rawStep = compiled.steps[stepIndex];
+  if (!authoredStep || !rawStep) return null;
+  const step = beginnerFocusedStep(rawStep);
 
   const playback: PlaybackRequest = {
     stepKey: `${lesson.id}:${step.stepId}`,
     playbackId,
     transition: step.transition,
   };
-  const focusedId = Object.entries(step.view.entityStates).find(
-    ([, state]) => state.inspectorMode === 'expanded',
-  )?.[0];
+  const focusedId =
+    Object.entries(step.view.entityStates).find(
+      ([, state]) => state.visible && state.inspectorMode === 'expanded',
+    )?.[0] ??
+    Object.entries(step.view.entityStates).find(
+      ([, state]) => state.visible && state.emphasis === 'focused',
+    )?.[0];
   const selectedEntity = selected ? step.world.entities[selected] : undefined;
   const pod = podForEntity(step.world.entities, selected);
   const podData = pod ? getPodData(pod) : undefined;
@@ -278,8 +355,10 @@ export function LearnPage() {
           const endpoint = candidate as Readonly<Record<string, unknown>>;
           const conditions = readEndpointConditions(endpoint);
           const targetRef = String(endpoint.targetRef ?? endpoint.address ?? 'endpoint');
-          const target =
-            step.world.entities[targetRef]?.name ?? targetRef.split(':').at(-1) ?? targetRef;
+          const targetEntity = step.world.entities[targetRef];
+          const target = targetEntity
+            ? friendlyEntityName(targetEntity, locale)
+            : (targetRef.split(':').at(-1) ?? targetRef);
           return [
             {
               label: `${target} Endpoint conditions`,
@@ -290,56 +369,62 @@ export function LearnPage() {
       : [];
   const inspectorFacts = selectedEntity
     ? [
-        { label: 'Name', value: selectedEntity.name },
-        { label: 'Kind', value: selectedEntity.kind },
+        { label: inspectorText.name, value: friendlyEntityName(selectedEntity, locale) },
+        { label: inspectorText.technicalName, value: selectedEntity.name },
+        { label: inspectorText.kind, value: selectedEntity.kind },
         ...(selectedEntity.namespace
-          ? [{ label: 'Namespace', value: selectedEntity.namespace }]
+          ? [{ label: inspectorText.namespace, value: selectedEntity.namespace }]
           : []),
         ...(podData
           ? [
-              { label: 'Pod UID', value: podData.uid },
-              { label: 'Node', value: podData.nodeName ?? 'Unscheduled' },
-              { label: 'Pod phase', value: podData.phase },
-              { label: 'PodScheduled', value: String(podData.conditions.podScheduled) },
-              { label: 'Initialized', value: String(podData.conditions.initialized) },
-              { label: 'ContainersReady', value: String(podData.conditions.containersReady) },
-              { label: 'Pod Ready', value: String(podData.conditions.ready) },
+              { label: inspectorText.podUid, value: podData.uid },
+              { label: inspectorText.node, value: podData.nodeName ?? inspectorText.unscheduled },
+              { label: inspectorText.podPhase, value: podData.phase },
+              { label: inspectorText.podScheduled, value: String(podData.conditions.podScheduled) },
+              { label: inspectorText.initialized, value: String(podData.conditions.initialized) },
+              {
+                label: inspectorText.containersReady,
+                value: String(podData.conditions.containersReady),
+              },
+              { label: inspectorText.podReady, value: String(podData.conditions.ready) },
             ]
           : []),
         ...(containerData
           ? [
-              { label: 'Container state', value: containerData.state.kind },
-              { label: 'Container ID', value: containerData.containerID || 'Not created' },
-              { label: 'Container Ready', value: String(containerData.ready) },
-              { label: 'Started', value: String(containerData.started) },
-              { label: 'Restart count', value: String(containerData.restartCount) },
+              { label: inspectorText.containerState, value: containerData.state.kind },
+              {
+                label: inspectorText.containerId,
+                value: containerData.containerID || inspectorText.notCreated,
+              },
+              { label: inspectorText.containerReady, value: String(containerData.ready) },
+              { label: inspectorText.started, value: String(containerData.started) },
+              { label: inspectorText.restartCount, value: String(containerData.restartCount) },
               ...(containerData.lastState
                 ? [
-                    { label: 'Last termination', value: containerData.lastState.reason },
-                    { label: 'Last exit code', value: String(containerData.lastState.exitCode) },
+                    { label: inspectorText.lastTermination, value: containerData.lastState.reason },
+                    {
+                      label: inspectorText.lastExitCode,
+                      value: String(containerData.lastState.exitCode),
+                    },
                   ]
                 : []),
-              { label: 'Image', value: containerData.image },
+              { label: inspectorText.image, value: containerData.image },
             ]
           : []),
         ...(selectedReplicaSetData
           ? [
+              { label: inspectorText.desired, value: String(selectedReplicaSetData.specReplicas) },
               {
-                label: '.spec.replicas (SPEC)',
-                value: String(selectedReplicaSetData.specReplicas),
-              },
-              {
-                label: '.status.replicas (OBSERVED)',
+                label: inspectorText.current,
                 value: String(selectedReplicaSetData.statusReplicas),
               },
-              {
-                label: '.status.readyReplicas (READY)',
-                value: String(selectedReplicaSetData.readyReplicas),
-              },
+              { label: inspectorText.ready, value: String(selectedReplicaSetData.readyReplicas) },
             ]
           : []),
         ...endpointConditionFacts,
-        ...(ownerEntity ? [{ label: 'Owner', value: ownerEntity.name }] : []),
+        ...(ownerEntity
+          ? [{ label: inspectorText.owner, value: friendlyEntityName(ownerEntity, locale) }]
+          : []),
       ]
     : [];
   const introducedTerms = authoredStep.introducesTerms.flatMap((id) => {
@@ -364,16 +449,22 @@ export function LearnPage() {
     ? (() => {
         const firstHop = firstActiveRoute.hops[0];
         const lastHop = firstActiveRoute.hops[firstActiveRoute.hops.length - 1];
-        const source = firstHop
-          ? (step.world.entities[firstHop.fromEntityId]?.name ?? firstHop.fromEntityId)
-          : firstActiveRoute.semantic;
-        const target = lastHop
-          ? (step.world.entities[lastHop.toEntityId]?.name ?? lastHop.toEntityId)
-          : firstActiveRoute.semantic;
+        const sourceEntity = firstHop ? step.world.entities[firstHop.fromEntityId] : undefined;
+        const targetEntity = lastHop ? step.world.entities[lastHop.toEntityId] : undefined;
+        const source = sourceEntity
+          ? friendlyEntityName(sourceEntity, locale)
+          : (firstHop?.fromEntityId ?? firstActiveRoute.semantic);
+        const target = targetEntity
+          ? friendlyEntityName(targetEntity, locale)
+          : (lastHop?.toEntityId ?? firstActiveRoute.semantic);
         return t.followPath(source, target);
       })()
     : focusedId
-      ? t.focusOn(step.world.entities[focusedId]?.name ?? focusedId)
+      ? t.focusOn(
+          step.world.entities[focusedId]
+            ? friendlyEntityName(step.world.entities[focusedId], locale)
+            : focusedId,
+        )
       : t.focusOn(authoredStep.title[locale]);
   const visibleRelationSemantics = Array.from(
     new Set(
@@ -389,8 +480,10 @@ export function LearnPage() {
     .map((route) => {
       const hops = route.hops
         .map((hop, index) => {
-          const source = step.world.entities[hop.fromEntityId]?.name ?? hop.fromEntityId;
-          const target = step.world.entities[hop.toEntityId]?.name ?? hop.toEntityId;
+          const sourceEntity = step.world.entities[hop.fromEntityId];
+          const targetEntity = step.world.entities[hop.toEntityId];
+          const source = sourceEntity ? friendlyEntityName(sourceEntity, locale) : hop.fromEntityId;
+          const target = targetEntity ? friendlyEntityName(targetEntity, locale) : hop.toEntityId;
           const hopLabel = hop.label?.[locale];
           return `hop ${index + 1}${hopLabel ? ` (${hopLabel})` : ''}: source ${source} at ${hop.fromAnchor}, target ${target} at ${hop.toAnchor}`;
         })
@@ -406,8 +499,10 @@ export function LearnPage() {
             const endpoint = candidate as Readonly<Record<string, unknown>>;
             const conditions = readEndpointConditions(endpoint);
             const targetRef = String(endpoint.targetRef ?? endpoint.address ?? 'endpoint');
-            const target =
-              step.world.entities[targetRef]?.name ?? targetRef.split(':').at(-1) ?? targetRef;
+            const targetEntity = step.world.entities[targetRef];
+            const target = targetEntity
+              ? friendlyEntityName(targetEntity, locale)
+              : (targetRef.split(':').at(-1) ?? targetRef);
             return [`${target} endpoint ${endpointConditionText(conditions, ', ')}`];
           })
           .join('; ')
@@ -422,7 +517,7 @@ export function LearnPage() {
       if (!hasRelevantChange) return [];
       const data = getPodData(update.after);
       return [
-        `Pod ${update.after.name}: phase ${data.phase}; ContainersReady ${data.conditions.containersReady}; Ready ${data.conditions.ready}.`,
+        `Pod ${friendlyEntityName(update.after, locale)}: phase ${data.phase}; ContainersReady ${data.conditions.containersReady}; Ready ${data.conditions.ready}.`,
       ];
     })
     .join(' ');
@@ -437,9 +532,11 @@ export function LearnPage() {
   const sceneSummary = [
     authoredStep.title[locale],
     authoredStep.teaching.whatChanged[locale],
-    focusedId ? `Focused entity: ${step.world.entities[focusedId]?.name ?? focusedId}.` : '',
+    focusedId && step.world.entities[focusedId]
+      ? `Focused entity: ${friendlyEntityName(step.world.entities[focusedId], locale)}.`
+      : '',
     replicaCounts
-      ? `ReplicaSet SPEC ${replicaCounts.specReplicas}, OBSERVED ${replicaCounts.statusReplicas}, READY ${replicaCounts.readyReplicas}.`
+      ? `Replica target ${replicaCounts.specReplicas}, current ${replicaCounts.statusReplicas}, ready ${replicaCounts.readyReplicas}.`
       : '',
     changedPodSummary,
     pendingContainerStatusSummary,
@@ -449,11 +546,11 @@ export function LearnPage() {
     .filter(Boolean)
     .join(' ');
 
+  const isProblemStage = beginnerProblemStageKindForStep(step) !== undefined;
+
   const stage = (
     <>
-      <div className="view-badge" aria-hidden="true">
-        {step.view.view.replace('-', ' ').toUpperCase()}
-      </div>
+      {!isProblemStage ? <SceneOrientation view={step.view.view} locale={locale} /> : null}
       {replicaCounts && (
         <p
           className="scene-fact-status sr-only"
@@ -470,7 +567,7 @@ export function LearnPage() {
       </p>
       {!step.view.comparison && (
         <>
-          <div className="scene-canvas">
+          <div className={`scene-canvas${isProblemStage ? ' is-problem-stage' : ''}`}>
             <SceneViewport
               key={`lesson-${lesson.id}`}
               role="img"
@@ -490,12 +587,14 @@ export function LearnPage() {
               onSelectEntity={handleSelectEntity}
             />
           </div>
-          <SceneLegend
-            locale={locale}
-            view={step.view.view}
-            activeRoutes={step.view.activeRoutes}
-            relationSemantics={visibleRelationSemantics}
-          />
+          {!isProblemStage ? (
+            <SceneLegend
+              locale={locale}
+              view={step.view.view}
+              activeRoutes={step.view.activeRoutes}
+              relationSemantics={visibleRelationSemantics}
+            />
+          ) : null}
         </>
       )}
       {step.view.comparison && <CompareView model={step.view.comparison} locale={locale} />}
@@ -540,6 +639,10 @@ export function LearnPage() {
         whyItHappened={authoredStep.teaching.whyItHappened[locale]}
         takeaway={authoredStep.teaching.takeaway[locale]}
         evidence={step.evidence}
+        component={componentExplanation(
+          selectedEntity ?? (focusedId ? step.world.entities[focusedId] : undefined),
+          locale,
+        )}
         termCount={introducedTerms.length}
         sourceCount={stepSources.length}
         onOpenTerms={() => openDetails('terms')}
@@ -554,7 +657,7 @@ export function LearnPage() {
       announcement={`${t.stepOf(stepIndex + 1, lesson.steps.length)}. ${authoredStep.title[locale]}. ${authoredStep.teaching.whatChanged[locale]}`}
       header={
         <LessonHeader
-          chapter={chapterTitle(lesson.chapterId, locale)}
+          chapter={chapterPresentation(lesson.chapterId, locale)}
           lessonTitle={lesson.title[locale]}
           stepIndex={stepIndex}
           stepCount={lesson.steps.length}

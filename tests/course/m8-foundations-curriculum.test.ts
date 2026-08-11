@@ -343,6 +343,9 @@ describe('M8 foundations curriculum with M9 flow-story expansion', () => {
       'three-replaceable-pods',
       'one-pod-is-lost',
       'controller-restores-count',
+      'scheduler-records-worker-c',
+      'binding-places-pod-on-worker-c',
+      'kubelet-starts-replacement',
       'replacement-becomes-ready',
     ]);
 
@@ -380,9 +383,27 @@ describe('M8 foundations curriculum with M9 flow-story expansion', () => {
     expect(desiredState.introducesTerms).toEqual(['desired-state', 'deployment', 'replicaset']);
 
     const lost = step(compiled, 'one-pod-is-lost');
+    const scheduled = step(compiled, 'scheduler-records-worker-c');
+    const placed = step(compiled, 'binding-places-pod-on-worker-c');
+    const started = step(compiled, 'kubelet-starts-replacement');
     const recovered = step(compiled, 'replacement-becomes-ready');
     const replicaSetId = 'api-object:namespaced:shop:ReplicaSet:api-rs';
+    const replacementId = 'api-object:namespaced:shop:Pod:api-d-new';
+    const replacementContainerId = 'container-status:shop:Pod:api-d-new:Container:api';
     expect(lost.world.entities[replicaSetId]?.data).toMatchObject({ readyReplicas: 2 });
+    expect(scheduled.world.entities[replacementId]?.data).toMatchObject({
+      nodeName: 'worker-c',
+      phase: 'Pending',
+      conditions: expect.objectContaining({ podScheduled: true, ready: false }),
+    });
+    expect(placed.world.entities[replacementId]?.data).toMatchObject({
+      nodeName: 'worker-c',
+      phase: 'Pending',
+    });
+    expect(started.world.entities[replacementContainerId]?.data).toMatchObject({
+      started: true,
+      ready: false,
+    });
     expect(recovered.world.entities[replicaSetId]?.data).toMatchObject({ readyReplicas: 3 });
   });
 

@@ -89,7 +89,7 @@ describe('HomePage orientation', () => {
       'Interactive lesson preview: Why Kubernetes? From one container to self-healing',
     );
     expect(
-      screen.getByText('CURRENT LESSON · Why Kubernetes? From one container to self-healing'),
+      screen.getByText('Current lesson · Why Kubernetes? From one container to self-healing'),
     ).toBeVisible();
     expect(screen.queryByRole('link', { name: /explore/i })).not.toBeInTheDocument();
     expect(
@@ -220,14 +220,14 @@ describe('HomePage orientation', () => {
     expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
       'Showcase preview: Container restart is not Pod replacement',
     );
-    expect(screen.getByText('SHOWCASE · Container restart is not Pod replacement')).toBeVisible();
+    expect(screen.getByText('Showcase · Container restart is not Pod replacement')).toBeVisible();
   });
 
   it.each([
     [
       'en',
       'Interactive lesson preview: Why Kubernetes? From one container to self-healing',
-      'CURRENT LESSON · Why Kubernetes? From one container to self-healing',
+      'Current lesson · Why Kubernetes? From one container to self-healing',
     ],
     [
       'ja',

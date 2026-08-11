@@ -28,8 +28,8 @@ const context = (
 const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> = Object.freeze({
   ownership: context('ownership', {
     color: colors.control,
-    widthCssPx: 1.35,
-    opacity: 0.34,
+    widthCssPx: 1.05,
+    opacity: 0.16,
     dashed: false,
     dashSize: 0,
     gapSize: 0,
@@ -44,8 +44,8 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
   }),
   scope: context('scope', {
     color: colors.neutral,
-    widthCssPx: 1.5,
-    opacity: 0.4,
+    widthCssPx: 1,
+    opacity: 0.14,
     dashed: true,
     dashSize: 0.24,
     gapSize: 0.18,
@@ -60,8 +60,8 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
   }),
   placement: context('placement', {
     color: colors.placement,
-    widthCssPx: 1.3,
-    opacity: 0.34,
+    widthCssPx: 1.05,
+    opacity: 0.18,
     dashed: false,
     dashSize: 0,
     gapSize: 0,
@@ -92,8 +92,8 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
   }),
   'control-observation': context('control-observation', {
     color: colors.control,
-    widthCssPx: 1.45,
-    opacity: 0.38,
+    widthCssPx: 1.05,
+    opacity: 0.18,
     dashed: true,
     dashSize: 0.34,
     gapSize: 0.22,
@@ -108,8 +108,8 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
   }),
   selection: context('selection', {
     color: colors.endpoint,
-    widthCssPx: 1.25,
-    opacity: 0.32,
+    widthCssPx: 1,
+    opacity: 0.17,
     dashed: true,
     dashSize: 0.25,
     gapSize: 0.14,
@@ -124,8 +124,8 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
   }),
   'endpoint-membership': context('endpoint-membership', {
     color: colors.endpoint,
-    widthCssPx: 1.25,
-    opacity: 0.36,
+    widthCssPx: 1,
+    opacity: 0.2,
     dashed: false,
     dashSize: 0,
     gapSize: 0,
@@ -140,8 +140,8 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
   }),
   'data-flow': context('data-flow', {
     color: colors.dataFlow,
-    widthCssPx: 1.4,
-    opacity: 0.34,
+    widthCssPx: 1.05,
+    opacity: 0.16,
     dashed: false,
     dashSize: 0,
     gapSize: 0,
@@ -156,8 +156,8 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
   }),
   'DNS-flow': context('DNS-flow', {
     color: colors.dns,
-    widthCssPx: 1.35,
-    opacity: 0.34,
+    widthCssPx: 1.05,
+    opacity: 0.16,
     dashed: true,
     dashSize: 0.38,
     gapSize: 0.18,
@@ -172,8 +172,8 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
   }),
   storage: context('storage', {
     color: colors.storage,
-    widthCssPx: 1.4,
-    opacity: 0.36,
+    widthCssPx: 1.05,
+    opacity: 0.18,
     dashed: false,
     dashSize: 0,
     gapSize: 0,
@@ -188,8 +188,8 @@ const CONTEXT_STYLES: Readonly<Record<RelationSemantic, ContextRelationStyle>> =
   }),
   configuration: context('configuration', {
     color: colors.configuration,
-    widthCssPx: 1.15,
-    opacity: 0.26,
+    widthCssPx: 0.95,
+    opacity: 0.14,
     dashed: true,
     dashSize: 0.2,
     gapSize: 0.18,
@@ -315,7 +315,7 @@ const ACTIVE_ROUTE_STYLES: Readonly<Record<RouteSemantic, TeachingRouteStyle>> =
 });
 
 const opacityFactor = (emphasis: RelationEmphasis): number => {
-  if (emphasis === 'dimmed') return 0.24;
+  if (emphasis === 'dimmed') return 0.16;
   if (emphasis === 'focused') return 1.12;
   if (emphasis === 'active') return 1.2;
   return 1;

@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { Locale } from '../../app/types';
 import { useAppStore } from '../../state/appStore';
@@ -69,16 +69,22 @@ export function StepTimeline({
 
   return (
     <nav className="step-timeline" aria-label={t.timeline} data-testid="step-timeline">
-      <button
-        className="timeline-edge-button"
-        type="button"
-        aria-label={t.previous}
-        disabled={currentStep === 0}
-        onClick={() => onStepChange(currentStep - 1)}
-      >
-        <ChevronLeft size={18} aria-hidden="true" />
-        <span>{t.previous}</span>
-      </button>
+      {currentStep === 0 ? (
+        <a className="timeline-edge-button timeline-home-link" href="#/" aria-label={t.backHome}>
+          <ArrowLeft size={18} aria-hidden="true" />
+          <span>{t.backHome}</span>
+        </a>
+      ) : (
+        <button
+          className="timeline-edge-button"
+          type="button"
+          aria-label={t.previous}
+          onClick={() => onStepChange(currentStep - 1)}
+        >
+          <ChevronLeft size={18} aria-hidden="true" />
+          <span>{t.previous}</span>
+        </button>
+      )}
       <div className="timeline-scroll" ref={scrollRef}>
         <ol>
           {titles.map((title, index) => (

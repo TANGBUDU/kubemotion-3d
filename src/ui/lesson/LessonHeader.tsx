@@ -1,4 +1,4 @@
-import { Camera, Home, Languages, List, Play, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Camera, Languages, List, Play, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Locale } from '../../app/types';
 import { lessonUi } from './copy';
@@ -44,7 +44,7 @@ export function LessonHeader({
           aria-label={t.backHome}
           title={t.backHome}
         >
-          <Home size={18} aria-hidden="true" />
+          <ArrowLeft size={18} aria-hidden="true" />
           <span className="lesson-home-text">{t.backHome}</span>
         </Link>
         <button
@@ -56,6 +56,7 @@ export function LessonHeader({
           onClick={onOpenCourse}
         >
           <List size={19} aria-hidden="true" />
+          <span className="course-trigger-text">{t.courseContents}</span>
         </button>
       </div>
       <div className="lesson-heading">

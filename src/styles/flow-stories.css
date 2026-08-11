@@ -146,7 +146,7 @@
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .flow-story-path strong {
@@ -348,7 +348,7 @@
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.1em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .flow-story-beat-heading h2 {
@@ -370,7 +370,7 @@
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.09em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .flow-story-teaching > section p {

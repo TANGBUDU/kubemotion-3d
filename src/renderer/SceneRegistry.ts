@@ -59,11 +59,11 @@ const isRendered = (state: EntityViewState | undefined): state is EntityViewStat
   state?.visible === true && state.emphasis !== 'hidden';
 
 const guideColor = (container: LayoutContainer): number => {
-  if (container.kind === 'pending-lane') return 0xf0b44d;
-  if (container.kind === 'control-lane') return 0xb792ff;
-  if (container.kind === 'workload-lane') return palette.scheduling;
-  if (container.kind === 'worker-lane') return palette.dataFlow;
-  return 0x5eb6ff;
+  if (container.kind === 'pending-lane') return 0x857860;
+  if (container.kind === 'control-lane') return 0x625c78;
+  if (container.kind === 'workload-lane') return 0x566879;
+  if (container.kind === 'worker-lane') return 0x3e6073;
+  return 0x4a6678;
 };
 
 const layoutGuideShapeKey = (container: LayoutContainer): string =>
@@ -140,7 +140,7 @@ const createPendingTray = (container: LayoutContainer): LayoutGuideHandle => {
       roughness: 0.72,
       metalness: 0.03,
       transparent: true,
-      opacity: 0.88,
+      opacity: 0.58,
     }),
   );
   const base = new THREE.Mesh(baseGeometry, baseMaterial);
@@ -149,7 +149,7 @@ const createPendingTray = (container: LayoutContainer): LayoutGuideHandle => {
   base.userData.selectable = false;
   root.add(base);
 
-  const railMaterial = ownMaterial(createFlatAccentMaterial(palette.scheduling, 0.88));
+  const railMaterial = ownMaterial(createFlatAccentMaterial(guideColor(container), 0.16));
   const longRailGeometry = ownGeometry(
     createRoundedBoxGeometry(container.bounds.size[0], 0.2, 0.09, 0.035),
   );
@@ -172,7 +172,7 @@ const createPendingTray = (container: LayoutContainer): LayoutGuideHandle => {
   const slotGeometry = ownGeometry(createRoundedBoxGeometry(1.58, 0.035, 1.22, 0.12));
   for (const slot of container.slots) {
     const slotMaterial = ownMaterial(
-      createFlatAccentMaterial(slot.occupiedBy ? palette.pending : palette.borderSubtle, 0.32),
+      createFlatAccentMaterial(slot.occupiedBy ? guideColor(container) : palette.borderSubtle, 0.1),
     );
     const well = new THREE.Mesh(slotGeometry, slotMaterial);
     well.position.set(
@@ -186,18 +186,6 @@ const createPendingTray = (container: LayoutContainer): LayoutGuideHandle => {
     root.add(well);
   }
 
-  const warningGeometry = ownGeometry(new THREE.BoxGeometry(0.32, 0.035, 0.075));
-  for (let index = 0; index < 5; index += 1) {
-    const warning = new THREE.Mesh(warningGeometry, railMaterial);
-    warning.position.set(
-      -container.bounds.size[0] / 2 + 0.36 + index * 0.45,
-      0.25,
-      -container.bounds.size[2] / 2,
-    );
-    warning.rotation.y = -0.58;
-    warning.userData.role = 'unscheduled-warning-mark';
-    root.add(warning);
-  }
   const labelAnchor = addDomLabelAnchor(root, container);
   root.position.set(...container.bounds.center);
   return {
@@ -239,7 +227,7 @@ const createSemanticIsland = (container: LayoutContainer): LayoutGuideHandle => 
       roughness: 0.76,
       metalness: 0.04,
       transparent: true,
-      opacity: 0.94,
+      opacity: 0.62,
     }),
   );
   const base = new THREE.Mesh(geometry, material);
@@ -250,7 +238,7 @@ const createSemanticIsland = (container: LayoutContainer): LayoutGuideHandle => 
   root.add(base);
 
   const edgeGeometry = ownGeometry(new THREE.EdgesGeometry(geometry, 24));
-  const edgeMaterial = ownMaterial(createFlatAccentMaterial(guideColor(container), 0.74));
+  const edgeMaterial = ownMaterial(createFlatAccentMaterial(guideColor(container), 0.14));
   const edge = new THREE.LineSegments(edgeGeometry, edgeMaterial);
   edge.userData.role = 'semantic-island-edge';
   edge.userData.islandKind = container.kind;
@@ -259,7 +247,7 @@ const createSemanticIsland = (container: LayoutContainer): LayoutGuideHandle => 
 
   const markerWidth = Math.min(3.4, Math.max(1.4, container.bounds.size[0] * 0.24));
   const markerGeometry = ownGeometry(createRoundedBoxGeometry(markerWidth, 0.055, 0.09, 0.025));
-  const markerMaterial = ownMaterial(createFlatAccentMaterial(guideColor(container), 0.9));
+  const markerMaterial = ownMaterial(createFlatAccentMaterial(guideColor(container), 0.24));
   const marker = new THREE.Mesh(markerGeometry, markerMaterial);
   marker.position.set(
     -container.bounds.size[0] / 2 + markerWidth / 2 + 0.36,
@@ -319,7 +307,7 @@ const createLayoutGuide = (container: LayoutContainer): LayoutGuideHandle => {
   const edgeMaterial = new THREE.LineDashedMaterial({
     color: guideColor(container),
     transparent: true,
-    opacity: subtleTrafficGuide ? 0.24 : 0.72,
+    opacity: subtleTrafficGuide ? 0.16 : 0.28,
     dashSize: subtleTrafficGuide ? 0.34 : 0.5,
     gapSize: subtleTrafficGuide ? 0.34 : 0.22,
   });
