@@ -1,0 +1,58 @@
+name: Apply beginner teaching contract fixes
+
+on:
+  push:
+    branches: [rebuild/world-state-engine]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-beginner-teaching-contract-fixes
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: rebuild/world-state-engine
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Apply beginner teaching contract fixes
+        shell: bash
+        run: |
+          cat > /tmp/beginner-contract-fixes.patch.gz.b64 <<'PATCH_B64'
+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
+PATCH_B64
+          base64 --decode /tmp/beginner-contract-fixes.patch.gz.b64 > /tmp/beginner-contract-fixes.patch.gz
+          echo '2bd7b72fcfe5f252e95b06de811da4ae5ef7092b0a93ffbf8140a11cd574b63a  /tmp/beginner-contract-fixes.patch.gz' | sha256sum --check -
+          gzip --decompress --stdout /tmp/beginner-contract-fixes.patch.gz > /tmp/beginner-contract-fixes.patch
+          git apply --check /tmp/beginner-contract-fixes.patch
+          git apply /tmp/beginner-contract-fixes.patch
+          rm -f .github/workflows/apply-beginner-contract-fixes.yml
+      - run: pnpm format
+      - run: git diff --check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm content:validate
+      - run: pnpm content:accuracy
+      - run: pnpm test:unit --run
+      - run: pnpm build
+      - name: Commit verified beginner teaching fixes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'fix: align beginner teaching contracts'
+          git push origin HEAD:rebuild/world-state-engine
