@@ -246,10 +246,13 @@ export function createEffectiveScenePlan(
     for (const relation of Object.values(world.relations)) {
       const dependentId = relation.semantic === 'composition' ? relation.to : relation.from;
       const requiredId = relation.semantic === 'composition' ? relation.from : relation.to;
+      // Placement view must show the physical Node that contains a scheduled Pod. Control-flow
+      // view is different: it may intentionally teach the Pod API object immediately after the
+      // scheduler writes nodeName, before the lesson switches to the physical Node view. The
+      // strict control-flow layout has an explicit assigned-Pod context lane for that case.
       const enforcesClosure =
         relation.semantic === 'composition' ||
-        ((grammar.id === 'placement' || grammar.id === 'control-flow') &&
-          relation.semantic === 'placement');
+        (grammar.id === 'placement' && relation.semantic === 'placement');
       if (enforcesClosure && visibleIds.has(dependentId) && !visibleIds.has(requiredId)) {
         visibleIds.delete(dependentId);
         hiddenReasons[dependentId] = 'required-context-missing';

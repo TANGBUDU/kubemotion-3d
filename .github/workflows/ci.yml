@@ -1,98 +1,29 @@
 name: CI
+
 on:
   pull_request:
   push:
     branches: [main]
+
 permissions:
-  contents: write
+  contents: read
+
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-jobs:
-  fix-beginner-scheduler-context:
-    if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-        with: { version: 11.16.0 }
-      - uses: actions/setup-node@v5
-        with: { node-version: 24, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - name: Keep worker-c visible when Scheduler records the binding
-        run: |
-          python - <<'PY'
-          from pathlib import Path
 
-          path = Path('content/courses/kubernetes-foundations/lessons/why-kubernetes-exists.yaml')
-          text = path.read_text(encoding='utf-8')
-          marker = '''        - selector:
-            byIds:
-              - infrastructure:cluster:global:Node:worker-c
-          visible: true
-          emphasis: dimmed
-          labelMode: full
-'''
-          if marker not in text:
-              old = '''        - selector:
-            byIds:
-              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-              - api-object:namespaced:shop:Pod:api-d-new
-          visible: true
-          emphasis: normal
-          labelMode: full
-      relationRules: []
-      activeRoutes:
-        - id: route-scheduler-records-worker-c
-'''
-              new = '''        - selector:
-            byIds:
-              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
-              - api-object:namespaced:shop:Pod:api-d-new
-          visible: true
-          emphasis: normal
-          labelMode: full
-        - selector:
-            byIds:
-              - infrastructure:cluster:global:Node:worker-c
-          visible: true
-          emphasis: dimmed
-          labelMode: full
-      relationRules: []
-      activeRoutes:
-        - id: route-scheduler-records-worker-c
-'''
-              if old not in text:
-                  raise SystemExit('Scheduler lesson insertion point is missing')
-              path.write_text(text.replace(old, new, 1), encoding='utf-8')
-          PY
-      - run: pnpm format
-      - run: git diff --check
-      - run: pnpm typecheck
-      - run: pnpm content:validate
-      - name: Commit scheduler context fix
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add content/courses/kubernetes-foundations/lessons/why-kubernetes-exists.yaml
-          git diff --cached --check
-          if git diff --cached --quiet; then
-            echo 'Scheduler context is already correct.'
-            exit 0
-          fi
-          git commit -m 'fix: show the selected worker in the scheduling step'
-          git push origin HEAD:${{ github.head_ref }}
+jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
-        with: { version: 11.16.0 }
+        with:
+          version: 11.16.0
       - uses: actions/setup-node@v5
-        with: { node-version: 24, cache: pnpm }
+        with:
+          node-version: 24
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm lint
