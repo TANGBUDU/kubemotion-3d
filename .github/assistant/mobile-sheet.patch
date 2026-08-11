@@ -1,0 +1,31 @@
+diff --git a/src/pages/LearnPage.tsx b/src/pages/LearnPage.tsx
+index cbee532..e16b16e 100644
+--- a/src/pages/LearnPage.tsx
++++ b/src/pages/LearnPage.tsx
+@@ -1,4 +1,4 @@
+-import { useCallback, useEffect, useMemo, useState } from 'react';
++import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+ import { Navigate, useNavigate, useParams } from 'react-router-dom';
+ import type { Locale } from '../app/types';
+ import { SceneViewport } from '../components/SceneViewport';
+@@ -149,6 +149,7 @@ export function LearnPage() {
+   const [detailsOpen, setDetailsOpen] = useState(false);
+   const [detailSection, setDetailSection] = useState<DetailSection>('inspector');
+   const [sheetExpanded, setSheetExpanded] = useState(() => !isMobile);
++  const previousIsMobile = useRef(isMobile);
+   const t = lessonUi(locale);
+   const valid = Boolean(
+     lesson &&
+@@ -196,6 +197,14 @@ export function LearnPage() {
+     if (valid && lesson) enterLesson(lesson.id, stepIndex);
+   }, [enterLesson, lesson, stepIndex, valid]);
+ 
++  useEffect(() => {
++    if (previousIsMobile.current === isMobile) return;
++    previousIsMobile.current = isMobile;
++    setSheetExpanded(!isMobile);
++  }, [isMobile]);
++
+   useEffect(() => {
+     const onKey = (event: KeyboardEvent) => {
+       if (event.key === 'Escape') {
