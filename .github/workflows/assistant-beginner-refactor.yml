@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/assistant/beginner-code.patch.gz.b64'
       - '.github/assistant/beginner-content.mjs.gz.b64'
+      - '.github/assistant/beginner-refactor.trigger'
       - '.github/workflows/assistant-beginner-refactor.yml'
 
 permissions:
@@ -47,6 +48,7 @@ jobs:
           rm -f .github/assistant/beginner-code.part-2
           rm -f .github/assistant/beginner-code.patch.gz.b64
           rm -f .github/assistant/beginner-content.mjs.gz.b64
+          rm -f .github/assistant/beginner-refactor.trigger
           rm -f .github/workflows/assistant-beginner-refactor.yml
 
       - run: pnpm format
