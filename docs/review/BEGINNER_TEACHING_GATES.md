@@ -16,6 +16,8 @@ Additional rules:
 - Use sentence case for chapter, view, and zone titles.
 - Show no more than one primary causal route in a normal guided step.
 - A region boundary must never resemble an active route.
+- A scheduling decision must visibly name the selected Node before the next step shows physical placement.
+- Completion titles must wrap inside their card at every supported viewport.
 - Explain component responsibility, mechanism, and non-responsibility.
 - Keep Node → Pod → Container and Deployment → ReplicaSet → Pod as separate mental models.
 - Responsive scene grammar owns the density and label budget; beginner simplification may remove

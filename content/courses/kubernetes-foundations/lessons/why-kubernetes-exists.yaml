@@ -746,9 +746,9 @@ steps:
               toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
               toAnchor: api-in
               label:
-                en: submit the selected Node
-                ja: 選択した Node を送信
-                zh-CN: 提交所选 Node
+                en: submit the worker-c choice
+                ja: worker-c の選択結果を送信
+                zh-CN: 提交 worker-c 选择结果
             - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
               fromAnchor: api-out
               toEntityId: api-object:namespaced:shop:Pod:api-d-new

@@ -81,6 +81,10 @@
   gap: 10px;
 }
 
+.lesson-completion-heading > div {
+  min-width: 0;
+}
+
 .lesson-completion-heading > span {
   display: grid;
   width: 32px;
@@ -119,13 +123,15 @@
 }
 
 .lesson-completion-heading h2 {
-  overflow: hidden;
+  overflow: visible;
+  max-width: 100%;
   margin-top: 3px;
   color: var(--text-primary);
   font-size: 14px;
   line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .lesson-completion-message {

@@ -110,6 +110,7 @@ test('beginner journey stays problem-first and visually focused', async ({ page 
   expect(diagnostics?.routeHandles).toBe(1);
   await expect(page.locator('.scene-legend li')).toHaveCount(1);
   await expect(page.locator('.scene-legend')).toContainText(/control command/i);
+  await expect(page.locator('.scene-route-label:not([hidden])').first()).toContainText(/worker-c/i);
   await expect(page.getByTestId('component-explanation')).toContainText(/choose|Node/i);
   await page.screenshot({
     path: `${reviewDir}/07-scheduler-records-node.png`,
@@ -137,6 +138,20 @@ test('beginner journey stays problem-first and visually focused', async ({ page 
 
   await gotoBeginnerLesson(page, 'why-kubernetes-exists', 8);
   await expect(page.getByTestId('teaching-takeaway')).toContainText(/declare|reality/i);
+  const completionTitle = page.locator('#lesson-completion-title');
+  await expect(completionTitle).toHaveText('Why Kubernetes? From one container to self-healing');
+  const completionTitleClips = await completionTitle.evaluate((element) => {
+    const card = element.closest('.lesson-completion-card');
+    if (!card) return true;
+    const titleRect = element.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    return (
+      element.scrollWidth > element.clientWidth + 1 ||
+      titleRect.right > cardRect.right + 1 ||
+      titleRect.bottom > cardRect.bottom + 1
+    );
+  });
+  expect(completionTitleClips).toBe(false);
   await page.screenshot({
     path: `${reviewDir}/10-ready-restores-capacity.png`,
     fullPage: false,
@@ -179,6 +194,7 @@ test('beginner journey stays problem-first and visually focused', async ({ page 
   diagnostics = await page.evaluate(() => window.__KUBEMOTION_TEST__?.getSceneDiagnostics());
   expect(diagnostics?.routeHandles).toBe(1);
   await expect(page.locator('.scene-legend li')).toHaveCount(1);
+  await expect(page.locator('.scene-route-label:not([hidden])').first()).toContainText(/worker-c/i);
   await page.screenshot({
     path: `${reviewDir}/14-zh-scheduler-one-line.png`,
     fullPage: false,
