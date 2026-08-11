@@ -27,7 +27,7 @@ index f022ca9..71d81fa 100644
    });
  });
 diff --git a/tests/components/learnPage.test.tsx b/tests/components/learnPage.test.tsx
-index 421373a..e6352a3 100644
+index 421373a..04daf89 100644
 --- a/tests/components/learnPage.test.tsx
 +++ b/tests/components/learnPage.test.tsx
 @@ -80,12 +80,12 @@ describe('LearnPage lesson information architecture', () => {
@@ -43,15 +43,15 @@ index 421373a..e6352a3 100644
 +    expect(screen.getByTestId('teaching-takeaway')).toHaveTextContent('Remember this');
      expect(
 -      within(screen.getByLabelText('Scene legend')).getByText('Local node runtime'),
-+      within(screen.getByLabelText('Scene legend')).getByText(/work inside one Node/i),
++      within(screen.getByLabelText('Scene legend')).getByText(/Kubernetes control command/i),
      ).toBeVisible();
      expect(
        within(screen.getByTestId('step-timeline')).getAllByRole('button', {
 diff --git a/tests/course/m8-foundations-curriculum.test.ts b/tests/course/m8-foundations-curriculum.test.ts
-index 74d8408..dab41c4 100644
+index 74d8408..feeca2a 100644
 --- a/tests/course/m8-foundations-curriculum.test.ts
 +++ b/tests/course/m8-foundations-curriculum.test.ts
-@@ -327,60 +327,60 @@ describe('M8 foundations curriculum with M9 flow-story expansion', () => {
+@@ -327,60 +327,63 @@ describe('M8 foundations curriculum with M9 flow-story expansion', () => {
      }
    }, 15_000);
  
@@ -125,19 +125,22 @@ index 74d8408..dab41c4 100644
 +    expect(startSimple.world.entities[containerId]).toMatchObject({ kind: 'Container' });
 +    expect(startSimple.evidence.map((item) => item.entityId)).toContain(containerId);
 +
-+    const threeCopies = step(compiled, 'declare-three-replicas');
-+    expect(threeCopies.evidence.map((item) => item.entityId)).toEqual(
-+      expect.arrayContaining([
-+        'api-object:namespaced:shop:Pod:api-a-old',
-+        'api-object:namespaced:shop:Pod:api-b',
-+        'api-object:namespaced:shop:Pod:api-c',
-+      ]),
++    const threeCopies = authored.steps.find(
++      (candidate) => candidate.id === 'declare-three-replicas',
      );
 -    expect(packaging.view.entityStates[containerId]).toMatchObject({
 -      visible: true,
 -      emphasis: 'focused',
 -      inspectorMode: 'expanded',
 -    });
++    if (!threeCopies) throw new Error('Missing declare-three-replicas step');
++    expect(threeCopies.evidence.entityIds).toEqual(
++      expect.arrayContaining([
++        'api-object:namespaced:shop:Pod:api-a-old',
++        'api-object:namespaced:shop:Pod:api-b',
++        'api-object:namespaced:shop:Pod:api-c',
++      ]),
++    );
 +
 +    const desiredState = authored.steps.find(
 +      (candidate) => candidate.id === 'three-replaceable-pods',
