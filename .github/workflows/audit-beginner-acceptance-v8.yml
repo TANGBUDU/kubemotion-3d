@@ -1,0 +1,139 @@
+name: Cross-viewport beginner acceptance audit
+
+on:
+  push:
+    branches: [rebuild/world-state-engine]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: beginner-acceptance-audit-v8
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: rebuild/world-state-engine
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Wait for the serialized repair to publish its verified commit
+        run: |
+          ready=0
+          for attempt in $(seq 1 60); do
+            git fetch origin rebuild/world-state-engine
+            if ! git cat-file -e origin/rebuild/world-state-engine:.github/workflows/apply-beginner-followup-v7.yml 2>/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'The serialized repair did not publish a final commit within ten minutes.'
+            exit 1
+          fi
+          git reset --hard origin/rebuild/world-state-engine
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm content:validate
+      - run: pnpm content:accuracy
+      - run: pnpm test:unit --run
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run the beginner lesson across every configured viewport project
+        run: pnpm exec playwright test tests/e2e/beginner-teaching.spec.ts
+
+      - name: Run the critical teaching and traffic suite on the desktop reference viewport
+        run: >-
+          pnpm exec playwright test
+          tests/e2e/batch03-traffic-composition.spec.ts
+          tests/e2e/explore-selection.spec.ts
+          tests/e2e/golden-timeline.spec.ts
+          tests/e2e/flow-story-player.spec.ts
+          --project=desktop-1280-chromium
+
+      - name: Run the complete M8 curriculum visual gate when available
+        run: |
+          if node -e "const p=require('./package.json'); process.exit(p.scripts?.['visual:m8'] ? 0 : 1)"; then
+            pnpm visual:m8
+          else
+            echo 'visual:m8 is not defined; the browser acceptance suite remains authoritative.'
+          fi
+
+      - name: Enforce the beginner-facing release invariants
+        run: |
+          test ! -e .github/workflows/apply-beginner-followup-v2.yml
+          test ! -e .github/workflows/apply-beginner-followup-v3.yml
+          test ! -e .github/workflows/apply-beginner-followup-v4.yml
+          test ! -e .github/workflows/apply-beginner-followup-v5.yml
+          test ! -e .github/workflows/apply-beginner-followup-v6.yml
+          test ! -e .github/workflows/apply-beginner-followup-v7.yml
+
+          ! grep -Fq '/Kubernetes control command/i' tests/components/learnPage.test.tsx
+          ! grep -Fq "toBe('CONTROL PLANE')" tests/renderer/labels.test.ts
+          ! grep -Fq "toEqual(['verb-0', 'verb-1', 'verb-2'])" tests/renderer/labels.test.ts
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import YAML from 'yaml';
+
+          const root = 'content/courses/kubernetes-foundations/lessons';
+          let found = false;
+          for (const file of fs.readdirSync(root).filter((name) => name.endsWith('.yaml'))) {
+            const lesson = YAML.parse(fs.readFileSync(path.join(root, file), 'utf8'));
+            const step = (lesson.steps ?? []).find(
+              (candidate) =>
+                candidate?.title?.en === 'api-a remains listed but becomes NotReady' ||
+                JSON.stringify(candidate).includes('api-a remains listed but becomes NotReady'),
+            );
+            if (!step) continue;
+            found = true;
+            if ((step.viewPatch?.activeRoutes ?? []).length !== 0) {
+              throw new Error('The readiness-only step still exposes an active request route.');
+            }
+            if (step.evidence?.mode !== 'snapshot') {
+              throw new Error('The readiness-only step must use snapshot evidence.');
+            }
+            if (JSON.stringify(step.transition?.cues ?? []).includes('routeId')) {
+              throw new Error('The readiness-only step still has a route transition cue.');
+            }
+          }
+          if (!found) throw new Error('The readiness-only Service step was not found.');
+          NODE
+
+      - name: Remove audit scaffolding and publish the audited branch
+        run: |
+          rm -f .github/workflows/audit-beginner-acceptance-v8.yml
+          rm -f .github/assistant/trigger-beginner-followup.txt
+          rm -f .github/assistant/trigger-final-beginner-gate.txt
+          rm -f .github/assistant/trigger-beginner-repair.txt
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+
+          if git diff --cached --quiet; then
+            echo 'The audited branch has no scaffolding to remove.'
+            exit 0
+          fi
+
+          git commit -m 'chore: pass cross-viewport beginner acceptance audit'
+          git push origin HEAD:rebuild/world-state-engine
