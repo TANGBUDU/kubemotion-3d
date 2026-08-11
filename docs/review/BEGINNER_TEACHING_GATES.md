@@ -28,3 +28,6 @@ Additional rules:
 - Browser acceptance checks must scope an assertion to the intended label or Home action rather than
   treating a valid collection of visible elements as one strict locator.
 - Do not count automated overlap checks as proof that a scene is understandable.
+
+The focused browser gate now verifies the named scheduling decision, completion-card containment,
+and reduced-motion exit cleanup before the review screenshots are accepted.
