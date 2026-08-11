@@ -1,0 +1,169 @@
+diff --git a/tests/components/homePage.test.tsx b/tests/components/homePage.test.tsx
+index f022ca9..71d81fa 100644
+--- a/tests/components/homePage.test.tsx
++++ b/tests/components/homePage.test.tsx
+@@ -128,7 +128,7 @@ describe('HomePage orientation', () => {
+ 
+     fireEvent.click(reopen);
+     await waitFor(() =>
+-      expect(screen.getByRole('heading', { name: /Three ideas/i })).toHaveFocus(),
++      expect(screen.getByRole('heading', { name: /Three things to know/i })).toHaveFocus(),
+     );
+ 
+     fireEvent.click(screen.getByRole('button', { name: 'Continue without review' }));
+@@ -241,9 +241,11 @@ describe('HomePage orientation', () => {
+     useAppStore.setState({ locale: 'zh-CN' });
+     renderHome();
+ 
+-    expect(screen.getByText('控制平面负责决策。')).toBeVisible();
+-    expect(screen.getByText('工作节点运行 Pod。')).toBeVisible();
+-    expect(screen.getByText('一个 Pod 包含一个或多个容器。')).toBeVisible();
++    expect(screen.getByText('只运行一个应用时，未必需要 Kubernetes。')).toBeVisible();
++    expect(screen.getByText('Kubernetes 的价值是让你声明的结果长期自动成立。')).toBeVisible();
++    expect(
++      screen.getByText('每条高亮线只表达一种动作：请求、控制、调度或 Node 内执行。'),
++    ).toBeVisible();
+     expect(screen.getByRole('link', { name: '开始课程' })).toBeVisible();
+   });
+ });
+diff --git a/tests/components/learnPage.test.tsx b/tests/components/learnPage.test.tsx
+index 421373a..e6352a3 100644
+--- a/tests/components/learnPage.test.tsx
++++ b/tests/components/learnPage.test.tsx
+@@ -80,12 +80,12 @@ describe('LearnPage lesson information architecture', () => {
+     expect(screen.getByTestId('teaching-step-heading')).toHaveTextContent(
+       'What you are looking at',
+     );
+-    expect(screen.getByTestId('teaching-what-changed')).toHaveTextContent('What changed');
+-    expect(screen.getByTestId('teaching-why-it-happened')).toHaveTextContent('Why it happened');
++    expect(screen.getByTestId('teaching-what-changed')).toHaveTextContent('What is true now');
++    expect(screen.getByTestId('teaching-why-it-happened')).toHaveTextContent('Why this happened');
+     expect(screen.getByTestId('evidence-panel')).toBeVisible();
+-    expect(screen.getByTestId('teaching-takeaway')).toHaveTextContent('Takeaway');
++    expect(screen.getByTestId('teaching-takeaway')).toHaveTextContent('Remember this');
+     expect(
+-      within(screen.getByLabelText('Scene legend')).getByText('Local node runtime'),
++      within(screen.getByLabelText('Scene legend')).getByText(/work inside one Node/i),
+     ).toBeVisible();
+     expect(
+       within(screen.getByTestId('step-timeline')).getAllByRole('button', {
+diff --git a/tests/course/m8-foundations-curriculum.test.ts b/tests/course/m8-foundations-curriculum.test.ts
+index 74d8408..dab41c4 100644
+--- a/tests/course/m8-foundations-curriculum.test.ts
++++ b/tests/course/m8-foundations-curriculum.test.ts
+@@ -327,60 +327,60 @@ describe('M8 foundations curriculum with M9 flow-story expansion', () => {
+     }
+   }, 15_000);
+ 
+-  it('opens by separating image packaging from Kubernetes orchestration', () => {
++  it('opens with the operational problem before introducing Kubernetes object names', () => {
+     const compiled = compiledLesson('why-kubernetes-exists');
+     const authored = lessonById.get('why-kubernetes-exists');
+     if (!authored) throw new Error('Missing why-kubernetes-exists lesson');
+ 
+-    expect(authored.learningOutcome.en).toContain('container packaging');
+-    expect(authored.learningOutcome.en).toContain('orchestration');
++    expect(authored.learningOutcome.en).toContain('Kubernetes becomes useful');
++    expect(authored.learningOutcome.en).toContain('desired state');
+     expect(authored.sourceIds).toEqual(
+-      expect.arrayContaining(['k8s-container-images', 'k8s-cluster-architecture']),
+-    );
+-    expect(authored.steps.map((candidate) => candidate.id)).toEqual(
+-      expect.arrayContaining([
+-        'image-packages-the-app',
+-        'one-pod-is-lost',
+-        'controller-restores-count',
+-        'replacement-becomes-ready',
+-      ]),
++      expect.arrayContaining(['k8s-container-images', 'k8s-objects', 'k8s-deployments']),
+     );
++    expect(authored.steps.map((candidate) => candidate.id)).toEqual([
++      'image-packages-the-app',
++      'declare-three-replicas',
++      'three-replaceable-pods',
++      'one-pod-is-lost',
++      'controller-restores-count',
++      'replacement-becomes-ready',
++    ]);
+ 
+-    const packaging = step(compiled, 'image-packages-the-app');
+-    const authoredPackaging = authored.steps.find(
++    const startSimple = step(compiled, 'image-packages-the-app');
++    const authoredStart = authored.steps.find(
+       (candidate) => candidate.id === 'image-packages-the-app',
+     );
+-    if (!authoredPackaging) throw new Error('Missing image-packages-the-app step');
+-    expect(authoredPackaging.introducesTerms).toEqual([
+-      'container-image',
+-      'container',
+-      'orchestration',
+-    ]);
+-    expect(authoredPackaging.sourceIds).toEqual(
+-      expect.arrayContaining(['k8s-container-images', 'k8s-cluster-architecture']),
+-    );
++    if (!authoredStart) throw new Error('Missing image-packages-the-app step');
++    expect(authoredStart.title.en).toContain('one container');
++    expect(authoredStart.narration.en).toContain('container runtime can be enough');
++    expect(authoredStart.teaching.takeaway.en).toContain('without Kubernetes');
++    expect(authoredStart.introducesTerms).toEqual(['container-image', 'container']);
+ 
+     const containerId = 'container-status:shop:Pod:api-a-old:Container:api';
+-    const container = packaging.world.entities[containerId];
+-    expect(container?.kind).toBe('Container');
+-    expect(container?.data.image).toBe('registry.example.invalid/shop/api:v1');
+-    expect(packaging.evidence.map((item) => item.entityId)).toContain(containerId);
+-    expect(packaging.evidence).toContainEqual(
+-      expect.objectContaining({
+-        entityId: containerId,
+-        path: '/data/image',
+-        after: {
+-          en: 'registry.example.invalid/shop/api:v1',
+-          ja: 'registry.example.invalid/shop/api:v1',
+-          'zh-CN': 'registry.example.invalid/shop/api:v1',
+-        },
+-      }),
++    expect(startSimple.world.entities[containerId]).toMatchObject({ kind: 'Container' });
++    expect(startSimple.evidence.map((item) => item.entityId)).toContain(containerId);
++
++    const threeCopies = step(compiled, 'declare-three-replicas');
++    expect(threeCopies.evidence.map((item) => item.entityId)).toEqual(
++      expect.arrayContaining([
++        'api-object:namespaced:shop:Pod:api-a-old',
++        'api-object:namespaced:shop:Pod:api-b',
++        'api-object:namespaced:shop:Pod:api-c',
++      ]),
+     );
+-    expect(packaging.view.entityStates[containerId]).toMatchObject({
+-      visible: true,
+-      emphasis: 'focused',
+-      inspectorMode: 'expanded',
+-    });
++
++    const desiredState = authored.steps.find(
++      (candidate) => candidate.id === 'three-replaceable-pods',
++    );
++    if (!desiredState) throw new Error('Missing three-replaceable-pods step');
++    expect(desiredState.narration.en).toContain('desired state');
++    expect(desiredState.introducesTerms).toEqual(['desired-state', 'deployment', 'replicaset']);
++
++    const lost = step(compiled, 'one-pod-is-lost');
++    const recovered = step(compiled, 'replacement-becomes-ready');
++    const replicaSetId = 'api-object:namespaced:shop:ReplicaSet:api-rs';
++    expect(lost.world.entities[replicaSetId]?.data).toMatchObject({ readyReplicas: 2 });
++    expect(recovered.world.entities[replicaSetId]?.data).toMatchObject({ readyReplicas: 3 });
+   });
+ 
+   it('separates DNS resolution from the later application route', () => {
+diff --git a/tests/renderer/relations.test.ts b/tests/renderer/relations.test.ts
+index cb055ee..da2b1c3 100644
+--- a/tests/renderer/relations.test.ts
++++ b/tests/renderer/relations.test.ts
+@@ -180,7 +180,7 @@ describe('WideLineHandle', () => {
+     expect(geometryDispose).toHaveBeenCalledTimes(1);
+     expect(handle.material).toBe(material);
+     expect(handle.sample(1).toArray()).toEqual([4, 0, 1]);
+-    expect(handle.material.dashed).toBe(false);
++    expect(handle.material.dashed).toBe(true);
+     handle.dispose();
+     handle.dispose();
+     expect(geometryDispose).toHaveBeenCalledTimes(1);
