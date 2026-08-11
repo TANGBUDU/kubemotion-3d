@@ -1,0 +1,123 @@
+name: Apply reduced-motion exit cleanup fix
+
+on:
+  push:
+    branches: [rebuild/world-state-engine]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-reduced-motion-exit-cleanup-fix
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: rebuild/world-state-engine
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Settle retained exit handles in reduced motion
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          scene_path = Path('src/renderer/SceneController.ts')
+          scene = scene_path.read_text(encoding='utf-8')
+          old = """    const accepted = this.animations.play(request, reducedMotion);
+              if (accepted && this.animations.activeCount > 0) {
+          """
+          new = """    const accepted = this.animations.play(request, reducedMotion);
+              if (
+                accepted &&
+                reducedMotion &&
+                this.animations.activeCount === 0 &&
+                this.pendingExitIds.size > 0
+              ) {
+                // Reduced-motion playback settles synchronously. Remove any retained exit handles
+                // even when an authored exit cue resolves without a live visual handler.
+                this.cleanupPendingExits();
+              }
+              if (accepted && this.animations.activeCount > 0) {
+          """
+          if old not in scene:
+              raise SystemExit('SceneController playback insertion point is missing')
+          scene_path.write_text(scene.replace(old, new, 1), encoding='utf-8')
+
+          test_path = Path('tests/renderer/animation.test.ts')
+          tests = test_path.read_text(encoding='utf-8')
+          insertion = """
+
+            it('cleans retained exit handles after synchronous reduced-motion playback', () => {
+              const cleanupPendingExits = vi.fn();
+              const markDirty = vi.fn();
+              const setRouteReducedMotion = vi.fn();
+              const cancel = vi.fn();
+              const play = vi.fn(() => true);
+              const prepareExitHandles = vi.fn();
+              const controller = Object.create(SceneController.prototype) as SceneController;
+
+              Object.assign(controller as unknown as Record<string, unknown>, {
+                reducedMotion: true,
+                cameraTransition: undefined,
+                animations: {
+                  activeCount: 0,
+                  lastPlaybackId: () => undefined,
+                  cancel,
+                  play,
+                },
+                activeRoutes: { size: 0, setReducedMotion: setRouteReducedMotion },
+                scheduler: { addReason: vi.fn(), removeReason: vi.fn(), markDirty },
+                currentStep: {},
+                pendingExitIds: new Set(['a']),
+                prepareExitHandles,
+                cleanupPendingExits,
+              });
+
+              controller.playTransition(
+                request({ type: 'entity-exit', entityId: 'a', durationMs: 1_000 }),
+                true,
+              );
+
+              expect(setRouteReducedMotion).toHaveBeenCalledWith(true);
+              expect(cancel).toHaveBeenCalledOnce();
+              expect(prepareExitHandles).toHaveBeenCalledOnce();
+              expect(play).toHaveBeenCalledOnce();
+              expect(cleanupPendingExits).toHaveBeenCalledOnce();
+              expect(markDirty).toHaveBeenCalledOnce();
+            });
+          """
+          marker = '\n});'
+          index = tests.rfind(marker)
+          if index < 0:
+              raise SystemExit('Animation test describe terminator is missing')
+          test_path.write_text(tests[:index] + insertion + tests[index:], encoding='utf-8')
+          PY
+      - run: pnpm format
+      - run: git diff --check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test:unit --run tests/renderer/animation.test.ts
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright test tests/e2e/golden-timeline.spec.ts --project=desktop-1280-chromium
+      - run: rm -f .github/workflows/apply-reduced-motion-exit-fix.yml
+      - name: Commit reduced-motion exit cleanup
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'fix: settle reduced-motion entity exits'
+          git push origin HEAD:rebuild/world-state-engine
