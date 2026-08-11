@@ -9,6 +9,14 @@ async function gotoBeginnerLesson(page: Page, lessonId: string, stepIndex: numbe
   await page.goto(`/#/learn/${lessonId}/${stepIndex}`);
   await expect(page.locator('.lesson-home-link')).toBeVisible();
   await expect(page.getByTestId('teaching-plain-language')).toBeVisible();
+
+  const isProblemStage = lessonId === 'why-kubernetes-exists' && stepIndex <= 1;
+  if (isProblemStage) {
+    await expect(page.getByTestId('beginner-problem-stage')).toBeVisible();
+    await expect(page.locator('.scene-legend li')).toHaveCount(0);
+    return;
+  }
+
   await expect(page.getByTestId('teaching-focus-hint')).toBeVisible();
   await waitForSceneIdle(page);
   const legendItems = page.locator('.scene-legend li');
@@ -29,6 +37,13 @@ test('beginner journey stays problem-first and visually focused', async ({ page 
   });
 
   await gotoBeginnerLesson(page, 'why-kubernetes-exists', 0);
+  await expect(page.getByTestId('beginner-problem-stage')).toHaveAttribute(
+    'data-concept',
+    'single-container',
+  );
+  await expect(page.getByTestId('beginner-problem-stage')).toContainText(
+    /One container can already run your app/i,
+  );
   await expect(page.getByTestId('teaching-plain-language')).toContainText(
     'container runtime can be enough',
   );
@@ -38,6 +53,13 @@ test('beginner journey stays problem-first and visually focused', async ({ page 
   });
 
   await gotoBeginnerLesson(page, 'why-kubernetes-exists', 1);
+  await expect(page.getByTestId('beginner-problem-stage')).toHaveAttribute(
+    'data-concept',
+    'manual-replicas',
+  );
+  await expect(page.getByTestId('beginner-problem-stage')).toContainText(
+    /Keeping three healthy is the hard part/i,
+  );
   await expect(page.getByTestId('teaching-plain-language')).toContainText('three copies');
   await page.screenshot({
     path: `${reviewDir}/03-three-copies-create-a-problem.png`,
@@ -70,9 +92,9 @@ test('beginner journey stays problem-first and visually focused', async ({ page 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/#/learn/why-kubernetes-exists/0');
   await expect(page.locator('.lesson-home-link')).toBeVisible();
+  await expect(page.getByTestId('beginner-problem-stage')).toBeVisible();
   await expect(page.getByTestId('teaching-sheet')).toHaveClass(/is-collapsed/);
   await expect(page.getByTestId('teaching-plain-language')).toBeVisible();
-  await expect(page.getByTestId('teaching-focus-hint')).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: `${reviewDir}/07-mobile-first-screen.png`, fullPage: false });
 });
