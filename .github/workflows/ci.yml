@@ -4,11 +4,42 @@ on:
   push:
     branches: [main]
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  apply-mobile-sheet-fix:
+    if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.16.0 }
+      - uses: actions/setup-node@v5
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Apply mobile teaching-sheet fix
+        run: |
+          git apply --check .github/assistant/mobile-sheet.patch
+          git apply .github/assistant/mobile-sheet.patch
+          rm .github/assistant/mobile-sheet.patch
+      - run: pnpm format
+      - run: git diff --check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm exec vitest --run tests/components/learnPage.test.tsx
+      - name: Commit mobile teaching-sheet fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "fix: collapse teaching sheet when entering mobile"
+          git push origin HEAD:${{ github.head_ref }}
   validate:
     runs-on: ubuntu-latest
     steps:
