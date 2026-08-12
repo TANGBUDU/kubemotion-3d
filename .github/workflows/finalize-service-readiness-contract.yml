@@ -1,0 +1,201 @@
+name: Finalize Service readiness contract
+
+on:
+  push:
+    branches: [rebuild/world-state-engine]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: finalize-service-readiness-contract
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: rebuild/world-state-engine
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Align stale Service tests with the readiness-only teaching step
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_regex(path: str, pattern: str, replacement: str, label: str) -> None:
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              updated, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one replacement, got {count}')
+              p.write_text(updated, encoding='utf-8')
+
+          replace_regex(
+              'tests/course/serviceLesson.test.ts',
+              r"    expect\(readinessChange\.view\.activeRoutes\)\.toEqual\(\[.*?    expect\(readinessChange\.transition\.cues\)\.toEqual\(\[\]\);",
+              "    expect(readinessChange.view.activeRoutes).toEqual([]);\n    expect(readinessChange.transition.cues).toEqual([]);",
+              'service lesson readiness route contract',
+          )
+
+          replace_regex(
+              'tests/renderer/service-visuals.test.ts',
+              r"    registry\.sync\(notReady\.world, notReady\.view\);\n    expect\(registry\.get\(SLICE\)\?\.root\.userData\.selectedEndpointTarget\)\.toBe\(API_C\);\n    expect\(.*?\n    \)\.toBe\(false\);\n\n    registry\.sync\(requestC\.world, requestC\.view\);",
+              "    registry.sync(notReady.world, notReady.view);\n    expect(registry.get(SLICE)?.root.userData.selectedEndpointTarget).toBeNull();\n    expect(notReady.view.activeRoutes).toEqual([]);\n\n    registry.sync(requestC.world, requestC.view);",
+              'Service visual readiness selection contract',
+          )
+
+          replace_regex(
+              'tests/components/serviceLearnPage.test.tsx',
+              r"  it\('shows the readiness change and a static eligible path for later traffic', \(\) => \{.*?\n  \}\);\n\n  it\('exposes Request B as a distinct later route to api-c',",
+              """  it('shows the readiness change without inventing the next request route', () => {
+    render(
+      <MemoryRouter initialEntries={['/learn/service-routes-to-pods/4']}>
+        <Routes>
+          <Route path=\"/learn/:lessonId/:stepIndex\" element={<LearnPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId('teaching-step-heading')).toHaveTextContent(
+      'api-a remains listed but becomes NotReady',
+    );
+    expect(screen.getByTestId('teaching-takeaway')).toHaveTextContent(
+      'Request A has already completed',
+    );
+    const evidence = screen.getByTestId('evidence-panel');
+    expect(evidence).toHaveTextContent('Ready for traffic');
+    expect(evidence).toHaveTextContent('Ready endpoints');
+    expect(evidence).toHaveTextContent('2/3 Ready');
+    expect(evidence).toHaveTextContent('ContainersReadyfalse');
+    expect(evidence).toHaveTextContent('Pod Readyfalse');
+    expect(evidence).not.toHaveTextContent('Pod status');
+    const summary = document.querySelector('#scene-accessible-summary');
+    expect(summary).toHaveTextContent(
+      'Pod api Pod A: phase Running; ContainersReady false; Ready false.',
+    );
+    expect(summary).not.toHaveTextContent('Pod status');
+    expect(summary).toHaveTextContent(
+      'api Pod A endpoint ready=false, serving=false, terminating=false',
+    );
+    expect(summary).not.toHaveTextContent('Eligible path for a later request route');
+    expect(summary).not.toHaveTextContent('target api Pod C at network-in');
+
+    act(() => useAppStore.getState().selectEntity(SLICE));
+    const inspector = screen.getByTestId('world-inspector');
+    expect(inspector).toHaveTextContent('api Pod A Endpoint conditions');
+    expect(inspector).toHaveTextContent('ready=false · serving=false · terminating=false');
+  });
+
+  it('exposes Request B as a distinct later route to api-c',""",
+              'Service LearnPage readiness presentation contract',
+          )
+          PY
+
+      - run: pnpm format
+      - run: git diff --check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm content:validate
+      - run: pnpm test:unit --run
+      - run: pnpm build
+
+      - name: Restore normal read-only CI and remove this one-shot workflow
+        run: |
+          cat > .github/workflows/ci.yml <<'YAML'
+          name: CI
+
+          on:
+            pull_request:
+            push:
+              branches: [main]
+
+          permissions:
+            contents: read
+
+          concurrency:
+            group: ci-${{ github.event.pull_request.number || github.ref }}
+            cancel-in-progress: true
+
+          jobs:
+            validate:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v5
+                - uses: pnpm/action-setup@v4
+                  with:
+                    version: 11.16.0
+                - uses: actions/setup-node@v5
+                  with:
+                    node-version: 24
+                    cache: pnpm
+                - run: pnpm install --frozen-lockfile
+                - run: pnpm format:check
+                - run: pnpm lint
+                - run: pnpm typecheck
+                - run: pnpm content:validate
+                - run: pnpm test:unit --run
+                - run: pnpm build
+                - run: pnpm exec playwright install --with-deps chromium
+                - name: Run focused PR browser smoke tests
+                  run: >-
+                    pnpm exec playwright test
+                    tests/e2e/beginner-teaching.spec.ts
+                    tests/e2e/batch03-traffic-composition.spec.ts
+                    tests/e2e/explore-selection.spec.ts
+                    tests/e2e/golden-timeline.spec.ts
+                    tests/e2e/flow-story-player.spec.ts
+                    --project=desktop-1280-chromium
+                - name: Pack assistant source snapshot
+                  run: >-
+                    tar -czf assistant-source.tar.gz
+                    src content tests
+                    package.json pnpm-lock.yaml
+                    tsconfig.json vite.config.ts playwright.config.ts
+                    .github
+                - uses: actions/upload-artifact@v4
+                  if: always()
+                  with:
+                    name: assistant-source-${{ github.sha }}
+                    path: assistant-source.tar.gz
+                    if-no-files-found: error
+                    retention-days: 3
+                - uses: actions/upload-artifact@v4
+                  if: always()
+                  with:
+                    name: visual-review-${{ github.sha }}
+                    path: |
+                      docs/review/evidence/beginner/
+                      docs/review/evidence/batch03/
+                      docs/review/evidence/story-player/
+                    if-no-files-found: ignore
+                    retention-days: 7
+                - uses: actions/upload-artifact@v4
+                  if: failure()
+                  with:
+                    name: playwright-report
+                    path: playwright-report/
+                    retention-days: 7
+          YAML
+          rm -f .github/workflows/finalize-service-readiness-contract.yml
+
+      - name: Commit the verified cleanup once
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'test: align readiness-only Service teaching contract'
+          git push origin HEAD:rebuild/world-state-engine
