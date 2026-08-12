@@ -1,0 +1,28 @@
+name: Assistant source snapshot
+
+on:
+  push:
+    branches: [assistant/hierarchy-teaching-rebuild]
+
+permissions:
+  contents: read
+
+jobs:
+  pack:
+    if: contains(github.event.head_commit.message, 'pack source')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Pack source
+        run: >-
+          tar -czf assistant-source.tar.gz
+          src content tests public docs
+          package.json pnpm-lock.yaml
+          tsconfig.json vite.config.ts playwright.config.ts
+          .github
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assistant-source-${{ github.sha }}
+          path: assistant-source.tar.gz
+          if-no-files-found: error
+          retention-days: 3
