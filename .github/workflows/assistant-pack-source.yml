@@ -48,11 +48,13 @@ jobs:
             .assistant/hierarchy-v2.patch.part00 \
             .assistant/hierarchy-v2.patch.part01 \
             .assistant/hierarchy-v2.patch.part02 \
-            .assistant/hierarchy-v2.patch.part03 \
+            .assistant/hierarchy-v2.patch.part03a \
+            .assistant/hierarchy-v2.patch.part03b \
             .assistant/hierarchy-v2.patch.part04 \
             .assistant/hierarchy-v2.patch.part05 \
-            .assistant/hierarchy-v2.patch.part06 \
-            .assistant/hierarchy-v2.patch.part07 \
+            .assistant/hierarchy-v2.patch.part06a \
+            .assistant/hierarchy-v2.patch.part06b \
+            .assistant/hierarchy-v2.patch.part07nl \
             > /tmp/hierarchy.patch.gz.b64
           echo 'dd6b05d5bf9821b121cb903619222016a696996ef3ea13d1fdb61777754d5348  /tmp/hierarchy.patch.gz.b64' | sha256sum -c - >> hierarchy-validation.txt 2>&1
           if [ $? -ne 0 ]; then failed=1; fi
