@@ -1,0 +1,3537 @@
+{
+  "generatedAt": "2026-08-08T09:50:01.231Z",
+  "milestone": 5,
+  "baseUrl": "http://127.0.0.1:4173",
+  "status": "pass",
+  "coverage": {
+    "captureCount": 15,
+    "topics": [
+      "overview",
+      "pod-container",
+      "service-traffic",
+      "container-restart",
+      "pending-scheduling"
+    ],
+    "viewports": ["1440x900", "1280x720", "390x844"],
+    "locales": ["en", "ja", "zh-CN"],
+    "matrix": "Every topic is captured once at 1440x900, 1280x720, and 390x844; locale rotation gives every topic and every viewport EN/JA/zh-CN coverage."
+  },
+  "gates": {
+    "allVisibleLabelSources": ["entity", "layout", "route", "callout"],
+    "mobileTotalVisibleLabelLimit": 3,
+    "labelsOutsideStage": 0,
+    "labelsOutsideSafeRect": 0,
+    "overlappingLabelPairs": 0,
+    "minimumSceneAndLegendTextCssPx": 10,
+    "horizontalOverflowPixels": 0,
+    "mobileLessonSceneHeightVh": [48, 55.00000000000001],
+    "mobileTeachingSheetExpanded": true,
+    "guidedCameraMode": "orthographic",
+    "exploreCameraModes": ["orthographic", "perspective"],
+    "safeViewportMatchesMeasuredExclusions": true,
+    "uiExclusionPairsOverlap": 0,
+    "clippedControlsAndLegendItems": 0,
+    "overviewSubjectFillRatio": { "minimum": 0.48, "maximum": 0.97 },
+    "activeRoutesAndFocusedEntitiesOutsideSafeRect": 0,
+    "completeSceneBoundsOutsideUiFreeContentRect": 0,
+    "persistentRoutesRetainWideLinesArrowheadsAndMarkers": true
+  },
+  "failures": [],
+  "captures": [
+    {
+      "id": "overview-1440x900-en",
+      "file": "m5-overview-1440x900-en.png",
+      "topic": "overview",
+      "viewport": { "width": 1440, "height": 900 },
+      "locale": "en",
+      "cameraMode": "perspective",
+      "route": { "kind": "explore", "view": "overview" },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "en",
+        "sceneCameraMode": "perspective",
+        "diagnostics": {
+          "cameraMode": "perspective",
+          "safeViewportExclusions": 4,
+          "safeRectX": 98.72,
+          "safeRectY": 87.36,
+          "safeRectWidth": 1242.56,
+          "safeRectHeight": 533.28,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.522805888363227,
+          "subjectScreenHeightRatio": 0.9253180630756813,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 11,
+          "relationHandles": 4,
+          "labels": 10,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 3,
+          "nodeBays": 12,
+          "scheduledPods": 3,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 3,
+          "podHandles": 3,
+          "mountedKubelets": 0,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 0,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 148,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 330,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 10, "entity": 7, "layout": 3, "route": 0, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "infrastructure:cluster:global:Cluster:demo-shop",
+              "text": "CLUSTER FOUNDATION",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": { "x": 519.4453125, "y": 544.632080078125, "width": 140.671875, "height": 24 }
+            },
+            {
+              "key": "infrastructure:cluster:global:Node:worker-a",
+              "text": "worker-a",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 505.2922668457031,
+                "y": 317.1597900390625,
+                "width": 62.140594482421875,
+                "height": 24
+              }
+            },
+            {
+              "key": "infrastructure:cluster:global:Node:worker-b",
+              "text": "worker-b",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 631.4918212890625,
+                "y": 391.6370849609375,
+                "width": 63.078125,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:ControllerManager:kube-controller-manager",
+              "text": "Controller Manager",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 886.8098754882812,
+                "y": 431.14764404296875,
+                "width": 118.984375,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:Etcd:etcd",
+              "text": "etcd · API DATA STORE",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 763.7542724609375,
+                "y": 328.793212890625,
+                "width": 134.65625,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:KubeAPIServer:kube-apiserver",
+              "text": "API Server",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 626.901123046875,
+                "y": 308.5511474609375,
+                "width": 70.375,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:Scheduler:kube-scheduler",
+              "text": "Scheduler",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": { "x": 809.9765625, "y": 379.7102966308594, "width": 68.0625, "height": 24 }
+            },
+            {
+              "key": "layout:control-plane-island",
+              "text": "CONTROL PLANE ISLAND",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 550.9193115234375,
+                "y": 264.8647766113281,
+                "width": 168.015625,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:unscheduled-transit-lane",
+              "text": "UNSCHEDULED / TRANSIT",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 696.0037231445312,
+                "y": 433.5837707519531,
+                "width": 172.359375,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:worker-nodes-island",
+              "text": "WORKER NODES ISLAND",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 442.5580139160156,
+                "y": 347.24395751953125,
+                "width": 164.73434448242188,
+                "height": 21
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 0, "y": 139, "width": 1440, "height": 761 },
+          "safeRect": { "x": 98.72, "y": 226.36, "width": 1242.56, "height": 533.28 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "scene-label", "text": "CLUSTER FOUNDATION", "fontSize": 11 },
+            { "selector": "scene-label", "text": "worker-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "worker-b", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Controller Manager", "fontSize": 11 },
+            { "selector": "scene-label", "text": "etcd · API DATA STORE", "fontSize": 11 },
+            { "selector": "scene-label", "text": "API Server", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Scheduler", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "CONTROL PLANE ISLAND",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-tray-title",
+              "text": "UNSCHEDULED / TRANSIT",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES ISLAND",
+              "fontSize": 10
+            },
+            { "selector": "strong", "text": "Scene legend", "fontSize": 10 },
+            { "selector": "span", "text": "Kubernetes API / control", "fontSize": 10 },
+            { "selector": "span", "text": "Scheduling decision", "fontSize": 10 },
+            { "selector": "span", "text": "Local node runtime", "fontSize": 10 },
+            {
+              "selector": "scene-caption",
+              "text": "SYNTHETIC SNAPSHOT · OVERVIEW · BETA",
+              "fontSize": 10
+            }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 1440,
+          "documentScrollWidth": 1440,
+          "overflowPixels": 0,
+          "rootScrollWidth": 1440,
+          "rootClientWidth": 1440,
+          "rootRect": { "x": 0, "y": 0, "width": 1440, "height": 900 },
+          "mainRect": { "x": 0, "y": 60, "width": 1440, "height": 840 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 1440, "height": 761 },
+          "exclusions": [
+            {
+              "selector": ".view-tabs",
+              "x": 514.8359375,
+              "y": 13,
+              "width": 410.328125,
+              "height": 38
+            },
+            {
+              "selector": ".explore-camera-controls",
+              "x": 1215.390625,
+              "y": 657,
+              "width": 210.609375,
+              "height": 42
+            },
+            { "selector": ".scene-legend", "x": 0, "y": 713, "width": 1440, "height": 48 },
+            { "selector": ".scene-caption", "x": 16, "y": 690, "width": 262.28125, "height": 13 }
+          ],
+          "diagnosticExclusionCount": 4,
+          "safeRect": { "x": 98.72, "y": 87.36, "width": 1242.56, "height": 533.28 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.6046798773543582,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "overview-1280x720-ja",
+      "file": "m5-overview-1280x720-ja.png",
+      "topic": "overview",
+      "viewport": { "width": 1280, "height": 720 },
+      "locale": "ja",
+      "cameraMode": "orthographic",
+      "route": { "kind": "explore", "view": "overview" },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "ja",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 4,
+          "safeRectX": 79.7,
+          "safeRectY": 78.53999999999999,
+          "safeRectWidth": 963.6,
+          "safeRectHeight": 403.92,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.49919954802535454,
+          "subjectScreenHeightRatio": 0.9399999999999993,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 11,
+          "relationHandles": 4,
+          "labels": 10,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 3,
+          "nodeBays": 12,
+          "scheduledPods": 3,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 3,
+          "podHandles": 3,
+          "mountedKubelets": 0,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 0,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 148,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 330,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 10, "entity": 7, "layout": 3, "route": 0, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "infrastructure:cluster:global:Cluster:demo-shop",
+              "text": "CLUSTER FOUNDATION",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 387.2549133300781,
+                "y": 487.4202575683594,
+                "width": 140.67184448242188,
+                "height": 24
+              }
+            },
+            {
+              "key": "infrastructure:cluster:global:Node:worker-a",
+              "text": "worker-a",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 369.8710021972656,
+                "y": 367.5614318847656,
+                "width": 62.140625,
+                "height": 24
+              }
+            },
+            {
+              "key": "infrastructure:cluster:global:Node:worker-b",
+              "text": "worker-b",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 473.9850769042969,
+                "y": 431.211181640625,
+                "width": 63.078155517578125,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:ControllerManager:kube-controller-manager",
+              "text": "Controller Manager",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 659.0545654296875,
+                "y": 404.1617736816406,
+                "width": 118.984375,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:Etcd:etcd",
+              "text": "etcd · API DATA STORE",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 505.5755920410156,
+                "y": 349.46435546875,
+                "width": 134.65621948242188,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:KubeAPIServer:kube-apiserver",
+              "text": "API Server",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 514.3361206054688,
+                "y": 300.3148193359375,
+                "width": 70.375,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:Scheduler:kube-scheduler",
+              "text": "Scheduler",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 659.8150634765625,
+                "y": 361.53631591796875,
+                "width": 68.0625,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:control-plane-island",
+              "text": "CONTROL PLANE ISLAND",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 389.6104736328125,
+                "y": 246.7097930908203,
+                "width": 168.015625,
+                "height": 20.999984741210938
+              }
+            },
+            {
+              "key": "layout:unscheduled-transit-lane",
+              "text": "UNSCHEDULED / TRANSIT",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 410.85894775390625,
+                "y": 404.6075744628906,
+                "width": 172.359375,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:worker-nodes-island",
+              "text": "WORKER NODES ISLAND",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 304.8038330078125,
+                "y": 328.75830078125,
+                "width": 164.734375,
+                "height": 21
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 0, "y": 139, "width": 1280, "height": 581 },
+          "safeRect": { "x": 79.7, "y": 217.54, "width": 963.6, "height": 403.92 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "scene-label", "text": "CLUSTER FOUNDATION", "fontSize": 11 },
+            { "selector": "scene-label", "text": "worker-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "worker-b", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Controller Manager", "fontSize": 11 },
+            { "selector": "scene-label", "text": "etcd · API DATA STORE", "fontSize": 11 },
+            { "selector": "scene-label", "text": "API Server", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Scheduler", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "CONTROL PLANE ISLAND",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-tray-title",
+              "text": "UNSCHEDULED / TRANSIT",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES ISLAND",
+              "fontSize": 10
+            },
+            { "selector": "strong", "text": "シーン凡例", "fontSize": 10 },
+            { "selector": "span", "text": "Kubernetes API / 制御", "fontSize": 10 },
+            { "selector": "span", "text": "スケジューリング", "fontSize": 10 },
+            { "selector": "span", "text": "ローカル Node ランタイム", "fontSize": 10 },
+            { "selector": "scene-caption", "text": "合成 SNAPSHOT · 概要 · ベータ", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 1280,
+          "documentScrollWidth": 1280,
+          "overflowPixels": 0,
+          "rootScrollWidth": 1280,
+          "rootClientWidth": 1280,
+          "rootRect": { "x": 0, "y": 0, "width": 1280, "height": 720 },
+          "mainRect": { "x": 0, "y": 60, "width": 1280, "height": 660 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 1280, "height": 581 },
+          "exclusions": [
+            { "selector": ".view-tabs", "x": 454, "y": 13, "width": 372, "height": 38 },
+            {
+              "selector": ".explore-camera-controls",
+              "x": 1109,
+              "y": 477,
+              "width": 157,
+              "height": 42
+            },
+            { "selector": ".scene-legend", "x": 0, "y": 533, "width": 1280, "height": 48 },
+            { "selector": ".scene-caption", "x": 16, "y": 510, "width": 184.984375, "height": 13 }
+          ],
+          "diagnosticExclusionCount": 4,
+          "safeRect": { "x": 79.7, "y": 78.53999999999999, "width": 963.6, "height": 403.92 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.52336665232358,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "overview-390x844-zh-cn",
+      "file": "m5-overview-390x844-zh-cn.png",
+      "topic": "overview",
+      "viewport": { "width": 390, "height": 844 },
+      "locale": "zh-CN",
+      "cameraMode": "perspective",
+      "route": { "kind": "explore", "view": "overview" },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "zh-CN",
+        "sceneCameraMode": "perspective",
+        "diagnostics": {
+          "cameraMode": "perspective",
+          "safeViewportExclusions": 4,
+          "safeRectX": 35.72,
+          "safeRectY": 125.08,
+          "safeRectWidth": 318.56,
+          "safeRectHeight": 279.84000000000003,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.6976093453349757,
+          "subjectScreenHeightRatio": 0.6295375880225681,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 8,
+          "relationHandles": 4,
+          "labels": 6,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 2,
+          "nodeBays": 8,
+          "scheduledPods": 1,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 2,
+          "podHandles": 1,
+          "mountedKubelets": 0,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 0,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 109,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 242,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 3, "entity": 2, "layout": 1, "route": 0, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "infrastructure:cluster:global:Cluster:demo-shop",
+              "text": "CLUSTER FOUNDATION",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 79.03150939941406,
+                "y": 571.1429443359375,
+                "width": 140.671875,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:KubeAPIServer:kube-apiserver",
+              "text": "API Server",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 138.80743408203125,
+                "y": 464.02886962890625,
+                "width": 70.375,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:worker-nodes-island",
+              "text": "WORKER NODES ISLAND",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 36.9681396484375,
+                "y": 493.8868408203125,
+                "width": 164.734375,
+                "height": 21
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 0, "y": 276, "width": 390, "height": 568 },
+          "safeRect": { "x": 35.72, "y": 401.08, "width": 318.56, "height": 279.84000000000003 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "scene-label", "text": "CLUSTER FOUNDATION", "fontSize": 11 },
+            { "selector": "scene-label", "text": "API Server", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES ISLAND",
+              "fontSize": 10
+            },
+            { "selector": "span", "text": "Kubernetes API / 控制流", "fontSize": 10 },
+            { "selector": "span", "text": "调度决策", "fontSize": 10 },
+            { "selector": "span", "text": "本地节点运行时", "fontSize": 10 },
+            { "selector": "scene-caption", "text": "合成 SNAPSHOT · 总览 · 测试版", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 390,
+          "documentScrollWidth": 390,
+          "overflowPixels": 0,
+          "rootScrollWidth": 390,
+          "rootClientWidth": 390,
+          "rootRect": { "x": 0, "y": 0, "width": 390, "height": 844 },
+          "mainRect": { "x": 0, "y": 112, "width": 390, "height": 732 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 390, "height": 568 },
+          "exclusions": [
+            { "selector": ".view-tabs", "x": 8, "y": 8, "width": 374, "height": 98 },
+            {
+              "selector": ".explore-camera-controls",
+              "x": 260,
+              "y": 424,
+              "width": 122,
+              "height": 48
+            },
+            { "selector": ".scene-legend", "x": 0, "y": 518, "width": 390, "height": 50 },
+            { "selector": ".scene-caption", "x": 8, "y": 491, "width": 374, "height": 13 }
+          ],
+          "diagnosticExclusionCount": 4,
+          "safeRect": { "x": 35.72, "y": 125.08, "width": 318.56, "height": 279.84000000000003 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.40242790899241604,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "pod-container-1440x900-ja",
+      "file": "m5-pod-container-1440x900-ja.png",
+      "topic": "pod-container",
+      "viewport": { "width": 1440, "height": 900 },
+      "locale": "ja",
+      "cameraMode": "orthographic",
+      "route": { "kind": "explore", "view": "placement" },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "ja",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 4,
+          "safeRectX": 89.3,
+          "safeRectY": 89.34,
+          "safeRectWidth": 1104.4,
+          "safeRectHeight": 562.32,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.5352357323263331,
+          "subjectScreenHeightRatio": 0.8928571428571429,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 4,
+          "relationHandles": 2,
+          "labels": 8,
+          "callouts": 0,
+          "layoutGuides": 4,
+          "semanticIslands": 4,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 1,
+          "nodeBays": 4,
+          "scheduledPods": 1,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 1,
+          "podHandles": 1,
+          "mountedKubelets": 0,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 1,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 69,
+          "textures": 10,
+          "programs": 15,
+          "drawCalls": 142,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 8, "entity": 4, "layout": 4, "route": 0, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "infrastructure:cluster:global:Node:worker-a",
+              "text": "worker-a",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 492.4128723144531,
+                "y": 505.7560119628906,
+                "width": 62.140594482421875,
+                "height": 23.999969482421875
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Pod:api-a-old",
+              "text": "api-7f8d9-a",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 457.12371826171875,
+                "y": 570.1823120117188,
+                "width": 81.015625,
+                "height": 24
+              }
+            },
+            {
+              "key": "container-status:shop:Pod:api-a-old:Container:api",
+              "text": "api",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 465.0915222167969,
+                "y": 614.2789916992188,
+                "width": 32.046875,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:workload-state-zone",
+              "text": "WORKLOAD STATE",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 335.7177734375,
+                "y": 251.18258666992188,
+                "width": 127.140625,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:pending-lane",
+              "text": "UNSCHEDULED PODS",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 690.8017578125,
+                "y": 503.9053649902344,
+                "width": 142.984375,
+                "height": 21.000030517578125
+              }
+            },
+            {
+              "key": "layout:worker-nodes-zone",
+              "text": "WORKER NODES",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 226.34527587890625,
+                "y": 333.776123046875,
+                "width": 115.0625,
+                "height": 21
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:KubeAPIServer:kube-apiserver",
+              "text": "API Server",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 755.4662475585938,
+                "y": 374.68695068359375,
+                "width": 70.375,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:control-plane-zone",
+              "text": "CONTROL PLANE",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 491.29998779296875,
+                "y": 228.33999633789062,
+                "width": 118.34375,
+                "height": 21
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 0, "y": 139, "width": 1440, "height": 761 },
+          "safeRect": { "x": 89.3, "y": 228.34, "width": 1104.4, "height": 562.32 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "scene-label", "text": "worker-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "api-7f8d9-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "api", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKLOAD STATE",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-tray-title",
+              "text": "UNSCHEDULED PODS",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES",
+              "fontSize": 10
+            },
+            { "selector": "scene-label", "text": "API Server", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "CONTROL PLANE",
+              "fontSize": 10
+            },
+            { "selector": "strong", "text": "シーン凡例", "fontSize": 10 },
+            { "selector": "span", "text": "スケジューリング", "fontSize": 10 },
+            { "selector": "span", "text": "ローカル Node ランタイム", "fontSize": 10 },
+            { "selector": "span", "text": "所有関係", "fontSize": 10 },
+            { "selector": "scene-caption", "text": "合成 SNAPSHOT · 配置 · ベータ", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 1440,
+          "documentScrollWidth": 1440,
+          "overflowPixels": 0,
+          "rootScrollWidth": 1440,
+          "rootClientWidth": 1440,
+          "rootRect": { "x": 0, "y": 0, "width": 1440, "height": 900 },
+          "mainRect": { "x": 0, "y": 60, "width": 1440, "height": 840 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 1440, "height": 761 },
+          "exclusions": [
+            { "selector": ".view-tabs", "x": 534, "y": 13, "width": 372, "height": 38 },
+            {
+              "selector": ".explore-camera-controls",
+              "x": 1269,
+              "y": 657,
+              "width": 157,
+              "height": 42
+            },
+            { "selector": ".scene-legend", "x": 0, "y": 713, "width": 1440, "height": 48 },
+            { "selector": ".scene-caption", "x": 16, "y": 690, "width": 184.984375, "height": 13 }
+          ],
+          "diagnosticExclusionCount": 4,
+          "safeRect": { "x": 89.3, "y": 89.34, "width": 1104.4, "height": 562.32 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.5667124835742445,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "pod-container-1280x720-zh-cn",
+      "file": "m5-pod-container-1280x720-zh-cn.png",
+      "topic": "pod-container",
+      "viewport": { "width": 1280, "height": 720 },
+      "locale": "zh-CN",
+      "cameraMode": "perspective",
+      "route": { "kind": "explore", "view": "placement" },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "zh-CN",
+        "sceneCameraMode": "perspective",
+        "diagnostics": {
+          "cameraMode": "perspective",
+          "safeViewportExclusions": 4,
+          "safeRectX": 81.67999999999999,
+          "safeRectY": 78.53999999999999,
+          "safeRectWidth": 992.64,
+          "safeRectHeight": 403.92,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.39663626015572306,
+          "subjectScreenHeightRatio": 0.7977402779788257,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 4,
+          "relationHandles": 2,
+          "labels": 8,
+          "callouts": 0,
+          "layoutGuides": 4,
+          "semanticIslands": 4,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 1,
+          "nodeBays": 4,
+          "scheduledPods": 1,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 1,
+          "podHandles": 1,
+          "mountedKubelets": 0,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 1,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 69,
+          "textures": 10,
+          "programs": 15,
+          "drawCalls": 142,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 5, "entity": 1, "layout": 4, "route": 0, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "api-object:namespaced:shop:Pod:api-a-old",
+              "text": "api-7f8d9-a",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 426.5491638183594,
+                "y": 458.41314697265625,
+                "width": 81.015625,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:workload-state-zone",
+              "text": "WORKLOAD STATE",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 397.4555358886719,
+                "y": 280.0120849609375,
+                "width": 127.14065551757812,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:pending-lane",
+              "text": "UNSCHEDULED PODS",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 583.1884155273438,
+                "y": 412.3191833496094,
+                "width": 142.984375,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:worker-nodes-zone",
+              "text": "WORKER NODES",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 331.3659362792969,
+                "y": 319.113037109375,
+                "width": 115.0625,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:control-plane-zone",
+              "text": "CONTROL PLANE",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 465.2707214355469,
+                "y": 245.67034912109375,
+                "width": 118.34378051757812,
+                "height": 21
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 0, "y": 139, "width": 1280, "height": 581 },
+          "safeRect": { "x": 81.67999999999999, "y": 217.54, "width": 992.64, "height": 403.92 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "scene-label", "text": "api-7f8d9-a", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKLOAD STATE",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-tray-title",
+              "text": "UNSCHEDULED PODS",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "CONTROL PLANE",
+              "fontSize": 10
+            },
+            { "selector": "strong", "text": "场景图例", "fontSize": 10 },
+            { "selector": "span", "text": "调度决策", "fontSize": 10 },
+            { "selector": "span", "text": "本地节点运行时", "fontSize": 10 },
+            { "selector": "span", "text": "所有关系", "fontSize": 10 },
+            { "selector": "scene-caption", "text": "合成 SNAPSHOT · 位置 · 测试版", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 1280,
+          "documentScrollWidth": 1280,
+          "overflowPixels": 0,
+          "rootScrollWidth": 1280,
+          "rootClientWidth": 1280,
+          "rootRect": { "x": 0, "y": 0, "width": 1280, "height": 720 },
+          "mainRect": { "x": 0, "y": 60, "width": 1280, "height": 660 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 1280, "height": 581 },
+          "exclusions": [
+            { "selector": ".view-tabs", "x": 503.5, "y": 13, "width": 273, "height": 38 },
+            {
+              "selector": ".explore-camera-controls",
+              "x": 1142,
+              "y": 477,
+              "width": 124,
+              "height": 42
+            },
+            { "selector": ".scene-legend", "x": 0, "y": 533, "width": 1280, "height": 48 },
+            { "selector": ".scene-caption", "x": 16, "y": 510, "width": 184.984375, "height": 13 }
+          ],
+          "diagnosticExclusionCount": 4,
+          "safeRect": {
+            "x": 81.67999999999999,
+            "y": 78.53999999999999,
+            "width": 992.64,
+            "height": 403.92
+          },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.5391393459552496,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "pod-container-390x844-en",
+      "file": "m5-pod-container-390x844-en.png",
+      "topic": "pod-container",
+      "viewport": { "width": 390, "height": 844 },
+      "locale": "en",
+      "cameraMode": "orthographic",
+      "route": { "kind": "explore", "view": "placement" },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "en",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 4,
+          "safeRectX": 35.72,
+          "safeRectY": 125.08,
+          "safeRectWidth": 318.56,
+          "safeRectHeight": 279.84000000000003,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.8928571428571427,
+          "subjectScreenHeightRatio": 0.8632914472811932,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 4,
+          "relationHandles": 2,
+          "labels": 7,
+          "callouts": 0,
+          "layoutGuides": 4,
+          "semanticIslands": 4,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 1,
+          "nodeBays": 4,
+          "scheduledPods": 1,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 1,
+          "podHandles": 1,
+          "mountedKubelets": 0,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 1,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 69,
+          "textures": 10,
+          "programs": 15,
+          "drawCalls": 140,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 3, "entity": 1, "layout": 2, "route": 0, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "layout:pending-lane",
+              "text": "UNSCHEDULED PODS",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 181.62661743164062,
+                "y": 532.8603515625,
+                "width": 142.984375,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:worker-nodes-zone",
+              "text": "WORKER NODES",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 36.9060173034668,
+                "y": 450.9986572265625,
+                "width": 115.06250381469727,
+                "height": 21
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Pod:api-a-old",
+              "text": "api-7f8d9-a",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 85.27053833007812,
+                "y": 563.9727783203125,
+                "width": 81.015625,
+                "height": 24
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 0, "y": 276, "width": 390, "height": 568 },
+          "safeRect": { "x": 35.72, "y": 401.08, "width": 318.56, "height": 279.84000000000003 }
+        },
+        "sceneText": {
+          "records": [
+            {
+              "selector": "scene-label scene-layout-label scene-tray-title",
+              "text": "UNSCHEDULED PODS",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES",
+              "fontSize": 10
+            },
+            { "selector": "scene-label", "text": "api-7f8d9-a", "fontSize": 11 },
+            { "selector": "span", "text": "Scheduling decision", "fontSize": 10 },
+            { "selector": "span", "text": "Local node runtime", "fontSize": 10 },
+            { "selector": "span", "text": "Ownership", "fontSize": 10 },
+            {
+              "selector": "scene-caption",
+              "text": "SYNTHETIC SNAPSHOT · PLACEMENT · BETA",
+              "fontSize": 10
+            }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 390,
+          "documentScrollWidth": 390,
+          "overflowPixels": 0,
+          "rootScrollWidth": 390,
+          "rootClientWidth": 390,
+          "rootRect": { "x": 0, "y": 0, "width": 390, "height": 844 },
+          "mainRect": { "x": 0, "y": 112, "width": 390, "height": 732 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 390, "height": 568 },
+          "exclusions": [
+            { "selector": ".view-tabs", "x": 8, "y": 8, "width": 374, "height": 98 },
+            {
+              "selector": ".explore-camera-controls",
+              "x": 181.28125,
+              "y": 424,
+              "width": 200.71875,
+              "height": 48
+            },
+            { "selector": ".scene-legend", "x": 0, "y": 518, "width": 390, "height": 50 },
+            { "selector": ".scene-caption", "x": 8, "y": 491, "width": 374, "height": 13 }
+          ],
+          "diagnosticExclusionCount": 4,
+          "safeRect": { "x": 35.72, "y": 125.08, "width": 318.56, "height": 279.84000000000003 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.40242790899241604,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "service-traffic-1440x900-zh-cn",
+      "file": "m5-service-traffic-1440x900-zh-cn.png",
+      "topic": "service-traffic",
+      "viewport": { "width": 1440, "height": 900 },
+      "locale": "zh-CN",
+      "cameraMode": "orthographic",
+      "route": { "kind": "lesson", "lessonId": "service-routes-to-pods", "step": 5 },
+      "requiredRoute": { "minimumArrowheads": 4, "minimumMarkers": 2 },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "zh-CN",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 0,
+          "safeRectX": 78.36,
+          "safeRectY": 58.44,
+          "safeRectWidth": 885.28,
+          "safeRectHeight": 593.12,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.8914357304414443,
+          "subjectScreenHeightRatio": 0.7467613207228647,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 6,
+          "relationHandles": 5,
+          "labels": 11,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 0,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 0,
+          "nodeBays": 0,
+          "scheduledPods": 4,
+          "scheduledPodsOutsideBays": 4,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 0,
+          "podHandles": 4,
+          "mountedKubelets": 0,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 0,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 84,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 187,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 4,
+          "flowTokens": 0,
+          "routeMarkers": 2,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 11, "entity": 6, "layout": 3, "route": 2, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "api-object:namespaced:shop:EndpointSlice:api-slice",
+              "text": "EndpointSlice • api-slice • R2/3",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 472.12969970703125,
+                "y": 334.1125793457031,
+                "width": 186.421875,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Pod:api-a",
+              "text": "api-a",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 856.9058837890625,
+                "y": 301.09588623046875,
+                "width": 42.875,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Pod:api-b",
+              "text": "api-b",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 834.7780151367188,
+                "y": 414.90594482421875,
+                "width": 43.828125,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Pod:api-c",
+              "text": "api-c",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 814.150146484375,
+                "y": 528.7159423828125,
+                "width": 42.3125,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Pod:traffic-client",
+              "text": "Client Pod · traffic-client",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 140.374755859375,
+                "y": 338.54974365234375,
+                "width": 142.765625,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Service:api",
+              "text": "Service • api",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 431.3751525878906,
+                "y": 401.3528747558594,
+                "width": 84.17184448242188,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:traffic-backend-lane",
+              "text": "BACKEND PODS",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 724.0974731445312,
+                "y": 328.3901672363281,
+                "width": 111.84375,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:traffic-client-lane",
+              "text": "CLIENT",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 141.89599609375,
+                "y": 256.37945556640625,
+                "width": 59.625,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:traffic-service-context",
+              "text": "STABLE ENTRY / ENDPOINT STATE",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 296.8362121582031,
+                "y": 284.31463623046875,
+                "width": 221.60934448242188,
+                "height": 21
+              }
+            },
+            {
+              "key": "route-label:client-service-api-c:0",
+              "text": "新的请求进入同一 Service",
+              "source": "route",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 265.38311767578125,
+                "y": 409.4332275390625,
+                "width": 140.53125,
+                "height": 23
+              }
+            },
+            {
+              "key": "route-label:client-service-api-c:1",
+              "text": "选择 Ready 的 api-c",
+              "source": "route",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 584.049072265625,
+                "y": 509.5063171386719,
+                "width": 114.4375,
+                "height": 23.000030517578125
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 13, "y": 75, "width": 1042, "height": 710 },
+          "safeRect": { "x": 91.36, "y": 133.44, "width": 885.28, "height": 593.12 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "view-badge", "text": "TRAFFIC", "fontSize": 10 },
+            {
+              "selector": "scene-label",
+              "text": "EndpointSlice • api-slice • R2/3",
+              "fontSize": 11
+            },
+            { "selector": "scene-label", "text": "api-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "api-b", "fontSize": 11 },
+            { "selector": "scene-label", "text": "api-c", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Client Pod · traffic-client", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Service • api", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "BACKEND PODS",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "CLIENT",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "STABLE ENTRY / ENDPOINT STATE",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-route-label",
+              "text": "新的请求进入同一 Service",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-route-label",
+              "text": "选择 Ready 的 api-c",
+              "fontSize": 10
+            },
+            { "selector": "strong", "text": "场景图例", "fontSize": 10 },
+            { "selector": "span", "text": "应用流量", "fontSize": 10 },
+            { "selector": "span", "text": "Kubernetes API / 控制流", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 1440,
+          "documentScrollWidth": 1440,
+          "overflowPixels": 0,
+          "rootScrollWidth": 1440,
+          "rootClientWidth": 1440,
+          "rootRect": { "x": 0, "y": 0, "width": 1440, "height": 900 },
+          "mainRect": { "x": 0, "y": 0, "width": 1440, "height": 900 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 1042, "height": 710 },
+          "exclusions": [],
+          "diagnosticExclusionCount": 0,
+          "safeRect": { "x": 78.36, "y": 58.44, "width": 885.28, "height": 593.12 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.7097365218566678,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "service-traffic-1280x720-en",
+      "file": "m5-service-traffic-1280x720-en.png",
+      "topic": "service-traffic",
+      "viewport": { "width": 1280, "height": 720 },
+      "locale": "en",
+      "cameraMode": "orthographic",
+      "route": { "kind": "lesson", "lessonId": "service-routes-to-pods", "step": 5 },
+      "requiredRoute": { "minimumArrowheads": 4, "minimumMarkers": 2 },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "en",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 0,
+          "safeRectX": 69.6,
+          "safeRectY": 47.64,
+          "safeRectWidth": 756.8,
+          "safeRectHeight": 434.72,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.8294777346420592,
+          "subjectScreenHeightRatio": 0.8104569086893599,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 6,
+          "relationHandles": 5,
+          "labels": 11,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 0,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 0,
+          "nodeBays": 0,
+          "scheduledPods": 4,
+          "scheduledPodsOutsideBays": 4,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 0,
+          "podHandles": 4,
+          "mountedKubelets": 0,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 0,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 84,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 187,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 4,
+          "flowTokens": 0,
+          "routeMarkers": 2,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 11, "entity": 6, "layout": 3, "route": 2, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "api-object:namespaced:shop:EndpointSlice:api-slice",
+              "text": "EndpointSlice • api-slice • R2/3",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 392.7622375488281,
+                "y": 268.02142333984375,
+                "width": 186.42184448242188,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Pod:api-a",
+              "text": "api-a",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 713.4591064453125,
+                "y": 202.00811767578125,
+                "width": 42.875,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Pod:api-b",
+              "text": "api-b",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 695.755126953125,
+                "y": 325.538818359375,
+                "width": 43.828125,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Pod:api-c",
+              "text": "api-c",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 679.5511474609375,
+                "y": 416.0694885253906,
+                "width": 42.3125,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Pod:traffic-client",
+              "text": "Client Pod · traffic-client",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 133.26412963867188,
+                "y": 264.80096435546875,
+                "width": 142.765625,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:Service:api",
+              "text": "Service • api",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 370.7757263183594,
+                "y": 314.75799560546875,
+                "width": 84.171875,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:traffic-backend-lane",
+              "text": "BACKEND PODS",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 600.7592163085938,
+                "y": 257.02630615234375,
+                "width": 111.84375,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:traffic-client-lane",
+              "text": "CLIENT",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 142.96286010742188,
+                "y": 199.7450714111328,
+                "width": 59.625,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:traffic-service-context",
+              "text": "STABLE ENTRY / ENDPOINT STATE",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 249.64248657226562,
+                "y": 221.9662322998047,
+                "width": 221.609375,
+                "height": 21
+              }
+            },
+            {
+              "key": "route-label:client-service-api-c:0",
+              "text": "New request enters same Service",
+              "source": "route",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 97.4071044921875,
+                "y": 321.2878112792969,
+                "width": 192.109375,
+                "height": 23
+              }
+            },
+            {
+              "key": "route-label:client-service-api-c:1",
+              "text": "select Ready api-c",
+              "source": "route",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 490.65264892578125,
+                "y": 400.891357421875,
+                "width": 111.109375,
+                "height": 23
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 13, "y": 75, "width": 896.40625, "height": 530 },
+          "safeRect": { "x": 82.6, "y": 122.64, "width": 756.8, "height": 434.72 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "view-badge", "text": "TRAFFIC", "fontSize": 10 },
+            {
+              "selector": "scene-label",
+              "text": "EndpointSlice • api-slice • R2/3",
+              "fontSize": 11
+            },
+            { "selector": "scene-label", "text": "api-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "api-b", "fontSize": 11 },
+            { "selector": "scene-label", "text": "api-c", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Client Pod · traffic-client", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Service • api", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "BACKEND PODS",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "CLIENT",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "STABLE ENTRY / ENDPOINT STATE",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-route-label",
+              "text": "New request enters same Service",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-route-label",
+              "text": "select Ready api-c",
+              "fontSize": 10
+            },
+            { "selector": "strong", "text": "Scene legend", "fontSize": 10 },
+            { "selector": "span", "text": "Application traffic", "fontSize": 10 },
+            { "selector": "span", "text": "Kubernetes API / control", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 1280,
+          "documentScrollWidth": 1280,
+          "overflowPixels": 0,
+          "rootScrollWidth": 1280,
+          "rootClientWidth": 1280,
+          "rootRect": { "x": 0, "y": 0, "width": 1280, "height": 720 },
+          "mainRect": { "x": 0, "y": 0, "width": 1280, "height": 720 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 896.40625, "height": 530 },
+          "exclusions": [],
+          "diagnosticExclusionCount": 0,
+          "safeRect": { "x": 69.6, "y": 47.64, "width": 756.8, "height": 434.72 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.6924844075366456,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "service-traffic-390x844-ja",
+      "file": "m5-service-traffic-390x844-ja.png",
+      "topic": "service-traffic",
+      "viewport": { "width": 390, "height": 844 },
+      "locale": "ja",
+      "cameraMode": "orthographic",
+      "route": { "kind": "lesson", "lessonId": "service-routes-to-pods", "step": 5 },
+      "requiredRoute": { "minimumArrowheads": 4, "minimumMarkers": 2 },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "ja",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 0,
+          "safeRectX": 33.12,
+          "safeRectY": 34.980000000000004,
+          "safeRectWidth": 309.76,
+          "safeRectHeight": 337.04,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.8917871782026817,
+          "subjectScreenHeightRatio": 0.3951734066334489,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 5,
+          "relationHandles": 4,
+          "labels": 8,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 0,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 0,
+          "nodeBays": 0,
+          "scheduledPods": 3,
+          "scheduledPodsOutsideBays": 3,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 0,
+          "podHandles": 3,
+          "mountedKubelets": 0,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 0,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 73,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 164,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 4,
+          "flowTokens": 0,
+          "routeMarkers": 2,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 3, "entity": 1, "layout": 1, "route": 1, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "api-object:namespaced:shop:Service:api",
+              "text": "Service • api",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 129.95510864257812,
+                "y": 248.29347229003906,
+                "width": 84.171875,
+                "height": 23.999984741210938
+              }
+            },
+            {
+              "key": "layout:traffic-backend-lane",
+              "text": "BACKEND PODS",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 225.12619018554688,
+                "y": 223.29010009765625,
+                "width": 111.84375,
+                "height": 21
+              }
+            },
+            {
+              "key": "route-label:client-service-api-c:0",
+              "text": "新しいリクエストが同じ Service に入る",
+              "source": "route",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 40.119998931884766,
+                "y": 285.97998046875,
+                "width": 206.31249618530273,
+                "height": 23
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 7, "y": 55, "width": 376, "height": 407.046875 },
+          "safeRect": { "x": 40.12, "y": 89.98, "width": 309.76, "height": 337.04 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "view-badge", "text": "TRAFFIC", "fontSize": 10 },
+            { "selector": "scene-label", "text": "Service • api", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "BACKEND PODS",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-route-label",
+              "text": "新しいリクエストが同じ Service に入る",
+              "fontSize": 10
+            },
+            { "selector": "span", "text": "アプリ通信", "fontSize": 10 },
+            { "selector": "span", "text": "Kubernetes API / 制御", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 390,
+          "documentScrollWidth": 390,
+          "overflowPixels": 0,
+          "rootScrollWidth": 390,
+          "rootClientWidth": 390,
+          "rootRect": { "x": 0, "y": 0, "width": 390, "height": 844 },
+          "mainRect": { "x": 0, "y": 0, "width": 390, "height": 844 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 376, "height": 407.046875 },
+          "exclusions": [],
+          "diagnosticExclusionCount": 0,
+          "safeRect": { "x": 33.12, "y": 34.980000000000004, "width": 309.76, "height": 337.04 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.682141562908109,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": {
+          "sceneCanvas": { "x": 7, "y": 55, "width": 376, "height": 407.046875 },
+          "stage": { "x": 6, "y": 54, "width": 378, "height": 459.046875 },
+          "teachingSheet": { "x": 6, "y": 518.046875, "width": 378, "height": 281.953125 },
+          "teachingBody": { "x": 7, "y": 563.046875, "width": 361, "height": 235.953125 },
+          "whatChanged": { "x": 17, "y": 571.046875, "width": 341, "height": 46.78125 },
+          "completionCard": { "x": 19, "y": 995.78125, "width": 337, "height": 202 },
+          "sceneHeightRatio": 0.4822830272511848,
+          "stageHeightRatio": 0.5438944016587678,
+          "teachingHeightRatio": 0.3340676836492891,
+          "teachingSheetExpanded": true,
+          "whatChangedVisible": true,
+          "whatChangedFullyVisible": true,
+          "completionOverlapsWhatChanged": false
+        }
+      }
+    },
+    {
+      "id": "container-restart-1440x900-en",
+      "file": "m5-container-restart-1440x900-en.png",
+      "topic": "container-restart",
+      "viewport": { "width": 1440, "height": 900 },
+      "locale": "en",
+      "cameraMode": "orthographic",
+      "route": { "kind": "lesson", "lessonId": "container-restart-vs-pod-replacement", "step": 3 },
+      "requiredRoute": { "minimumArrowheads": 1, "minimumMarkers": 1 },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "en",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 0,
+          "safeRectX": 78.36,
+          "safeRectY": 58.44,
+          "safeRectWidth": 885.28,
+          "safeRectHeight": 593.12,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.5649425106339125,
+          "subjectScreenHeightRatio": 0.6466966578173992,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 12,
+          "relationHandles": 6,
+          "labels": 11,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 2,
+          "nodeBays": 8,
+          "scheduledPods": 3,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 2,
+          "podHandles": 3,
+          "mountedKubelets": 1,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 2,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 145,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 329,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 1,
+          "flowTokens": 0,
+          "routeMarkers": 1,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 9, "entity": 5, "layout": 3, "route": 1, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "api-object:namespaced:shop:Pod:api-a-old",
+              "text": "api-7f8d9-a",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 383.9811706542969,
+                "y": 463.4819641113281,
+                "width": 81.015625,
+                "height": 24
+              }
+            },
+            {
+              "key": "infrastructure:cluster:global:Node:worker-a",
+              "text": "worker-a",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 339.52874755859375,
+                "y": 383.47552490234375,
+                "width": 65.203125,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:ControllerManager:kube-controller-manager",
+              "text": "Controller Manager",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": { "x": 496.73291015625, "y": 271.640625, "width": 124.53125, "height": 24 }
+            },
+            {
+              "key": "runtime-component:cluster:global:KubeAPIServer:kube-apiserver",
+              "text": "API Server",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 357.2176818847656,
+                "y": 246.13507080078125,
+                "width": 73.921875,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:Scheduler:kube-scheduler",
+              "text": "Scheduler",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 688.7481079101562,
+                "y": 293.5654602050781,
+                "width": 70.5625,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:control-plane-island",
+              "text": "CONTROL PLANE ISLAND",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 179.47116088867188,
+                "y": 233.567138671875,
+                "width": 168.015625,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:unscheduled-transit-lane",
+              "text": "UNSCHEDULED / TRANSIT",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 161.46627807617188,
+                "y": 313.41156005859375,
+                "width": 172.359375,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:worker-nodes-island",
+              "text": "WORKER NODES ISLAND",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 148.96141052246094,
+                "y": 402.0087890625,
+                "width": 164.73439025878906,
+                "height": 21
+              }
+            },
+            {
+              "key": "route-label:route-kubelet-a-restart:0",
+              "text": "restart locally",
+              "source": "route",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 404.0877685546875,
+                "y": 415.1780090332031,
+                "width": 90.671875,
+                "height": 23
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 13, "y": 75, "width": 1042, "height": 710 },
+          "safeRect": { "x": 91.36, "y": 133.44, "width": 885.28, "height": 593.12 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "view-badge", "text": "CONTROL FLOW", "fontSize": 10 },
+            { "selector": "scene-label", "text": "api-7f8d9-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "worker-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Controller Manager", "fontSize": 11 },
+            { "selector": "scene-label", "text": "API Server", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Scheduler", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "CONTROL PLANE ISLAND",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-tray-title",
+              "text": "UNSCHEDULED / TRANSIT",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES ISLAND",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-route-label",
+              "text": "restart locally",
+              "fontSize": 10
+            },
+            { "selector": "strong", "text": "Scene legend", "fontSize": 10 },
+            { "selector": "span", "text": "Kubernetes API / control", "fontSize": 10 },
+            { "selector": "span", "text": "Scheduling decision", "fontSize": 10 },
+            { "selector": "span", "text": "Local node runtime", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 1440,
+          "documentScrollWidth": 1440,
+          "overflowPixels": 0,
+          "rootScrollWidth": 1440,
+          "rootClientWidth": 1440,
+          "rootRect": { "x": 0, "y": 0, "width": 1440, "height": 900 },
+          "mainRect": { "x": 0, "y": 0, "width": 1440, "height": 900 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 1042, "height": 710 },
+          "exclusions": [],
+          "diagnosticExclusionCount": 0,
+          "safeRect": { "x": 78.36, "y": 58.44, "width": 885.28, "height": 593.12 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.7097365218566678,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "container-restart-1280x720-ja",
+      "file": "m5-container-restart-1280x720-ja.png",
+      "topic": "container-restart",
+      "viewport": { "width": 1280, "height": 720 },
+      "locale": "ja",
+      "cameraMode": "orthographic",
+      "route": { "kind": "lesson", "lessonId": "container-restart-vs-pod-replacement", "step": 3 },
+      "requiredRoute": { "minimumArrowheads": 1, "minimumMarkers": 1 },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "ja",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 0,
+          "safeRectX": 69.6,
+          "safeRectY": 47.64,
+          "safeRectWidth": 756.8,
+          "safeRectHeight": 434.72,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.4843628629057203,
+          "subjectScreenHeightRatio": 0.6466966578173992,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 12,
+          "relationHandles": 6,
+          "labels": 11,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 2,
+          "nodeBays": 8,
+          "scheduledPods": 3,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 2,
+          "podHandles": 3,
+          "mountedKubelets": 1,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 2,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 145,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 329,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 1,
+          "flowTokens": 0,
+          "routeMarkers": 1,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 9, "entity": 5, "layout": 3, "route": 1, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "api-object:namespaced:shop:Pod:api-a-old",
+              "text": "api-7f8d9-a",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 340.2295227050781,
+                "y": 361.33544921875,
+                "width": 81.015625,
+                "height": 24
+              }
+            },
+            {
+              "key": "infrastructure:cluster:global:Node:worker-a",
+              "text": "worker-a",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": { "x": 263.28515625, "y": 359.8826599121094, "width": 65.203125, "height": 24 }
+            },
+            {
+              "key": "runtime-component:cluster:global:ControllerManager:kube-controller-manager",
+              "text": "Controller Manager",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 493.494140625,
+                "y": 220.72769165039062,
+                "width": 124.53125,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:KubeAPIServer:kube-apiserver",
+              "text": "API Server",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 372.54827880859375,
+                "y": 202.03372192382812,
+                "width": 73.921875,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:Scheduler:kube-scheduler",
+              "text": "Scheduler",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 564.9400024414062,
+                "y": 269.7972412109375,
+                "width": 70.5625,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:control-plane-island",
+              "text": "CONTROL PLANE ISLAND",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 178.71922302246094,
+                "y": 193.22280883789062,
+                "width": 168.01564025878906,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:unscheduled-transit-lane",
+              "text": "UNSCHEDULED / TRANSIT",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 164.9886474609375,
+                "y": 251.7437744140625,
+                "width": 172.359375,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:worker-nodes-island",
+              "text": "WORKER NODES ISLAND",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 156.75807189941406,
+                "y": 316.6800537109375,
+                "width": 164.73435974121094,
+                "height": 21
+              }
+            },
+            {
+              "key": "route-label:route-kubelet-a-restart:0",
+              "text": "ローカルで再起動",
+              "source": "route",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 349.631103515625,
+                "y": 317.5191955566406,
+                "width": 99.203125,
+                "height": 23
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 13, "y": 75, "width": 896.40625, "height": 530 },
+          "safeRect": { "x": 82.6, "y": 122.64, "width": 756.8, "height": 434.72 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "view-badge", "text": "CONTROL FLOW", "fontSize": 10 },
+            { "selector": "scene-label", "text": "api-7f8d9-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "worker-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Controller Manager", "fontSize": 11 },
+            { "selector": "scene-label", "text": "API Server", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Scheduler", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "CONTROL PLANE ISLAND",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-tray-title",
+              "text": "UNSCHEDULED / TRANSIT",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES ISLAND",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-route-label",
+              "text": "ローカルで再起動",
+              "fontSize": 10
+            },
+            { "selector": "strong", "text": "シーン凡例", "fontSize": 10 },
+            { "selector": "span", "text": "Kubernetes API / 制御", "fontSize": 10 },
+            { "selector": "span", "text": "スケジューリング", "fontSize": 10 },
+            { "selector": "span", "text": "ローカル Node ランタイム", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 1280,
+          "documentScrollWidth": 1280,
+          "overflowPixels": 0,
+          "rootScrollWidth": 1280,
+          "rootClientWidth": 1280,
+          "rootRect": { "x": 0, "y": 0, "width": 1280, "height": 720 },
+          "mainRect": { "x": 0, "y": 0, "width": 1280, "height": 720 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 896.40625, "height": 530 },
+          "exclusions": [],
+          "diagnosticExclusionCount": 0,
+          "safeRect": { "x": 69.6, "y": 47.64, "width": 756.8, "height": 434.72 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.6924844075366456,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "container-restart-390x844-zh-cn",
+      "file": "m5-container-restart-390x844-zh-cn.png",
+      "topic": "container-restart",
+      "viewport": { "width": 390, "height": 844 },
+      "locale": "zh-CN",
+      "cameraMode": "orthographic",
+      "route": { "kind": "lesson", "lessonId": "container-restart-vs-pod-replacement", "step": 3 },
+      "requiredRoute": { "minimumArrowheads": 1, "minimumMarkers": 1 },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "zh-CN",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 0,
+          "safeRectX": 33.12,
+          "safeRectY": 34.980000000000004,
+          "safeRectWidth": 309.76,
+          "safeRectHeight": 337.04,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.5746962452052226,
+          "subjectScreenHeightRatio": 0.4050797430637688,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 8,
+          "relationHandles": 4,
+          "labels": 7,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 1,
+          "nodeBays": 4,
+          "scheduledPods": 1,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 0,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 1,
+          "podHandles": 1,
+          "mountedKubelets": 1,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 1,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 98,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 230,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 1,
+          "flowTokens": 0,
+          "routeMarkers": 1,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 3, "entity": 1, "layout": 1, "route": 1, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "api-object:namespaced:shop:Pod:api-a-old",
+              "text": "api-7f8d9-a",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 152.01370239257812,
+                "y": 300.010009765625,
+                "width": 81.015625,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:worker-nodes-island",
+              "text": "WORKER NODES ISLAND",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 101.31391906738281,
+                "y": 241.77415466308594,
+                "width": 164.73435974121094,
+                "height": 21.000015258789062
+              }
+            },
+            {
+              "key": "route-label:route-kubelet-a-restart:0",
+              "text": "在本机重启",
+              "source": "route",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": { "x": 166.1199951171875, "y": 201.97999572753906, "width": 68, "height": 23 }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 7, "y": 55, "width": 376, "height": 407.046875 },
+          "safeRect": { "x": 40.12, "y": 89.98, "width": 309.76, "height": 337.04 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "view-badge", "text": "CONTROL FLOW", "fontSize": 10 },
+            { "selector": "scene-label", "text": "api-7f8d9-a", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES ISLAND",
+              "fontSize": 10
+            },
+            { "selector": "scene-label scene-route-label", "text": "在本机重启", "fontSize": 10 },
+            { "selector": "span", "text": "Kubernetes API / 控制流", "fontSize": 10 },
+            { "selector": "span", "text": "调度决策", "fontSize": 10 },
+            { "selector": "span", "text": "本地节点运行时", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 390,
+          "documentScrollWidth": 390,
+          "overflowPixels": 0,
+          "rootScrollWidth": 390,
+          "rootClientWidth": 390,
+          "rootRect": { "x": 0, "y": 0, "width": 390, "height": 844 },
+          "mainRect": { "x": 0, "y": 0, "width": 390, "height": 844 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 376, "height": 407.046875 },
+          "exclusions": [],
+          "diagnosticExclusionCount": 0,
+          "safeRect": { "x": 33.12, "y": 34.980000000000004, "width": 309.76, "height": 337.04 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.682141562908109,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": {
+          "sceneCanvas": { "x": 7, "y": 55, "width": 376, "height": 407.046875 },
+          "stage": { "x": 6, "y": 54, "width": 378, "height": 459.046875 },
+          "teachingSheet": { "x": 6, "y": 518.046875, "width": 378, "height": 281.953125 },
+          "teachingBody": { "x": 7, "y": 563.046875, "width": 361, "height": 235.953125 },
+          "whatChanged": { "x": 17, "y": 571.046875, "width": 341, "height": 46.78125 },
+          "completionCard": null,
+          "sceneHeightRatio": 0.4822830272511848,
+          "stageHeightRatio": 0.5438944016587678,
+          "teachingHeightRatio": 0.3340676836492891,
+          "teachingSheetExpanded": true,
+          "whatChangedVisible": true,
+          "whatChangedFullyVisible": true,
+          "completionOverlapsWhatChanged": false
+        }
+      }
+    },
+    {
+      "id": "pending-scheduling-1440x900-ja",
+      "file": "m5-pending-scheduling-1440x900-ja.png",
+      "topic": "pending-scheduling",
+      "viewport": { "width": 1440, "height": 900 },
+      "locale": "ja",
+      "cameraMode": "orthographic",
+      "route": { "kind": "lesson", "lessonId": "container-restart-vs-pod-replacement", "step": 6 },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "ja",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 0,
+          "safeRectX": 78.36,
+          "safeRectY": 58.44,
+          "safeRectWidth": 885.28,
+          "safeRectHeight": 593.12,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.5746962452052224,
+          "subjectScreenHeightRatio": 0.6495097301325474,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 12,
+          "relationHandles": 4,
+          "labels": 10,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 2,
+          "nodeBays": 8,
+          "scheduledPods": 2,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 1,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 2,
+          "podHandles": 3,
+          "mountedKubelets": 1,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 2,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 136,
+          "textures": 10,
+          "programs": 15,
+          "drawCalls": 318,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 9, "entity": 6, "layout": 3, "route": 0, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "api-object:namespaced:shop:Pod:api-d-new",
+              "text": "api-7f8d9-d",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 652.9598999023438,
+                "y": 355.4843444824219,
+                "width": 81.96875,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:ReplicaSet:api-rs",
+              "text": "ReplicaSet · api-rs · SPEC 3 OBSERVED 3 READY 2",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 381.5210876464844,
+                "y": 318.9630126953125,
+                "width": 290.3906555175781,
+                "height": 24
+              }
+            },
+            {
+              "key": "infrastructure:cluster:global:Node:worker-a",
+              "text": "worker-a",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 336.7322998046875,
+                "y": 421.25732421875,
+                "width": 65.203125,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:ControllerManager:kube-controller-manager",
+              "text": "Controller Manager",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 497.1685485839844,
+                "y": 273.9218444824219,
+                "width": 124.53128051757812,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:KubeAPIServer:kube-apiserver",
+              "text": "API Server",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 354.8043518066406,
+                "y": 247.9759521484375,
+                "width": 73.921875,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:Scheduler:kube-scheduler",
+              "text": "Scheduler",
+              "source": "entity",
+              "lang": "ja",
+              "fontSize": 11,
+              "box": {
+                "x": 692.0327758789062,
+                "y": 296.2252197265625,
+                "width": 70.5625,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:control-plane-island",
+              "text": "CONTROL PLANE ISLAND",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 174.80047607421875,
+                "y": 235.16513061523438,
+                "width": 168.015625,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:unscheduled-transit-lane",
+              "text": "UNSCHEDULED / TRANSIT",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 156.51927185058594,
+                "y": 316.3880615234375,
+                "width": 172.35939025878906,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:worker-nodes-island",
+              "text": "WORKER NODES ISLAND",
+              "source": "layout",
+              "lang": "ja",
+              "fontSize": 10,
+              "box": {
+                "x": 143.7380828857422,
+                "y": 406.5149230957031,
+                "width": 164.73439025878906,
+                "height": 21
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 13, "y": 75, "width": 1042, "height": 710 },
+          "safeRect": { "x": 91.36, "y": 133.44, "width": 885.28, "height": 593.12 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "view-badge", "text": "CONTROL FLOW", "fontSize": 10 },
+            { "selector": "scene-label", "text": "api-7f8d9-d", "fontSize": 11 },
+            {
+              "selector": "scene-label",
+              "text": "ReplicaSet · api-rs · SPEC 3 OBSERVED 3 READY 2",
+              "fontSize": 11
+            },
+            { "selector": "scene-label", "text": "worker-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Controller Manager", "fontSize": 11 },
+            { "selector": "scene-label", "text": "API Server", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Scheduler", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "CONTROL PLANE ISLAND",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-tray-title",
+              "text": "UNSCHEDULED / TRANSIT",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES ISLAND",
+              "fontSize": 10
+            },
+            { "selector": "strong", "text": "シーン凡例", "fontSize": 10 },
+            { "selector": "span", "text": "Kubernetes API / 制御", "fontSize": 10 },
+            { "selector": "span", "text": "スケジューリング", "fontSize": 10 },
+            { "selector": "span", "text": "ローカル Node ランタイム", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 1440,
+          "documentScrollWidth": 1440,
+          "overflowPixels": 0,
+          "rootScrollWidth": 1440,
+          "rootClientWidth": 1440,
+          "rootRect": { "x": 0, "y": 0, "width": 1440, "height": 900 },
+          "mainRect": { "x": 0, "y": 0, "width": 1440, "height": 900 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 1042, "height": 710 },
+          "exclusions": [],
+          "diagnosticExclusionCount": 0,
+          "safeRect": { "x": 78.36, "y": 58.44, "width": 885.28, "height": 593.12 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.7097365218566678,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "pending-scheduling-1280x720-zh-cn",
+      "file": "m5-pending-scheduling-1280x720-zh-cn.png",
+      "topic": "pending-scheduling",
+      "viewport": { "width": 1280, "height": 720 },
+      "locale": "zh-CN",
+      "cameraMode": "orthographic",
+      "route": { "kind": "lesson", "lessonId": "container-restart-vs-pod-replacement", "step": 6 },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "zh-CN",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 0,
+          "safeRectX": 69.6,
+          "safeRectY": 47.64,
+          "safeRectWidth": 756.8,
+          "safeRectHeight": 434.72,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.502577086333893,
+          "subjectScreenHeightRatio": 0.6624962192627396,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 12,
+          "relationHandles": 4,
+          "labels": 10,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 2,
+          "nodeBays": 8,
+          "scheduledPods": 2,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 1,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 2,
+          "podHandles": 3,
+          "mountedKubelets": 1,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 2,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 136,
+          "textures": 10,
+          "programs": 15,
+          "drawCalls": 318,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 8, "entity": 5, "layout": 3, "route": 0, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "api-object:namespaced:shop:Pod:api-d-new",
+              "text": "api-7f8d9-d",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 539.5847778320312,
+                "y": 281.2637939453125,
+                "width": 81.96875,
+                "height": 24
+              }
+            },
+            {
+              "key": "api-object:namespaced:shop:ReplicaSet:api-rs",
+              "text": "ReplicaSet · api-rs · SPEC 3 OBSERVED 3 READY 2",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 191.54164123535156,
+                "y": 286.960693359375,
+                "width": 290.39060974121094,
+                "height": 24
+              }
+            },
+            {
+              "key": "infrastructure:cluster:global:Node:worker-a",
+              "text": "worker-a",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 351.8209533691406,
+                "y": 330.4351806640625,
+                "width": 65.203125,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:ControllerManager:kube-controller-manager",
+              "text": "Controller Manager",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 494.1896057128906,
+                "y": 220.2882843017578,
+                "width": 124.53121948242188,
+                "height": 24
+              }
+            },
+            {
+              "key": "runtime-component:cluster:global:KubeAPIServer:kube-apiserver",
+              "text": "API Server",
+              "source": "entity",
+              "lang": "zh-CN",
+              "fontSize": 11,
+              "box": {
+                "x": 368.69561767578125,
+                "y": 200.89132690429688,
+                "width": 73.921875,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:control-plane-island",
+              "text": "CONTROL PLANE ISLAND",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 171.26296997070312,
+                "y": 191.69268798828125,
+                "width": 168.015625,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:unscheduled-transit-lane",
+              "text": "UNSCHEDULED / TRANSIT",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 157.0912628173828,
+                "y": 252.414306640625,
+                "width": 172.35935974121094,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:worker-nodes-island",
+              "text": "WORKER NODES ISLAND",
+              "source": "layout",
+              "lang": "zh-CN",
+              "fontSize": 10,
+              "box": {
+                "x": 148.41957092285156,
+                "y": 319.79248046875,
+                "width": 164.73435974121094,
+                "height": 21
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 13, "y": 75, "width": 896.40625, "height": 530 },
+          "safeRect": { "x": 82.6, "y": 122.64, "width": 756.8, "height": 434.72 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "view-badge", "text": "CONTROL FLOW", "fontSize": 10 },
+            { "selector": "scene-label", "text": "api-7f8d9-d", "fontSize": 11 },
+            {
+              "selector": "scene-label",
+              "text": "ReplicaSet · api-rs · SPEC 3 OBSERVED 3 READY 2",
+              "fontSize": 11
+            },
+            { "selector": "scene-label", "text": "worker-a", "fontSize": 11 },
+            { "selector": "scene-label", "text": "Controller Manager", "fontSize": 11 },
+            { "selector": "scene-label", "text": "API Server", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "CONTROL PLANE ISLAND",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-tray-title",
+              "text": "UNSCHEDULED / TRANSIT",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES ISLAND",
+              "fontSize": 10
+            },
+            { "selector": "strong", "text": "场景图例", "fontSize": 10 },
+            { "selector": "span", "text": "Kubernetes API / 控制流", "fontSize": 10 },
+            { "selector": "span", "text": "调度决策", "fontSize": 10 },
+            { "selector": "span", "text": "本地节点运行时", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 1280,
+          "documentScrollWidth": 1280,
+          "overflowPixels": 0,
+          "rootScrollWidth": 1280,
+          "rootClientWidth": 1280,
+          "rootRect": { "x": 0, "y": 0, "width": 1280, "height": 720 },
+          "mainRect": { "x": 0, "y": 0, "width": 1280, "height": 720 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 896.40625, "height": 530 },
+          "exclusions": [],
+          "diagnosticExclusionCount": 0,
+          "safeRect": { "x": 69.6, "y": 47.64, "width": 756.8, "height": 434.72 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.6924844075366456,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": null
+      }
+    },
+    {
+      "id": "pending-scheduling-390x844-en",
+      "file": "m5-pending-scheduling-390x844-en.png",
+      "topic": "pending-scheduling",
+      "viewport": { "width": 390, "height": 844 },
+      "locale": "en",
+      "cameraMode": "orthographic",
+      "route": { "kind": "lesson", "lessonId": "container-restart-vs-pod-replacement", "step": 6 },
+      "status": "pass",
+      "failures": [],
+      "inspection": {
+        "documentLanguage": "en",
+        "sceneCameraMode": "orthographic",
+        "diagnostics": {
+          "cameraMode": "orthographic",
+          "safeViewportExclusions": 0,
+          "safeRectX": 33.12,
+          "safeRectY": 34.980000000000004,
+          "safeRectWidth": 309.76,
+          "safeRectHeight": 337.04,
+          "activeCameraTransitions": 0,
+          "subjectScreenWidthRatio": 0.5746962452052222,
+          "subjectScreenHeightRatio": 0.3999368915864774,
+          "routesOutsideSafeRect": 0,
+          "focusedEntitiesOutsideSafeRect": 0,
+          "sceneBoundsOutsideContentRect": 0,
+          "entityHandles": 9,
+          "relationHandles": 3,
+          "labels": 6,
+          "callouts": 0,
+          "layoutGuides": 3,
+          "semanticIslands": 3,
+          "foundationMeshes": 3,
+          "localAlignmentMarks": 14,
+          "dominantGridMarks": 0,
+          "visibleNodes": 2,
+          "nodeBays": 8,
+          "scheduledPods": 1,
+          "scheduledPodsOutsideBays": 0,
+          "duplicateBayAssignments": 0,
+          "podPairOverlaps": 0,
+          "podSystemModuleOverlaps": 0,
+          "pendingPods": 1,
+          "pendingPodsInsideNodes": 0,
+          "nodeHandles": 2,
+          "podHandles": 2,
+          "mountedKubelets": 0,
+          "mountedContainerRuntimes": 0,
+          "orphanKubelets": 0,
+          "orphanContainerRuntimes": 0,
+          "containedContainers": 1,
+          "containersOutsidePods": 0,
+          "activeAnimations": 0,
+          "geometries": 120,
+          "textures": 10,
+          "programs": 15,
+          "drawCalls": 289,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        },
+        "labels": {
+          "counts": { "total": 3, "entity": 1, "layout": 2, "route": 0, "callout": 0, "other": 0 },
+          "records": [
+            {
+              "key": "api-object:namespaced:shop:Pod:api-d-new",
+              "text": "api-7f8d9-d",
+              "source": "entity",
+              "lang": "en",
+              "fontSize": 11,
+              "box": {
+                "x": 209.97007751464844,
+                "y": 257.625732421875,
+                "width": 81.96876525878906,
+                "height": 24
+              }
+            },
+            {
+              "key": "layout:unscheduled-transit-lane",
+              "text": "UNSCHEDULED / TRANSIT",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 107.0107192993164,
+                "y": 181.92108154296875,
+                "width": 172.35936737060547,
+                "height": 21
+              }
+            },
+            {
+              "key": "layout:worker-nodes-island",
+              "text": "WORKER NODES ISLAND",
+              "source": "layout",
+              "lang": "en",
+              "fontSize": 10,
+              "box": {
+                "x": 101.31391906738281,
+                "y": 213.45651245117188,
+                "width": 164.73435974121094,
+                "height": 21
+              }
+            }
+          ],
+          "missingBounds": [],
+          "labelsOutsideStage": [],
+          "labelsOutsideSafeRect": [],
+          "languageMismatches": [],
+          "overlappingPairs": [],
+          "maximumOverlapRatio": 0,
+          "stage": { "x": 7, "y": 55, "width": 376, "height": 407.046875 },
+          "safeRect": { "x": 40.12, "y": 89.98, "width": 309.76, "height": 337.04 }
+        },
+        "sceneText": {
+          "records": [
+            { "selector": "view-badge", "text": "CONTROL FLOW", "fontSize": 10 },
+            { "selector": "scene-label", "text": "api-7f8d9-d", "fontSize": 11 },
+            {
+              "selector": "scene-label scene-layout-label scene-tray-title",
+              "text": "UNSCHEDULED / TRANSIT",
+              "fontSize": 10
+            },
+            {
+              "selector": "scene-label scene-layout-label scene-zone-title",
+              "text": "WORKER NODES ISLAND",
+              "fontSize": 10
+            },
+            { "selector": "span", "text": "Kubernetes API / control", "fontSize": 10 },
+            { "selector": "span", "text": "Scheduling decision", "fontSize": 10 },
+            { "selector": "span", "text": "Local node runtime", "fontSize": 10 }
+          ],
+          "minimumFontSize": 10,
+          "tinyText": []
+        },
+        "horizontalOverflow": {
+          "viewportWidth": 390,
+          "documentScrollWidth": 390,
+          "overflowPixels": 0,
+          "rootScrollWidth": 390,
+          "rootClientWidth": 390,
+          "rootRect": { "x": 0, "y": 0, "width": 390, "height": 844 },
+          "mainRect": { "x": 0, "y": 0, "width": 390, "height": 844 }
+        },
+        "safeViewport": {
+          "host": { "x": 0, "y": 0, "width": 376, "height": 407.046875 },
+          "exclusions": [],
+          "diagnosticExclusionCount": 0,
+          "safeRect": { "x": 33.12, "y": 34.980000000000004, "width": 309.76, "height": 337.04 },
+          "safeRectInsideHost": true,
+          "safeRectAreaRatio": 0.682141562908109,
+          "exclusionsOverlappingSafeRect": [],
+          "overlappingExclusionPairs": []
+        },
+        "controlClipping": { "clippedButtons": [], "clippedSelects": [], "clippedLegendItems": [] },
+        "mobileLesson": {
+          "sceneCanvas": { "x": 7, "y": 55, "width": 376, "height": 407.046875 },
+          "stage": { "x": 6, "y": 54, "width": 378, "height": 459.046875 },
+          "teachingSheet": { "x": 6, "y": 518.046875, "width": 378, "height": 281.953125 },
+          "teachingBody": { "x": 7, "y": 563.046875, "width": 361, "height": 235.953125 },
+          "whatChanged": { "x": 17, "y": 571.046875, "width": 341, "height": 46.78125 },
+          "completionCard": null,
+          "sceneHeightRatio": 0.4822830272511848,
+          "stageHeightRatio": 0.5438944016587678,
+          "teachingHeightRatio": 0.3340676836492891,
+          "teachingSheetExpanded": true,
+          "whatChangedVisible": true,
+          "whatChangedFullyVisible": true,
+          "completionOverlapsWhatChanged": false
+        }
+      }
+    }
+  ]
+}

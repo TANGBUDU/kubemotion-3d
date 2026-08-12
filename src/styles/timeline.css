@@ -1,0 +1,96 @@
+.step-timeline {
+  position: relative;
+  z-index: 14;
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--border-soft);
+  background: rgb(8 18 31 / 96%);
+}
+
+.timeline-edge-button {
+  display: inline-flex;
+  min-width: 106px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgb(19 39 62 / 78%);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.timeline-edge-button.primary {
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
+  background: rgb(34 81 120 / 54%);
+  color: var(--text-primary);
+}
+
+.timeline-scroll {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.timeline-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.timeline-scroll ol {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1vw, 14px);
+  padding: 0 8px;
+  margin: 0;
+  list-style: none;
+}
+
+.timeline-scroll li {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.timeline-scroll li:not(:last-child)::after {
+  width: clamp(7px, 1.1vw, 15px);
+  height: 1px;
+  margin-left: clamp(3px, 0.5vw, 7px);
+  background: var(--border);
+  content: '';
+}
+
+.timeline-scroll button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: #0e2035;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.timeline-scroll button.is-complete {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  color: #b8dcf7;
+}
+
+.timeline-scroll button[aria-current='step'] {
+  border-color: var(--accent);
+  background: #234c70;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgb(94 182 255 / 13%);
+}

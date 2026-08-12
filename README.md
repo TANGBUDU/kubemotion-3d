@@ -1,48 +1,89 @@
 # KubeMotion
 
-**Learn Kubernetes by watching it move.**
+**Learn Kubernetes by watching factual state change.**
 
-KubeMotion is an open-source, static-first, interactive 3D teaching system. It explains what Kubernetes objects are, which components manage them, where Pods run, how control loops converge, and how application traffic reaches changing backends.
+KubeMotion is an open-source, static-first 3D teaching system. Its world-state engine separates
+the Kubernetes facts in a lesson from the camera, emphasis, labels, routes, and animation used to
+explain them. That boundary makes a Container restart visibly and testably different from replacing
+a Pod.
 
-<!-- Add a real release screenshot or GIF here after capturing the verified build. -->
+![KubeMotion ten-step Pod lifecycle lesson](docs/review/screenshots/golden-step-00-1440x900.png)
 
 ## Live demo
 
-[Open the deployed KubeMotion site](http://kubemotion.109-123-230-235.sslip.io/)
+[Open the canonical GitHub Pages deployment](https://tangbudu.github.io/kubemotion-3d/)
 
-## What it teaches
+## Verified release scope
 
-Release 0.1 contains five complete lessons covering cluster architecture, the difference between Namespace and Node, the path from a Deployment manifest to a running Pod, Service and EndpointSlice behavior, and container restart versus Pod replacement. Learn and Explore modes share one synthetic `demo-shop` graph and five deterministic views: Overview, Logical, Placement, Control Flow, and Traffic.
+- **14 fully verified lessons:** from `why-kubernetes-exists` through `hpa`, including cluster
+  structure, Pod/Container composition,
+  Namespace/Node separation, Deployment ownership, manifest flow, Pending scheduling,
+  restart-versus-replacement, labels/selectors, Service/EndpointSlice, DNS, external Gateway
+  traffic, and HPA scale-out
+- **Manifest order:** `why-kubernetes-exists` → `cluster-overview` → `pod-and-container` →
+  `pod-and-placement` → `deployment-replicaset-and-pods` → `manifest-to-running-pod` →
+  `pending-and-scheduling` → `container-restart-vs-pod-replacement` →
+  `labels-and-selectors` → `service-routes-to-pods` → `dns-and-service-discovery` →
+  `probes-and-rolling-update` → `full-external-request` → `hpa`
+- **Foundation-first sequence:** desired-state motivation → cluster foundation → Pod/Container →
+  logical scope and placement → workload ownership → API/scheduling flow → self-healing →
+  selection → Service traffic → DNS → probes and rolling updates → external traffic → scaling
+- **10-step Pod lifecycle:** orientation → healthy baseline → Container exit → in-place restart → intentional Pod deletion → controller replacement → unscheduled Pending → scheduler binding → kubelet start/readiness → snapshot-derived comparison
+- **6-step Service traffic path:** identify objects → stable Service entry → EndpointSlice readiness → Request A to a Ready backend → readiness change → later Request B to another Ready backend
+- **8 verified Flow Stories:** four P0 stories and four P1 stories compile ordered lesson history
+  into persistent, evidence-backed causal routes
+- **8 planned lessons:** visible as roadmap entries, not represented as complete
+- **Explore (Beta):** filters a compiled snapshot while keeping one-hop ownership and placement context
+- **Synthetic only:** no cluster credentials, telemetry, backend, or resource mutation
 
-## What it deliberately does not do
-
-KubeMotion does not connect to a real cluster, accept cluster credentials, read telemetry, show logs, offer a terminal, or write Kubernetes resources. The animations are sourced conceptual explanations—not packet captures or literal timing traces.
+The Pod lifecycle lesson shows three semantic zones, API-mediated control routes, a real
+unscheduled tray, Node racks with embedded kubelets and Pod bays, Pods as shells containing child
+Container status slots, and in-place ReplicaSet counters. A runtime restart is evidenced by
+`containerID`, `restartCount`, `state`, and `lastState`; ReplicaSet counters are presented as
+`SPEC / OBSERVED / READY`. The traffic lesson separates the stable Service address, EndpointSlice
+API state, and the selected Ready backend. All fourteen lessons use a fixed teaching panel with
+evidence and takeaways, collision-aware labels, explicit replay, and meaningful reduced-motion
+fallbacks; route-bearing causal and traffic steps retain persistent wide teaching routes.
 
 ## Architecture
 
 ```mermaid
-flowchart LR
-  YAML["YAML content"] --> Zod["Zod validation"]
-  Zod --> Domain["ClusterGraph / CompiledLesson"]
-  Domain --> Projection["Deterministic SceneProjection"]
-  Projection --> Diff["SceneController diff"]
-  Diff --> Three["Shared Three.js objects"]
+flowchart TD
+  YAML["YAML lesson + scenario"] --> Validate["Zod + semantic validation"]
+  Validate --> Before["beforeWorld: WorldSnapshot"]
+  Validate --> Patch["typed atomic WorldPatch"]
+  Before --> Apply["applyWorldPatch"]
+  Patch --> Apply
+  Apply --> World["world: WorldSnapshot"]
+  Before --> Diff["WorldDiff"]
+  World --> Diff
+  Validate --> ViewPatch["ViewProjectionPatch"]
+  World --> Projection["ViewProjection"]
+  ViewPatch --> Projection
+  World --> Renderer["Three.js renderer registries"]
+  Diff --> Renderer
+  Projection --> Renderer
+  Renderer --> Routes["Semantic relations + active teaching routes"]
+  Renderer --> Teaching["EvidencePanel + comparison + accessible summary"]
 ```
 
-React owns routes and serializable UI state. `SceneController` owns Three.js resources. Course steps compile to complete projections, so direct links, Back, language changes, and replay never depend on hidden scene history.
+`WorldSnapshot` is the factual source of truth. `ViewProjection` can hide, dim, label, or frame
+facts, but it cannot override them. Every `CompiledStep` includes `beforeWorld`, `world`,
+`worldDiff`, `view`, and `transition`. Animations are cancellable explanations between settled
+states and never become factual state.
+
+React owns routes and serializable UI state. `SceneController` owns Three.js handles, relation
+resources, DOM labels/callouts, pooled animation tokens, post-processing, rendering, and disposal.
+See [the architecture notes](docs/architecture.md).
 
 ## Quick start
 
-Requirements: Node.js 24 and pnpm.
+Requirements: Node.js 24 and pnpm 11.16.
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm dev
 ```
-
-## Content validation
-
-`pnpm content:validate` parses YAML, validates Zod schemas, builds the graph, compiles all available lessons, checks references and selectors, verifies source hosts and prerequisite cycles, enforces glossary order, and scans for sensitive or known misleading expressions.
 
 ## Validation
 
@@ -51,22 +92,35 @@ pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm content:validate
-pnpm test:unit --run
+pnpm content:accuracy
+pnpm test:unit -- --run
 pnpm build
 pnpm test:e2e
+pnpm visual:capture
 ```
+
+The suite covers typed patch transactions, deterministic diffs, snapshot immutability, cue
+contracts, specialized visuals, stable and traffic-specific layouts, eight compiled Flow Stories,
+desktop/mobile navigation and language persistence, camera/route/label gates, required visual
+captures at 1440×900, 1280×720, and 390×844, and 20-cycle renderer memory stress across all fourteen
+verified lessons. Human screenshot acceptance remains mandatory; see the
+[review checklist](docs/review/VISUAL_ACCEPTANCE_CHECKLIST.md) and
+[before/after evidence](docs/review/BEFORE_AFTER.md).
 
 ## Deployment
 
-The Vite output works on GitHub Pages through HashRouter. A digest-pinned, non-root nginx image and a hardened Helm chart are also included. The chart deploys only the static site and creates no ServiceAccount or RBAC.
+Hash routing and a relative Vite base make GitHub Pages the canonical static host. The repository
+also includes a digest-pinned, non-root nginx image and hardened Helm chart; neither requires
+Kubernetes RBAC.
 
-## Accuracy policy
+## Accuracy and safety
 
-Core teaching facts cite Kubernetes or Gateway API official documentation and carry a verification date. Automated rules catch references, invalid flow paths, translation omissions, and a limited denylist; human review is still required for semantic accuracy. See `docs/accuracy-policy.md`.
-
-## Roadmap
-
-Seventeen later lessons are listed as non-interactive roadmap entries. Live monitoring, authentication, team features, a backend, and cluster mutation are intentionally outside Release 0.1.
+Lesson claims cite official Kubernetes documentation and carry a verification date. Animations
+explain responsibility and causality; they are not packet captures or literal timing traces.
+Synthetic IDs and timestamps are clearly teaching data, while field meanings follow Kubernetes API
+concepts. Service data-plane behavior remains implementation-dependent. See
+[the accuracy policy](docs/accuracy-policy.md) and
+[visual semantics](docs/visualization-semantics.md).
 
 ## License
 

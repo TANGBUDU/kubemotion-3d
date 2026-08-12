@@ -1,100 +1,155 @@
-import * as THREE from 'three';
-import type { TransitionCue } from '../course/types';
-import type { SceneRegistry } from './SceneRegistry';
+import type { PlaybackRequest } from '../course/types';
+import type { ActiveCue, AnimationContext, ResolvedAnimationContext } from './animation/contracts';
+import { CueHandlerRegistry } from './animation/handlers';
+import { AnimationTokenPool } from './animation/runtime';
 
-interface ActiveToken {
-  mesh: THREE.Mesh;
-  path: THREE.Vector3[];
-  startedAt: number;
-  duration: number;
-  generation: number;
-}
+export type {
+  ActiveCue,
+  AnimationContext,
+  AnimationPhase,
+  CounterProgressEvent,
+  CueHandler,
+  CueOfType,
+  CueProgressEvent,
+  RelationAnimationTarget,
+  TeachingRouteAnimationTarget,
+} from './animation/contracts';
 
+/**
+ * Executes explicit playback commands. A repeated or stale playbackId for the same step is ignored,
+ * so React rerenders cannot accidentally replay a transition.
+ */
 export class AnimationCoordinator {
-  private generation = 0;
-  private active: ActiveToken[] = [];
-  private readonly pool: THREE.Mesh[] = [];
-  private readonly tokenGeometry = new THREE.SphereGeometry(0.16, 12, 8);
-  private readonly materials = {
-    'data-packet': new THREE.MeshBasicMaterial({ color: 0x5eb6ff }),
-    'dns-query': new THREE.MeshBasicMaterial({ color: 0x45d6d0 }),
-    'api-request': new THREE.MeshBasicMaterial({ color: 0xb792ff }),
-  };
+  private readonly pool: AnimationTokenPool;
+  private readonly handlers: CueHandlerRegistry;
+  private readonly lastPlaybackIds = new Map<string, number>();
+  private active: ActiveCue[] = [];
+  private disposed = false;
 
-  constructor(private readonly scene: THREE.Scene) {}
+  public constructor(private readonly baseContext: AnimationContext) {
+    this.pool = new AnimationTokenPool(baseContext.scene);
+    this.handlers = new CueHandlerRegistry();
+  }
 
-  play(cues: readonly TransitionCue[], registry: SceneRegistry, reducedMotion: boolean): void {
+  /** Returns false only when the request was a duplicate/stale playback command. */
+  public play(
+    request: PlaybackRequest,
+    reducedMotion = this.baseContext.reducedMotion ?? false,
+  ): boolean {
+    if (this.disposed) throw new Error('Cannot play animations after coordinator disposal.');
+    const previousPlaybackId = this.lastPlaybackIds.get(request.stepKey);
+    if (previousPlaybackId !== undefined && request.playbackId <= previousPlaybackId) return false;
+
     this.cancel();
-    const now = performance.now();
-    for (const cue of cues) {
-      if (!('path' in cue)) {
-        if ('entityId' in cue) registry.get(cue.entityId)?.root.scale.multiplyScalar(1.08);
-        continue;
+    const context: ResolvedAnimationContext = {
+      ...this.baseContext,
+      now: this.baseContext.now ?? (() => performance.now()),
+      reducedMotion,
+    };
+
+    const started: ActiveCue[] = [];
+    try {
+      for (const cue of request.transition.cues) {
+        started.push(this.handlers.start(cue, context));
       }
-      const path = cue.path.flatMap((id) => {
-        const root = registry.get(id)?.root;
-        return root ? [root.position.clone().add(new THREE.Vector3(0, 0.55, 0))] : [];
-      });
-      if (path.length < 2) continue;
-      const mesh = this.acquire(cue.type);
-      this.scene.add(mesh);
-      this.active.push({
-        mesh,
-        path,
-        startedAt: now,
-        duration: reducedMotion ? 320 : cue.durationMs,
-        generation: this.generation,
-      });
+    } catch (error: unknown) {
+      for (const cue of started) {
+        cue.cancel();
+        cue.dispose();
+      }
+      throw error;
     }
+
+    this.active = started;
+    this.lastPlaybackIds.set(request.stepKey, request.playbackId);
+    if (started.length > 0) this.baseContext.markDirty?.();
+    // Reduced motion is a settled factual state, not a shorter animation. Completing in the same
+    // call prevents route tokens, opacity fades, and lifecycle intermediates from changing a
+    // screenshot after navigation while persistent routes and final evidence remain visible.
+    if (reducedMotion && started.length > 0) this.finish();
+    return true;
   }
 
-  private acquire(type: 'data-packet' | 'dns-query' | 'api-request'): THREE.Mesh {
-    const mesh = this.pool.pop() ?? new THREE.Mesh(this.tokenGeometry, this.materials[type]);
-    mesh.material = this.materials[type];
-    mesh.visible = true;
-    return mesh;
-  }
-
-  update(time: number): boolean {
-    const remaining: ActiveToken[] = [];
-    for (const token of this.active) {
-      if (token.generation !== this.generation) {
-        this.release(token.mesh);
-        continue;
+  /** Advances all active cues and returns true while another frame is required. */
+  public update(now: number): boolean {
+    if (this.active.length === 0) return false;
+    const remaining: ActiveCue[] = [];
+    try {
+      for (const cue of this.active) {
+        if (cue.update(now)) {
+          remaining.push(cue);
+        } else {
+          cue.finish();
+          cue.dispose();
+        }
       }
-      const progress = Math.min(1, Math.max(0, (time - token.startedAt) / token.duration));
-      const scaled = progress * (token.path.length - 1);
-      const segment = Math.min(token.path.length - 2, Math.floor(scaled));
-      const start = token.path[segment];
-      const end = token.path[segment + 1];
-      if (start && end) token.mesh.position.lerpVectors(start, end, scaled - segment);
-      if (progress < 1) remaining.push(token);
-      else this.release(token.mesh);
+    } catch (error: unknown) {
+      for (const cue of this.active) {
+        cue.cancel();
+        cue.dispose();
+      }
+      this.active = [];
+      throw error;
     }
     this.active = remaining;
-    return this.active.length > 0;
+    return remaining.length > 0;
   }
 
-  cancel(): void {
-    this.generation += 1;
-    for (const token of this.active) this.release(token.mesh);
+  /** Immediately settles all active cues at their factual final state. */
+  public finish(): void {
+    for (const cue of this.active) {
+      cue.finish();
+      cue.dispose();
+    }
     this.active = [];
+    this.baseContext.markDirty?.();
   }
-  private release(mesh: THREE.Mesh): void {
-    this.scene.remove(mesh);
-    mesh.visible = false;
-    this.pool.push(mesh);
+
+  /** Stops playback and restores every captured visual baseline. */
+  public cancel(): void {
+    for (const cue of this.active) {
+      cue.cancel();
+      cue.dispose();
+    }
+    this.active = [];
+    this.baseContext.markDirty?.();
   }
-  get activeCount(): number {
+
+  public get activeCount(): number {
     return this.active.length;
   }
-  get pooledCount(): number {
-    return this.pool.length;
+
+  public get pooledCount(): number {
+    return this.pool.pooledCount;
   }
-  destroy(): void {
+
+  public get leasedTokenCount(): number {
+    return this.pool.leasedCount;
+  }
+
+  public lastPlaybackId(stepKey: string): number | undefined {
+    return this.lastPlaybackIds.get(stepKey);
+  }
+
+  /**
+   * Starts a new authored application of a step. React rerenders remain deduped,
+   * while back/forward or direct navigation may replay the same playback id.
+   */
+  public forgetPlayback(stepKey: string): void {
+    if (this.disposed) throw new Error('Cannot reset playback after coordinator disposal.');
+    this.lastPlaybackIds.delete(stepKey);
+  }
+
+  public dispose(): void {
+    if (this.disposed) return;
     this.cancel();
-    this.tokenGeometry.dispose();
-    Object.values(this.materials).forEach((material) => material.dispose());
-    this.pool.length = 0;
+    this.pool.dispose();
+    this.lastPlaybackIds.clear();
+    this.disposed = true;
+  }
+
+  /** Compatibility name for renderer owners whose lifecycle method is called destroy(). */
+  public destroy(): void {
+    this.dispose();
   }
 }

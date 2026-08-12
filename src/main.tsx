@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom';
 import { App } from './app/App';
 import './styles/tokens.css';
 import './styles/global.css';
+import './styles/teaching-panel.css';
 import './styles/accessibility.css';
 import { installDebugBridge } from './test-support/debugBridge';
 

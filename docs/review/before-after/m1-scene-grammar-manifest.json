@@ -1,0 +1,283 @@
+{
+  "generatedAt": "2026-08-08T06:24:33.479Z",
+  "milestone": 1,
+  "baseUrl": "http://127.0.0.1:4173",
+  "captures": [
+    {
+      "view": "overview",
+      "file": "m1-overview-1440x900.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "budget": {
+        "maxPrimaryEntities": 9,
+        "maxSecondaryEntities": 4,
+        "maxEntityLabels": 7,
+        "maxRelationLabels": 1,
+        "maxFocusedEntities": 2,
+        "maxAnimatedTokens": 2,
+        "maxRelationFamilies": 2
+      },
+      "inspection": {
+        "entityLabels": 6,
+        "layoutLabels": 4,
+        "relationLabels": 0,
+        "routeLabels": 0,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "diagnostics": {
+          "entityHandles": 9,
+          "relationHandles": 6,
+          "labels": 11,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 121,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 260,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "view": "logical",
+      "file": "m1-logical-1440x900.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "budget": {
+        "maxPrimaryEntities": 8,
+        "maxSecondaryEntities": 4,
+        "maxEntityLabels": 7,
+        "maxRelationLabels": 3,
+        "maxFocusedEntities": 3,
+        "maxAnimatedTokens": 2,
+        "maxRelationFamilies": 2
+      },
+      "inspection": {
+        "entityLabels": 4,
+        "layoutLabels": 2,
+        "relationLabels": 0,
+        "routeLabels": 0,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "diagnostics": {
+          "entityHandles": 4,
+          "relationHandles": 3,
+          "labels": 6,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 56,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 155,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "view": "placement",
+      "file": "m1-placement-1440x900.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "budget": {
+        "maxPrimaryEntities": 11,
+        "maxSecondaryEntities": 6,
+        "maxEntityLabels": 7,
+        "maxRelationLabels": 2,
+        "maxFocusedEntities": 3,
+        "maxAnimatedTokens": 2,
+        "maxRelationFamilies": 2
+      },
+      "inspection": {
+        "entityLabels": 3,
+        "layoutLabels": 3,
+        "relationLabels": 0,
+        "routeLabels": 0,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "diagnostics": {
+          "entityHandles": 12,
+          "relationHandles": 6,
+          "labels": 10,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 119,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 228,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "view": "control-flow",
+      "file": "m1-control-flow-1440x900.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "budget": {
+        "maxPrimaryEntities": 9,
+        "maxSecondaryEntities": 4,
+        "maxEntityLabels": 7,
+        "maxRelationLabels": 3,
+        "maxFocusedEntities": 3,
+        "maxAnimatedTokens": 3,
+        "maxRelationFamilies": 2
+      },
+      "inspection": {
+        "entityLabels": 4,
+        "layoutLabels": 4,
+        "relationLabels": 0,
+        "routeLabels": 0,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "diagnostics": {
+          "entityHandles": 12,
+          "relationHandles": 9,
+          "labels": 11,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 134,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 299,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "view": "traffic",
+      "file": "m1-traffic-1440x900.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "budget": {
+        "maxPrimaryEntities": 5,
+        "maxSecondaryEntities": 5,
+        "maxEntityLabels": 7,
+        "maxRelationLabels": 2,
+        "maxFocusedEntities": 3,
+        "maxAnimatedTokens": 6,
+        "maxRelationFamilies": 2
+      },
+      "inspection": {
+        "entityLabels": 3,
+        "layoutLabels": 0,
+        "relationLabels": 0,
+        "routeLabels": 0,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "diagnostics": {
+          "entityHandles": 3,
+          "relationHandles": 0,
+          "labels": 5,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 42,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 76,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "view": "storage",
+      "file": "m1-storage-1440x900.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "budget": {
+        "maxPrimaryEntities": 5,
+        "maxSecondaryEntities": 3,
+        "maxEntityLabels": 7,
+        "maxRelationLabels": 3,
+        "maxFocusedEntities": 3,
+        "maxAnimatedTokens": 2,
+        "maxRelationFamilies": 2
+      },
+      "inspection": {
+        "entityLabels": 2,
+        "layoutLabels": 0,
+        "relationLabels": 0,
+        "routeLabels": 0,
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "diagnostics": {
+          "entityHandles": 2,
+          "relationHandles": 1,
+          "labels": 2,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 31,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 73,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    }
+  ]
+}

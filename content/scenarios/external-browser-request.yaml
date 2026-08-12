@@ -1,0 +1,450 @@
+schemaVersion: 2
+scenarioId: external-browser-request
+revision: 0
+
+# Every hostname, address, UID, and controller identity below is synthetic teaching data.
+# The hostname uses the reserved .example domain and every address uses an RFC 5737 TEST-NET block.
+entities:
+  - id: external:internet:global:Browser:shopper
+    category: external
+    kind: Browser
+    name: shopper-browser
+    status: healthy
+    data:
+      url: https://shop.example/
+      host: shop.example
+      clientAddress: 192.0.2.10
+      syntheticAddress: true
+      trafficRole: client
+      requestMethod: GET
+      requestPath: /
+    title:
+      en: Shopper browser
+      ja: 買い物客の Browser
+      zh-CN: 购物者浏览器
+    summary:
+      en: An external synthetic browser that first resolves shop.example, then starts a separate HTTPS request.
+      ja: 最初に shop.example を解決し、その後に別の HTTPS request を開始する外部の合成 Browser です。
+      zh-CN: 一个外部合成浏览器，先解析 shop.example，再发起一条独立的 HTTPS 请求。
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview]
+    visual: { archetype: external, size: lg, group: external-origin }
+
+  - id: external:internet:global:PublicDNS:shop-example
+    category: external
+    kind: PublicDNS
+    name: public-dns
+    status: healthy
+    data:
+      queryName: shop.example
+      recordType: A
+      answer: 203.0.113.80
+      ttlSeconds: 300
+      syntheticAddress: true
+      authoritativeForTeaching: true
+      trafficRole: dns-support
+    title:
+      en: Public DNS
+      ja: Public DNS
+      zh-CN: 公共 DNS
+    summary:
+      en: A synthetic public resolver that returns the documentation-only address 203.0.113.80 for shop.example; it is not an HTTP packet hop.
+      ja: shop.example に対して教材専用 address 203.0.113.80 を返す合成 public resolver です。HTTP packet の hop ではありません。
+      zh-CN: 一个合成公共解析器，为 shop.example 返回仅供文档使用的地址 203.0.113.80；它不是 HTTP 数据包的 Hop。
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview]
+    visual: { archetype: external, size: lg, group: dns-support }
+
+  - id: api-object:namespaced:shop:Gateway:public-gateway
+    category: api-object
+    kind: Gateway
+    name: public-gateway
+    namespace: shop
+    status: ready
+    data:
+      gatewayClassName: example-gateway-class
+      syntheticControllerName: example.invalid/gateway-controller
+      addresses:
+        - { type: IPAddress, value: 203.0.113.80, syntheticAddress: true }
+      listeners:
+        - name: https
+          protocol: HTTPS
+          port: 443
+          hostname: shop.example
+          allowedRouteKinds: [HTTPRoute]
+      programmed: true
+      trafficRole: configuration-support
+    title:
+      en: public-gateway Gateway configuration
+      ja: public-gateway Gateway configuration
+      zh-CN: public-gateway Gateway 配置
+    summary:
+      en: The declarative Gateway API object for the synthetic HTTPS listener; it configures infrastructure but is not itself a packet-processing box.
+      ja: 合成 HTTPS listener のための宣言的 Gateway API object です。infrastructure を設定しますが、それ自体は packet-processing box ではありません。
+      zh-CN: 合成 HTTPS Listener 的声明式 Gateway API 对象；它配置基础设施，但本身不是数据包处理盒子。
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview]
+    visual: { archetype: config, size: lg, group: gateway-configuration }
+
+  - id: api-object:namespaced:shop:HTTPRoute:shop-route
+    category: api-object
+    kind: HTTPRoute
+    name: shop-route
+    namespace: shop
+    status: ready
+    data:
+      parentGatewayRef: api-object:namespaced:shop:Gateway:public-gateway
+      hostnames: [shop.example]
+      matches:
+        - { pathType: PathPrefix, pathValue: / }
+      backendServiceRef: api-object:namespaced:shop:Service:web
+      backendPort: 8080
+      accepted: true
+      trafficRole: configuration-support
+    title:
+      en: shop-route HTTPRoute configuration
+      ja: shop-route HTTPRoute configuration
+      zh-CN: shop-route HTTPRoute 配置
+    summary:
+      en: The route rule that attaches to public-gateway and names the web Service backend; it supports routing but is never an application packet hop.
+      ja: public-gateway に接続し、web Service backend を指定する route rule です。routing を支えますが、application packet の hop にはなりません。
+      zh-CN: 一条挂接到 public-gateway 并指向 web Service 后端的路由规则；它为路由提供配置，但绝不是应用数据包的 Hop。
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview, k8s-services]
+    visual: { archetype: config, size: lg, group: gateway-configuration }
+
+  - id: infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+    category: infrastructure
+    kind: GatewayDataPlane
+    name: edge-gateway
+    status: ready
+    data:
+      gatewayRef: api-object:namespaced:shop:Gateway:public-gateway
+      controllerIdentity: example.invalid/gateway-controller
+      listenerAddress: 203.0.113.80
+      listenerPort: 443
+      protocol: HTTPS
+      syntheticAddress: true
+      programmed: true
+      trafficRole: ingress
+    title:
+      en: Gateway data plane
+      ja: Gateway data plane
+      zh-CN: Gateway 数据面
+    summary:
+      en: Synthetic packet-processing infrastructure programmed from the Gateway and HTTPRoute configuration; this is the external application request hop.
+      ja: Gateway と HTTPRoute configuration からプログラムされた合成 packet-processing infrastructure です。外部 application request が通る hop はこれです。
+      zh-CN: 由 Gateway 和 HTTPRoute 配置编程的合成数据包处理基础设施；它才是外部应用请求经过的 Hop。
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview]
+    visual: { archetype: gateway, size: xl, group: ingress-data-plane }
+
+  - id: api-object:namespaced:shop:Service:web
+    category: api-object
+    kind: Service
+    name: web
+    namespace: shop
+    labels: { app.kubernetes.io/name: web }
+    status: ready
+    data:
+      serviceType: ClusterIP
+      clusterIP: 198.51.100.80
+      syntheticAddress: true
+      publishNotReadyAddresses: false
+      selector: { app.kubernetes.io/name: web }
+      trafficRole: stable-entry
+      ports:
+        - { name: http, port: 8080, targetPort: 8080, protocol: TCP }
+    title:
+      en: web Service
+      ja: web Service
+      zh-CN: web Service
+    summary:
+      en: The stable in-cluster entry selected by the HTTPRoute backend reference before one Ready endpoint receives the illustrated request.
+      ja: HTTPRoute backend reference が指定する安定した cluster 内 entry で、図示した request はここから 1 つの Ready endpoint に渡されます。
+      zh-CN: HTTPRoute 后端引用所指向的稳定集群内入口；示例请求由此被交给一个 Ready Endpoint。
+    sourceIds: [k8s-services, gateway-api-overview]
+    visual: { archetype: service, size: lg, group: application-entry }
+
+  - id: api-object:namespaced:shop:EndpointSlice:web-slice
+    category: api-object
+    kind: EndpointSlice
+    name: web-slice
+    namespace: shop
+    labels: { kubernetes.io/service-name: web }
+    status: ready
+    data:
+      addressType: IPv4
+      serviceName: web
+      ports:
+        - { name: http, port: 8080, protocol: TCP }
+      endpoints:
+        - address: 192.0.2.81
+          targetRef: api-object:namespaced:shop:Pod:web-a
+          conditions: { ready: true, serving: true, terminating: false }
+        - address: 192.0.2.82
+          targetRef: api-object:namespaced:shop:Pod:web-b
+          conditions: { ready: true, serving: true, terminating: false }
+      trafficRole: selection-support
+    title:
+      en: web EndpointSlice
+      ja: web EndpointSlice
+      zh-CN: web EndpointSlice
+    summary:
+      en: The Ready backend inventory supporting Service selection; it highlights web-a for this request without becoming a packet hop.
+      ja: Service selection を支える Ready backend inventory です。この request では web-a を強調しますが、packet hop にはなりません。
+      zh-CN: 支撑 Service 选择的 Ready 后端清单；它为本次请求高亮 web-a，但不会成为数据包 Hop。
+    sourceIds: [k8s-endpoint-slices, k8s-endpoint-slice-api, k8s-services]
+    visual: { archetype: endpointslice, size: lg, group: selection-support }
+
+  - id: infrastructure:cluster:global:Node:worker-web
+    category: infrastructure
+    kind: Node
+    name: worker-web
+    status: ready
+    data: { rackOrder: 1, podSlotCount: 4 }
+    title:
+      en: worker-web
+      ja: worker-web
+      zh-CN: worker-web
+    summary:
+      en: Synthetic worker Node hosting both web Pods; hidden in the external traffic view unless placement context is requested.
+      ja: 2 つの web Pod をホストする合成 worker Node です。placement context が必要でない限り external traffic view では非表示です。
+      zh-CN: 承载两个 web Pod 的合成工作节点；除非需要放置上下文，否则在外部流量视图中隐藏。
+    sourceIds: [k8s-nodes]
+    visual: { archetype: node, size: xl, group: placement-context }
+
+  - id: api-object:namespaced:shop:Pod:web-a
+    category: api-object
+    kind: Pod
+    name: web-a
+    namespace: shop
+    labels: { app.kubernetes.io/name: web }
+    status: ready
+    data:
+      uid: synthetic-uid-external-web-a-01
+      nodeName: worker-web
+      phase: Running
+      restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
+      trafficRole: backend
+      podIP: 192.0.2.81
+      containerPort: 8080
+      syntheticAddress: true
+    title:
+      en: web-a Pod
+      ja: web-a Pod
+      zh-CN: web-a Pod
+    summary:
+      en: The Ready endpoint selected for the synthetic external browser request.
+      ja: 合成 external browser request のために選択された Ready endpoint です。
+      zh-CN: 为合成外部浏览器请求选中的 Ready Endpoint。
+    sourceIds: [k8s-pods, k8s-services, k8s-endpoint-slices]
+    visual: { archetype: pod, size: md, group: application-backends }
+
+  - id: api-object:namespaced:shop:Pod:web-b
+    category: api-object
+    kind: Pod
+    name: web-b
+    namespace: shop
+    labels: { app.kubernetes.io/name: web }
+    status: ready
+    data:
+      uid: synthetic-uid-external-web-b-01
+      nodeName: worker-web
+      phase: Running
+      restartPolicy: Always
+      conditions: { podScheduled: true, initialized: true, containersReady: true, ready: true }
+      trafficRole: backend
+      podIP: 192.0.2.82
+      containerPort: 8080
+      syntheticAddress: true
+    title:
+      en: web-b Pod
+      ja: web-b Pod
+      zh-CN: web-b Pod
+    summary:
+      en: A second Ready endpoint recorded for web Service but not selected for this teaching request.
+      ja: web Service に記録された 2 番目の Ready endpoint ですが、この教材 request では選択されません。
+      zh-CN: web Service 记录的第二个 Ready Endpoint，但本次教学请求没有选中它。
+    sourceIds: [k8s-pods, k8s-services, k8s-endpoint-slices]
+    visual: { archetype: pod, size: md, group: application-backends }
+
+relations:
+  - id: public-dns-resolves-shop-address
+    type: resolves-to
+    from: external:internet:global:PublicDNS:shop-example
+    to: infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+    directed: true
+    semantic: DNS-flow
+    title:
+      en: shop.example resolves to the synthetic listener address
+      ja: shop.example が合成 listener address に解決される
+      zh-CN: shop.example 解析为合成 Listener 地址
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview]
+    data: { queryName: shop.example, answer: 203.0.113.80, syntheticAddress: true }
+
+  - id: gateway-config-implemented-by-data-plane
+    type: implemented-by
+    from: api-object:namespaced:shop:Gateway:public-gateway
+    to: infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+    directed: true
+    semantic: configuration
+    title:
+      en: Gateway configuration programs the data plane
+      ja: Gateway configuration が data plane をプログラムする
+      zh-CN: Gateway 配置对数据面进行编程
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview]
+
+  - id: http-route-attaches-to-gateway
+    type: configured-by
+    from: api-object:namespaced:shop:HTTPRoute:shop-route
+    to: api-object:namespaced:shop:Gateway:public-gateway
+    directed: true
+    semantic: configuration
+    title:
+      en: HTTPRoute attaches to public-gateway
+      ja: HTTPRoute が public-gateway に接続する
+      zh-CN: HTTPRoute 挂接到 public-gateway
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview]
+
+  - id: http-route-references-web-service
+    type: references
+    from: api-object:namespaced:shop:HTTPRoute:shop-route
+    to: api-object:namespaced:shop:Service:web
+    directed: true
+    semantic: configuration
+    title:
+      en: HTTPRoute backendRef names web Service
+      ja: HTTPRoute backendRef が web Service を指定する
+      zh-CN: HTTPRoute backendRef 指向 web Service
+    sourceIds: [gateway-api-overview, k8s-services]
+
+  - id: browser-queries-public-dns
+    type: routes-to
+    from: external:internet:global:Browser:shopper
+    to: external:internet:global:PublicDNS:shop-example
+    directed: true
+    semantic: DNS-flow
+    title:
+      en: Browser queries public DNS
+      ja: Browser が public DNS に query する
+      zh-CN: 浏览器查询公共 DNS
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview]
+
+  - id: browser-enters-gateway-data-plane
+    type: routes-to
+    from: external:internet:global:Browser:shopper
+    to: infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+    directed: true
+    semantic: data-flow
+    title:
+      en: HTTPS request reaches the Gateway data plane
+      ja: HTTPS request が Gateway data plane に到達する
+      zh-CN: HTTPS 请求到达 Gateway 数据面
+    sourceIds: [gateway-api-kubernetes, gateway-api-overview]
+
+  - id: gateway-data-plane-routes-to-web-service
+    type: routes-to
+    from: infrastructure:cluster:global:GatewayDataPlane:edge-gateway
+    to: api-object:namespaced:shop:Service:web
+    directed: true
+    semantic: data-flow
+    title:
+      en: Gateway data plane forwards to web Service
+      ja: Gateway data plane が web Service に転送する
+      zh-CN: Gateway 数据面转发到 web Service
+    sourceIds: [gateway-api-overview, k8s-services]
+
+  - id: web-service-selects-web-a
+    type: selects
+    from: api-object:namespaced:shop:Service:web
+    to: api-object:namespaced:shop:Pod:web-a
+    directed: true
+    semantic: selection
+    title:
+      en: selector matches Ready web-a
+      ja: selector が Ready web-a に一致する
+      zh-CN: Selector 匹配 Ready web-a
+    sourceIds: [k8s-services, k8s-endpoint-slices]
+
+  - id: web-service-selects-web-b
+    type: selects
+    from: api-object:namespaced:shop:Service:web
+    to: api-object:namespaced:shop:Pod:web-b
+    directed: true
+    semantic: selection
+    title:
+      en: selector matches Ready web-b
+      ja: selector が Ready web-b に一致する
+      zh-CN: Selector 匹配 Ready web-b
+    sourceIds: [k8s-services, k8s-endpoint-slices]
+
+  - id: web-service-routes-to-web-a
+    type: routes-to
+    from: api-object:namespaced:shop:Service:web
+    to: api-object:namespaced:shop:Pod:web-a
+    directed: true
+    semantic: data-flow
+    title:
+      en: illustrated request selects web-a
+      ja: 図示した request が web-a を選択する
+      zh-CN: 示例请求选择 web-a
+    sourceIds: [k8s-services, k8s-pods]
+
+  - id: web-slice-for-web-service
+    type: contains-endpoint-for
+    from: api-object:namespaced:shop:EndpointSlice:web-slice
+    to: api-object:namespaced:shop:Service:web
+    directed: true
+    semantic: configuration
+    title:
+      en: endpoints for web Service
+      ja: web Service の endpoint
+      zh-CN: web Service 的 Endpoint
+    sourceIds: [k8s-endpoint-slices, k8s-services]
+
+  - id: web-slice-references-web-a
+    type: references
+    from: api-object:namespaced:shop:EndpointSlice:web-slice
+    to: api-object:namespaced:shop:Pod:web-a
+    directed: true
+    semantic: endpoint-membership
+    title:
+      en: Ready endpoint web-a
+      ja: Ready endpoint web-a
+      zh-CN: Ready Endpoint web-a
+    sourceIds: [k8s-endpoint-slices]
+    data: { address: 192.0.2.81, ready: true, serving: true, terminating: false }
+
+  - id: web-slice-references-web-b
+    type: references
+    from: api-object:namespaced:shop:EndpointSlice:web-slice
+    to: api-object:namespaced:shop:Pod:web-b
+    directed: true
+    semantic: endpoint-membership
+    title:
+      en: Ready endpoint web-b
+      ja: Ready endpoint web-b
+      zh-CN: Ready Endpoint web-b
+    sourceIds: [k8s-endpoint-slices]
+    data: { address: 192.0.2.82, ready: true, serving: true, terminating: false }
+
+  - id: web-a-scheduled-on-worker-web
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:web-a
+    to: infrastructure:cluster:global:Node:worker-web
+    directed: true
+    semantic: placement
+    title:
+      en: web-a scheduled on worker-web
+      ja: web-a を worker-web に配置
+      zh-CN: web-a 调度到 worker-web
+    sourceIds: [k8s-pods, k8s-nodes]
+
+  - id: web-b-scheduled-on-worker-web
+    type: scheduled-on
+    from: api-object:namespaced:shop:Pod:web-b
+    to: infrastructure:cluster:global:Node:worker-web
+    directed: true
+    semantic: placement
+    title:
+      en: web-b scheduled on worker-web
+      ja: web-b を worker-web に配置
+      zh-CN: web-b 调度到 worker-web
+    sourceIds: [k8s-pods, k8s-nodes]

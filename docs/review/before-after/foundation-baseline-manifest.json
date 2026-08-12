@@ -1,0 +1,230 @@
+{
+  "generatedAt": "2026-08-08T05:40:40.959Z",
+  "baselineCommit": "bdcc5f92e61ff3e9bcee2c5048a0dbc87c19e0c4",
+  "baseUrl": "http://127.0.0.1:4173",
+  "availableLessonCount": 2,
+  "plannedLessonCount": 20,
+  "availableLessons": [
+    {
+      "id": "service-routes-to-pods",
+      "title": {
+        "en": "How a Service routes to ready Pods",
+        "ja": "Service が ready な Pod へルーティングする仕組み",
+        "zh-CN": "Service 如何将流量路由到 Ready Pod"
+      }
+    },
+    {
+      "id": "container-restart-vs-pod-replacement",
+      "title": {
+        "en": "Container restart is not Pod replacement",
+        "ja": "コンテナ再起動と Pod 置換の違い",
+        "zh-CN": "容器重启不等于 Pod 替换"
+      }
+    }
+  ],
+  "captures": [
+    {
+      "id": "explore-overview",
+      "url": "/#/explore",
+      "file": "branch-before-explore-overview-1440x900.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "purpose": "explore-overview",
+      "inspection": {
+        "entityLabels": 7,
+        "layoutLabels": 4,
+        "routeLabels": [],
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "teachingTextVisible": false,
+        "diagnostics": {
+          "entityHandles": 17,
+          "relationHandles": 17,
+          "labels": 21,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 192,
+          "textures": 10,
+          "programs": 15,
+          "drawCalls": 404,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "id": "service-routes-to-pods-entry",
+      "url": "/#/learn/service-routes-to-pods/0",
+      "file": "branch-before-service-routes-to-pods-step-00-1440x900.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "lessonId": "service-routes-to-pods",
+      "step": 0,
+      "purpose": "lesson-entry",
+      "inspection": {
+        "entityLabels": 5,
+        "layoutLabels": 3,
+        "routeLabels": [],
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "teachingTextVisible": true,
+        "diagnostics": {
+          "entityHandles": 6,
+          "relationHandles": 7,
+          "labels": 9,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 67,
+          "textures": 10,
+          "programs": 14,
+          "drawCalls": 134,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "id": "service-routes-to-pods-settled-route",
+      "url": "/#/learn/service-routes-to-pods/3",
+      "file": "branch-before-service-routes-to-pods-route-step-03-1440x900.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "lessonId": "service-routes-to-pods",
+      "step": 3,
+      "purpose": "settled-route",
+      "inspection": {
+        "entityLabels": 6,
+        "layoutLabels": 3,
+        "routeLabels": ["Request A enters Service", "select Ready api-a"],
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "teachingTextVisible": true,
+        "diagnostics": {
+          "entityHandles": 6,
+          "relationHandles": 8,
+          "labels": 11,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 74,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 151,
+          "pooledTokens": 2,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 4,
+          "flowTokens": 2,
+          "routeMarkers": 2,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "id": "container-restart-vs-pod-replacement-entry",
+      "url": "/#/learn/container-restart-vs-pod-replacement/0",
+      "file": "branch-before-container-restart-vs-pod-replacement-step-00-1440x900.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "lessonId": "container-restart-vs-pod-replacement",
+      "step": 0,
+      "purpose": "lesson-entry",
+      "inspection": {
+        "entityLabels": 7,
+        "layoutLabels": 4,
+        "routeLabels": [],
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "teachingTextVisible": true,
+        "diagnostics": {
+          "entityHandles": 16,
+          "relationHandles": 10,
+          "labels": 15,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 153,
+          "textures": 10,
+          "programs": 15,
+          "drawCalls": 336,
+          "pooledTokens": 0,
+          "retainedExitHandles": 0,
+          "routeHandles": 0,
+          "arrowheads": 0,
+          "flowTokens": 0,
+          "routeMarkers": 0,
+          "wideLineGeometries": 0,
+          "wideLineMaterials": 0,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    },
+    {
+      "id": "container-restart-vs-pod-replacement-settled-route",
+      "url": "/#/learn/container-restart-vs-pod-replacement/4",
+      "file": "branch-before-container-restart-vs-pod-replacement-route-step-04-1440x900.png",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "lessonId": "container-restart-vs-pod-replacement",
+      "step": 4,
+      "purpose": "settled-route",
+      "inspection": {
+        "entityLabels": 7,
+        "layoutLabels": 4,
+        "routeLabels": ["request delete", "delete Pod object"],
+        "maximumLabelOverlap": 0,
+        "labelsOutsideStage": 0,
+        "teachingTextVisible": true,
+        "diagnostics": {
+          "entityHandles": 15,
+          "relationHandles": 6,
+          "labels": 16,
+          "callouts": 0,
+          "activeAnimations": 0,
+          "geometries": 146,
+          "textures": 10,
+          "programs": 17,
+          "drawCalls": 334,
+          "pooledTokens": 1,
+          "retainedExitHandles": 0,
+          "routeHandles": 1,
+          "arrowheads": 2,
+          "flowTokens": 1,
+          "routeMarkers": 2,
+          "wideLineGeometries": 1,
+          "wideLineMaterials": 1,
+          "renderTargets": 4,
+          "eventListeners": 7
+        }
+      }
+    }
+  ]
+}

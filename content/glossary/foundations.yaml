@@ -144,3 +144,31 @@ terms:
         zh-CN: kubelet 与容器运行时之间的接口。,
       }
     sourceIds: [k8s-cri]
+  - id: container-image
+    term: { en: Container image, ja: コンテナイメージ, zh-CN: 容器镜像 }
+    definition:
+      en: An immutable package containing an application and the files needed to run it.
+      ja: アプリケーションと実行に必要なファイルをまとめた不変のパッケージです。
+      zh-CN: 包含应用及其运行所需文件的不可变软件包。
+    sourceIds: [k8s-container-images]
+  - id: container
+    term: { en: Container, ja: コンテナ, zh-CN: 容器 }
+    definition:
+      en: A running application process isolated and managed inside a Pod.
+      ja: Pod 内で分離され管理される、実行中のアプリケーションプロセスです。
+      zh-CN: 在 Pod 内隔离并受管理的运行中应用进程。
+    sourceIds: [k8s-pods, k8s-container-images]
+  - id: orchestration
+    term: { en: Orchestration, ja: オーケストレーション, zh-CN: 编排 }
+    definition:
+      en: Coordinating desired workload state, placement, recovery, and updates across machines.
+      ja: 複数のマシンにまたがる望ましいワークロード状態、配置、復旧、更新を調整することです。
+      zh-CN: 跨多台机器协调工作负载期望状态、放置、恢复和更新。
+    sourceIds: [k8s-cluster-architecture, k8s-components]
+  - id: pending
+    term: { en: Pending, ja: Pending, zh-CN: Pending }
+    definition:
+      en: A Pod phase in which the Pod has been accepted but one or more containers are not yet running.
+      ja: Pod は受理されたものの、1 つ以上のコンテナがまだ実行されていない段階です。
+      zh-CN: Pod 已被接受，但其中一个或多个容器尚未运行的阶段。
+    sourceIds: [k8s-pod-lifecycle]

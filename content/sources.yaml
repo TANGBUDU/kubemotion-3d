@@ -40,6 +40,14 @@ sources:
       verifiedAt: '2026-08-07',
       type: official-documentation,
     }
+  k8s-container-images:
+    {
+      title: Images,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/containers/images/,
+      verifiedAt: '2026-08-08',
+      type: official-documentation,
+    }
   k8s-pod-lifecycle:
     {
       title: Pod Lifecycle,
@@ -88,11 +96,33 @@ sources:
       verifiedAt: '2026-08-07',
       type: official-documentation,
     }
+  k8s-replicaset-api:
+    {
+      title: ReplicaSet v1 API,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/reference/kubernetes-api/apps/replica-set-v1/,
+      verifiedAt: '2026-08-08',
+      type: official-documentation,
+    }
+  k8s-container-status-api:
+    {
+      title: Kubernetes API Reference — ContainerStatus,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/reference/generated/kubernetes-api/,
+      verifiedAt: '2026-08-08',
+      type: official-documentation,
+    }
+  k8s-pod-conditions:
+    {
+      title: Pod Conditions,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/workloads/pods/pod-condition/,
+      verifiedAt: '2026-08-08',
+      type: official-documentation,
+    }
   k8s-services:
     {
-      title: Services,
-      Load Balancing,
-      and Networking,
+      title: 'Services, Load Balancing, and Networking',
       authority: Kubernetes Documentation,
       url: https://kubernetes.io/docs/concepts/services-networking/service/,
       verifiedAt: '2026-08-07',
@@ -106,11 +136,17 @@ sources:
       verifiedAt: '2026-08-07',
       type: official-documentation,
     }
+  k8s-endpoint-slice-api:
+    {
+      title: EndpointSlice v1 API,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/reference/kubernetes-api/discovery/endpoint-slice-v1/,
+      verifiedAt: '2026-08-08',
+      type: official-documentation,
+    }
   k8s-networking-overview:
     {
-      title: Services,
-      Networking,
-      and Storage,
+      title: 'Services, Networking, and Storage',
       authority: Kubernetes Documentation,
       url: https://kubernetes.io/docs/concepts/services-networking/,
       verifiedAt: '2026-08-07',
@@ -118,12 +154,18 @@ sources:
     }
   k8s-probes:
     {
-      title: Liveness,
-      Readiness,
-      and Startup Probes,
+      title: 'Liveness, Readiness, and Startup Probes',
       authority: Kubernetes Documentation,
-      url: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes,
-      verifiedAt: '2026-08-07',
+      url: https://kubernetes.io/docs/concepts/workloads/pods/probes/,
+      verifiedAt: '2026-08-08',
+      type: official-documentation,
+    }
+  k8s-dns-services-pods:
+    {
+      title: DNS for Services and Pods,
+      authority: Kubernetes Documentation,
+      url: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/,
+      verifiedAt: '2026-08-08',
       type: official-documentation,
     }
   k8s-resources:

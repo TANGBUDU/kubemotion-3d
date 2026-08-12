@@ -1,0 +1,728 @@
+schemaVersion: 2
+id: pending-and-scheduling
+scenarioId: container-restart-golden
+chapterId: workloads-self-healing
+title:
+  en: Pending Pod and scheduling
+  ja: Pending Pod と scheduling
+  zh-CN: Pending Pod 与调度
+summary:
+  en: Follow one Pod from the unscheduled tray through Scheduler observation, candidate evaluation, binding, and Node-local Container startup.
+  ja: 一つの Pod が未スケジュールトレイから Scheduler の監視、候補評価、binding、Node-local Container 起動へ進む流れを追います。
+  zh-CN: 跟随一个 Pod 从未调度托盘，经过 Scheduler 观察、候选 Node 评估与绑定，最终到达 Node 本地容器启动。
+learningOutcome:
+  en: Explain that Pod creation, Node selection, binding, kubelet observation, and Container startup are distinct factual events.
+  ja: Pod 作成、Node 選択、binding、kubelet の監視、Container 起動が別々の事実イベントであることを説明する。
+  zh-CN: 解释 Pod 创建、Node 选择、绑定、kubelet 观察与容器启动是彼此独立的事实事件。
+prerequisites: [manifest-to-running-pod]
+sourceIds:
+  - k8s-pods
+  - k8s-pod-lifecycle
+  - k8s-components
+  - k8s-api
+  - k8s-nodes
+  - k8s-cri
+verifiedAt: '2026-08-08'
+baseView:
+  view: placement
+  cameraPresetId: placement
+  resetEntities: true
+  entityRules: []
+  relationRules: []
+  activeRoutes: []
+
+steps:
+  - id: pod-enters-unscheduled-tray
+    title:
+      en: A new Pending Pod has no Node assignment
+      ja: 新しい Pending Pod には Node 割り当てがない
+      zh-CN: 新 Pending Pod 尚无 Node 分配
+    learningOutcome:
+      en: Verify that a created Pod with no nodeName remains outside every Node chassis.
+      ja: nodeName のない作成済み Pod がすべての Node シャーシ外に残ることを確認する。
+      zh-CN: 验证已创建但没有 nodeName 的 Pod 位于所有 Node 底盘之外。
+    narration:
+      en: The synthetic schedule-demo Pod now exists in the shop Namespace with phase Pending, PodScheduled=false, and no nodeName. Its waiting Container status sits inside the Pod shell, while the complete Pod remains in the UNSCHEDULED tray rather than leaning toward a worker.
+      ja: 合成 schedule-demo Pod が shop Namespace に作成され、phase は Pending、PodScheduled=false、nodeName はありません。waiting Container 状態は Pod シェル内にあり、Pod 全体は worker に寄らず UNSCHEDULED トレイに残ります。
+      zh-CN: 虚构的 schedule-demo Pod 现在已创建于 shop Namespace，阶段为 Pending、PodScheduled=false，并且没有 nodeName。waiting 容器状态位于 Pod 外壳内部，而完整 Pod 留在 UNSCHEDULED 托盘，不会靠近任何工作 Node。
+    teaching:
+      whatChanged:
+        en: A Pending Pod, its waiting Container status slot, and their containment relation were added without a scheduled-on relation.
+        ja: Pending Pod、waiting Container 状態スロット、その包含関係が追加されましたが、scheduled-on 関係はありません。
+        zh-CN: 新增了 Pending Pod、waiting 容器状态槽及二者的包含关系，但没有 scheduled-on 关系。
+      whyItHappened:
+        en: Creating the Pod API object precedes the Scheduler recording a selected Node.
+        ja: Pod API オブジェクトの作成は、Scheduler が選択 Node を記録するより先に起こるためです。
+        zh-CN: 因为 Pod API 对象的创建早于 Scheduler 记录选定 Node。
+      takeaway:
+        en: Pending plus no nodeName means this Pod is still unscheduled and belongs outside every Node.
+        ja: Pending かつ nodeName なしなら、Pod はまだ未スケジュールで、すべての Node 外にあります。
+        zh-CN: Pending 且没有 nodeName，表示该 Pod 尚未调度，必须位于所有 Node 之外。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - api-object:namespaced:shop:Pod:schedule-demo
+        - container-status:shop:Pod:schedule-demo:Container:demo
+    introducesTerms: [pod, pending, scheduling]
+    usesTerms: []
+    sourceIds: [k8s-pods, k8s-pod-lifecycle, k8s-nodes]
+    worldPatch:
+      operations:
+        - op: add-entity
+          entity:
+            id: api-object:namespaced:shop:Pod:schedule-demo
+            category: api-object
+            kind: Pod
+            name: schedule-demo
+            namespace: shop
+            labels: { app.kubernetes.io/name: schedule-demo }
+            status: pending
+            data:
+              uid: synthetic-schedule-demo-01
+              phase: Pending
+              restartPolicy: Always
+              conditions:
+                podScheduled: false
+                initialized: true
+                containersReady: false
+                ready: false
+            title:
+              en: schedule-demo Pod
+              ja: schedule-demo Pod
+              zh-CN: schedule-demo Pod
+            summary:
+              en: Synthetic Pod waiting for a Scheduler decision and Node assignment.
+              ja: Scheduler の判断と Node 割り当てを待つ合成 Pod です。
+              zh-CN: 等待 Scheduler 决策与 Node 分配的虚构 Pod。
+            sourceIds: [k8s-pods, k8s-pod-lifecycle]
+            visual: { archetype: pod, size: md, group: schedule-demo }
+        - op: add-entity
+          entity:
+            id: container-status:shop:Pod:schedule-demo:Container:demo
+            category: runtime-status
+            kind: Container
+            name: demo
+            namespace: shop
+            status: waiting
+            data:
+              podId: api-object:namespaced:shop:Pod:schedule-demo
+              name: demo
+              image: registry.example.invalid/shop/demo:v1
+              restartCount: 0
+              ready: false
+              started: false
+              state:
+                kind: waiting
+                reason: PodInitializing
+            title:
+              en: demo Container · schedule-demo
+              ja: demo Container · schedule-demo
+              zh-CN: demo 容器 · schedule-demo
+            summary:
+              en: Container status slot waiting for the Pod to be assigned and started.
+              ja: Pod の割り当てと起動を待つ Container 状態スロットです。
+              zh-CN: 等待 Pod 完成分配与启动的容器状态槽。
+            sourceIds: [k8s-pods, k8s-pod-lifecycle]
+            visual: { archetype: container, size: sm, group: schedule-demo }
+        - op: add-relation
+          relation:
+            id: contains-schedule-demo-container
+            type: contains-runtime
+            from: api-object:namespaced:shop:Pod:schedule-demo
+            to: container-status:shop:Pod:schedule-demo:Container:demo
+            directed: true
+            semantic: composition
+            title:
+              en: contains Container status
+              ja: Container 状態を含む
+              zh-CN: 包含容器状态
+            sourceIds: [k8s-pods]
+        - op: add-relation
+          relation:
+            id: api-exposes-schedule-demo
+            type: references
+            from: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+            to: api-object:namespaced:shop:Pod:schedule-demo
+            directed: true
+            semantic: control-observation
+            title:
+              en: exposes Pending Pod API object
+              ja: Pending Pod API オブジェクトを公開
+              zh-CN: 提供 Pending Pod API 对象
+            sourceIds: [k8s-api, k8s-pods]
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byKind: Node }
+          visible: true
+          emphasis: normal
+          labelMode: short
+        - selector: { byIds: [api-object:namespaced:shop:Pod:schedule-demo] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [container-status:shop:Pod:schedule-demo:Container:demo] }
+          visible: true
+          emphasis: normal
+          labelMode: short
+      relationRules:
+        - byIds: [contains-schedule-demo-container]
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: entity-enter
+          entityId: api-object:namespaced:shop:Pod:schedule-demo
+          durationMs: 600
+        - type: entity-enter
+          entityId: container-status:shop:Pod:schedule-demo:Container:demo
+          delayMs: 180
+          durationMs: 520
+
+  - id: scheduler-observes-pending-pod
+    title:
+      en: Scheduler observes an unbound Pod through the API
+      ja: Scheduler が API 経由で未 binding Pod を監視する
+      zh-CN: Scheduler 通过 API 观察未绑定 Pod
+    learningOutcome:
+      en: Place Scheduler observation before candidate evaluation and binding.
+      ja: Scheduler の監視を候補評価と binding より前に位置づける。
+      zh-CN: 明确 Scheduler 观察发生在候选评估与绑定之前。
+    narration:
+      en: kube-scheduler watches Kubernetes API state for Pods that have no Node assignment. It observes schedule-demo through the API Server; it does not scan a Node-local container runtime or receive a request directly from the Pod.
+      ja: kube-scheduler は Node 割り当てのない Pod を Kubernetes API state で監視します。schedule-demo を API Server 経由で観測し、Node-local container runtime を走査したり Pod から直接要求を受けたりしません。
+      zh-CN: kube-scheduler 监视 Kubernetes API 状态中尚无 Node 分配的 Pod。它通过 API Server 观察 schedule-demo；不会扫描 Node 本地容器运行时，也不会直接接收 Pod 请求。
+    teaching:
+      whatChanged:
+        en: No Pod field changed; a persistent control route now exposes Scheduler-to-API observation of the unbound Pod.
+        ja: Pod field は変化せず、Scheduler から API を経由して未 binding Pod を監視する persistent control route が表示されました。
+        zh-CN: Pod 字段没有变化；现在显示一条持久控制路线，表达 Scheduler 通过 API 观察未绑定 Pod。
+      whyItHappened:
+        en: Scheduler makes placement decisions from API state after a Pod exists without nodeName.
+        ja: Scheduler は nodeName のない Pod が存在した後、API state から配置判断を行うためです。
+        zh-CN: 因为 Scheduler 会在无 nodeName 的 Pod 已存在后，根据 API 状态作出放置决策。
+      takeaway:
+        en: Scheduler first observes an unscheduled Pod through the API; no Node is selected yet.
+        ja: Scheduler はまず API 経由で未スケジュール Pod を監視し、この時点では Node は未選択です。
+        zh-CN: Scheduler 首先通过 API 观察未调度 Pod；此时尚未选定 Node。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - runtime-component:cluster:global:Scheduler:kube-scheduler
+        - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+        - api-object:namespaced:shop:Pod:schedule-demo
+    introducesTerms: [scheduler, kubernetes-api]
+    usesTerms: [pod, pending, scheduling]
+    sourceIds: [k8s-components, k8s-api, k8s-pods]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: control-flow
+      cameraPresetId: control-flow
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [runtime-component:cluster:global:Scheduler:kube-scheduler] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: compact
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - api-object:namespaced:shop:Pod:schedule-demo
+          visible: true
+          emphasis: normal
+          labelMode: full
+      relationRules:
+        - byIds: [scheduler-watches-api-server, api-exposes-schedule-demo]
+          visible: true
+          emphasis: focused
+      activeRoutes:
+        - id: route-scheduler-observes-schedule-demo
+          semantic: control
+          label:
+            en: observe unbound Pod
+            ja: 未 binding Pod を監視
+            zh-CN: 观察未绑定 Pod
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:cluster:global:Scheduler:kube-scheduler
+              fromAnchor: api-out
+              toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              toAnchor: api-in
+              label:
+                en: watch API state
+                ja: API state を監視
+                zh-CN: 监视 API 状态
+            - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              fromAnchor: api-out
+              toEntityId: api-object:namespaced:shop:Pod:schedule-demo
+              toAnchor: api-in
+              label:
+                en: unbound Pod
+                ja: 未 binding Pod
+                zh-CN: 未绑定 Pod
+    transition:
+      cues:
+        - type: reconcile-pulse
+          fromEntityId: runtime-component:cluster:global:Scheduler:kube-scheduler
+          toEntityId: api-object:namespaced:shop:Pod:schedule-demo
+          routeId: route-scheduler-observes-schedule-demo
+          durationMs: 740
+
+  - id: evaluate-candidate-nodes
+    title:
+      en: Scheduler evaluates candidate Nodes
+      ja: Scheduler が候補 Node を評価する
+      zh-CN: Scheduler 评估候选 Node
+    learningOutcome:
+      en: Distinguish candidate evaluation from the later recorded assignment.
+      ja: 候補評価を、その後に記録される割り当てと区別する。
+      zh-CN: 区分候选评估与稍后才记录的分配结果。
+    narration:
+      en: For this synthetic example, worker-a, worker-b, and worker-c are shown as candidates while Scheduler evaluates placement constraints and available resources. schedule-demo still has no nodeName, so none of these candidates is yet its assigned Node.
+      ja: この合成例では、Scheduler が配置制約と利用可能 resource を評価する間、worker-a、worker-b、worker-c を候補として表示します。schedule-demo にはまだ nodeName がなく、どの候補も割り当て先ではありません。
+      zh-CN: 在这个虚构示例中，Scheduler 评估放置约束与可用资源时，worker-a、worker-b、worker-c 都作为候选项显示。schedule-demo 仍没有 nodeName，因此这些候选 Node 尚未成为其分配目标。
+    teaching:
+      whatChanged:
+        en: Scheduler's teaching evidence now records three candidate Node names; the Pod remains unbound and Pending.
+        ja: Scheduler の教学 evidence に三つの候補 Node 名が記録されましたが、Pod は未 binding の Pending のままです。
+        zh-CN: Scheduler 的教学证据现在记录了三个候选 Node 名称；Pod 仍处于未绑定 Pending 状态。
+      whyItHappened:
+        en: Scheduling evaluates feasible Nodes before selecting one and writing an assignment.
+        ja: scheduling は一つを選んで割り当てを書き込む前に、実行可能な Node を評価するためです。
+        zh-CN: 因为调度会先评估可行 Node，之后才选定一个并写入分配结果。
+      takeaway:
+        en: A candidate is not an assignment; nodeName remains absent until binding.
+        ja: 候補は割り当てではなく、binding までは nodeName がありません。
+        zh-CN: 候选项不等于分配结果；在绑定前 nodeName 仍为空。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - runtime-component:cluster:global:Scheduler:kube-scheduler
+        - api-object:namespaced:shop:Pod:schedule-demo
+        - infrastructure:cluster:global:Node:worker-a
+        - infrastructure:cluster:global:Node:worker-b
+        - infrastructure:cluster:global:Node:worker-c
+    introducesTerms: [node]
+    usesTerms: [pod, pending, scheduling, scheduler]
+    sourceIds: [k8s-components, k8s-nodes, k8s-pods]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: runtime-component:cluster:global:Scheduler:kube-scheduler
+          patch:
+            data:
+              role: scheduling
+              candidateNodeNames: [worker-a, worker-b, worker-c]
+              selectedNodeName: null
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [runtime-component:cluster:global:Scheduler:kube-scheduler] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - infrastructure:cluster:global:Node:worker-a
+              - infrastructure:cluster:global:Node:worker-b
+              - infrastructure:cluster:global:Node:worker-c
+              - api-object:namespaced:shop:Pod:schedule-demo
+          visible: true
+          emphasis: normal
+          labelMode: full
+      relationRules: []
+      callouts:
+        - id: candidate-worker-a
+          entityId: infrastructure:cluster:global:Node:worker-a
+          text: { en: Candidate, ja: 候補, zh-CN: 候选 }
+        - id: candidate-worker-b
+          entityId: infrastructure:cluster:global:Node:worker-b
+          text: { en: Candidate, ja: 候補, zh-CN: 候选 }
+        - id: candidate-worker-c
+          entityId: infrastructure:cluster:global:Node:worker-c
+          text: { en: Candidate, ja: 候補, zh-CN: 候选 }
+      activeRoutes: []
+    transition:
+      cues:
+        - type: layout-transition
+          entityIds:
+            - runtime-component:cluster:global:Scheduler:kube-scheduler
+            - infrastructure:cluster:global:Node:worker-a
+            - infrastructure:cluster:global:Node:worker-b
+            - infrastructure:cluster:global:Node:worker-c
+            - api-object:namespaced:shop:Pod:schedule-demo
+          durationMs: 700
+
+  - id: bind-pod-to-worker-c
+    title:
+      en: Binding records worker-c on the Pod
+      ja: binding が Pod に worker-c を記録する
+      zh-CN: 绑定把 worker-c 记录到 Pod
+    learningOutcome:
+      en: Verify the precise state change that turns an unbound Pod into an assigned Pod.
+      ja: 未 binding Pod を割り当て済み Pod にする正確な state change を確認する。
+      zh-CN: 验证未绑定 Pod 变为已分配 Pod 时发生的精确状态变化。
+    narration:
+      en: Scheduler selects worker-c and records the assignment through the Kubernetes API. schedule-demo gains nodeName worker-c and PodScheduled=true, but its phase stays Pending and its Container still has no containerID.
+      ja: Scheduler は worker-c を選び、Kubernetes API 経由で割り当てを記録します。schedule-demo は nodeName worker-c と PodScheduled=true を得ますが、phase は Pending のままで Container にはまだ containerID がありません。
+      zh-CN: Scheduler 选择 worker-c，并通过 Kubernetes API 记录分配。schedule-demo 获得 nodeName worker-c 与 PodScheduled=true，但阶段仍为 Pending，容器也仍没有 containerID。
+    teaching:
+      whatChanged:
+        en: The Pod gained nodeName worker-c and PodScheduled=true, a scheduled-on relation was added, and no Container runtime state changed.
+        ja: Pod に nodeName worker-c と PodScheduled=true が入り、scheduled-on 関係が追加されましたが、Container runtime state は変化していません。
+        zh-CN: Pod 获得 nodeName worker-c 与 PodScheduled=true，并新增 scheduled-on 关系；容器运行时状态没有变化。
+      whyItHappened:
+        en: Scheduler completed selection and the API recorded the binding to the chosen Node.
+        ja: Scheduler が選択を完了し、API が選ばれた Node への binding を記録したためです。
+        zh-CN: 因为 Scheduler 完成选择，API 记录了到选定 Node 的绑定。
+      takeaway:
+        en: Binding records placement; it does not itself start the Container.
+        ja: binding は配置を記録しますが、それ自体が Container を起動するわけではありません。
+        zh-CN: 绑定只记录放置结果，本身不会启动容器。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - api-object:namespaced:shop:Pod:schedule-demo
+        - container-status:shop:Pod:schedule-demo:Container:demo
+        - runtime-component:cluster:global:Scheduler:kube-scheduler
+        - infrastructure:cluster:global:Node:worker-c
+    introducesTerms: [binding]
+    usesTerms: [pod, pending, scheduling, scheduler, kubernetes-api, node]
+    sourceIds: [k8s-components, k8s-api, k8s-nodes, k8s-pods, k8s-pod-lifecycle]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: runtime-component:cluster:global:Scheduler:kube-scheduler
+          patch:
+            data:
+              role: scheduling
+              candidateNodeNames: [worker-a, worker-b, worker-c]
+              selectedNodeName: worker-c
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:schedule-demo
+          patch:
+            status: pending
+            data:
+              uid: synthetic-schedule-demo-01
+              nodeName: worker-c
+              phase: Pending
+              restartPolicy: Always
+              conditions:
+                podScheduled: true
+                initialized: true
+                containersReady: false
+                ready: false
+        - op: add-relation
+          relation:
+            id: scheduled-schedule-demo
+            type: scheduled-on
+            from: api-object:namespaced:shop:Pod:schedule-demo
+            to: infrastructure:cluster:global:Node:worker-c
+            directed: true
+            semantic: placement
+            title:
+              en: scheduled on
+              ja: 配置先
+              zh-CN: 调度到
+            sourceIds: [k8s-nodes, k8s-components]
+    viewPatch:
+      view: control-flow
+      cameraPresetId: control-flow
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:Pod:schedule-demo] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - runtime-component:cluster:global:Scheduler:kube-scheduler
+              - runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              - infrastructure:cluster:global:Node:worker-c
+          visible: true
+          emphasis: normal
+          labelMode: full
+      relationRules:
+        - byIds: [scheduler-watches-api-server, api-exposes-schedule-demo, scheduled-schedule-demo]
+          visible: true
+          emphasis: focused
+      activeRoutes:
+        - id: route-record-schedule-demo-binding
+          semantic: control
+          label:
+            en: record selected Node
+            ja: 選択した Node を記録
+            zh-CN: 记录所选 Node
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:cluster:global:Scheduler:kube-scheduler
+              fromAnchor: api-out
+              toEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              toAnchor: api-in
+              label:
+                en: select worker-c
+                ja: worker-c を選択
+                zh-CN: 选择 worker-c
+            - fromEntityId: runtime-component:cluster:global:KubeAPIServer:kube-apiserver
+              fromAnchor: api-out
+              toEntityId: api-object:namespaced:shop:Pod:schedule-demo
+              toAnchor: api-in
+              label:
+                en: record nodeName
+                ja: nodeName を記録
+                zh-CN: 记录 nodeName
+        - id: route-bind-schedule-demo
+          semantic: scheduling
+          label:
+            en: place Pending Pod on worker-c
+            ja: Pending Pod を worker-c に配置
+            zh-CN: 将 Pending Pod 放置到 worker-c
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:schedule-demo
+              fromAnchor: placement
+              toEntityId: infrastructure:cluster:global:Node:worker-c
+              toAnchor: placement
+              label:
+                en: assigned to worker-c
+                ja: worker-c に割り当て
+                zh-CN: 分配到 worker-c
+    transition:
+      cues:
+        - type: api-request
+          routeId: route-record-schedule-demo-binding
+          label: { en: record selected Node, ja: 選択した Node を記録, zh-CN: 记录所选 Node }
+          durationMs: 620
+        - type: scheduler-assignment
+          schedulerId: runtime-component:cluster:global:Scheduler:kube-scheduler
+          podId: api-object:namespaced:shop:Pod:schedule-demo
+          nodeId: infrastructure:cluster:global:Node:worker-c
+          routeId: route-bind-schedule-demo
+          delayMs: 240
+          durationMs: 780
+        - type: layout-transition
+          entityIds: [api-object:namespaced:shop:Pod:schedule-demo]
+          delayMs: 540
+          durationMs: 720
+        - type: relation-reveal
+          relationId: scheduled-schedule-demo
+          delayMs: 540
+          durationMs: 700
+
+  - id: binding-is-not-startup
+    title:
+      en: Bound does not mean started
+      ja: binding 済みは起動済みを意味しない
+      zh-CN: 已绑定不等于已启动
+    learningOutcome:
+      en: Read an assigned Pending Pod whose Container is still waiting and has no runtime identity.
+      ja: 割り当て済みでも Container が waiting で runtime ID のない Pending Pod を読み取る。
+      zh-CN: 读懂一个已分配但仍为 Pending、容器仍在 waiting 且没有运行时身份的 Pod。
+    narration:
+      en: schedule-demo is now placed in a worker-c Pod bay because nodeName exists. However, its phase is still Pending, the Container state is waiting, and containerID is absent. The binding fact and the startup fact are deliberately shown separately.
+      ja: schedule-demo は nodeName があるため worker-c の Pod bay に配置されます。しかし phase は Pending、Container state は waiting、containerID はありません。binding の事実と起動の事実を意図的に分けて表示します。
+      zh-CN: schedule-demo 因为已有 nodeName 而位于 worker-c 的 Pod 槽位中。但其阶段仍为 Pending，容器状态仍为 waiting，containerID 仍不存在。绑定事实与启动事实被有意分开展示。
+    teaching:
+      whatChanged:
+        en: No API or runtime field changed; the placement view exposed the assigned Pod and its still-waiting Container inside worker-c.
+        ja: API や runtime field は変化せず、placement view で worker-c 内の割り当て済み Pod と waiting Container を表示しました。
+        zh-CN: API 与运行时字段没有变化；放置视图展示了 worker-c 内已分配 Pod 与仍在 waiting 的容器。
+      whyItHappened:
+        en: Node assignment must exist before the selected Node's kubelet and runtime can create the Container.
+        ja: 選択 Node の kubelet と runtime が Container を作る前に、Node 割り当てが必要だからです。
+        zh-CN: 因为必须先存在 Node 分配，选定 Node 上的 kubelet 与运行时才能创建容器。
+      takeaway:
+        en: nodeName proves placement; containerID and running state prove Container startup.
+        ja: nodeName は配置を、containerID と running state は Container 起動を示します。
+        zh-CN: nodeName 证明放置已完成；containerID 与 running 状态才证明容器已启动。
+    evidence:
+      mode: snapshot
+      entityIds:
+        - api-object:namespaced:shop:Pod:schedule-demo
+        - container-status:shop:Pod:schedule-demo:Container:demo
+        - infrastructure:cluster:global:Node:worker-c
+    introducesTerms: []
+    usesTerms: [pod, pending, scheduling, node, binding]
+    sourceIds: [k8s-pods, k8s-pod-lifecycle, k8s-nodes, k8s-components]
+    worldPatch: { operations: [] }
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-c] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:schedule-demo] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [container-status:shop:Pod:schedule-demo:Container:demo] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules:
+        - byIds: [scheduled-schedule-demo, contains-schedule-demo-container]
+          visible: true
+          emphasis: focused
+      callouts:
+        - id: bound-not-started
+          entityId: container-status:shop:Pod:schedule-demo:Container:demo
+          text:
+            en: waiting · no containerID
+            ja: waiting · containerID なし
+            zh-CN: waiting · 无 containerID
+      activeRoutes: []
+    transition:
+      cues:
+        - type: focus-camera
+          entityId: container-status:shop:Pod:schedule-demo:Container:demo
+          durationMs: 600
+
+  - id: node-runtime-starts-container
+    title:
+      en: The Node runtime starts the Container
+      ja: Node runtime が Container を起動する
+      zh-CN: Node 运行时启动容器
+    learningOutcome:
+      en: Separate Node-local Container creation from Scheduler's earlier placement decision.
+      ja: Node-local Container 作成を、Scheduler の先の配置判断と区別する。
+      zh-CN: 区分 Node 本地容器创建与 Scheduler 先前的放置决策。
+    narration:
+      en: worker-c's kubelet observes the assigned Pod and works through CRI with its local container runtime. The runtime creates containerd://synthetic-schedule-demo-01; the Pod phase becomes Running, while Ready remains false until later readiness succeeds.
+      ja: worker-c の kubelet は割り当て済み Pod を監視し、CRI を通じて local container runtime と連携します。runtime が containerd://synthetic-schedule-demo-01 を作り、Pod phase は Running になりますが、後の readiness 成功までは Ready=false です。
+      zh-CN: worker-c 上的 kubelet 观察已分配 Pod，并通过 CRI 与本机容器运行时协作。运行时创建 containerd://synthetic-schedule-demo-01；Pod 阶段变为 Running，但在稍后就绪检查成功前 Ready 仍为 false。
+    teaching:
+      whatChanged:
+        en: The waiting Container gained its first containerID and became running; the Pod phase became Running while its Ready condition stayed false.
+        ja: waiting Container に最初の containerID が入り running となり、Pod phase は Running になりましたが Ready condition は false のままです。
+        zh-CN: waiting 容器获得首个 containerID 并变为 running；Pod 阶段变为 Running，但 Ready 条件仍为 false。
+      whyItHappened:
+        en: After binding, kubelet requested Node-local execution through CRI and the container runtime created the Container.
+        ja: binding 後、kubelet が CRI 経由で Node-local execution を要求し、container runtime が Container を作ったためです。
+        zh-CN: 因为绑定完成后，kubelet 通过 CRI 请求 Node 本地执行，容器运行时实际创建了容器。
+      takeaway:
+        en: Scheduler chooses placement; kubelet and the Node-local runtime perform Container startup afterward.
+        ja: Scheduler が配置を選び、その後 kubelet と Node-local runtime が Container を起動します。
+        zh-CN: Scheduler 选择放置位置；之后由 kubelet 与 Node 本地运行时完成容器启动。
+    evidence:
+      mode: diff-with-context
+      entityIds:
+        - runtime-component:node:worker-c:Kubelet:kubelet
+        - runtime-component:node:worker-c:ContainerRuntime:runtime
+        - api-object:namespaced:shop:Pod:schedule-demo
+        - container-status:shop:Pod:schedule-demo:Container:demo
+    introducesTerms: [cri]
+    usesTerms: [pod, pending, scheduling, scheduler, node, binding, cri]
+    sourceIds: [k8s-components, k8s-cri, k8s-pods, k8s-pod-lifecycle, k8s-nodes]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: container-status:shop:Pod:schedule-demo:Container:demo
+          patch:
+            status: running
+            data:
+              podId: api-object:namespaced:shop:Pod:schedule-demo
+              name: demo
+              image: registry.example.invalid/shop/demo:v1
+              containerID: containerd://synthetic-schedule-demo-01
+              restartCount: 0
+              ready: false
+              started: true
+              state:
+                kind: running
+                startedAt: 2026-08-08T03:00:00Z
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:schedule-demo
+          patch:
+            status: not-ready
+            data:
+              uid: synthetic-schedule-demo-01
+              nodeName: worker-c
+              phase: Running
+              restartPolicy: Always
+              conditions:
+                podScheduled: true
+                initialized: true
+                containersReady: false
+                ready: false
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [runtime-component:node:worker-c:ContainerRuntime:runtime] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - infrastructure:cluster:global:Node:worker-c
+              - runtime-component:node:worker-c:Kubelet:kubelet
+              - api-object:namespaced:shop:Pod:schedule-demo
+              - container-status:shop:Pod:schedule-demo:Container:demo
+          visible: true
+          emphasis: normal
+          labelMode: full
+      relationRules:
+        - byIds:
+            - kubelet-c-uses-container-runtime
+            - scheduled-schedule-demo
+            - contains-schedule-demo-container
+          visible: true
+          emphasis: focused
+      activeRoutes:
+        - id: route-start-schedule-demo-container
+          semantic: node-runtime
+          label:
+            en: Node-local Container startup
+            ja: Node-local Container 起動
+            zh-CN: Node 本地容器启动
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:node:worker-c:Kubelet:kubelet
+              fromAnchor: local-runtime
+              toEntityId: runtime-component:node:worker-c:ContainerRuntime:runtime
+              toAnchor: local-runtime
+              label:
+                en: request through CRI
+                ja: CRI 経由で要求
+                zh-CN: 通过 CRI 请求
+            - fromEntityId: runtime-component:node:worker-c:ContainerRuntime:runtime
+              fromAnchor: local-runtime
+              toEntityId: container-status:shop:Pod:schedule-demo:Container:demo
+              toAnchor: local-runtime
+              label:
+                en: create and start
+                ja: 作成して起動
+                zh-CN: 创建并启动
+    transition:
+      cues:
+        - type: container-start
+          entityId: container-status:shop:Pod:schedule-demo:Container:demo
+          durationMs: 760
+        - type: callout
+          entityId: runtime-component:node:worker-c:ContainerRuntime:runtime
+          label:
+            en: Startup happens after binding
+            ja: 起動は binding の後
+            zh-CN: 启动发生在绑定之后
+          delayMs: 180
+          durationMs: 620

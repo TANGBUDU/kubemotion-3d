@@ -1,0 +1,1089 @@
+schemaVersion: 2
+id: probes-and-rolling-update
+scenarioId: probes-and-rolling-update
+chapterId: resources-scaling
+title:
+  en: Probes and a rolling update
+  ja: Probe とローリング更新
+  zh-CN: 探针与滚动更新
+summary:
+  en: Follow one v2 Pod from startup gating to traffic eligibility, then watch the Deployment shrink the old ReplicaSet and kubelet recover the container from liveness failure.
+  ja: 1 つの v2 Pod が startup のゲートからトラフィック対象になるまでを追い、Deployment が古い ReplicaSet を縮小し、kubelet が liveness 障害からコンテナを復旧する様子を確認します。
+  zh-CN: 跟踪一个 v2 Pod 从启动门控到进入流量集合，再观察 Deployment 缩减旧 ReplicaSet，以及 kubelet 从存活探针失败中恢复容器。
+learningOutcome:
+  en: Distinguish startup, readiness, and liveness effects, and explain why a rolling update waits for a new Ready Pod before removing an old one.
+  ja: startup、readiness、liveness の効果を区別し、ローリング更新が新しい Pod の Ready を待ってから古い Pod を削除する理由を説明する。
+  zh-CN: 区分启动、就绪和存活探针的作用，并解释滚动更新为何在移除旧 Pod 前等待新 Pod Ready。
+prerequisites: [dns-and-service-discovery]
+sourceIds: [k8s-probes, k8s-deployments, k8s-pods, k8s-services, k8s-endpoint-slices]
+verifiedAt: '2026-08-08'
+
+baseView:
+  view: logical
+  cameraPresetId: logical
+  resetEntities: true
+  entityRules:
+    - selector: { byKind: Deployment, namespace: shop }
+      visible: true
+      emphasis: normal
+      labelMode: full
+    - selector: { byKind: ReplicaSet, namespace: shop }
+      visible: true
+      emphasis: normal
+      labelMode: full
+    - selector: { byKind: Pod, namespace: shop }
+      visible: true
+      emphasis: normal
+      labelMode: short
+  relationRules:
+    - byType: owns
+      visible: true
+      emphasis: normal
+  activeRoutes: []
+
+steps:
+  - id: three-probe-roles
+    title:
+      {
+        en: 'Three probes, three decisions',
+        ja: 3 つの probe、3 つの判断,
+        zh-CN: 三种探针，三种判断,
+      }
+    learningOutcome:
+      en: Match startup, readiness, and liveness probes to their distinct effects.
+      ja: startup、readiness、liveness probe をそれぞれ異なる効果に対応付ける。
+      zh-CN: 将启动、就绪和存活探针分别对应到不同作用。
+    narration:
+      en: The container configuration has three checks. Startup gates the other checks, readiness controls traffic eligibility, and repeated liveness failure can trigger a container restart.
+      ja: コンテナ設定には 3 つの検査があります。startup は他の検査を待たせ、readiness はトラフィック対象を決め、liveness の規定回数の失敗はコンテナ再起動を引き起こします。
+      zh-CN: 容器配置包含三种检查：启动探针阻止另外两种检查提前运行；就绪探针控制流量资格；存活探针连续失败达到阈值可触发容器重启。
+    teaching:
+      whatChanged:
+        en: Nothing has mutated; the scene exposes the three configured probe roles on a healthy v1 container.
+        ja: 状態は変化していません。シーンは正常な v1 コンテナに設定された 3 種類の probe の役割を示します。
+        zh-CN: 世界状态尚未变化；场景展示健康 v1 容器上配置的三种探针职责。
+      whyItHappened:
+        en: Kubernetes keeps startup completion, traffic readiness, and process health as separate decisions.
+        ja: Kubernetes は起動完了、トラフィック準備、プロセスの健全性を別々の判断として扱います。
+        zh-CN: Kubernetes 将启动完成、流量就绪和进程健康视为三个独立判断。
+      takeaway:
+        en: Probe names are not synonyms; each one changes a different part of behavior.
+        ja: probe の名前は同義ではなく、それぞれ異なる動作を変えます。
+        zh-CN: 三种探针不是同义词，各自改变不同的系统行为。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Deployment:api
+        - container-status:shop:Pod:api-v1-a:Container:api
+      mode: snapshot
+    introducesTerms: [startup-probe, readiness-probe, liveness-probe]
+    usesTerms: []
+    sourceIds: [k8s-probes]
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - infrastructure:cluster:global:Node:worker-rollout
+              - runtime-component:node:worker-rollout:Kubelet:kubelet
+              - api-object:namespaced:shop:Pod:api-v1-a
+              - container-status:shop:Pod:api-v1-a:Container:api
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [container-status:shop:Pod:api-v1-a:Container:api] }
+          emphasis: focused
+          inspectorMode: expanded
+      callouts:
+        - id: startup-role
+          entityId: container-status:shop:Pod:api-v1-a:Container:api
+          text:
+            {
+              en: 'Startup: gate later probes',
+              ja: 'startup: 後続 probe を待たせる',
+              zh-CN: '启动：门控后续探针',
+            }
+        - id: readiness-role
+          entityId: api-object:namespaced:shop:Pod:api-v1-a
+          text:
+            {
+              en: 'Readiness: traffic eligibility',
+              ja: 'readiness: トラフィック対象',
+              zh-CN: '就绪：流量资格',
+            }
+        - id: liveness-role
+          entityId: runtime-component:node:worker-rollout:Kubelet:kubelet
+          text:
+            {
+              en: 'Liveness: restart decision',
+              ja: 'liveness: 再起動判断',
+              zh-CN: '存活：重启判断',
+            }
+      activeRoutes: []
+
+  - id: new-replicaset-starts
+    title:
+      {
+        en: The update creates a new ReplicaSet,
+        ja: 更新で新しい ReplicaSet が作られる,
+        zh-CN: 更新创建新 ReplicaSet,
+      }
+    learningOutcome:
+      en: Observe a v2 ReplicaSet and its first starting Pod appear while both v1 Pods remain Ready.
+      ja: 両方の v1 Pod が Ready のまま、v2 ReplicaSet と最初の起動中 Pod が現れることを確認する。
+      zh-CN: 观察两个 v1 Pod 仍保持 Ready 时，v2 ReplicaSet 及其第一个启动中 Pod 出现。
+    narration:
+      en: Changing the Deployment Pod template starts revision 2. With maxSurge=1, the controller can add one v2 Pod before removing either Ready v1 Pod.
+      ja: Deployment の Pod template を変更すると revision 2 が始まります。maxSurge=1 のため、Ready な v1 Pod を削除する前に v2 Pod を 1 つ追加できます。
+      zh-CN: 修改 Deployment 的 Pod 模板会启动修订版 2。由于 maxSurge=1，控制器可在移除任何 Ready v1 Pod 前先增加一个 v2 Pod。
+    teaching:
+      whatChanged:
+        en: A new v2 ReplicaSet, Pod, and waiting container are added; the old ReplicaSet still has two Ready replicas.
+        ja: 新しい v2 ReplicaSet、Pod、waiting コンテナが追加されます。古い ReplicaSet は Ready レプリカを 2 つ維持しています。
+        zh-CN: 新增 v2 ReplicaSet、Pod 和等待中的容器；旧 ReplicaSet 仍有两个 Ready 副本。
+      whyItHappened:
+        en: A Deployment rolling update scales a new ReplicaSet up gradually while respecting surge and availability limits.
+        ja: Deployment のローリング更新は surge と可用性の制限を守りながら新しい ReplicaSet を段階的に増やします。
+        zh-CN: Deployment 滚动更新在遵守额外副本和可用性限制的同时逐步扩展新 ReplicaSet。
+      takeaway:
+        en: A rollout creates replacement Pods through a new ReplicaSet; it does not mutate a v1 Pod into v2.
+        ja: ロールアウトは新しい ReplicaSet から置換 Pod を作り、v1 Pod 自体を v2 に書き換えません。
+        zh-CN: 滚动更新通过新 ReplicaSet 创建替换 Pod，而不是把 v1 Pod 原地变成 v2。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Deployment:api
+        - api-object:namespaced:shop:ReplicaSet:api-v1
+        - api-object:namespaced:shop:ReplicaSet:api-v2
+        - api-object:namespaced:shop:Pod:api-v2-a
+      mode: diff-with-context
+    introducesTerms: [rolling-update, deployment, replicaset]
+    usesTerms: []
+    sourceIds: [k8s-deployments, k8s-replicasets]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Deployment:api
+          patch:
+            status: starting
+            data: { revision: 2, version: v2, updatedReplicas: 1 }
+        - op: add-entity
+          entity:
+            id: api-object:namespaced:shop:ReplicaSet:api-v2
+            category: api-object
+            kind: ReplicaSet
+            name: api-v2
+            namespace: shop
+            labels: { app.kubernetes.io/name: api, app.kubernetes.io/version: v2 }
+            status: starting
+            data: { specReplicas: 1, statusReplicas: 1, readyReplicas: 0, version: v2 }
+            title: { en: api-v2 ReplicaSet, ja: api-v2 ReplicaSet, zh-CN: api-v2 ReplicaSet }
+            summary:
+              {
+                en: New ReplicaSet for revision 2.,
+                ja: revision 2 の新しい ReplicaSet です。,
+                zh-CN: 修订版 2 的新 ReplicaSet。,
+              }
+            sourceIds: [k8s-deployments, k8s-replicasets]
+            visual: { archetype: replicaset, size: md, group: rollout-control }
+        - op: add-entity
+          entity:
+            id: api-object:namespaced:shop:Pod:api-v2-a
+            category: api-object
+            kind: Pod
+            name: api-v2-a
+            namespace: shop
+            labels: { app.kubernetes.io/name: api, app.kubernetes.io/version: v2 }
+            status: starting
+            data:
+              uid: synthetic-api-v2-a-01
+              nodeName: worker-rollout
+              phase: Pending
+              restartPolicy: Always
+              conditions:
+                { podScheduled: true, initialized: false, containersReady: false, ready: false }
+              podIP: 192.0.2.73
+            title: { en: api-v2-a Pod, ja: api-v2-a Pod, zh-CN: api-v2-a Pod }
+            summary:
+              {
+                en: 'First v2 Pod, not yet started or Ready.',
+                ja: まだ起動も Ready も完了していない最初の v2 Pod です。,
+                zh-CN: 第一个尚未启动且未 Ready 的 v2 Pod。,
+              }
+            sourceIds: [k8s-pods, k8s-deployments]
+            visual: { archetype: pod, size: md, group: api-v2 }
+        - op: add-entity
+          entity:
+            id: container-status:shop:Pod:api-v2-a:Container:api
+            category: runtime-status
+            kind: Container
+            name: api
+            namespace: shop
+            status: waiting
+            data:
+              podId: api-object:namespaced:shop:Pod:api-v2-a
+              name: api
+              image: registry.example.invalid/shop/api:v2
+              containerID: ''
+              restartCount: 0
+              ready: false
+              started: false
+              state: { kind: waiting, reason: ContainerCreating }
+              probes:
+                startup: { configured: true, succeeded: false }
+                readiness: { configured: true, running: false }
+                liveness: { configured: true, running: false }
+            title: { en: api v2 container, ja: api v2 コンテナ, zh-CN: api v2 容器 }
+            summary:
+              {
+                en: Waiting v2 container whose startup probe has not succeeded.,
+                ja: startup probe がまだ成功していない waiting 状態の v2 コンテナです。,
+                zh-CN: 启动探针尚未成功的等待中 v2 容器。,
+              }
+            sourceIds: [k8s-pods, k8s-probes]
+            visual: { archetype: container, size: sm, group: api-v2-a }
+        - op: add-relation
+          relation:
+            id: deployment-owns-api-v2
+            type: owns
+            from: api-object:namespaced:shop:Deployment:api
+            to: api-object:namespaced:shop:ReplicaSet:api-v2
+            directed: true
+            semantic: ownership
+            title:
+              { en: owns new ReplicaSet, ja: 新しい ReplicaSet を所有, zh-CN: 拥有新 ReplicaSet }
+            sourceIds: [k8s-deployments]
+        - op: add-relation
+          relation:
+            id: api-v2-owns-a
+            type: owns
+            from: api-object:namespaced:shop:ReplicaSet:api-v2
+            to: api-object:namespaced:shop:Pod:api-v2-a
+            directed: true
+            semantic: ownership
+            title: { en: owns v2 Pod, ja: v2 Pod を所有, zh-CN: 拥有 v2 Pod }
+            sourceIds: [k8s-replicasets]
+        - op: add-relation
+          relation:
+            id: api-v2-a-on-worker
+            type: scheduled-on
+            from: api-object:namespaced:shop:Pod:api-v2-a
+            to: infrastructure:cluster:global:Node:worker-rollout
+            directed: true
+            semantic: placement
+            title: { en: scheduled on worker, ja: worker に配置, zh-CN: 调度到 worker }
+            sourceIds: [k8s-pods, k8s-nodes]
+        - op: add-relation
+          relation:
+            id: api-v2-a-contains-container
+            type: contains-runtime
+            from: api-object:namespaced:shop:Pod:api-v2-a
+            to: container-status:shop:Pod:api-v2-a:Container:api
+            directed: true
+            semantic: composition
+            title: { en: contains v2 container, ja: v2 コンテナを内包, zh-CN: 包含 v2 容器 }
+            sourceIds: [k8s-pods]
+        - op: add-relation
+          relation:
+            id: kubelet-watches-api-v2-a
+            type: watches
+            from: runtime-component:node:worker-rollout:Kubelet:kubelet
+            to: api-object:namespaced:shop:Pod:api-v2-a
+            directed: true
+            semantic: control-observation
+            title: { en: runs probes, ja: probe を実行, zh-CN: 执行探针 }
+            sourceIds: [k8s-probes, k8s-components]
+    viewPatch:
+      view: logical
+      cameraPresetId: logical
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Deployment:api
+              - api-object:namespaced:shop:ReplicaSet:api-v1
+              - api-object:namespaced:shop:ReplicaSet:api-v2
+              - api-object:namespaced:shop:Pod:api-v1-a
+              - api-object:namespaced:shop:Pod:api-v1-b
+              - api-object:namespaced:shop:Pod:api-v2-a
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:ReplicaSet:api-v2] }
+          emphasis: focused
+          inspectorMode: expanded
+      relationRules:
+        - byType: owns
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+    transition:
+      cues:
+        - type: entity-enter
+          entityId: api-object:namespaced:shop:ReplicaSet:api-v2
+          durationMs: 500
+        - type: entity-enter
+          entityId: api-object:namespaced:shop:Pod:api-v2-a
+          durationMs: 500
+          delayMs: 200
+
+  - id: startup-probe-passes
+    title:
+      {
+        en: Startup passes before readiness begins,
+        ja: readiness の前に startup が成功する,
+        zh-CN: 启动探针先于就绪检查通过,
+      }
+    learningOutcome:
+      en: See the v2 container start while its Pod remains NotReady.
+      ja: v2 コンテナが起動しても Pod はまだ NotReady であることを確認する。
+      zh-CN: 观察 v2 容器已启动，但其 Pod 仍为 NotReady。
+    narration:
+      en: The startup probe succeeds, so kubelet may begin liveness and readiness checks. Success here does not make the Pod eligible for Service traffic.
+      ja: startup probe が成功したため、kubelet は liveness と readiness の検査を開始できます。ただし、この成功だけでは Pod は Service トラフィックの対象になりません。
+      zh-CN: 启动探针成功后，kubelet 才可开始存活与就绪检查；此处成功并不会让 Pod 获得 Service 流量资格。
+    teaching:
+      whatChanged:
+        {
+          en: 'The v2 container enters Running with started=true, but ready remains false.',
+          ja: v2 コンテナは started=true の Running になりますが、ready は false のままです。,
+          zh-CN: v2 容器进入 Running 且 started=true，但 ready 仍为 false。,
+        }
+      whyItHappened:
+        {
+          en: A configured startup probe gates liveness and readiness until it succeeds.,
+          ja: 設定された startup probe は成功するまで liveness と readiness を待たせるためです。,
+          zh-CN: 配置了启动探针时，存活和就绪检查会等待其成功。,
+        }
+      takeaway:
+        {
+          en: Started is not the same as Ready.,
+          ja: Started と Ready は同じではありません。,
+          zh-CN: 已启动不等于已就绪。,
+        }
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-v2-a
+        - container-status:shop:Pod:api-v2-a:Container:api
+      mode: diff
+    introducesTerms: [pod, container]
+    usesTerms: [startup-probe, readiness-probe, liveness-probe]
+    sourceIds: [k8s-probes, k8s-pods]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-v2-a
+          patch:
+            data:
+              phase: Running
+              conditions:
+                { podScheduled: true, initialized: true, containersReady: false, ready: false }
+        - op: patch-entity
+          entityId: container-status:shop:Pod:api-v2-a:Container:api
+          patch:
+            status: running
+            data:
+              containerID: containerd://synthetic-api-v2-a-01
+              ready: false
+              started: true
+              state: { kind: running, startedAt: '2026-08-08T00:02:00Z' }
+              probes:
+                startup: { configured: true, succeeded: true }
+                readiness: { configured: true, running: true, succeeded: false }
+                liveness: { configured: true, running: true, succeeded: true }
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - infrastructure:cluster:global:Node:worker-rollout
+              - runtime-component:node:worker-rollout:Kubelet:kubelet
+              - api-object:namespaced:shop:Pod:api-v2-a
+              - container-status:shop:Pod:api-v2-a:Container:api
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [container-status:shop:Pod:api-v2-a:Container:api] }
+          emphasis: focused
+          inspectorMode: expanded
+      callouts:
+        - id: startup-passed
+          entityId: container-status:shop:Pod:api-v2-a:Container:api
+          text:
+            {
+              en: 'started=true · ready=false',
+              ja: 'started=true · ready=false',
+              zh-CN: 'started=true · ready=false',
+            }
+      activeRoutes: []
+    transition:
+      cues:
+        - type: container-start
+          entityId: container-status:shop:Pod:api-v2-a:Container:api
+          durationMs: 650
+
+  - id: readiness-keeps-v2-out
+    title:
+      {
+        en: NotReady stays out of ordinary traffic,
+        ja: NotReady は通常トラフィックから外れる,
+        zh-CN: NotReady 不进入普通流量,
+      }
+    learningOutcome:
+      en: Verify that the running v2 Pod is absent from the EndpointSlice while readiness fails.
+      ja: readiness が失敗している間、実行中の v2 Pod が EndpointSlice に含まれないことを確認する。
+      zh-CN: 验证就绪探针失败时，运行中的 v2 Pod 不在 EndpointSlice 可用集合中。
+    narration:
+      en: The readiness check is still failing. The v2 container keeps running, but the EndpointSlice only lists the two Ready v1 backends.
+      ja: readiness 検査はまだ失敗しています。v2 コンテナは動き続けますが、EndpointSlice には Ready な 2 つの v1 バックエンドだけが記録されています。
+      zh-CN: 就绪检查仍失败。v2 容器继续运行，但 EndpointSlice 仅列出两个 Ready 的 v1 后端。
+    teaching:
+      whatChanged:
+        {
+          en: The v2 Pod is explicitly NotReady; no endpoint or traffic route is added for it.,
+          ja: v2 Pod は明示的に NotReady となり、その endpoint やトラフィック経路は追加されません。,
+          zh-CN: v2 Pod 明确处于 NotReady；系统没有为它新增 Endpoint 或流量路线。,
+        }
+      whyItHappened:
+        {
+          en: Failed readiness keeps the container running but excludes the Pod from matching Service traffic.,
+          ja: readiness の失敗はコンテナを動かしたまま、Pod を対応する Service トラフィックから除外します。,
+          zh-CN: 就绪失败不会停止容器，但会让 Pod 退出匹配 Service 的普通流量集合。,
+        }
+      takeaway:
+        {
+          en: 'Readiness changes traffic eligibility, not process liveness.',
+          ja: readiness が変えるのはトラフィック対象であり、プロセスの生存ではありません。,
+          zh-CN: 就绪探针改变的是流量资格，而不是进程是否存活。,
+        }
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-v2-a
+        - container-status:shop:Pod:api-v2-a:Container:api
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+      mode: diff-with-context
+    introducesTerms: [service, endpoint-slice, endpoint]
+    usesTerms: [pod, container, readiness-probe]
+    sourceIds: [k8s-probes, k8s-services, k8s-endpoint-slices]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-v2-a
+          patch: { status: not-ready }
+        - op: patch-entity
+          entityId: container-status:shop:Pod:api-v2-a:Container:api
+          patch:
+            data:
+              probes:
+                startup: { configured: true, succeeded: true }
+                readiness: { configured: true, running: true, succeeded: false, result: Failure }
+                liveness: { configured: true, running: true, succeeded: true }
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Service:api
+              - api-object:namespaced:shop:EndpointSlice:api-slice
+              - api-object:namespaced:shop:Pod:api-v1-a
+              - api-object:namespaced:shop:Pod:api-v1-b
+              - api-object:namespaced:shop:Pod:api-v2-a
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Pod:api-v2-a] }
+          emphasis: focused
+          inspectorMode: expanded
+      relationRules:
+        - byType: references
+          visible: true
+          emphasis: focused
+        - byType: contains-endpoint-for
+          visible: true
+          emphasis: dimmed
+      callouts:
+        - id: v2-not-endpoint
+          entityId: api-object:namespaced:shop:Pod:api-v2-a
+          text:
+            {
+              en: 'Running · NotReady · no ordinary traffic',
+              ja: 'Running · NotReady · 通常トラフィックなし',
+              zh-CN: 'Running · NotReady · 无普通流量',
+            }
+      activeRoutes: []
+
+  - id: readiness-adds-v2-endpoint
+    title:
+      {
+        en: Ready v2 enters the backend set,
+        ja: Ready な v2 がバックエンド集合に入る,
+        zh-CN: Ready v2 进入后端集合,
+      }
+    learningOutcome:
+      en: Trace new traffic only after the v2 Pod becomes Ready and appears as an endpoint.
+      ja: v2 Pod が Ready になり endpoint として現れた後にだけ、新しいトラフィックを追う。
+      zh-CN: 仅在 v2 Pod Ready 并成为 Endpoint 后跟踪新流量。
+    narration:
+      en: The readiness probe now succeeds. The v2 Pod becomes Ready, the EndpointSlice records it, and a new request may follow client → Service → api-v2-a.
+      ja: readiness probe が成功します。v2 Pod は Ready になり EndpointSlice に記録され、新しいリクエストは client → Service → api-v2-a を進めます。
+      zh-CN: 就绪探针现已成功。v2 Pod 变为 Ready，EndpointSlice 记录它，新请求才可沿 client → Service → api-v2-a 前进。
+    teaching:
+      whatChanged:
+        {
+          en: 'ready becomes true, the v2 endpoint is added, and a persistent route to v2 becomes visible.',
+          ja: ready が true になり、v2 endpoint が追加され、v2 への持続表示ルートが現れます。,
+          zh-CN: ready 变为 true，新增 v2 Endpoint，并显示通往 v2 的持久路线。,
+        }
+      whyItHappened:
+        {
+          en: A successful readiness probe makes the Pod eligible for matching Service traffic.,
+          ja: readiness probe の成功により、その Pod は対応する Service トラフィックの対象になります。,
+          zh-CN: 就绪探针成功使该 Pod 获得匹配 Service 流量的资格。,
+        }
+      takeaway:
+        {
+          en: The route appears after readiness evidence; EndpointSlice supports the selection but is not a packet hop.,
+          ja: ルートは readiness の証拠の後に現れます。EndpointSlice は選択を支えますが packet の hop ではありません。,
+          zh-CN: 路线在就绪证据之后出现；EndpointSlice 支持后端选择，但不是数据包 Hop。,
+        }
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-v2-a
+        - container-status:shop:Pod:api-v2-a:Container:api
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+        - api-object:namespaced:shop:Service:api
+      mode: diff-with-context
+    introducesTerms: []
+    usesTerms: [readiness-probe, service, endpoint-slice, endpoint, pod]
+    sourceIds: [k8s-probes, k8s-services, k8s-endpoint-slices]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Pod:api-v2-a
+          patch:
+            status: ready
+            data:
+              conditions:
+                { podScheduled: true, initialized: true, containersReady: true, ready: true }
+        - op: patch-entity
+          entityId: container-status:shop:Pod:api-v2-a:Container:api
+          patch:
+            data:
+              ready: true
+              probes:
+                startup: { configured: true, succeeded: true }
+                readiness: { configured: true, running: true, succeeded: true, result: Success }
+                liveness: { configured: true, running: true, succeeded: true }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:ReplicaSet:api-v2
+          patch: { status: ready, data: { readyReplicas: 1 } }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Deployment:api
+          patch: { data: { readyReplicas: 3, availableReplicas: 3 } }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:EndpointSlice:api-slice
+          patch:
+            data:
+              endpoints:
+                - address: 192.0.2.71
+                  targetRef: api-object:namespaced:shop:Pod:api-v1-a
+                  conditions: { ready: true, serving: true, terminating: false }
+                - address: 192.0.2.72
+                  targetRef: api-object:namespaced:shop:Pod:api-v1-b
+                  conditions: { ready: true, serving: true, terminating: false }
+                - address: 192.0.2.73
+                  targetRef: api-object:namespaced:shop:Pod:api-v2-a
+                  conditions: { ready: true, serving: true, terminating: false }
+        - op: add-relation
+          relation:
+            id: service-selects-api-v2-a
+            type: selects
+            from: api-object:namespaced:shop:Service:api
+            to: api-object:namespaced:shop:Pod:api-v2-a
+            directed: true
+            semantic: selection
+            title:
+              {
+                en: selector matches Ready v2,
+                ja: selector が Ready v2 に一致,
+                zh-CN: Selector 匹配 Ready v2,
+              }
+            sourceIds: [k8s-services, k8s-labels]
+        - op: add-relation
+          relation:
+            id: endpoint-slice-references-api-v2-a
+            type: references
+            from: api-object:namespaced:shop:EndpointSlice:api-slice
+            to: api-object:namespaced:shop:Pod:api-v2-a
+            directed: true
+            semantic: endpoint-membership
+            title: { en: Ready v2 endpoint, ja: Ready v2 endpoint, zh-CN: Ready v2 Endpoint }
+            sourceIds: [k8s-endpoint-slices]
+            data: { address: 192.0.2.73, ready: true, serving: true, terminating: false }
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:rollout-client
+              - api-object:namespaced:shop:Service:api
+              - api-object:namespaced:shop:EndpointSlice:api-slice
+              - api-object:namespaced:shop:Pod:api-v1-a
+              - api-object:namespaced:shop:Pod:api-v1-b
+              - api-object:namespaced:shop:Pod:api-v2-a
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Service:api] }
+          emphasis: focused
+          inspectorMode: expanded
+      relationRules:
+        - byType: references
+          visible: true
+          emphasis: dimmed
+        - byType: contains-endpoint-for
+          visible: true
+          emphasis: dimmed
+      activeRoutes:
+        - id: ready-v2-request
+          semantic: data-flow
+          requestId: rollout-request-a
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice
+            serviceId: api-object:namespaced:shop:Service:api
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-v2-a
+          label:
+            {
+              en: New request · Ready v2,
+              ja: 新しいリクエスト · Ready v2,
+              zh-CN: 新请求 · Ready v2,
+            }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:rollout-client
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: network-in
+              label:
+                { en: enter stable Service, ja: 安定した Service に入る, zh-CN: 进入稳定 Service }
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Pod:api-v2-a
+              toAnchor: network-in
+              label: { en: select Ready v2, ja: Ready v2 を選択, zh-CN: 选择 Ready v2 }
+    transition:
+      cues:
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-v2
+          field: data.readyReplicas
+          from: 0
+          to: 1
+          durationMs: 550
+        - type: data-packet
+          routeId: ready-v2-request
+          label: { en: New request, ja: 新しいリクエスト, zh-CN: 新请求 }
+          durationMs: 1500
+
+  - id: old-replicaset-scales-down
+    title:
+      {
+        en: Only then does an old Pod leave,
+        ja: その後で古い Pod が 1 つ減る,
+        zh-CN: 此后旧 Pod 才减少,
+      }
+    learningOutcome:
+      en: Connect new readiness to the next safe old-ReplicaSet scale-down.
+      ja: 新しい Pod の readiness と、安全な古い ReplicaSet の次の縮小を結び付ける。
+      zh-CN: 将新 Pod 就绪与随后安全缩减旧 ReplicaSet 联系起来。
+    narration:
+      en: After v2 is Ready, the Deployment reduces the old ReplicaSet from two replicas to one. One v1 Pod and its endpoint disappear; the Ready count returns to the desired two.
+      ja: v2 が Ready になった後、Deployment は古い ReplicaSet を 2 から 1 に減らします。v1 Pod とその endpoint が 1 つ消え、Ready 数は desired の 2 に戻ります。
+      zh-CN: v2 Ready 后，Deployment 把旧 ReplicaSet 从两个副本缩减为一个；一个 v1 Pod 及其 Endpoint 消失，Ready 数回到期望的两个。
+    teaching:
+      whatChanged:
+        {
+          en: api-v1-a and its container are removed; the old ReplicaSet and EndpointSlice each shrink by one member.,
+          ja: api-v1-a とそのコンテナが削除され、古い ReplicaSet と EndpointSlice のメンバーが 1 つ減ります。,
+          zh-CN: api-v1-a 及其容器被移除；旧 ReplicaSet 与 EndpointSlice 各减少一个成员。,
+        }
+      whyItHappened:
+        {
+          en: The new Ready replica provides availability before the controller scales the old ReplicaSet down.,
+          ja: 新しい Ready レプリカが可用性を確保した後に、コントローラーが古い ReplicaSet を縮小するためです。,
+          zh-CN: 新 Ready 副本先提供可用性，控制器随后才缩减旧 ReplicaSet。,
+        }
+      takeaway:
+        {
+          en: Rolling updates coordinate ReplicaSet counts; readiness supplies the evidence for safe progress.,
+          ja: ローリング更新は ReplicaSet の数を調整し、readiness が安全に進むための証拠になります。,
+          zh-CN: 滚动更新协调 ReplicaSet 数量，而就绪状态为安全推进提供证据。,
+        }
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Deployment:api
+        - api-object:namespaced:shop:ReplicaSet:api-v1
+        - api-object:namespaced:shop:ReplicaSet:api-v2
+        - api-object:namespaced:shop:Pod:api-v1-a
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+      mode: diff-with-context
+    introducesTerms: []
+    usesTerms: [rolling-update, deployment, replicaset, readiness-probe, pod, endpoint-slice]
+    sourceIds: [k8s-deployments, k8s-replicasets, k8s-probes, k8s-endpoint-slices]
+    worldPatch:
+      operations:
+        - op: remove-relation
+          relationId: api-v1-owns-a
+        - op: remove-relation
+          relationId: api-v1-a-on-worker
+        - op: remove-relation
+          relationId: api-v1-a-contains-container
+        - op: remove-relation
+          relationId: kubelet-watches-api-v1-a
+        - op: remove-relation
+          relationId: service-selects-api-v1-a
+        - op: remove-relation
+          relationId: endpoint-slice-references-api-v1-a
+        - op: remove-entity
+          entityId: container-status:shop:Pod:api-v1-a:Container:api
+        - op: remove-entity
+          entityId: api-object:namespaced:shop:Pod:api-v1-a
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:ReplicaSet:api-v1
+          patch: { data: { specReplicas: 1, statusReplicas: 1, readyReplicas: 1 } }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:Deployment:api
+          patch: { data: { readyReplicas: 2, availableReplicas: 2 } }
+        - op: patch-entity
+          entityId: api-object:namespaced:shop:EndpointSlice:api-slice
+          patch:
+            data:
+              endpoints:
+                - address: 192.0.2.72
+                  targetRef: api-object:namespaced:shop:Pod:api-v1-b
+                  conditions: { ready: true, serving: true, terminating: false }
+                - address: 192.0.2.73
+                  targetRef: api-object:namespaced:shop:Pod:api-v2-a
+                  conditions: { ready: true, serving: true, terminating: false }
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:rollout-client
+              - api-object:namespaced:shop:Service:api
+              - api-object:namespaced:shop:Pod:api-v1-b
+              - api-object:namespaced:shop:Pod:api-v2-a
+              - api-object:namespaced:shop:EndpointSlice:api-slice
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [api-object:namespaced:shop:Service:api] }
+          emphasis: focused
+          inspectorMode: expanded
+      relationRules:
+        - byType: references
+          visible: true
+          emphasis: dimmed
+        - byType: contains-endpoint-for
+          visible: true
+          emphasis: dimmed
+      callouts:
+        - id: old-count-shrinks
+          entityId: api-object:namespaced:shop:Service:api
+          text:
+            {
+              en: 'old Ready: 2 → 1 · route stays on Ready v2',
+              ja: 'old Ready: 2 → 1 · Ready v2 への経路は維持',
+              zh-CN: '旧 Ready：2 → 1 · Ready v2 路线保持',
+            }
+      activeRoutes:
+        - id: ready-v2-request
+          semantic: data-flow
+          requestId: rollout-request-a
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice
+            serviceId: api-object:namespaced:shop:Service:api
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-v2-a
+          label:
+            {
+              en: Ready v2 remains in service,
+              ja: Ready v2 は引き続きサービス対象,
+              zh-CN: Ready v2 继续接收流量,
+            }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:rollout-client
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: network-in
+              label:
+                { en: enter stable Service, ja: 安定した Service に入る, zh-CN: 进入稳定 Service }
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Pod:api-v2-a
+              toAnchor: network-in
+              label:
+                {
+                  en: keep Ready v2 selected,
+                  ja: Ready v2 を選択し続ける,
+                  zh-CN: 继续选择 Ready v2,
+                }
+    transition:
+      cues:
+        - type: entity-exit
+          entityId: api-object:namespaced:shop:Pod:api-v1-a
+          durationMs: 600
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-v1
+          field: data.specReplicas
+          from: 2
+          to: 1
+          durationMs: 550
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-v1
+          field: data.statusReplicas
+          from: 2
+          to: 1
+          durationMs: 550
+        - type: counter-change
+          entityId: api-object:namespaced:shop:ReplicaSet:api-v1
+          field: data.readyReplicas
+          from: 2
+          to: 1
+          durationMs: 550
+
+  - id: liveness-restarts-container
+    title:
+      {
+        en: 'Liveness restarts the container, not the Pod',
+        ja: liveness は Pod ではなくコンテナを再起動する,
+        zh-CN: 存活探针重启容器，而非 Pod,
+      }
+    learningOutcome:
+      en: Use stable Pod UID and increased restartCount to identify an in-place container restart.
+      ja: 変わらない Pod UID と増えた restartCount から、コンテナの同一 Pod 内再起動を見分ける。
+      zh-CN: 通过不变的 Pod UID 与增加的 restartCount 识别容器原地重启。
+    narration:
+      en: After repeated liveness failure, kubelet restarts the v2 container. The Pod entity and UID stay the same, the container ID changes, and restartCount becomes one.
+      ja: liveness が規定回数失敗した後、kubelet は v2 コンテナを再起動します。Pod と UID は同じまま、container ID が変わり restartCount は 1 になります。
+      zh-CN: 存活探针连续失败达到阈值后，kubelet 重启 v2 容器。Pod 实体与 UID 不变，容器 ID 改变，restartCount 增为 1。
+    teaching:
+      whatChanged:
+        {
+          en: 'Only container runtime state changes; the Pod, ReplicaSet, and Service endpoint identities remain.',
+          ja: 変化するのはコンテナのランタイム状態だけで、Pod、ReplicaSet、Service endpoint の ID は維持されます。,
+          zh-CN: 只有容器运行时状态变化；Pod、ReplicaSet 与 Service Endpoint 身份均保持不变。,
+        }
+      whyItHappened:
+        {
+          en: Repeated liveness failure instructs kubelet to restart that container according to the Pod restart policy.,
+          ja: liveness の規定回数の失敗により、kubelet は Pod の restart policy に従ってそのコンテナを再起動します。,
+          zh-CN: 存活探针连续失败达到阈值后，kubelet 按 Pod 重启策略重启该容器。,
+        }
+      takeaway:
+        {
+          en: A liveness restart is not a rolling-update Pod replacement.,
+          ja: liveness による再起動はローリング更新の Pod 置換ではありません。,
+          zh-CN: 存活探针触发的重启不是滚动更新中的 Pod 替换。,
+        }
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Pod:api-v2-a
+        - container-status:shop:Pod:api-v2-a:Container:api
+        - runtime-component:node:worker-rollout:Kubelet:kubelet
+      mode: diff-with-context
+    introducesTerms: [restart-count]
+    usesTerms: [liveness-probe, pod, container, rolling-update]
+    sourceIds: [k8s-probes, k8s-pod-lifecycle]
+    worldPatch:
+      operations:
+        - op: patch-entity
+          entityId: container-status:shop:Pod:api-v2-a:Container:api
+          patch:
+            data:
+              containerID: containerd://synthetic-api-v2-a-02
+              restartCount: 1
+              ready: true
+              started: true
+              state: { kind: running, startedAt: '2026-08-08T00:05:00Z' }
+              lastState:
+                kind: terminated
+                reason: LivenessProbeFailed
+                exitCode: 137
+                finishedAt: '2026-08-08T00:04:59Z'
+                containerID: containerd://synthetic-api-v2-a-01
+              probes:
+                startup: { configured: true, succeeded: true }
+                readiness: { configured: true, running: true, succeeded: true }
+                liveness:
+                  { configured: true, running: true, lastResult: Failure, restartTriggered: true }
+    viewPatch:
+      view: placement
+      cameraPresetId: placement
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - infrastructure:cluster:global:Node:worker-rollout
+              - runtime-component:node:worker-rollout:Kubelet:kubelet
+              - api-object:namespaced:shop:Pod:api-v2-a
+              - container-status:shop:Pod:api-v2-a:Container:api
+          visible: true
+          emphasis: normal
+          labelMode: full
+        - selector: { byIds: [container-status:shop:Pod:api-v2-a:Container:api] }
+          emphasis: focused
+          inspectorMode: expanded
+      activeRoutes:
+        - id: kubelet-restarts-v2-container
+          semantic: node-runtime
+          label: { en: kubelet restart, ja: kubelet 再起動, zh-CN: kubelet 重启 }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: runtime-component:node:worker-rollout:Kubelet:kubelet
+              fromAnchor: local-runtime
+              toEntityId: container-status:shop:Pod:api-v2-a:Container:api
+              toAnchor: local-runtime
+              label:
+                {
+                  en: restart same container slot,
+                  ja: 同じコンテナ枠を再起動,
+                  zh-CN: 重启同一容器槽位,
+                }
+    transition:
+      cues:
+        - type: container-restart
+          entityId: container-status:shop:Pod:api-v2-a:Container:api
+          durationMs: 1200
+        - type: counter-change
+          entityId: container-status:shop:Pod:api-v2-a:Container:api
+          field: data.restartCount
+          from: 0
+          to: 1
+          durationMs: 500
+
+  - id: rollout-evidence-summary
+    title:
+      {
+        en: Read the rollout as evidence,
+        ja: 証拠からロールアウトを読む,
+        zh-CN: 用证据读懂滚动更新,
+      }
+    learningOutcome:
+      en: Summarize the causal order from startup gating to safe scale-down and container recovery.
+      ja: startup のゲートから安全な縮小、コンテナ復旧までの因果順序をまとめる。
+      zh-CN: 总结从启动门控到安全缩减及容器恢复的因果顺序。
+    narration:
+      en: 'The surviving v1 Pod and Ready v2 Pod keep the desired count at two. The next rollout cycle can repeat the same order: create, start, become Ready, then shrink old capacity.'
+      ja: 残った v1 Pod と Ready な v2 Pod により desired の 2 が維持されています。次のサイクルも作成、起動、Ready、古い容量の縮小という同じ順序を繰り返せます。
+      zh-CN: 保留的 v1 Pod 与 Ready v2 Pod 共同维持期望的两个副本。下一轮仍可按创建、启动、Ready、再缩减旧容量的顺序继续。
+    teaching:
+      whatChanged:
+        {
+          en: No new mutation occurs; the final view keeps the Ready v2 traffic route visible while the evidence rows retain both ReplicaSet counters.,
+          ja: 新しい変化はありません。最終ビューは Ready v2 のトラフィック経路を表示し、証拠行には両 ReplicaSet の数が残ります。,
+          zh-CN: 此步没有新变化；最终视图保留 Ready v2 流量路线，证据行保留两个 ReplicaSet 计数。,
+        }
+      whyItHappened:
+        {
+          en: Static evidence must remain understandable after animation ends.,
+          ja: アニメーション終了後も静的な証拠から理解できる必要があるためです。,
+          zh-CN: 动画结束后，用户仍应能通过静态证据理解系统。,
+        }
+      takeaway:
+        {
+          en: Startup gates checks; readiness gates traffic and rollout progress; liveness can restart one container without replacing its Pod.,
+          ja: startup は検査を待たせ、readiness はトラフィックとロールアウト進行を制御し、liveness は Pod を置換せず 1 コンテナを再起動できます。,
+          zh-CN: 启动探针门控检查；就绪探针门控流量与滚动进度；存活探针可在不替换 Pod 的情况下重启单个容器。,
+        }
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Deployment:api
+        - api-object:namespaced:shop:ReplicaSet:api-v1
+        - api-object:namespaced:shop:ReplicaSet:api-v2
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+        - api-object:namespaced:shop:Pod:api-v2-a
+        - container-status:shop:Pod:api-v2-a:Container:api
+      mode: snapshot
+    introducesTerms: []
+    usesTerms:
+      [
+        startup-probe,
+        readiness-probe,
+        liveness-probe,
+        rolling-update,
+        deployment,
+        replicaset,
+        service,
+        endpoint-slice,
+        restart-count,
+      ]
+    sourceIds: [k8s-probes, k8s-deployments, k8s-services, k8s-endpoint-slices]
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:rollout-client
+              - api-object:namespaced:shop:Deployment:api
+              - api-object:namespaced:shop:ReplicaSet:api-v1
+              - api-object:namespaced:shop:ReplicaSet:api-v2
+              - api-object:namespaced:shop:Service:api
+              - api-object:namespaced:shop:EndpointSlice:api-slice
+              - api-object:namespaced:shop:Pod:api-v1-b
+              - api-object:namespaced:shop:Pod:api-v2-a
+          visible: true
+          emphasis: normal
+          labelMode: short
+        - selector: { byIds: [api-object:namespaced:shop:Service:api] }
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+      relationRules:
+        - byType: owns
+          visible: true
+          emphasis: dimmed
+        - byType: references
+          visible: true
+          emphasis: dimmed
+      activeRoutes:
+        - id: final-ready-v2-route
+          semantic: data-flow
+          requestId: rollout-summary
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice
+            serviceId: api-object:namespaced:shop:Service:api
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-v2-a
+          label:
+            {
+              en: Ready v2 remains eligible,
+              ja: Ready v2 は引き続き対象,
+              zh-CN: Ready v2 仍可接收流量,
+            }
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:rollout-client
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: network-in
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Pod:api-v2-a
+              toAnchor: network-in

@@ -1,0 +1,12 @@
+Read KUBEMOTION_FOUNDATION_FIRST_REBUILD_DIRECTIVE.md completely and execute it.
+
+Treat KUBEMOTION_CURRENT_OVERVIEW_REFERENCE.png as a rejected baseline, not as a visual target.
+
+This directive supersedes previous visual-layout, scene-composition, model-style, relation-rendering, lesson-volume, and flow-story instructions when they conflict.
+
+Preserve correct deterministic navigation, content validation, source attribution, and correct world-state semantics.
+
+Do not write another plan-only document.
+Implement milestones in order.
+Do not add more free-flying tokens without persistent visible routes.
+Do not claim completion while any mandatory visual, hierarchy, route, curriculum, or human screenshot gate is FAIL.

@@ -1,27 +1,26 @@
 import type { EntitySelector } from './types';
-import type { ClusterEntity, ClusterGraph } from '../domain/types';
+import type { WorldEntity, WorldSnapshot } from '../world/types';
 
-export function selectEntities(graph: ClusterGraph, selector: EntitySelector): ClusterEntity[] {
-  if ('byIds' in selector) {
-    return selector.byIds.flatMap((id) => {
-      const entity = graph.entityById.get(id);
-      return entity ? [entity] : [];
-    });
-  }
-  if ('byKind' in selector) {
-    return [...(graph.entitiesByKind.get(selector.byKind) ?? [])].filter(
-      (entity) => !selector.namespace || entity.namespace === selector.namespace,
+/** View-only selectors. Factual WorldPatch operations always require exact IDs. */
+export function selectEntities(
+  world: WorldSnapshot,
+  selector: EntitySelector,
+): readonly WorldEntity[] {
+  const entities = Object.values(world.entities);
+  if ('byIds' in selector) return selector.byIds.flatMap((id) => world.entities[id] ?? []);
+  if ('byKind' in selector)
+    return entities.filter(
+      (entity) =>
+        entity.kind === selector.byKind &&
+        (!selector.namespace || entity.namespace === selector.namespace),
     );
-  }
-  if ('byLabel' in selector) {
-    return graph.snapshot.entities.filter(
+  if ('byLabel' in selector)
+    return entities.filter(
       (entity) =>
         entity.labels?.[selector.byLabel.key] === selector.byLabel.value &&
         (!selector.namespace || entity.namespace === selector.namespace),
     );
-  }
-  if ('byCategory' in selector) {
-    return graph.snapshot.entities.filter((entity) => entity.category === selector.byCategory);
-  }
-  return [...(graph.entitiesByNode.get(selector.byNode) ?? [])];
+  if ('byCategory' in selector)
+    return entities.filter((entity) => entity.category === selector.byCategory);
+  return entities.filter((entity) => entity.data.nodeName === selector.byNode);
 }

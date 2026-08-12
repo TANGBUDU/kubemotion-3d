@@ -1,0 +1,596 @@
+schemaVersion: 2
+id: dns-and-service-discovery
+scenarioId: internal-request-and-dns
+chapterId: networking-resilience
+title:
+  en: DNS and Service discovery
+  ja: DNS と Service discovery
+  zh-CN: DNS 与 Service 发现
+summary:
+  en: Resolve one in-cluster Service name through kube-dns and CoreDNS, then trace a separate application request through the resolved Service to a Ready Pod.
+  ja: cluster 内の Service 名を kube-dns と CoreDNS で解決し、その後、別の application request を解決済み Service から Ready Pod まで追跡します。
+  zh-CN: 通过 kube-dns 与 CoreDNS 解析集群内 Service 名称，再沿一条独立的应用请求路线，从已解析的 Service 到达 Ready Pod。
+learningOutcome:
+  en: Distinguish DNS resolution, the stable Service identity, EndpointSlice selection evidence, and the later application data path.
+  ja: DNS resolution、安定した Service identity、EndpointSlice の selection evidence、その後の application data path を区別します。
+  zh-CN: 区分 DNS 解析、稳定的 Service 身份、EndpointSlice 选择证据，以及后续应用数据路径。
+prerequisites: [service-routes-to-pods]
+sourceIds:
+  - k8s-dns-services-pods
+  - k8s-services
+  - k8s-endpoint-slices
+  - k8s-networking-overview
+verifiedAt: '2026-08-08'
+
+baseView:
+  view: traffic
+  cameraPresetId: traffic
+  resetEntities: true
+  entityRules: []
+  relationRules: []
+  activeRoutes: []
+
+steps:
+  - id: service-dns-identity
+    title:
+      en: A Service receives a DNS identity
+      ja: Service に DNS identity が与えられる
+      zh-CN: Service 获得 DNS 身份
+    learningOutcome:
+      en: Read the synthetic Service name and its stable ClusterIP as two forms of one Service identity.
+      ja: 合成 Service 名と安定した ClusterIP を、同じ Service identity の 2 つの表現として読み取ります。
+      zh-CN: 将合成 Service 名称和稳定 ClusterIP 理解为同一个 Service 身份的两种表示。
+    narration:
+      en: In this teaching cluster, the api Service in Namespace shop is discoverable as api.shop.svc.cluster.example. Its synthetic ClusterIP is 198.51.100.42.
+      ja: この教材 cluster では、shop Namespace の api Service を api.shop.svc.cluster.example として discovery できます。合成 ClusterIP は 198.51.100.42 です。
+      zh-CN: 在本教学集群中，shop Namespace 里的 api Service 可通过 api.shop.svc.cluster.example 被发现；其合成 ClusterIP 为 198.51.100.42。
+    teaching:
+      whatChanged:
+        en: Focus moves to the api Service and exposes its configured DNS name beside its stable ClusterIP.
+        ja: focus が api Service に移り、設定された DNS 名と安定した ClusterIP が並んで示されます。
+        zh-CN: 焦点移到 api Service，同时展示其配置的 DNS 名称和稳定 ClusterIP。
+      whyItHappened:
+        en: Kubernetes DNS creates records for Services so workloads can discover a stable Service name instead of memorizing backend Pod addresses.
+        ja: Kubernetes DNS は Service の record を作るため、workload は backend Pod address を記憶せず、安定した Service 名を discovery できます。
+        zh-CN: Kubernetes DNS 会为 Service 建立记录，因此工作负载可以发现稳定的 Service 名称，而不必记住后端 Pod 地址。
+      takeaway:
+        en: The DNS name identifies the Service; it is not the name or address of one selected backend Pod.
+        ja: DNS 名が識別するのは Service であり、選択された 1 つの backend Pod の名前や address ではありません。
+        zh-CN: DNS 名称标识的是 Service，而不是某个已选后端 Pod 的名称或地址。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Service:api
+      mode: snapshot
+    introducesTerms: [dns, service, cluster-ip]
+    usesTerms: []
+    sourceIds: [k8s-dns-services-pods, k8s-services]
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:Pod:dns-client] }
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:Service:api] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:EndpointSlice:api-slice
+              - api-object:namespaced:shop:Pod:api-a
+          visible: true
+          emphasis: dimmed
+          labelMode: none
+          inspectorMode: none
+      relationRules:
+        - byIds: [api-slice-for-service]
+          visible: true
+          emphasis: dimmed
+        - byIds: [api-slice-references-api-a]
+          visible: true
+          emphasis: dimmed
+      callouts:
+        - id: api-service-dns-name
+          entityId: api-object:namespaced:shop:Service:api
+          text:
+            en: api.shop.svc.cluster.example → 198.51.100.42
+            ja: api.shop.svc.cluster.example → 198.51.100.42
+            zh-CN: api.shop.svc.cluster.example → 198.51.100.42
+      activeRoutes: []
+
+  - id: dns-query-and-response
+    title:
+      en: Query cluster DNS and receive the answer
+      ja: cluster DNS に query して answer を受け取る
+      zh-CN: 查询集群 DNS 并接收应答
+    learningOutcome:
+      en: Trace one DNS query through the kube-dns Service to a CoreDNS Pod and the response back to the client.
+      ja: 1 つの DNS query が kube-dns Service から CoreDNS Pod へ進み、response が client に戻る経路を追跡します。
+      zh-CN: 跟踪一次 DNS 查询经 kube-dns Service 到达 CoreDNS Pod，并让应答返回客户端。
+    narration:
+      en: The client sends a DNS query to the stable kube-dns Service. The illustrated Service path selects a Ready CoreDNS Pod, and the response returns over the same conceptual route after a pause.
+      ja: client は安定した kube-dns Service に DNS query を送ります。図示した Service path は Ready CoreDNS Pod を選び、pause の後に response が同じ概念 route を逆向きに戻ります。
+      zh-CN: 客户端向稳定的 kube-dns Service 发送 DNS 查询；示例 Service 路径选择一个 Ready CoreDNS Pod，应答在短暂停顿后沿同一概念路线反向返回。
+    teaching:
+      whatChanged:
+        en: A dashed DNS route appears as client Pod → kube-dns Service → CoreDNS Pod; the query moves forward and the response moves back.
+        ja: client Pod → kube-dns Service → CoreDNS Pod の破線 DNS route が現れ、query は forward、response は reverse に移動します。
+        zh-CN: 出现一条虚线 DNS 路线：客户端 Pod → kube-dns Service → CoreDNS Pod；查询向前，应答反向返回。
+      whyItHappened:
+        en: Workloads use the cluster DNS Service as the stable entry, while a DNS server Pod implements the query handling behind that Service.
+        ja: workload は cluster DNS Service を安定した entry として使い、その背後の DNS server Pod が query を処理します。
+        zh-CN: 工作负载把集群 DNS Service 作为稳定入口，由该 Service 后面的 DNS 服务器 Pod 处理查询。
+      takeaway:
+        en: DNS traffic reaches CoreDNS through kube-dns; it does not travel through the target api Service or either EndpointSlice.
+        ja: DNS traffic は kube-dns 経由で CoreDNS に届きます。target の api Service や EndpointSlice を packet hop として通過しません。
+        zh-CN: DNS 流量通过 kube-dns 到达 CoreDNS；它不会把目标 api Service 或任何 EndpointSlice 当作数据包 Hop。
+    evidence:
+      entityIds:
+        - api-object:namespaced:kube-system:Service:kube-dns
+        - api-object:namespaced:kube-system:EndpointSlice:kube-dns-slice
+        - api-object:namespaced:kube-system:Pod:coredns-a
+      mode: snapshot
+    introducesTerms: [pod, service-data-plane]
+    usesTerms: [dns, service, cluster-ip]
+    sourceIds: [k8s-dns-services-pods, k8s-services, k8s-pods]
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:Pod:dns-client] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:kube-system:Service:kube-dns] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [api-object:namespaced:kube-system:EndpointSlice:kube-dns-slice] }
+          visible: true
+          emphasis: dimmed
+          labelMode: short
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:kube-system:Pod:coredns-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+      relationRules:
+        - byIds: [kube-dns-slice-for-service]
+          visible: true
+          emphasis: dimmed
+        - byIds: [kube-dns-slice-references-coredns]
+          visible: true
+          emphasis: dimmed
+      activeRoutes:
+        - id: dns-client-kube-dns-coredns
+          semantic: dns
+          requestId: dns-api-shop
+          label:
+            en: DNS query / response · api.shop.svc.cluster.example
+            ja: DNS query / response · api.shop.svc.cluster.example
+            zh-CN: DNS 查询 / 应答 · api.shop.svc.cluster.example
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:dns-client
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:kube-system:Service:kube-dns
+              toAnchor: network-in
+              label:
+                en: Query enters kube-dns
+                ja: query が kube-dns に入る
+                zh-CN: 查询进入 kube-dns
+            - fromEntityId: api-object:namespaced:kube-system:Service:kube-dns
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:kube-system:Pod:coredns-a
+              toAnchor: network-in
+              label:
+                en: Ready CoreDNS endpoint
+                ja: Ready CoreDNS endpoint
+                zh-CN: Ready CoreDNS Endpoint
+    transition:
+      cues:
+        - type: dns-query
+          routeId: dns-client-kube-dns-coredns
+          label:
+            en: Query api.shop.svc.cluster.example
+            ja: api.shop.svc.cluster.example を query
+            zh-CN: 查询 api.shop.svc.cluster.example
+          flowPhase: request
+          direction: forward
+          durationMs: 700
+        - type: dns-query
+          routeId: dns-client-kube-dns-coredns
+          label:
+            en: Answer 198.51.100.42
+            ja: answer 198.51.100.42
+            zh-CN: 应答 198.51.100.42
+          flowPhase: response
+          direction: reverse
+          delayMs: 900
+          durationMs: 700
+
+  - id: dns-answer-is-service-cluster-ip
+    title:
+      en: The answer is the Service ClusterIP
+      ja: answer は Service ClusterIP
+      zh-CN: 应答是 Service ClusterIP
+    learningOutcome:
+      en: Distinguish the resolved Service address from backend Pod IPs.
+      ja: 解決された Service address と backend Pod IP を区別します。
+      zh-CN: 区分解析得到的 Service 地址与后端 Pod IP。
+    narration:
+      en: For this ordinary ClusterIP Service and configured cluster domain, the DNS answer maps api.shop.svc.cluster.example to synthetic ClusterIP 198.51.100.42.
+      ja: この通常の ClusterIP Service と設定済み cluster domain では、DNS answer が api.shop.svc.cluster.example を合成 ClusterIP 198.51.100.42 に対応付けます。
+      zh-CN: 对于本示例中的普通 ClusterIP Service 和已配置集群域，DNS 应答把 api.shop.svc.cluster.example 映射到合成 ClusterIP 198.51.100.42。
+    teaching:
+      whatChanged:
+        en: The moving DNS token is gone; a static callout now binds the Service DNS name to its ClusterIP.
+        ja: moving DNS token が消え、static callout が Service DNS 名と ClusterIP の対応を示します。
+        zh-CN: 移动的 DNS 标记消失；静态标注现在把 Service DNS 名称与 ClusterIP 关联起来。
+      whyItHappened:
+        en: A normal Service DNS record resolves to the Service entry. Backend selection happens later when application traffic reaches that Service.
+        ja: 通常の Service DNS record は Service entry に解決されます。backend selection は application traffic が Service に届いた後です。
+        zh-CN: 普通 Service DNS 记录解析到 Service 入口；后端选择要等应用流量到达该 Service 后才发生。
+      takeaway:
+        en: DNS resolution does not choose api-a or api-b and does not return an EndpointSlice object.
+        ja: DNS resolution は api-a / api-b を選ばず、EndpointSlice object を返す処理でもありません。
+        zh-CN: DNS 解析不会选择 api-a 或 api-b，也不会返回 EndpointSlice 对象。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Service:api
+      mode: snapshot
+    introducesTerms: []
+    usesTerms: [dns, service, cluster-ip]
+    sourceIds: [k8s-dns-services-pods, k8s-services]
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:Pod:dns-client] }
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:Service:api] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:EndpointSlice:api-slice
+              - api-object:namespaced:shop:Pod:api-a
+          visible: true
+          emphasis: dimmed
+          labelMode: none
+          inspectorMode: none
+      relationRules:
+        - byIds: [api-slice-for-service]
+          visible: true
+          emphasis: dimmed
+        - byIds: [api-slice-references-api-a]
+          visible: true
+          emphasis: dimmed
+      callouts:
+        - id: dns-answer-cluster-ip
+          entityId: api-object:namespaced:shop:Service:api
+          text:
+            en: DNS answer · 198.51.100.42 · Service, not Pod
+            ja: DNS answer · 198.51.100.42 · Pod ではなく Service
+            zh-CN: DNS 应答 · 198.51.100.42 · 是 Service，不是 Pod
+      activeRoutes: []
+
+  - id: endpoint-slice-selection-evidence
+    title:
+      en: EndpointSlice records eligible backends
+      ja: EndpointSlice が eligible backend を記録する
+      zh-CN: EndpointSlice 记录可用后端
+    learningOutcome:
+      en: Read EndpointSlice readiness as backend-selection evidence without inserting it into the request path.
+      ja: EndpointSlice readiness を backend-selection evidence として読み、request path の hop にしないことを理解します。
+      zh-CN: 将 EndpointSlice 就绪状态理解为后端选择证据，而不是请求路径中的 Hop。
+    narration:
+      en: 'The api EndpointSlice records two Ready, serving, non-terminating endpoints: api-a and api-b. The upcoming request illustrates selecting api-a.'
+      ja: api EndpointSlice は Ready、serving、non-terminating の 2 endpoint、api-a と api-b を記録します。次の request では api-a の選択を図示します。
+      zh-CN: api EndpointSlice 记录两个 Ready、serving 且非 terminating 的 Endpoint：api-a 和 api-b；下一步请求将示例选择 api-a。
+    teaching:
+      whatChanged:
+        en: Focus leaves the Service address and moves to the EndpointSlice rows for api-a and api-b.
+        ja: focus が Service address から離れ、api-a と api-b の EndpointSlice row に移ります。
+        zh-CN: 焦点离开 Service 地址，移到 api-a 与 api-b 的 EndpointSlice 条目。
+      whyItHappened:
+        en: Service backend membership and readiness are represented by EndpointSlice API state, separate from the DNS record and from packet motion.
+        ja: Service backend membership と readiness は EndpointSlice API state で表され、DNS record や packet motion とは別です。
+        zh-CN: Service 后端成员关系与就绪状态由 EndpointSlice API 状态表示，与 DNS 记录和数据包运动相互独立。
+      takeaway:
+        en: EndpointSlice explains why api-a is eligible; the application packet will still travel Service → api-a directly in the teaching route.
+        ja: EndpointSlice は api-a が eligible な理由を示しますが、教材 route の application packet は Service → api-a と直接進みます。
+        zh-CN: EndpointSlice 解释 api-a 为什么可选；在教学路线中，应用数据包仍然从 Service 直接前往 api-a。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+        - api-object:namespaced:shop:Pod:api-a
+        - api-object:namespaced:shop:Pod:api-b
+      mode: snapshot
+    introducesTerms: [endpoint-slice, endpoint]
+    usesTerms: [service, pod, cluster-ip]
+    sourceIds: [k8s-endpoint-slices, k8s-endpoint-slice-api, k8s-services]
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:Pod:dns-client] }
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:Service:api] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:EndpointSlice:api-slice] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:api-a
+              - api-object:namespaced:shop:Pod:api-b
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+      relationRules:
+        - byIds: [api-slice-for-service]
+          visible: true
+          emphasis: focused
+        - byIds: [api-slice-references-api-a, api-slice-references-api-b]
+          visible: true
+          emphasis: focused
+      activeRoutes: []
+
+  - id: application-request-after-dns
+    title:
+      en: Send a separate application request
+      ja: 別の application request を送る
+      zh-CN: 发送独立的应用请求
+    learningOutcome:
+      en: Trace application traffic from the client through the resolved Service to one selected Ready Pod.
+      ja: application traffic を client から解決済み Service を経て、選択された 1 つの Ready Pod まで追跡します。
+      zh-CN: 跟踪应用流量从客户端经过已解析 Service，到达一个被选中的 Ready Pod。
+    narration:
+      en: After resolution, a new application request enters the api Service at 198.51.100.42. This teaching request selects Ready endpoint api-a.
+      ja: resolution 後、新しい application request が 198.51.100.42 の api Service に入ります。この教材 request は Ready endpoint api-a を選択します。
+      zh-CN: 解析完成后，一个新的应用请求进入 198.51.100.42 上的 api Service；本教学请求选择 Ready Endpoint api-a。
+    teaching:
+      whatChanged:
+        en: 'The dashed DNS route is replaced by a distinct solid application route: client Pod → api Service → api-a Pod.'
+        ja: 破線 DNS route に代わり、別の実線 application route、client Pod → api Service → api-a Pod が表示されます。
+        zh-CN: 虚线 DNS 路线被一条独立的实线应用路线取代：客户端 Pod → api Service → api-a Pod。
+      whyItHappened:
+        en: DNS supplied the stable Service address first. The Service data plane then used eligible endpoint state to illustrate selecting api-a for this request.
+        ja: DNS が先に安定した Service address を提供しました。その後 Service data plane が eligible endpoint state を使い、この request で api-a を選ぶ様子を示します。
+        zh-CN: DNS 先提供稳定 Service 地址；随后 Service 数据面依据可用 Endpoint 状态，示例为本次请求选择 api-a。
+      takeaway:
+        en: Name resolution and application delivery are two different flows with different destinations and route semantics.
+        ja: name resolution と application delivery は、destination も route semantic も異なる 2 つの flow です。
+        zh-CN: 名称解析与应用交付是两条不同的 Flow，目的地和路线语义均不相同。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Service:api
+        - api-object:namespaced:shop:EndpointSlice:api-slice
+        - api-object:namespaced:shop:Pod:api-a
+      mode: snapshot
+    introducesTerms: []
+    usesTerms: [dns, service, cluster-ip, pod, endpoint-slice, endpoint, service-data-plane]
+    sourceIds:
+      - k8s-dns-services-pods
+      - k8s-services
+      - k8s-endpoint-slices
+      - k8s-networking-overview
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:Pod:dns-client] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:Service:api] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [api-object:namespaced:shop:EndpointSlice:api-slice] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:api-a
+              - api-object:namespaced:shop:Pod:api-b
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+      relationRules:
+        - byIds: [api-slice-for-service]
+          visible: true
+          emphasis: dimmed
+        - byIds: [api-slice-references-api-a, api-slice-references-api-b]
+          visible: true
+          emphasis: dimmed
+      activeRoutes:
+        - id: application-client-api-service-api-a
+          semantic: data-flow
+          requestId: application-request-after-dns
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice
+            serviceId: api-object:namespaced:shop:Service:api
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-a
+          label:
+            en: Application request · Ready api-a
+            ja: application request · Ready api-a
+            zh-CN: 应用请求 · Ready api-a
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:dns-client
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: network-in
+              label:
+                en: Resolved Service entry
+                ja: 解決済み Service entry
+                zh-CN: 已解析的 Service 入口
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Pod:api-a
+              toAnchor: network-in
+              label:
+                en: Select Ready api-a
+                ja: Ready api-a を選択
+                zh-CN: 选择 Ready api-a
+    transition:
+      cues:
+        - type: data-packet
+          routeId: application-client-api-service-api-a
+          label:
+            en: GET /health
+            ja: GET /health
+            zh-CN: GET /health
+          flowPhase: request
+          direction: forward
+          durationMs: 1400
+
+  - id: dns-before-application-summary
+    title:
+      en: Resolve first, then send the request
+      ja: 先に resolve、その後 request
+      zh-CN: 先解析，再发送请求
+    learningOutcome:
+      en: Summarize the boundary between cluster DNS and the Service application path.
+      ja: cluster DNS と Service application path の境界をまとめます。
+      zh-CN: 总结集群 DNS 与 Service 应用路径之间的边界。
+    narration:
+      en: The client first used kube-dns and CoreDNS to obtain the api Service ClusterIP. The later application request used that stable Service and reached api-a; no packet traversed an EndpointSlice object.
+      ja: client はまず kube-dns と CoreDNS で api Service ClusterIP を取得しました。その後の application request は安定した Service を使って api-a に到達し、EndpointSlice object を packet hop として通過しませんでした。
+      zh-CN: 客户端先通过 kube-dns 与 CoreDNS 获得 api Service ClusterIP；后续应用请求使用该稳定 Service 到达 api-a，没有任何数据包穿过 EndpointSlice 对象。
+    teaching:
+      whatChanged:
+        en: 'The application route remains visible while focus returns to the client and a callout states the required order: DNS first, application request second.'
+        ja: application route を残したまま focus が client に戻り、callout が DNS first、application request second の順序を示します。
+        zh-CN: 应用路线继续可见，焦点回到客户端；标注明确顺序：先 DNS，后应用请求。
+      whyItHappened:
+        en: Resolving a Service name and delivering data to a backend solve different problems even when one client performs them consecutively.
+        ja: 1 つの client が連続して行っても、Service 名の resolution と backend への data delivery は異なる問題を解決します。
+        zh-CN: 即使由同一个客户端连续执行，解析 Service 名称和向后端交付数据仍是在解决两个不同问题。
+      takeaway:
+        en: DNS ends at the DNS server and returns a Service address; application traffic starts a separate Service-to-Pod selection path.
+        ja: DNS は DNS server で処理され Service address を返します。application traffic は別の Service-to-Pod selection path を開始します。
+        zh-CN: DNS 在 DNS 服务器处完成并返回 Service 地址；应用流量随后开启独立的 Service 到 Pod 选择路径。
+    evidence:
+      entityIds:
+        - api-object:namespaced:shop:Pod:dns-client
+        - api-object:namespaced:shop:Service:api
+        - api-object:namespaced:shop:Pod:api-a
+      mode: snapshot
+    introducesTerms: []
+    usesTerms: [dns, service, cluster-ip, pod, endpoint-slice, endpoint, service-data-plane]
+    sourceIds:
+      - k8s-dns-services-pods
+      - k8s-services
+      - k8s-endpoint-slices
+      - k8s-networking-overview
+    viewPatch:
+      view: traffic
+      cameraPresetId: traffic
+      resetEntities: true
+      entityRules:
+        - selector: { byIds: [api-object:namespaced:shop:Pod:dns-client] }
+          visible: true
+          emphasis: focused
+          labelMode: full
+          inspectorMode: expanded
+        - selector: { byIds: [api-object:namespaced:shop:Service:api] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector: { byIds: [api-object:namespaced:shop:EndpointSlice:api-slice] }
+          visible: true
+          emphasis: normal
+          labelMode: full
+          inspectorMode: none
+        - selector:
+            byIds:
+              - api-object:namespaced:shop:Pod:api-a
+              - api-object:namespaced:shop:Pod:api-b
+          visible: true
+          emphasis: normal
+          labelMode: short
+          inspectorMode: none
+      relationRules:
+        - byIds: [api-slice-for-service]
+          visible: true
+          emphasis: dimmed
+        - byIds: [api-slice-references-api-a, api-slice-references-api-b]
+          visible: true
+          emphasis: dimmed
+      callouts:
+        - id: resolve-before-request
+          entityId: api-object:namespaced:shop:Pod:dns-client
+          text:
+            en: 1 · DNS resolution   2 · Application request
+            ja: 1 · DNS resolution   2 · application request
+            zh-CN: 1 · DNS 解析   2 · 应用请求
+      activeRoutes:
+        - id: application-summary-client-service-api-a
+          semantic: data-flow
+          requestId: application-summary
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice
+            serviceId: api-object:namespaced:shop:Service:api
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-a
+          label:
+            en: Separate application path
+            ja: 別の application path
+            zh-CN: 独立的应用路径
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:dns-client
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: network-in
+              label:
+                en: Service address from DNS
+                ja: DNS で得た Service address
+                zh-CN: DNS 返回的 Service 地址
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Pod:api-a
+              toAnchor: network-in
+              label:
+                en: Selected Ready backend
+                ja: 選択された Ready backend
+                zh-CN: 被选中的 Ready 后端

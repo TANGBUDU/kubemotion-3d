@@ -15,6 +15,56 @@
   outline-offset: 3px;
 }
 
+@supports selector(:focus-visible) {
+  button:focus:not(:focus-visible),
+  a:focus:not(:focus-visible),
+  select:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+@media (pointer: coarse) {
+  button,
+  select,
+  a {
+    touch-action: manipulation;
+  }
+
+  .app-header .brand,
+  .app-header nav a,
+  .app-header .motion-toggle,
+  .app-header button,
+  .app-header select,
+  .lesson-shell button,
+  .lesson-shell select,
+  .lesson-shell a,
+  .lesson-language {
+    min-height: var(--touch-target);
+  }
+
+  .app-header button,
+  .app-header select,
+  .lesson-shell button,
+  .lesson-shell select {
+    min-width: var(--touch-target);
+  }
+
+  .explore-tools input,
+  .explore-tools select,
+  .explore-tools button,
+  .view-tabs button,
+  .inspector-close,
+  .inspector .sources a {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+  }
+
+  .inspector .sources a {
+    display: flex;
+    align-items: center;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

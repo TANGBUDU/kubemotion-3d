@@ -3,14 +3,24 @@ import { resolve } from 'node:path';
 import { parse } from 'yaml';
 import {
   courseSchema,
+  flowStoriesSchema,
   glossarySchema,
-  lessonSchema,
-  scenarioSchema,
+  legacyLessonMarkerSchema,
+  lessonV2Schema,
+  scenarioV2AuthorSchema,
   sourcesSchema,
 } from '../src/content/schemas';
-import { createClusterGraph } from '../src/domain/clusterGraph';
+import { assertRawLessonRouteContract } from '../src/content/rawRouteContract';
 import { courseEngine } from '../src/course/CourseEngine';
-import type { Lesson } from '../src/course/types';
+import { flowStoryEngine } from '../src/course/FlowStoryEngine';
+import type { FlowStory, LessonV2, SourceEntry } from '../src/course/types';
+import {
+  getContainerData,
+  getPodData,
+  getReplicaSetData,
+  validateWorldSnapshot,
+} from '../src/world';
+import type { WorldSnapshot } from '../src/world/types';
 
 const root = resolve(import.meta.dirname, '..');
 const read = (path: string): string => readFileSync(resolve(root, path), 'utf8');
@@ -21,22 +31,66 @@ const yaml = (path: string): unknown => {
     throw new Error(`${path}: YAML parse failed: ${String(error)}`, { cause: error });
   }
 };
-const lessonDirectory = 'content/courses/kubernetes-foundations/lessons';
-const lessonFiles = readdirSync(resolve(root, lessonDirectory)).filter((file) =>
-  file.endsWith('.yaml'),
-);
-
-const sourcesData = sourcesSchema.parse(yaml('content/sources.yaml'));
-const scenario = scenarioSchema.parse(yaml('content/scenarios/demo-shop.yaml'));
-const course = courseSchema.parse(yaml('content/courses/kubernetes-foundations/course.yaml'));
-const lessons = lessonFiles.map((file) => lessonSchema.parse(yaml(`${lessonDirectory}/${file}`)));
-const graph = createClusterGraph(scenario);
-const sourceIds = new Set(Object.keys(sourcesData.sources));
-const lessonById = new Map(lessons.map((lesson) => [lesson.id, lesson]));
 
 function check(condition: boolean, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
+
+const lessonDirectory = 'content/courses/kubernetes-foundations/lessons';
+function yamlFilesUnder(relativeDirectory: string): string[] {
+  const directory = resolve(root, relativeDirectory);
+  return readdirSync(directory, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.yaml'))
+    .map((entry) =>
+      resolve(entry.parentPath, entry.name)
+        .slice(directory.length + 1)
+        .replaceAll('\\', '/'),
+    )
+    .sort();
+}
+
+const lessonFiles = yamlFilesUnder(lessonDirectory);
+const scenarioDirectory = 'content/scenarios';
+const scenarioFiles = readdirSync(resolve(root, scenarioDirectory))
+  .filter((file) => file.endsWith('.yaml'))
+  .sort();
+const sourcesData = sourcesSchema.parse(yaml('content/sources.yaml'));
+const course = courseSchema.parse(yaml('content/courses/kubernetes-foundations/course.yaml'));
+
+function uniqueRecord<T extends { readonly id: string }>(values: readonly T[], label: string) {
+  const record: Record<string, T> = {};
+  for (const value of values) {
+    check(!record[value.id], `${label}: duplicate ID ${value.id}`);
+    record[value.id] = value;
+  }
+  return record;
+}
+
+const scenarios = new Map<string, WorldSnapshot>();
+const v2ScenarioFiles: string[] = [];
+for (const file of scenarioFiles) {
+  const raw = yaml(`${scenarioDirectory}/${file}`);
+  check(Boolean(raw && typeof raw === 'object'), `${file}: scenario must be an object`);
+  if ((raw as { schemaVersion?: unknown }).schemaVersion !== 2) continue;
+  v2ScenarioFiles.push(file);
+  const authored = scenarioV2AuthorSchema.parse(raw);
+  check(
+    !scenarios.has(authored.scenarioId),
+    `${file}: duplicate scenario ID ${authored.scenarioId}`,
+  );
+  scenarios.set(
+    authored.scenarioId,
+    validateWorldSnapshot({
+      schemaVersion: 2,
+      scenarioId: authored.scenarioId,
+      revision: authored.revision,
+      entities: uniqueRecord(authored.entities, `${file} entity`),
+      relations: uniqueRecord(authored.relations, `${file} relation`),
+    }),
+  );
+}
+
+const sourceIds = new Set(Object.keys(sourcesData.sources));
 function checkSources(ids: readonly string[], context: string): void {
   for (const id of ids) check(sourceIds.has(id), `${context}: unknown source ID ${id}`);
 }
@@ -48,6 +102,7 @@ for (const [id, source] of Object.entries(sourcesData.sources)) {
     `content/sources.yaml: ${id} uses a disallowed host`,
   );
 }
+
 check(
   new Set(course.lessonOrder).size === course.lessonOrder.length,
   'course.yaml: duplicate lessonOrder ID',
@@ -56,14 +111,9 @@ check(
   course.lessonOrder.length === course.lessons.length,
   'course.yaml: lessonOrder does not match manifest',
 );
+const manifestById = new Map(course.lessons.map((entry) => [entry.id, entry]));
 for (const id of course.lessonOrder)
-  check(
-    course.lessons.some((entry) => entry.id === id),
-    `course.yaml: missing manifest entry ${id}`,
-  );
-for (const entry of course.lessons.filter((item) => item.status === 'available')) {
-  check(lessonById.has(entry.id), `course.yaml: available lesson file missing for ${entry.id}`);
-}
+  check(manifestById.has(id), `course.yaml: missing manifest entry ${id}`);
 
 const visiting = new Set<string>();
 const visited = new Set<string>();
@@ -71,35 +121,132 @@ function visit(id: string): void {
   if (visiting.has(id)) throw new Error(`course.yaml: prerequisite cycle at ${id}`);
   if (visited.has(id)) return;
   visiting.add(id);
-  const entry = course.lessons.find((item) => item.id === id);
-  check(Boolean(entry), `course.yaml: unknown prerequisite lesson ${id}`);
-  for (const prerequisite of entry?.prerequisites ?? []) visit(prerequisite);
+  const entry = manifestById.get(id);
+  check(entry !== undefined, `course.yaml: unknown prerequisite lesson ${id}`);
+  for (const prerequisite of entry.prerequisites) visit(prerequisite);
   visiting.delete(id);
   visited.add(id);
 }
 for (const entry of course.lessons) visit(entry.id);
 
-const terms = new Map<string, string>();
-for (const file of readdirSync(resolve(root, 'content/glossary')).filter((name) =>
-  name.endsWith('.yaml'),
-)) {
-  const glossary = glossarySchema.parse(yaml(`content/glossary/${file}`));
-  for (const term of glossary.terms) {
-    check(!terms.has(term.id), `content/glossary/${file}: duplicate term ${term.id}`);
-    terms.set(term.id, file);
-    checkSources(term.sourceIds, `content/glossary/${file}:${term.id}`);
+const v2Lessons = new Map<string, LessonV2>();
+for (const file of lessonFiles) {
+  const path = `${lessonDirectory}/${file}`;
+  const raw = yaml(path);
+  check(Boolean(raw && typeof raw === 'object'), `${file}: lesson must be an object`);
+  assertRawLessonRouteContract(raw, path);
+  const schemaVersion = (raw as { schemaVersion?: unknown }).schemaVersion;
+  if (schemaVersion === 2) {
+    const lesson = lessonV2Schema.parse(raw) as unknown as LessonV2;
+    check(!v2Lessons.has(lesson.id), `${file}: duplicate lesson ID ${lesson.id}`);
+    v2Lessons.set(lesson.id, lesson);
+  } else {
+    const legacy = legacyLessonMarkerSchema.parse(raw);
+    check(
+      manifestById.get(legacy.id)?.status === 'planned',
+      `${file}: v1 lessons must remain explicitly planned until migrated`,
+    );
   }
 }
 
-const introduced = new Set<string>();
-for (const lessonId of course.lessonOrder) {
-  const lesson = lessonById.get(lessonId);
-  if (!lesson) continue;
-  check(lesson.scenarioId === scenario.id, `${lesson.id}: unknown scenario ${lesson.scenarioId}`);
+const available = course.lessons.filter((entry) => entry.status === 'available');
+const expectedAvailableLessonIds = [
+  'why-kubernetes-exists',
+  'cluster-overview',
+  'pod-and-container',
+  'pod-and-placement',
+  'deployment-replicaset-and-pods',
+  'manifest-to-running-pod',
+  'pending-and-scheduling',
+  'container-restart-vs-pod-replacement',
+  'labels-and-selectors',
+  'service-routes-to-pods',
+  'dns-and-service-discovery',
+  'probes-and-rolling-update',
+  'full-external-request',
+  'hpa',
+] as const;
+check(
+  JSON.stringify(available.map((entry) => entry.id)) === JSON.stringify(expectedAvailableLessonIds),
+  'course.yaml: M9 must publish fourteen interactive lessons while retaining the M8 core prefix',
+);
+check(course.lessons.length === 22, 'course.yaml: the catalog must retain exactly 22 lessons');
+check(
+  course.lessons.length - available.length === 8,
+  'course.yaml: M9 must retain exactly eight explicitly planned lessons',
+);
+for (const entry of available)
+  check(v2Lessons.has(entry.id), `${entry.id}: available lessons must use schemaVersion 2`);
+
+const parsedFlowStories = flowStoriesSchema.parse(
+  yaml('content/courses/kubernetes-foundations/flow-stories.yaml'),
+);
+const flowStories = parsedFlowStories.stories as FlowStory[];
+check(flowStories.length === 8, 'flow-stories.yaml: M9 requires exactly eight flow stories');
+const sourceCatalog = new Map<string, SourceEntry>(
+  Object.entries(sourcesData.sources).map(([id, entry]) => [id, { id, ...entry }]),
+);
+const compiledFlowStories = flowStoryEngine.compileStories(flowStories, {
+  lessons: v2Lessons,
+  scenarios,
+  sources: sourceCatalog,
+});
+check(
+  compiledFlowStories.length === flowStories.length,
+  'flow-stories.yaml: every authored story must compile against its complete lesson history',
+);
+
+const terms = new Set<string>();
+for (const file of readdirSync(resolve(root, 'content/glossary'))
+  .filter((name) => name.endsWith('.yaml'))
+  .sort()) {
+  const glossary = glossarySchema.parse(yaml(`content/glossary/${file}`));
+  for (const term of glossary.terms) {
+    check(!terms.has(term.id), `${file}: duplicate glossary term ${term.id}`);
+    terms.add(term.id);
+    checkSources(term.sourceIds, `${file}:${term.id}`);
+  }
+}
+
+const compiledLessons = [];
+for (const entry of available) {
+  const lesson = v2Lessons.get(entry.id);
+  check(lesson !== undefined, `${entry.id}: missing v2 lesson`);
+  check(
+    lesson.steps.length >= 4 && lesson.steps.length <= 10,
+    `${lesson.id}: verified lessons require 4–10 meaningful steps`,
+  );
+  check(lesson.sourceIds.length > 0, `${lesson.id}: lesson sourceIds cannot be empty`);
+  check(
+    JSON.stringify(lesson.prerequisites) === JSON.stringify(entry.prerequisites),
+    `${lesson.id}: lesson prerequisites must match course.yaml`,
+  );
+  const lessonScenario = scenarios.get(lesson.scenarioId);
+  check(lessonScenario !== undefined, `${lesson.id}: unknown scenario ${lesson.scenarioId}`);
   checkSources(lesson.sourceIds, lesson.id);
+  const introduced = new Set<string>();
   for (const step of lesson.steps) {
+    check(
+      step.introducesTerms.length <= 3,
+      `${lesson.id}/${step.id}: a step may introduce at most three terms`,
+    );
+    check(step.sourceIds.length > 0, `${lesson.id}/${step.id}: sourceIds cannot be empty`);
+    check(
+      step.evidence.mode !== 'none' && step.evidence.entityIds.length > 0,
+      `${lesson.id}/${step.id}: every verified step requires inspectable factual evidence`,
+    );
+    check(
+      (step.viewPatch.entityRules?.length ?? 0) > 0 ||
+        (step.viewPatch.relationRules?.length ?? 0) > 0 ||
+        (step.viewPatch.callouts?.length ?? 0) > 0 ||
+        (step.viewPatch.activeRoutes?.length ?? 0) > 0 ||
+        (step.worldPatch?.operations.length ?? 0) > 0 ||
+        Boolean(step.viewPatch.comparison),
+      `${lesson.id}/${step.id}: verified steps need a scene, route, evidence, or world-state change`,
+    );
     for (const id of step.introducesTerms) {
       check(terms.has(id), `${lesson.id}/${step.id}: introduces unknown term ${id}`);
+      check(!introduced.has(id), `${lesson.id}/${step.id}: introduces ${id} more than once`);
       introduced.add(id);
     }
     for (const id of step.usesTerms) {
@@ -108,33 +255,206 @@ for (const lessonId of course.lessonOrder) {
     }
     checkSources(step.sourceIds, `${lesson.id}/${step.id}`);
   }
-  courseEngine.compileLesson(lesson as Lesson, graph);
+  if (lesson.steps.length <= 6) {
+    check(
+      introduced.size <= 8,
+      `${lesson.id}: a short lesson introduces ${String(introduced.size)} terms; expected at most 8`,
+    );
+  }
+  const compiled = courseEngine.compileLesson(lesson, lessonScenario);
+  for (const [index, sequential] of compiled.steps.entries()) {
+    const authored = lesson.steps[index];
+    check(authored !== undefined, `${lesson.id}/${index}: missing authored step`);
+    check(
+      JSON.stringify(courseEngine.compileDirect(lesson, lessonScenario, index)) ===
+        JSON.stringify(sequential),
+      `${lesson.id}/${index}: direct compilation is not deterministic`,
+    );
+    for (const evidenceEntityId of authored.evidence.entityIds) {
+      check(
+        Boolean(
+          sequential.world.entities[evidenceEntityId] ??
+          sequential.beforeWorld.entities[evidenceEntityId],
+        ),
+        `${lesson.id}/${authored.id}: evidence references missing entity ${evidenceEntityId}`,
+      );
+    }
+    if (!sequential.view.comparison) {
+      const focused = Object.values(sequential.view.entityStates).filter(
+        (state) => state.visible && state.emphasis === 'focused',
+      );
+      check(
+        focused.length === 1,
+        `${lesson.id}/${authored.id}: normal guided steps require exactly one primary focus`,
+      );
+    }
+  }
+  compiledLessons.push(compiled);
 }
-for (const entity of scenario.entities) checkSources(entity.sourceIds, entity.id);
-for (const relation of scenario.relations) checkSources(relation.sourceIds, relation.id);
 
-for (const service of scenario.entities.filter((entity) => entity.kind === 'Service')) {
-  const selector = service.data?.selector;
-  check(typeof selector === 'string' && selector.includes('='), `${service.id}: missing selector`);
-  const [key, value] = selector.split('=');
-  const selected = scenario.entities.filter(
-    (entity) =>
-      entity.kind === 'Pod' &&
-      entity.namespace === service.namespace &&
-      entity.labels?.[key ?? ''] === value,
-  );
-  check(selected.length > 0, `${service.id}: selector matches no Pods`);
+for (const scenario of scenarios.values()) {
+  for (const entity of Object.values(scenario.entities)) checkSources(entity.sourceIds, entity.id);
+  for (const relation of Object.values(scenario.relations)) {
+    checkSources(relation.sourceIds, relation.id);
+  }
 }
 
-const contentText = [
+const golden = compiledLessons.find(
+  (compiled) => compiled.lesson.id === 'container-restart-vs-pod-replacement',
+);
+check(golden !== undefined, 'golden lesson must be available');
+const goldenScenario = scenarios.get(golden.lesson.scenarioId);
+check(goldenScenario !== undefined, 'golden scenario must be available');
+const expectedGoldenSteps = [
+  'scene-orientation',
+  'healthy-baseline',
+  'container-exits',
+  'container-restarted',
+  'kubectl-delete-pod',
+  'controller-creates-replacement',
+  'replacement-pending',
+  'scheduler-binds-worker-c',
+  'kubelet-starts-container',
+  'compare-identities',
+] as const;
+check(
+  JSON.stringify(golden.steps.map((step) => step.stepId)) === JSON.stringify(expectedGoldenSteps),
+  'golden lesson must preserve the required ten-step teaching sequence',
+);
+
+const goldenStep = (stepId: (typeof expectedGoldenSteps)[number]) => {
+  const value = golden.steps.find((step) => step.stepId === stepId);
+  check(value !== undefined, `golden lesson step ${stepId} is missing`);
+  return value;
+};
+
+const baseline = goldenStep('healthy-baseline');
+const restarted = goldenStep('container-restarted');
+const deleted = goldenStep('kubectl-delete-pod');
+const created = goldenStep('controller-creates-replacement');
+const pending = goldenStep('replacement-pending');
+const scheduled = goldenStep('scheduler-binds-worker-c');
+const started = goldenStep('kubelet-starts-container');
+const apiServerId = 'runtime-component:cluster:global:KubeAPIServer:kube-apiserver';
+const kubectlId = 'external:external:global:Kubectl:kubectl';
+const newPodId = 'api-object:namespaced:shop:Pod:api-d-new';
+const oldPodId = 'api-object:namespaced:shop:Pod:api-a-old';
+const oldContainerId = 'container-status:shop:Pod:api-a-old:Container:api';
+const newContainerId = 'container-status:shop:Pod:api-d-new:Container:api';
+const replicaSetId = 'api-object:namespaced:shop:ReplicaSet:api-rs';
+
+check(
+  goldenScenario.entities[apiServerId]?.kind === 'KubeAPIServer',
+  'golden scenario must model API Server',
+);
+check(
+  goldenScenario.entities[kubectlId]?.kind === 'Kubectl',
+  'golden scenario must model the kubectl actor',
+);
+check(
+  goldenScenario.relations['kubectl-requests-api-server']?.from === kubectlId &&
+    goldenScenario.relations['kubectl-requests-api-server']?.to === apiServerId,
+  'kubectl must reach cluster objects through the API Server',
+);
+
+check(!baseline.world.entities[newPodId], 'replacement Pod must not exist in the baseline');
+check(
+  restarted.worldDiff.addedEntities.length === 0 &&
+    restarted.worldDiff.removedEntities.length === 0,
+  'in-place restart must preserve Pod and Container entity IDs',
+);
+check(
+  restarted.worldDiff.updatedEntities.some(
+    (update) => update.id === oldContainerId && update.changedPaths.includes('/data/restartCount'),
+  ),
+  'restart claim must patch Container restartCount',
+);
+check(
+  !deleted.world.entities[oldPodId] &&
+    !deleted.world.entities[oldContainerId] &&
+    !deleted.world.entities[newPodId],
+  'explicit deletion must remove the old Pod before replacement exists',
+);
+check(
+  getReplicaSetData(deleted.world.entities[replicaSetId]!).statusReplicas === 2 &&
+    getReplicaSetData(deleted.world.entities[replicaSetId]!).readyReplicas === 2,
+  'deletion must expose the ReplicaSet deficit',
+);
+check(
+  Boolean(created.worldDiff.addedEntities.find((item) => item.id === newPodId)) &&
+    Boolean(created.worldDiff.addedEntities.find((item) => item.id === newContainerId)),
+  'controller reconciliation must create distinct replacement identities',
+);
+check(
+  getPodData(created.world.entities[newPodId]!).nodeName === undefined &&
+    getPodData(created.world.entities[newPodId]!).phase === 'Pending' &&
+    created.world.entities[newContainerId]?.status === 'waiting',
+  'controller-created replacement must begin Pending and unscheduled',
+);
+check(
+  pending.worldDiff.addedEntities.length === 0 &&
+    pending.worldDiff.removedEntities.length === 0 &&
+    pending.worldDiff.updatedEntities.length === 0,
+  'the Pending teaching beat must observe the existing world without inventing a mutation',
+);
+check(
+  getPodData(scheduled.world.entities[newPodId]!).nodeName === 'worker-c' &&
+    getPodData(scheduled.world.entities[newPodId]!).phase === 'Pending' &&
+    scheduled.world.entities[newContainerId]?.status === 'waiting' &&
+    getReplicaSetData(scheduled.world.entities[replicaSetId]!).readyReplicas === 2,
+  'Scheduler binding must not start the Container or restore readiness',
+);
+check(
+  getPodData(started.world.entities[newPodId]!).phase === 'Running' &&
+    started.world.entities[newContainerId]?.status === 'running' &&
+    getContainerData(started.world.entities[newContainerId]!).restartCount === 0 &&
+    getReplicaSetData(started.world.entities[replicaSetId]!).readyReplicas === 3,
+  'kubelet startup must be the separate beat that restores readiness',
+);
+
+for (const step of golden.steps) {
+  const routes = new Map(step.view.activeRoutes.map((route) => [route.id, route]));
+  for (const cue of step.transition.cues) {
+    if ('routeId' in cue) {
+      check(routes.has(cue.routeId), `${step.stepId}: routed cue must reference an active route`);
+    }
+  }
+  for (const route of step.view.activeRoutes) {
+    if (route.semantic === 'control') {
+      check(
+        route.hops.some(
+          (hop) => hop.fromEntityId === apiServerId || hop.toEntityId === apiServerId,
+        ),
+        `${step.stepId}/${route.id}: golden control routes must expose API mediation`,
+      );
+    }
+    if (route.semantic === 'scheduling') {
+      check(
+        route.hops.length === 1,
+        `${step.stepId}/${route.id}: scheduling must be one Pending Pod -> selected Node hop`,
+      );
+      const hop = route.hops[0]!;
+      check(
+        step.world.entities[hop.fromEntityId]?.kind === 'Pod' &&
+          step.world.entities[hop.toEntityId]?.kind === 'Node' &&
+          hop.fromEntityId !== apiServerId &&
+          hop.toEntityId !== apiServerId,
+        `${step.stepId}/${route.id}: scheduling must not mix API control with placement`,
+      );
+    }
+  }
+  check(step.evidence.length > 0, `${step.stepId}: compiled evidence must not be empty`);
+}
+
+const contentPaths = [
   'content/sources.yaml',
-  'content/scenarios/demo-shop.yaml',
+  'content/courses/kubernetes-foundations/flow-stories.yaml',
+  ...v2ScenarioFiles.map((file) => `${scenarioDirectory}/${file}`),
   ...lessonFiles.map((file) => `${lessonDirectory}/${file}`),
   ...readdirSync(resolve(root, 'content/glossary')).map((file) => `content/glossary/${file}`),
   'content/courses/kubernetes-foundations/course.yaml',
-]
-  .map((path) => `${path}\n${read(path)}`)
-  .join('\n');
+];
+const contentText = contentPaths.map((path) => `${path}\n${read(path)}`).join('\n');
 const sensitivePatterns: readonly [RegExp, string][] = [
   [/\b10\.(?:\d{1,3}\.){2}\d{1,3}\b/, 'private IPv4'],
   [/\b172\.(?:1[6-9]|2\d|3[01])\.(?:\d{1,3}\.)\d{1,3}\b/, 'private IPv4'],
@@ -152,17 +472,27 @@ for (const company of read('scripts/content-denylist.txt').split(/\r?\n/).filter
     `content: denied name ${company}`,
   );
 }
-const misleading = [
-  'Secret is encrypted because it is base64',
-  'Service is a proxy Pod',
-  'Deployment forwards traffic',
-  'Scheduler starts containers',
-  'Namespace contains Nodes',
-  'kube-proxy is mandatory in every cluster',
-];
-for (const phrase of misleading)
-  check(!contentText.includes(phrase), `content: misleading expression: ${phrase}`);
 
+const misleadingPatterns: readonly [RegExp, string][] = [
+  [/Secret is encrypted because it is base64/i, 'Base64 is encryption'],
+  [/Service is a proxy Pod/i, 'Service as proxy Pod'],
+  [/Deployment forwards traffic/i, 'Deployment in the data path'],
+  [/Scheduler starts containers/i, 'Scheduler starts containers'],
+  [/Namespace contains Nodes/i, 'Namespace contains Nodes'],
+  [/kube-proxy is mandatory in every cluster/i, 'universal kube-proxy requirement'],
+  [/EndpointSlice(?:s)? (?:contains?|tracks?) only ready/i, 'EndpointSlice as ready-only list'],
+];
+for (const [pattern, label] of misleadingPatterns)
+  check(!pattern.test(contentText), `content: misleading claim (${label})`);
+
+const entityCount = [...scenarios.values()].reduce(
+  (total, scenario) => total + Object.keys(scenario.entities).length,
+  0,
+);
+const relationCount = [...scenarios.values()].reduce(
+  (total, scenario) => total + Object.keys(scenario.relations).length,
+  0,
+);
 console.log(
-  `Content validation passed: ${scenario.entities.length} entities, ${scenario.relations.length} relations, ${lessons.length} lessons, ${terms.size} terms, ${sourceIds.size} sources.`,
+  `Content validation passed: ${scenarios.size} v2 scenarios, ${entityCount} entities, ${relationCount} relations, ${available.length} verified v2 lessons, ${course.lessons.length - available.length} planned lessons, ${terms.size} terms, ${sourceIds.size} official sources.`,
 );

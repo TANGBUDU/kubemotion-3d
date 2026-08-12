@@ -1,12 +1,18 @@
 import { expect, test } from '@playwright/test';
 
 test('deep link and back navigation restore projection', async ({ page }) => {
-  await page.goto('/#/learn/service-and-endpoints/2');
-  await expect(
-    page.getByRole('heading', { name: /EndpointSlice tracks concrete backends/i }),
-  ).toBeVisible();
-  await expect(page.locator('.view-badge')).toHaveText('LOGICAL');
-  await page.getByRole('button', { name: /Previous/i }).click();
-  await expect(page).toHaveURL(/service-and-endpoints\/1$/);
-  await expect(page.getByRole('heading', { name: /A Service selects by labels/i })).toBeVisible();
+  await page.goto('/#/learn/container-restart-vs-pod-replacement/6');
+  await expect(page.getByTestId('teaching-step-heading')).toContainText(
+    'The new Pod is Pending and unscheduled',
+    { timeout: 20_000 },
+  );
+  await expect(page.locator('.view-badge')).toHaveText('CONTROL FLOW');
+  await page.getByRole('button', { name: /Next/i }).click();
+  await expect(page).toHaveURL(/container-restart-vs-pod-replacement\/7$/);
+  await page.goBack();
+  await expect(page).toHaveURL(/container-restart-vs-pod-replacement\/6$/);
+  await expect(page.getByTestId('teaching-step-heading')).toContainText(
+    'The new Pod is Pending and unscheduled',
+  );
+  await expect(page.getByTestId('evidence-panel')).toContainText('Unscheduled');
 });
