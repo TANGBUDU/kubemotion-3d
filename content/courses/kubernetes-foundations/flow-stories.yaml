@@ -217,8 +217,7 @@ stories:
         selectedRouteId: client-service-api-a
       - id: readiness-fails
         stepId: endpoint-becomes-not-ready
-        routeIds: [client-service-api-c]
-        selectedRouteId: client-service-api-c
+        routeIds: []
       - id: shifted-request
         stepId: later-request-ready-backend
         routeIds: [client-service-api-c]
