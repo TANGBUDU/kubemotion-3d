@@ -45,15 +45,29 @@ jobs:
           }
 
           cat \
-            .assistant/hierarchy.patch.part00 \
-            .assistant/hierarchy.patch.part01 \
-            .assistant/hierarchy.patch.part02 \
-            .assistant/hierarchy.patch.part03 \
+            .assistant/hierarchy-v2.patch.part00 \
+            .assistant/hierarchy-v2.patch.part01 \
+            .assistant/hierarchy-v2.patch.part02 \
+            .assistant/hierarchy-v2.patch.part03 \
+            .assistant/hierarchy-v2.patch.part04 \
+            .assistant/hierarchy-v2.patch.part05 \
+            .assistant/hierarchy-v2.patch.part06 \
+            .assistant/hierarchy-v2.patch.part07 \
             > /tmp/hierarchy.patch.gz.b64
-          base64 -d /tmp/hierarchy.patch.gz.b64 > /tmp/hierarchy.patch.gz
-          gzip -dc /tmp/hierarchy.patch.gz > /tmp/hierarchy.patch
+          echo 'dd6b05d5bf9821b121cb903619222016a696996ef3ea13d1fdb61777754d5348  /tmp/hierarchy.patch.gz.b64' | sha256sum -c - >> hierarchy-validation.txt 2>&1
+          if [ $? -ne 0 ]; then failed=1; fi
+          if [ $failed -eq 0 ]; then base64 -d /tmp/hierarchy.patch.gz.b64 > /tmp/hierarchy.patch.gz; fi
+          if [ $failed -eq 0 ]; then
+            echo 'b4342308b6ea27c01f4f425b6b42bfc614aab39635c936adc4dcd3ada781a7e8  /tmp/hierarchy.patch.gz' | sha256sum -c - >> hierarchy-validation.txt 2>&1
+            if [ $? -ne 0 ]; then failed=1; fi
+          fi
+          if [ $failed -eq 0 ]; then gzip -dc /tmp/hierarchy.patch.gz > /tmp/hierarchy.patch; fi
+          if [ $failed -eq 0 ]; then
+            echo 'a4e306a0d9dcadc79b20d783ed37f3296c3df3988b350442ca4ea8d58da00a67  /tmp/hierarchy.patch' | sha256sum -c - >> hierarchy-validation.txt 2>&1
+            if [ $? -ne 0 ]; then failed=1; fi
+          fi
 
-          record patch-check git apply --check /tmp/hierarchy.patch
+          if [ $failed -eq 0 ]; then record patch-check git apply --check /tmp/hierarchy.patch; fi
           if [ $failed -eq 0 ]; then record patch-apply git apply /tmp/hierarchy.patch; fi
           if [ $failed -eq 0 ]; then record install pnpm install --frozen-lockfile; fi
           if [ $failed -eq 0 ]; then
@@ -64,7 +78,7 @@ jobs:
             record typecheck pnpm typecheck
             record content pnpm content:validate
             record accuracy pnpm content:accuracy
-            record unit pnpm test:unit --run tests/course/hpa-scale-out-raw.test.ts tests/renderer/layout-contracts.test.ts tests/components/serviceLearnPage.test.tsx
+            record unit pnpm test:unit --run tests/course/hpa-scale-out-raw.test.ts tests/renderer/hpa-hierarchy-layout.test.ts tests/renderer/layout-contracts.test.ts tests/components/serviceLearnPage.test.tsx
             record build pnpm build
             record playwright-install pnpm exec playwright install --with-deps chromium
             record hierarchy-e2e pnpm exec playwright test tests/e2e/hierarchy-teaching.spec.ts --project=desktop-1280-chromium
