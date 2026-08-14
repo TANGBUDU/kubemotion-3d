@@ -109,7 +109,7 @@ const showcaseCopy: Readonly<
     controls: 'Sequence controls',
     complete: 'Sequence complete',
     hint: 'Drag to inspect · choose a scenario · select a beat to take control',
-    aria: 'Interactive 3D Kubernetes playground',
+    aria: 'Live 3D Kubernetes demonstration',
     timeline: 'Demonstration beats',
     explain: 'Explain this',
     presets: {
@@ -152,7 +152,7 @@ const showcaseCopy: Readonly<
     controls: 'シーケンス操作',
     complete: 'シーケンス完了',
     hint: 'ドラッグで確認 · シナリオを選択 · Beat を選ぶと手動操作',
-    aria: 'インタラクティブ Kubernetes 3D Playground',
+    aria: 'Kubernetes のライブ 3D デモ',
     timeline: 'デモの Beat',
     explain: 'この仕組みを学ぶ',
     presets: {
@@ -194,7 +194,7 @@ const showcaseCopy: Readonly<
     controls: '序列控制',
     complete: '序列播放完成',
     hint: '拖动查看 · 选择场景 · 选择阶段即可接管播放',
-    aria: '可交互 Kubernetes 3D Playground',
+    aria: 'Kubernetes 实时 3D 演示',
     timeline: '演示阶段',
     explain: '学习这个机制',
     presets: {

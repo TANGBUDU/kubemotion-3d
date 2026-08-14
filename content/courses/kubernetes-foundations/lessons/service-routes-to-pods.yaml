@@ -470,7 +470,7 @@ steps:
         - api-object:namespaced:shop:Pod:api-a
         - api-object:namespaced:shop:Pod:api-c
         - api-object:namespaced:shop:Service:api
-      mode: snapshot
+      mode: diff-with-context
     introducesTerms: []
     usesTerms:
       - service
@@ -561,7 +561,38 @@ steps:
             en: Endpoint remains · ready=false · serving=false · terminating=false
             ja: endpoint は残る · ready=false · serving=false · terminating=false
             zh-CN: Endpoint 仍保留 · ready=false · serving=false · terminating=false
-      activeRoutes: []
+      activeRoutes:
+        - id: client-service-api-c
+          semantic: data-flow
+          requestId: request-b
+          flowPhase: request
+          support:
+            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice
+            serviceId: api-object:namespaced:shop:Service:api
+            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-c
+          label:
+            en: Eligible path for a later request
+            ja: 後続リクエストで選択可能な経路
+            zh-CN: 后续请求可用路径
+          persistAfterAnimation: true
+          numbered: true
+          hops:
+            - fromEntityId: api-object:namespaced:shop:Pod:traffic-client
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Service:api
+              toAnchor: network-in
+              label:
+                en: later request enters same Service
+                ja: 後続リクエストが同じ Service に入る
+                zh-CN: 后续请求进入同一 Service
+            - fromEntityId: api-object:namespaced:shop:Service:api
+              fromAnchor: network-out
+              toEntityId: api-object:namespaced:shop:Pod:api-c
+              toAnchor: network-in
+              label:
+                en: Ready api-c is eligible
+                ja: Ready な api-c が選択可能
+                zh-CN: Ready api-c 可被选择
   - id: later-request-ready-backend
     title:
       en: A later request selects another Ready endpoint
