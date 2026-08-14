@@ -27,3 +27,14 @@ new = '    inset: 92px 10px 196px;\n'
 if old not in text:
     raise SystemExit('mobile showcase viewport inset not found')
 path.write_text(text.replace(old, new, 1), 'utf-8')
+
+# The scene projection can switch to a compact/mobile layout on a 1280px laptop because the hero
+# occupies one column. That should not disable mouse/trackpad polish. Gate the effect by the actual
+# pointer type instead; touch stays quiet and inexpensive.
+path = Path('src/components/HomeShowcase.tsx')
+text = path.read_text('utf-8')
+old = "    if (reducedMotion || viewportClass === 'mobile') return;\n"
+new = "    if (reducedMotion || event.pointerType === 'touch') return;\n"
+if old not in text:
+    raise SystemExit('pointer capability gate not found')
+path.write_text(text.replace(old, new, 1), 'utf-8')
