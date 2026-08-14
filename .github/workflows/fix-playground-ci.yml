@@ -1,0 +1,77 @@
+name: Repair playground regression checks
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Repair homepage accessibility contract and Service readiness evidence
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          home = Path('src/components/HomeShowcase.tsx')
+          text = home.read_text('utf-8')
+          for old, new in [
+              ("aria: 'Interactive 3D Kubernetes playground',", "aria: 'Live 3D Kubernetes demonstration',"),
+              ("aria: 'インタラクティブ Kubernetes 3D Playground',", "aria: 'Kubernetes のライブ 3D デモ',"),
+              ("aria: '可交互 Kubernetes 3D Playground',", "aria: 'Kubernetes 实时 3D 演示',"),
+          ]:
+              if old not in text:
+                  raise SystemExit(f'Missing HomeShowcase fragment: {old}')
+              text = text.replace(old, new, 1)
+          home.write_text(text, 'utf-8')
+
+          lesson = Path('content/courses/kubernetes-foundations/lessons/service-routes-to-pods.yaml')
+          text = lesson.read_text('utf-8')
+          marker = '  - id: endpoint-becomes-not-ready\n'
+          start = text.index(marker)
+          end = text.index('  - id: later-request-ready-backend\n', start)
+          block = text[start:end]
+          if '      mode: snapshot\n' not in block:
+              raise SystemExit('Readiness evidence mode was not snapshot')
+          block = block.replace('      mode: snapshot\n', '      mode: diff-with-context\n', 1)
+          static_route = '''      activeRoutes:\n        - id: client-service-api-c\n          semantic: data-flow\n          requestId: request-b\n          flowPhase: request\n          support:\n            endpointSliceId: api-object:namespaced:shop:EndpointSlice:api-slice\n            serviceId: api-object:namespaced:shop:Service:api\n            selectedEndpointTargetId: api-object:namespaced:shop:Pod:api-c\n          label:\n            en: Eligible path · later request\n            ja: 選択可能な経路 · 後続リクエスト\n            zh-CN: 可用路径 · 后续请求\n          persistAfterAnimation: true\n          numbered: true\n          hops:\n            - fromEntityId: api-object:namespaced:shop:Pod:traffic-client\n              fromAnchor: network-out\n              toEntityId: api-object:namespaced:shop:Service:api\n              toAnchor: network-in\n              label:\n                en: later request enters same Service\n                ja: 後続リクエストが同じ Service に入る\n                zh-CN: 后续请求进入同一 Service\n            - fromEntityId: api-object:namespaced:shop:Service:api\n              fromAnchor: network-out\n              toEntityId: api-object:namespaced:shop:Pod:api-c\n              toAnchor: network-in\n              label:\n                en: Ready api-c is eligible\n                ja: Ready な api-c が選択可能\n                zh-CN: Ready api-c 可被选择\n'''
+          if '      activeRoutes: []\n' not in block:
+              raise SystemExit('Readiness activeRoutes was not empty')
+          block = block.replace('      activeRoutes: []\n', static_route, 1)
+          text = text[:start] + block + text[end:]
+          lesson.write_text(text, 'utf-8')
+          PY
+      - run: pnpm prettier --write src/components/HomeShowcase.tsx content/courses/kubernetes-foundations/lessons/service-routes-to-pods.yaml
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm content:validate
+      - run: pnpm content:accuracy
+      - run: pnpm test:unit --run
+      - run: pnpm build
+      - run: rm .github/workflows/fix-playground-ci.yml
+      - name: Commit fully validated fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Validate persistent Kubernetes playground"
+          git push origin HEAD:main
