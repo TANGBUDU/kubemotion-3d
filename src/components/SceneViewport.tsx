@@ -16,6 +16,7 @@ export interface SceneViewportProps {
   selectedEntityId?: EntityId | undefined;
   locale: Locale;
   reducedMotion: boolean;
+  ambientRouteFlow?: boolean | undefined;
   cameraResetId?: number | undefined;
   cameraMode?: SceneCameraMode | undefined;
   allowPerspective?: boolean | undefined;
@@ -231,6 +232,9 @@ function ThreeSceneViewport(props: SceneViewportProps) {
   useEffect(() => {
     controllerRef.current?.setReducedMotion(props.reducedMotion);
   }, [attempt, props.reducedMotion]);
+  useEffect(() => {
+    controllerRef.current?.setAmbientRouteFlow?.(props.ambientRouteFlow ?? false);
+  }, [attempt, props.ambientRouteFlow]);
   useEffect(() => {
     controllerRef.current?.setOnSelect(props.onSelectEntity);
   }, [attempt, props.onSelectEntity]);

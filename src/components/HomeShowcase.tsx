@@ -280,6 +280,8 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
   );
   const hostRef = useRef<HTMLElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
+  const pointerFrameRef = useRef<number | undefined>(undefined);
+  const pendingPointerRef = useRef<{ clientX: number; clientY: number } | undefined>(undefined);
   const copy = showcaseCopy[locale];
   const preset = presets[presetId];
 
@@ -324,6 +326,13 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
     document.addEventListener('visibilitychange', update);
     return () => document.removeEventListener('visibilitychange', update);
   }, []);
+
+  useEffect(
+    () => () => {
+      if (pointerFrameRef.current !== undefined) cancelAnimationFrame(pointerFrameRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!playing) return;
@@ -377,25 +386,51 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
   };
 
   const updateTilt = (event: ReactPointerEvent<HTMLElement>): void => {
-    if (reducedMotion || viewportClass === 'mobile') return;
-    const frame = frameRef.current;
-    if (!frame) return;
-    const rect = frame.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-    const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-    frame.style.setProperty('--showcase-tilt-x', `${(0.5 - y) * 2.6}deg`);
-    frame.style.setProperty('--showcase-tilt-y', `${(x - 0.5) * 3.4}deg`);
-    frame.style.setProperty('--showcase-light-x', `${x * 100}%`);
-    frame.style.setProperty('--showcase-light-y', `${y * 100}%`);
+    if (reducedMotion || event.pointerType === 'touch') return;
+    pendingPointerRef.current = { clientX: event.clientX, clientY: event.clientY };
+    if (pointerFrameRef.current !== undefined) return;
+    pointerFrameRef.current = requestAnimationFrame(() => {
+      pointerFrameRef.current = undefined;
+      const frame = frameRef.current;
+      const pointer = pendingPointerRef.current;
+      if (!frame || !pointer) return;
+      const rect = frame.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      const x = Math.max(0, Math.min(1, (pointer.clientX - rect.left) / rect.width));
+      const y = Math.max(0, Math.min(1, (pointer.clientY - rect.top) / rect.height));
+      const offsetX = x - 0.5;
+      const offsetY = y - 0.5;
+      frame.style.setProperty('--showcase-tilt-x', `${-offsetY * 2.1}deg`);
+      frame.style.setProperty('--showcase-tilt-y', `${offsetX * 2.8}deg`);
+      frame.style.setProperty('--showcase-light-x', `${x * 100}%`);
+      frame.style.setProperty('--showcase-light-y', `${y * 100}%`);
+      frame.style.setProperty('--showcase-pointer-x', `${x * 100}%`);
+      frame.style.setProperty('--showcase-pointer-y', `${y * 100}%`);
+      frame.style.setProperty('--showcase-grid-x', `${offsetX * 5}px`);
+      frame.style.setProperty('--showcase-grid-y', `${offsetY * 4}px`);
+      frame.style.setProperty('--showcase-scan-x', `${offsetX * -3}px`);
+      frame.style.setProperty('--showcase-scan-y', `${offsetY * -2}px`);
+      frame.style.setProperty('--showcase-pointer-active', '1');
+    });
   };
 
   const resetTilt = (): void => {
+    if (pointerFrameRef.current !== undefined) {
+      cancelAnimationFrame(pointerFrameRef.current);
+      pointerFrameRef.current = undefined;
+    }
+    pendingPointerRef.current = undefined;
     const frame = frameRef.current;
     if (!frame) return;
     frame.style.setProperty('--showcase-tilt-x', '0deg');
     frame.style.setProperty('--showcase-tilt-y', '0deg');
     frame.style.setProperty('--showcase-light-x', '64%');
     frame.style.setProperty('--showcase-light-y', '36%');
+    frame.style.setProperty('--showcase-grid-x', '0px');
+    frame.style.setProperty('--showcase-grid-y', '0px');
+    frame.style.setProperty('--showcase-scan-x', '0px');
+    frame.style.setProperty('--showcase-scan-y', '0px');
+    frame.style.setProperty('--showcase-pointer-active', '0');
   };
 
   const controlLabel = complete
@@ -434,6 +469,7 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
             }}
             locale={locale}
             reducedMotion={reducedMotion}
+            ambientRouteFlow={inView && pageVisible}
             cameraMode={viewportClass === 'mobile' ? 'orthographic' : 'perspective'}
             allowPerspective
             onViewportClassChange={setViewportClass}

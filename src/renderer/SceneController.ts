@@ -442,6 +442,10 @@ export class SceneController {
   private cameraTransition: CameraTransition | undefined;
   private cameraTransitionStartedAt = 0;
   private reducedMotion = false;
+  private ambientRouteFlow = false;
+  private ambientRouteFlowTimer: number | undefined;
+  private ambientRouteFlowProgress = 0;
+  private ambientRouteFlowLastTime = 0;
   private lastRenderTime = 0;
   private framingUsedStageFallback = 1;
   private occupiedGuideBoundsEmpty = 1;
@@ -767,6 +771,47 @@ export class SceneController {
     this.scheduler.markDirty();
   }
 
+  private startAmbientRouteFlowTimer(): void {
+    if (this.ambientRouteFlowTimer !== undefined || this.destroyed || this.reducedMotion) return;
+    this.ambientRouteFlowLastTime = performance.now();
+    this.ambientRouteFlowTimer = window.setInterval(() => {
+      if (
+        this.destroyed ||
+        !this.ambientRouteFlow ||
+        this.reducedMotion ||
+        this.animations.activeCount > 0 ||
+        this.activeRoutes.size === 0
+      ) {
+        this.ambientRouteFlowLastTime = performance.now();
+        return;
+      }
+      const now = performance.now();
+      const elapsed = Math.min(120, Math.max(0, now - this.ambientRouteFlowLastTime));
+      this.ambientRouteFlowLastTime = now;
+      this.ambientRouteFlowProgress = (this.ambientRouteFlowProgress + elapsed * 0.00019) % 1;
+      this.activeRoutes.advanceDash(elapsed * 0.00078);
+      this.activeRoutes.setLoopFlowProgress(this.ambientRouteFlowProgress);
+      this.scheduler.markDirty();
+    }, 42);
+  }
+
+  private stopAmbientRouteFlowTimer(): void {
+    if (this.ambientRouteFlowTimer === undefined) return;
+    window.clearInterval(this.ambientRouteFlowTimer);
+    this.ambientRouteFlowTimer = undefined;
+  }
+
+  public setAmbientRouteFlow(enabled: boolean): void {
+    if (this.ambientRouteFlow === enabled) {
+      if (enabled && !this.reducedMotion) this.startAmbientRouteFlowTimer();
+      return;
+    }
+    this.ambientRouteFlow = enabled;
+    if (enabled && !this.reducedMotion) this.startAmbientRouteFlowTimer();
+    else this.stopAmbientRouteFlowTimer();
+    this.scheduler.markDirty();
+  }
+
   public setOnSelect(callback: (id?: EntityId | undefined) => void): void {
     this.onSelect = callback;
   }
@@ -877,6 +922,8 @@ export class SceneController {
     const reducedMotionChanged = this.reducedMotion !== reducedMotion;
     this.reducedMotion = reducedMotion;
     this.activeRoutes.setReducedMotion(reducedMotion);
+    if (reducedMotion) this.stopAmbientRouteFlowTimer();
+    else if (this.ambientRouteFlow) this.startAmbientRouteFlowTimer();
     if (reducedMotion && this.cameraTransition) this.finishCameraTransition();
     if (reducedMotion && reducedMotionChanged && this.animations.activeCount > 0) {
       // SceneViewport applies this prop before it replays the same playback command. Settle the
@@ -1158,6 +1205,7 @@ export class SceneController {
     if (this.destroyed) return;
     this.destroyed = true;
     this.cancelCameraTransition(false);
+    this.stopAmbientRouteFlowTimer();
     this.animations.destroy();
     this.scheduler.destroy();
     this.cleanupPendingExits();

@@ -307,6 +307,29 @@ export class RouteHandle {
     if (!this.reducedMotion) this.line.advanceDash(distance);
   }
 
+  public setLoopFlowProgress(progress: number): void {
+    this.assertUsable();
+    if (this.reducedMotion) {
+      this.clearFlowTokens();
+      return;
+    }
+    this.root.visible = true;
+    this.line.setVisible(true);
+    for (const arrow of this.arrows) arrow.setVisible(true);
+    for (const marker of this.markers) marker.setVisible(true);
+    this.flowDirection = 'forward';
+    this.root.userData.flowDirection = 'forward';
+    this.root.userData.flowPhase = this.currentRoute.flowPhase ?? 'request';
+    this.ensureFlowTokens();
+    const phase = ((progress % 1) + 1) % 1;
+    const spacing = 1 / Math.max(1, this.tokens.length);
+    this.tokens.forEach((token, index) => {
+      const tokenProgress = (phase + index * spacing) % 1;
+      token.setVisible(true);
+      token.setProgress(this.currentPlan.points, tokenProgress, 'forward');
+    });
+  }
+
   public sample(progress: number, target = new THREE.Vector3()): THREE.Vector3 {
     this.assertUsable();
     return this.line.sample(progress, target);
