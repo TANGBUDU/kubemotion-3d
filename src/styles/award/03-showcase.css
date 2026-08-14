@@ -1,6 +1,8 @@
 .home-showcase {
-  position: relative;
+  position: sticky;
   z-index: 2;
+  top: calc(var(--header-height) + 22px);
+  align-self: start;
   min-width: 0;
   perspective: 1600px;
 }

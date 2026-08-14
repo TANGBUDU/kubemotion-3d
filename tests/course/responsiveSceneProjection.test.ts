@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { lessonById, scenario, scenarioById } from '../../src/content/loader';
+import {
+  flowStoryById,
+  lessonById,
+  scenario,
+  scenarioById,
+  sources,
+} from '../../src/content/loader';
 import { courseEngine } from '../../src/course/CourseEngine';
+import { flowStoryEngine } from '../../src/course/FlowStoryEngine';
 import {
   createExploreProjection,
   createExploreScenePlan,
@@ -76,6 +83,40 @@ describe('viewport-responsive scene projection', () => {
           (state) => state.visible && state.labelMode !== 'none',
         ).length,
       ).toBeLessThanOrEqual(3);
+    }
+
+    const nodeId = 'infrastructure:cluster:global:Node:worker-a';
+    const kubeletId = 'runtime-component:node:worker-a:Kubelet:kubelet';
+    for (const compiledLesson of [implicitDesktop, mobile]) {
+      const restarted = compiledLesson.steps.find((step) => step.stepId === 'container-restarted');
+      if (!restarted) throw new Error('Container restart step is missing');
+      expect(restarted.view.entityStates[nodeId]).toMatchObject({ visible: true });
+      expect(restarted.view.entityStates[kubeletId]).toMatchObject({ visible: true });
+      expect(() => calculateLayout({ world: restarted.world, view: restarted.view })).not.toThrow();
+    }
+
+    const story = flowStoryById.get('container-restart-vs-pod-replacement');
+    if (!story) throw new Error('Container restart Flow Story is missing');
+    for (const viewport of ['desktop', 'mobile'] as const) {
+      const compiledStory = flowStoryEngine.compileStory(
+        story,
+        { lessons: lessonById, scenarios: scenarioById, sources },
+        { viewport },
+      );
+      const restartBeat = compiledStory.beats.find(
+        (beat) => beat.beat.id === 'local-container-restart',
+      );
+      if (!restartBeat) throw new Error('Local container restart beat is missing');
+      expect(restartBeat.compiledStep.view.entityStates[nodeId]).toMatchObject({ visible: true });
+      expect(restartBeat.compiledStep.view.entityStates[kubeletId]).toMatchObject({
+        visible: true,
+      });
+      expect(() =>
+        calculateLayout({
+          world: restartBeat.compiledStep.world,
+          view: restartBeat.compiledStep.view,
+        }),
+      ).not.toThrow();
     }
 
     const direct = courseEngine.compileDirect(lesson, lessonScenario, 0, {

@@ -366,6 +366,10 @@ steps:
           emphasis: focused
           labelMode: full
           inspectorMode: expanded
+        - selector: { byIds: [infrastructure:cluster:global:Node:worker-a] }
+          visible: true
+          emphasis: normal
+          labelMode: full
         - selector: { byIds: [runtime-component:node:worker-a:Kubelet:kubelet] }
           visible: true
           emphasis: normal

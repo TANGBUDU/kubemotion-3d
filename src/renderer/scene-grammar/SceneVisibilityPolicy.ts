@@ -65,6 +65,19 @@ function priorityContext(
   let changed = true;
   while (changed) {
     changed = false;
+    for (const entityId of [...priority]) {
+      const entity = world.entities[entityId];
+      if (!entity || (entity.kind !== 'Kubelet' && entity.kind !== 'ContainerRuntime')) continue;
+      const nodeName = typeof entity.data.nodeName === 'string' ? entity.data.nodeName : undefined;
+      if (!nodeName) continue;
+      const node = Object.values(world.entities).find(
+        (candidate) => candidate.kind === 'Node' && candidate.name === nodeName,
+      );
+      if (node && !priority.has(node.id)) {
+        priority.add(node.id);
+        changed = true;
+      }
+    }
     for (const relation of Object.values(world.relations)) {
       // composition and placement both point from the dependent Pod/Container chain outward:
       // Pod -> Container needs the Pod when Container is focused; Pod -> Node needs the Node.

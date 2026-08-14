@@ -92,6 +92,19 @@ function focusStoryStep(
   let expanded = true;
   while (expanded) {
     expanded = false;
+    for (const entityId of [...relevant]) {
+      const entity = compiledStep.world.entities[entityId];
+      if (!entity || (entity.kind !== 'Kubelet' && entity.kind !== 'ContainerRuntime')) continue;
+      const nodeName = typeof entity.data.nodeName === 'string' ? entity.data.nodeName : undefined;
+      if (!nodeName) continue;
+      const node = Object.values(compiledStep.world.entities).find(
+        (candidate) => candidate.kind === 'Node' && candidate.name === nodeName,
+      );
+      if (node && !relevant.has(node.id)) {
+        relevant.add(node.id);
+        expanded = true;
+      }
+    }
     for (const relation of Object.values(compiledStep.world.relations)) {
       if (relation.semantic === 'composition' && relevant.has(relation.to)) {
         const size = relevant.size;

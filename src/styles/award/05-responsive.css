@@ -49,7 +49,11 @@
   }
 
   .home-showcase {
+    position: relative;
+    top: auto;
     order: -1;
+    align-self: stretch;
+    width: 100%;
   }
 
   .home-showcase__frame {

@@ -416,6 +416,7 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
       aria-label={sceneLabel}
       data-play-state={complete ? 'complete' : playing ? 'playing' : 'paused'}
       data-preset={presetId}
+      data-beat-index={beatIndex}
       onPointerMove={updateTilt}
       onPointerLeave={resetTilt}
       onPointerDown={() => setPaused(true)}
@@ -522,6 +523,8 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
           <div className="showcase-controls__actions">
             <Link
               className="showcase-learn-link"
+              aria-label={copy.explain}
+              title={copy.explain}
               to={`/stories/${preset.storyId}/${compiledBeatIndex}`}
               onPointerDown={(event) => event.stopPropagation()}
               onClick={(event) => event.stopPropagation()}
