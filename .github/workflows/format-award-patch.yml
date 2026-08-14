@@ -1,17 +1,24 @@
-name: Format award patch
+name: Finalize award patch formatting
 
 on:
   push:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: format-award-patch
+  cancel-in-progress: true
 
 jobs:
-  format:
+  format-and-commit:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: main
       - uses: pnpm/action-setup@v4
         with:
           version: 11.16.0
@@ -20,18 +27,20 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm format
-      - name: Upload formatted patch
-        uses: actions/upload-artifact@v4
-        with:
-          name: formatted-award-patch
-          path: |
-            src/components/HomeShowcase.tsx
-            src/pages/HomePage.tsx
-            src/styles/award/01-shell.css
-            src/styles/award/03-showcase.css
-            src/styles/award/04-content.css
-            src/styles/award/05-responsive.css
-            tests/components/homePage.test.tsx
-          if-no-files-found: error
-          retention-days: 1
+      - name: Format the complete repository
+        run: pnpm format
+      - name: Remove this one-shot workflow
+        run: rm .github/workflows/format-award-patch.yml
+      - name: Commit the canonical formatted sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No formatting changes to commit"
+            exit 0
+          fi
+          git commit -m "Format cinematic homepage"
+          git push origin HEAD:main
