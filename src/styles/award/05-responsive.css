@@ -153,8 +153,23 @@
   }
 
   .home-showcase__frame {
-    min-height: min(58svh, 520px);
+    min-height: min(64svh, 560px);
     border-radius: 20px;
+  }
+
+  .home-showcase__viewport {
+    inset: 92px 10px 196px;
+    border-radius: 12px;
+  }
+
+  .home-showcase .scene-label[data-emphasis='normal'] {
+    display: none;
+  }
+
+  .home-showcase .scene-route-label {
+    max-width: min(46vw, 180px) !important;
+    padding: 2px 4px;
+    font-size: 8px;
   }
 
   .showcase-status {
@@ -311,6 +326,16 @@
   .hero-copy .eyebrow::before,
   .showcase-status__pulse {
     animation: none !important;
+  }
+
+  .home-showcase__frame::before {
+    display: none !important;
+  }
+
+  .home-showcase__grid,
+  .home-showcase__scan {
+    transform: none !important;
+    transition: none !important;
   }
 
   .home-showcase__frame,

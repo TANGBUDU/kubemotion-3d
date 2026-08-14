@@ -156,6 +156,12 @@ export class RelationLayer {
     for (const handle of this.handles.values()) handle.advanceDash(distance);
   }
 
+  public setLoopFlowProgress(progress: number): void {
+    this.assertUsable();
+    if (this.reducedMotion) return;
+    for (const handle of this.handles.values()) handle.setLoopFlowProgress(progress);
+  }
+
   public setResolution(width: number, height: number, pixelRatio = 1): void {
     this.assertUsable();
     this.resolution = validateResolution(width, height, pixelRatio);

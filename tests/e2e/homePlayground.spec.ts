@@ -27,6 +27,40 @@ test('persistent homepage playground switches verified Kubernetes stories', asyn
   await expect(scenario('Overview')).toHaveAttribute('aria-pressed', 'true');
   await expect(showcase.getByText('Manifest to running Pod', { exact: true })).toBeVisible();
 
+  await showcase.locator('.showcase-timeline button').first().click({ force: true });
+  await expect(showcase).toHaveAttribute('data-beat-index', '0');
+  await expect
+    .poll(async () =>
+      page.evaluate(
+        () => window.__KUBEMOTION_TEST__?.getSceneDiagnostics()?.activeAnimations ?? -1,
+      ),
+    )
+    .toBe(0);
+  await expect
+    .poll(async () =>
+      page.evaluate(() => window.__KUBEMOTION_TEST__?.getSceneDiagnostics()?.flowTokens ?? 0),
+    )
+    .toBeGreaterThan(0);
+
+  const viewportBox = await showcase.locator('.home-showcase__viewport').boundingBox();
+  const readoutBox = await showcase.locator('.showcase-readout').boundingBox();
+  expect(viewportBox).not.toBeNull();
+  expect(readoutBox).not.toBeNull();
+  if (viewportBox && readoutBox) {
+    expect(readoutBox.y).toBeGreaterThanOrEqual(viewportBox.y + viewportBox.height - 1);
+  }
+
+  const frame = showcase.locator('.home-showcase__frame');
+  const frameBox = await frame.boundingBox();
+  if (frameBox && testInfo.project.name.includes('desktop')) {
+    await page.mouse.move(frameBox.x + frameBox.width * 0.72, frameBox.y + frameBox.height * 0.34);
+    await expect
+      .poll(() =>
+        frame.evaluate((element) => element.style.getPropertyValue('--showcase-pointer-active')),
+      )
+      .toBe('1');
+  }
+
   await scenario('Request').click({ force: true });
   await expect(scenario('Request')).toHaveAttribute('aria-pressed', 'true');
   await expect(showcase.getByText('Internal Service request', { exact: true })).toBeVisible();
