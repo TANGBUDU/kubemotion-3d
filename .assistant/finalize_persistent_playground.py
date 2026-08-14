@@ -36,7 +36,7 @@ replace_once(
     'showcase beat state',
 )
 
-# A visible kubelet needs its visible Node parent for the real layout contract.
+# A visible kubelet needs its Node to be part of the authored teaching view.
 lesson = Path('content/courses/kubernetes-foundations/lessons/container-restart-vs-pod-replacement.yaml')
 text = lesson.read_text('utf-8')
 start = text.index('  - id: container-restarted\n')
@@ -61,8 +61,38 @@ if old not in block:
 block = block.replace(old, new, 1)
 lesson.write_text(text[:start] + block + text[end:], 'utf-8')
 
-# Put the live product demo at the top of the desktop hero instead of vertically centering it
-# against the taller onboarding copy.
+# Density pruning must keep the physical Node that owns any priority node-local runtime actor.
+# Without this closure a focused/route-participating kubelet can survive the budget while its Node
+# is removed, which later violates StrictControlFlowLayout's parent contract.
+policy = Path('src/renderer/scene-grammar/SceneVisibilityPolicy.ts')
+replace_once(
+    policy,
+    '''  while (changed) {
+    changed = false;
+    for (const relation of Object.values(world.relations)) {
+''',
+    '''  while (changed) {
+    changed = false;
+    for (const entityId of [...priority]) {
+      const entity = world.entities[entityId];
+      if (!entity || (entity.kind !== 'Kubelet' && entity.kind !== 'ContainerRuntime')) continue;
+      const nodeName = typeof entity.data.nodeName === 'string' ? entity.data.nodeName : undefined;
+      if (!nodeName) continue;
+      const node = Object.values(world.entities).find(
+        (candidate) => candidate.kind === 'Node' && candidate.name === nodeName,
+      );
+      if (node && !priority.has(node.id)) {
+        priority.add(node.id);
+        changed = true;
+      }
+    }
+    for (const relation of Object.values(world.relations)) {
+''',
+    'runtime-to-Node priority closure',
+)
+
+# Put the live product demo at the top of the desktop hero and let it stay in view while the taller
+# onboarding copy scrolls. Tablet/mobile deliberately revert to normal document flow.
 replace_once(
     Path('src/styles/award/02-hero.css'),
     '''  gap: clamp(34px, 4.5vw, 82px);
@@ -107,33 +137,77 @@ replace_once(
     position: relative;
     top: auto;
     order: -1;
+    align-self: stretch;
+    width: 100%;
   }
 ''',
-    'tablet showcase reset',
+    'tablet/mobile showcase reset',
 )
 
-# Strengthen browser QA: exercise the formerly failing kubelet beat, expose state deterministically,
-# and reject any uncaught runtime error.
-e2e = Path('tests/e2e/homePlayground.spec.ts')
-text = e2e.read_text('utf-8')
-old = "  const showcase = page.locator('.home-showcase');\n  const scenario = (name: string) => showcase.getByRole('button', { name, exact: true });\n"
-new = "  const pageErrors: string[] = [];\n  page.on('pageerror', (error) => pageErrors.push(error.message));\n  const showcase = page.locator('.home-showcase');\n  const scenario = (name: string) => showcase.getByRole('button', { name, exact: true });\n"
-if old not in text:
-    raise SystemExit('Missing first E2E showcase setup')
-text = text.replace(old, new, 1)
+# Regression test the exact contract that previously failed in the real browser on the second
+# container-restart beat, for both desktop and mobile density budgets.
+responsive_test = Path('tests/course/responsiveSceneProjection.test.ts')
+replace_once(
+    responsive_test,
+    '''    const direct = courseEngine.compileDirect(lesson, lessonScenario, 0, {
+      viewport: 'mobile',
+    });
+''',
+    '''    const nodeId = 'infrastructure:cluster:global:Node:worker-a';
+    const kubeletId = 'runtime-component:node:worker-a:Kubelet:kubelet';
+    for (const compiledLesson of [implicitDesktop, mobile]) {
+      const restarted = compiledLesson.steps.find((step) => step.stepId === 'container-restarted');
+      if (!restarted) throw new Error('Container restart step is missing');
+      expect(restarted.view.entityStates[nodeId]).toMatchObject({ visible: true });
+      expect(restarted.view.entityStates[kubeletId]).toMatchObject({ visible: true });
+      expect(() => calculateLayout({ world: restarted.world, view: restarted.view })).not.toThrow();
+    }
 
-old = '''  await scenario('Kill container').click();
-  await expect(scenario('Kill container')).toHaveAttribute('aria-pressed', 'true');
-  await expect(showcase.getByText('Container restart versus Pod replacement', { exact: true })).toBeVisible();
+    const direct = courseEngine.compileDirect(lesson, lessonScenario, 0, {
+      viewport: 'mobile',
+    });
+''',
+    'runtime-parent responsive regression',
+)
+
+# Browser QA is intentionally independent of animation timing. User-selected scenarios autoplay,
+# so selecting beat 01 first takes manual control before exercising beat 02.
+e2e = Path('tests/e2e/homePlayground.spec.ts')
+e2e.write_text(
+    '''import { expect, test, type Page } from '@playwright/test';
+
+async function openCleanHome(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.clear();
+  });
+  await page.goto('/');
+  await expect(page.locator('.home-showcase')).toBeVisible();
+  await expect(page.locator('.home-showcase canvas')).toBeVisible();
+}
+
+test('persistent homepage playground switches verified Kubernetes stories', async ({ page }, testInfo) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await openCleanHome(page);
+
+  const showcase = page.locator('.home-showcase');
+  const scenario = (name: string) => showcase.getByRole('button', { name, exact: true });
+
+  await expect(scenario('Overview')).toHaveAttribute('aria-pressed', 'true');
+  await expect(showcase.getByText('Manifest to running Pod', { exact: true })).toBeVisible();
+
+  await scenario('Request').click();
+  await expect(scenario('Request')).toHaveAttribute('aria-pressed', 'true');
+  await expect(showcase.getByText('Internal Service request', { exact: true })).toBeVisible();
   await expect(showcase.getByRole('link', { name: 'Explain this' })).toHaveAttribute(
     'href',
-    '#/stories/container-restart-vs-pod-replacement/2',
+    '#/stories/internal-service-request/0',
   );
 
-  await scenario('Delete Pod').click();
-'''
-new = '''  await scenario('Kill container').click();
+  await scenario('Kill container').click();
+  await showcase.locator('.showcase-timeline button').first().click();
   await expect(scenario('Kill container')).toHaveAttribute('aria-pressed', 'true');
+  await expect(showcase).toHaveAttribute('data-beat-index', '0');
   await expect(showcase.getByText('Container restart versus Pod replacement', { exact: true })).toBeVisible();
   await expect(showcase.getByRole('link', { name: 'Explain this' })).toHaveAttribute(
     'href',
@@ -147,36 +221,35 @@ new = '''  await scenario('Kill container').click();
   expect(pageErrors).toEqual([]);
 
   await scenario('Delete Pod').click();
-'''
-if old not in text:
-    raise SystemExit('Missing Kill container E2E block')
-text = text.replace(old, new, 1)
+  await expect(scenario('Delete Pod')).toHaveAttribute('aria-pressed', 'true');
+  await expect(showcase.getByRole('link', { name: 'Explain this' })).toHaveAttribute(
+    'href',
+    '#/stories/container-restart-vs-pod-replacement/4',
+  );
 
-old = '''  expect(hasPageOverflow).toBe(false);
+  await scenario('Scale +').click();
+  await expect(scenario('Scale +')).toHaveAttribute('aria-pressed', 'true');
+  await expect(showcase.getByText('HPA scale-out', { exact: true })).toBeVisible();
+  await expect(showcase.getByRole('link', { name: 'Explain this' })).toHaveAttribute(
+    'href',
+    '#/stories/hpa-scale-out/0',
+  );
 
-  await page.screenshot({ path: testInfo.outputPath('homepage-playground.png'), fullPage: false });
-});
-'''
-new = '''  expect(hasPageOverflow).toBe(false);
+  const hasPageOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  );
+  expect(hasPageOverflow).toBe(false);
   expect(pageErrors).toEqual([]);
 
   await page.screenshot({ path: testInfo.outputPath('homepage-playground.png'), fullPage: false });
 });
-'''
-if old not in text:
-    raise SystemExit('Missing first E2E overflow block')
-text = text.replace(old, new, 1)
 
-old = '''  const showcase = page.locator('.home-showcase');
-  await showcase.getByRole('button', { name: 'Kill container', exact: true }).click();
-  await expect(showcase.getByRole('button', { name: 'Advance sequence' })).toBeVisible();
-  await expect(showcase.locator('.showcase-timeline button[aria-current="step"] span')).toHaveText('01');
-
-  await showcase.getByRole('button', { name: 'Advance sequence' }).click();
-  await expect(showcase.locator('.showcase-timeline button[aria-current="step"] span')).toHaveText('02');
-'''
-new = '''  const pageErrors: string[] = [];
+test('homepage playground stays usable with reduced motion', async ({ page }, testInfo) => {
+  const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openCleanHome(page);
+
   const showcase = page.locator('.home-showcase');
   await showcase.getByRole('button', { name: 'Kill container', exact: true }).click();
   await expect(showcase.getByRole('button', { name: 'Advance sequence' })).toBeVisible();
@@ -187,9 +260,15 @@ new = '''  const pageErrors: string[] = [];
   await expect(
     showcase.getByText('kubelet restarts the Container in the same Pod', { exact: true }),
   ).toBeVisible();
+
+  const hasPageOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth + 1,
+  );
+  expect(hasPageOverflow).toBe(false);
   expect(pageErrors).toEqual([]);
-'''
-if old not in text:
-    raise SystemExit('Missing reduced-motion E2E block')
-text = text.replace(old, new, 1)
-e2e.write_text(text, 'utf-8')
+
+  await page.screenshot({ path: testInfo.outputPath('homepage-playground-reduced.png'), fullPage: false });
+});
+''',
+    'utf-8',
+)
