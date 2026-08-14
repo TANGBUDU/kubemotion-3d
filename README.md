@@ -13,6 +13,11 @@ a Pod.
 
 [Open the canonical GitHub Pages deployment](https://tangbudu.github.io/kubemotion-3d/)
 
+The public entry experience opens in English and immediately plays the verified eight-beat
+`manifest-to-running-pod` story inside the real Three.js world-state renderer. The sequence pauses
+when it leaves the viewport, exposes beat-level controls, respects reduced-motion preferences, and
+keeps explicit English / Japanese / Chinese language selection visible in the header.
+
 ## Verified release scope
 
 - **14 fully verified lessons:** from `why-kubernetes-exists` through `hpa`, including cluster
