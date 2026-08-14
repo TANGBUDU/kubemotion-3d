@@ -1,4 +1,14 @@
-import { Pause, Play, RotateCcw, Sparkles } from 'lucide-react';
+import {
+  ArrowRightLeft,
+  BookOpen,
+  Pause,
+  Play,
+  Plus,
+  RefreshCcw,
+  RotateCcw,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import {
   useEffect,
   useMemo,
@@ -6,6 +16,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import { Link } from 'react-router-dom';
 import type { Locale } from '../app/types';
 import { flowStoryById, lessonById, scenarioById, sources } from '../content/loader';
 import { flowStoryEngine } from '../course/FlowStoryEngine';
@@ -17,9 +28,46 @@ interface HomeShowcaseProps {
   readonly reducedMotion: boolean;
 }
 
-const storyId = 'manifest-to-running-pod';
-const authoredStory = flowStoryById.get(storyId);
-if (!authoredStory) throw new Error(`Home showcase story is missing: ${storyId}`);
+type ShowcasePresetId = 'overview' | 'request' | 'restart' | 'replace' | 'scale';
+
+interface ShowcasePreset {
+  readonly storyId: string;
+  readonly startBeat: number;
+  readonly endBeat?: number;
+}
+
+const presetOrder: readonly ShowcasePresetId[] = [
+  'overview',
+  'request',
+  'restart',
+  'replace',
+  'scale',
+];
+
+const presets: Readonly<Record<ShowcasePresetId, ShowcasePreset>> = {
+  overview: {
+    storyId: 'manifest-to-running-pod',
+    startBeat: 0,
+  },
+  request: {
+    storyId: 'internal-service-request',
+    startBeat: 0,
+  },
+  restart: {
+    storyId: 'container-restart-vs-pod-replacement',
+    startBeat: 2,
+    endBeat: 3,
+  },
+  replace: {
+    storyId: 'container-restart-vs-pod-replacement',
+    startBeat: 4,
+    endBeat: 9,
+  },
+  scale: {
+    storyId: 'hpa-scale-out',
+    startBeat: 0,
+  },
+};
 
 const showcaseCopy: Readonly<
   Record<
@@ -28,15 +76,22 @@ const showcaseCopy: Readonly<
       readonly live: string;
       readonly verified: string;
       readonly story: string;
+      readonly scenario: string;
+      readonly playground: string;
       readonly beat: (current: number, total: number) => string;
       readonly pause: string;
       readonly play: string;
+      readonly next: string;
       readonly replay: string;
       readonly controls: string;
       readonly complete: string;
       readonly hint: string;
       readonly aria: string;
       readonly timeline: string;
+      readonly explain: string;
+      readonly presets: Readonly<
+        Record<ShowcasePresetId, { readonly label: string; readonly caption: string }>
+      >;
     }
   >
 > = {
@@ -44,43 +99,121 @@ const showcaseCopy: Readonly<
     live: 'LIVE 3D',
     verified: 'VERIFIED WORLD STATE',
     story: 'Causal sequence',
+    scenario: 'Playground',
+    playground: 'Kubernetes playground scenarios',
     beat: (current, total) => `Beat ${current} / ${total}`,
     pause: 'Pause sequence',
     play: 'Resume sequence',
+    next: 'Advance sequence',
     replay: 'Replay sequence',
     controls: 'Sequence controls',
     complete: 'Sequence complete',
-    hint: 'Drag to inspect · select a beat to take control',
-    aria: 'Live 3D Kubernetes demonstration',
+    hint: 'Drag to inspect · choose a scenario · select a beat to take control',
+    aria: 'Interactive 3D Kubernetes playground',
     timeline: 'Demonstration beats',
+    explain: 'Explain this',
+    presets: {
+      overview: {
+        label: 'Overview',
+        caption: 'Desired state travels through the API, controllers, Scheduler, kubelet, and runtime.',
+      },
+      request: {
+        label: 'Request',
+        caption: 'Trace a client request through a stable Service to a Ready backend.',
+      },
+      restart: {
+        label: 'Kill container',
+        caption: 'The Container exits, then kubelet restarts it inside the same Pod.',
+      },
+      replace: {
+        label: 'Delete Pod',
+        caption: 'Delete the Pod and watch controller reconciliation create and schedule a replacement.',
+      },
+      scale: {
+        label: 'Scale +',
+        caption: 'Raise desired replicas and watch controllers, Scheduler, kubelet, and traffic catch up.',
+      },
+    },
   },
   ja: {
     live: 'LIVE 3D',
     verified: '検証済み WORLD STATE',
     story: '因果シーケンス',
+    scenario: 'Playground',
+    playground: 'Kubernetes Playground シナリオ',
     beat: (current, total) => `Beat ${current} / ${total}`,
     pause: 'シーケンスを一時停止',
     play: 'シーケンスを再開',
+    next: '次の Beat へ',
     replay: 'シーケンスを再生し直す',
     controls: 'シーケンス操作',
     complete: 'シーケンス完了',
-    hint: 'ドラッグで確認 · Beat を選ぶと手動操作に切り替わります',
-    aria: 'Kubernetes のライブ 3D デモ',
+    hint: 'ドラッグで確認 · シナリオを選択 · Beat を選ぶと手動操作',
+    aria: 'インタラクティブ Kubernetes 3D Playground',
     timeline: 'デモの Beat',
+    explain: 'この仕組みを学ぶ',
+    presets: {
+      overview: {
+        label: 'Overview',
+        caption: 'desired state が API、controller、Scheduler、kubelet、runtime を通る流れを追います。',
+      },
+      request: {
+        label: 'Request',
+        caption: 'クライアント要求が安定した Service から Ready backend へ届く経路を追います。',
+      },
+      restart: {
+        label: 'Kill container',
+        caption: 'Container が終了し、同じ Pod の中で kubelet が再起動することを確認します。',
+      },
+      replace: {
+        label: 'Delete Pod',
+        caption: 'Pod を削除し、controller が replacement を作成して配置するまでを追います。',
+      },
+      scale: {
+        label: 'Scale +',
+        caption: 'desired replicas を増やし、controller・Scheduler・kubelet・traffic が追従する流れを見ます。',
+      },
+    },
   },
   'zh-CN': {
     live: 'LIVE 3D',
     verified: '已验证 WORLD STATE',
     story: '因果序列',
+    scenario: 'Playground',
+    playground: 'Kubernetes Playground 场景',
     beat: (current, total) => `阶段 ${current} / ${total}`,
     pause: '暂停序列',
     play: '继续序列',
+    next: '下一阶段',
     replay: '重新播放序列',
     controls: '序列控制',
     complete: '序列播放完成',
-    hint: '拖动查看 · 选择阶段即可接管播放',
-    aria: 'Kubernetes 实时 3D 演示',
+    hint: '拖动查看 · 选择场景 · 选择阶段即可接管播放',
+    aria: '可交互 Kubernetes 3D Playground',
     timeline: '演示阶段',
+    explain: '学习这个机制',
+    presets: {
+      overview: {
+        label: 'Overview',
+        caption: '观察期望状态依次经过 API、控制器、Scheduler、kubelet 和运行时。',
+      },
+      request: {
+        label: 'Request',
+        caption: '跟踪客户端请求如何经由稳定 Service 到达 Ready 后端。',
+      },
+      restart: {
+        label: 'Kill container',
+        caption: 'Container 退出后，由 kubelet 在同一个 Pod 内重启它。',
+      },
+      replace: {
+        label: 'Delete Pod',
+        caption: '删除 Pod，观察控制器协调、创建替代 Pod 并重新调度。',
+      },
+      scale: {
+        label: 'Scale +',
+        caption: '提高期望副本数，观察控制器、Scheduler、kubelet 与流量逐层追上。',
+      },
+    },
   },
 };
 
@@ -106,15 +239,32 @@ function stepForBeat(beat: CompiledFlowStoryBeat): CompiledStep {
 }
 
 function playbackDuration(cues: readonly TransitionCue[], reducedMotion: boolean): number {
-  if (reducedMotion) return 1_400;
+  if (reducedMotion) return 1_200;
   return Math.min(
-    5_200,
-    Math.max(2_650, ...cues.map((cue) => (cue.delayMs ?? 0) + cue.durationMs + 1_050)),
+    3_800,
+    Math.max(1_800, ...cues.map((cue) => (cue.delayMs ?? 0) + cue.durationMs + 700)),
   );
+}
+
+function PresetIcon({ id }: { readonly id: ShowcasePresetId }) {
+  const common = { size: 14, 'aria-hidden': true } as const;
+  switch (id) {
+    case 'request':
+      return <ArrowRightLeft {...common} />;
+    case 'restart':
+      return <RefreshCcw {...common} />;
+    case 'replace':
+      return <Trash2 {...common} />;
+    case 'scale':
+      return <Plus {...common} />;
+    default:
+      return <Sparkles {...common} />;
+  }
 }
 
 export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
   const [viewportClass, setViewportClass] = useState<'mobile' | 'desktop'>('desktop');
+  const [presetId, setPresetId] = useState<ShowcasePresetId>('overview');
   const [beatIndex, setBeatIndex] = useState(0);
   const [playbackId, setPlaybackId] = useState(1);
   const [paused, setPaused] = useState(false);
@@ -125,29 +275,30 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
   );
   const hostRef = useRef<HTMLElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
-  const previousViewportClass = useRef(viewportClass);
   const copy = showcaseCopy[locale];
+  const preset = presets[presetId];
 
-  const compiled = useMemo(
-    () =>
-      flowStoryEngine.compileStory(
-        authoredStory,
-        { lessons: lessonById, scenarios: scenarioById, sources },
-        { viewport: viewportClass },
-      ),
-    [viewportClass],
-  );
-  const beat = compiled.beats[beatIndex] ?? compiled.beats[0];
-  if (!beat) throw new Error(`Home showcase has no beat: ${storyId}`);
+  const compiled = useMemo(() => {
+    const story = flowStoryById.get(preset.storyId);
+    if (!story) throw new Error(`Home showcase story is missing: ${preset.storyId}`);
+    return flowStoryEngine.compileStory(
+      story,
+      { lessons: lessonById, scenarios: scenarioById, sources },
+      { viewport: viewportClass },
+    );
+  }, [preset.storyId, viewportClass]);
+
+  const presetBeats = useMemo(() => {
+    const lastBeat = Math.min(preset.endBeat ?? compiled.beats.length - 1, compiled.beats.length - 1);
+    return compiled.beats.slice(preset.startBeat, lastBeat + 1);
+  }, [compiled.beats, preset.endBeat, preset.startBeat]);
+  const beat = presetBeats[beatIndex] ?? presetBeats[0];
+  if (!beat) throw new Error(`Home showcase preset has no beat: ${presetId}`);
   const step = useMemo(() => stepForBeat(beat), [beat]);
-  const total = compiled.beats.length;
+  const total = presetBeats.length;
+  const compiledBeatIndex = preset.startBeat + beatIndex;
   const playing = !paused && !complete && !reducedMotion && inView && pageVisible;
-
-  useEffect(() => {
-    if (previousViewportClass.current === viewportClass) return;
-    previousViewportClass.current = viewportClass;
-    setPlaybackId((current) => current + 1);
-  }, [viewportClass]);
+  const presetCopy = copy.presets[presetId];
 
   useEffect(() => {
     const host = hostRef.current;
@@ -183,10 +334,13 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
     return () => window.clearTimeout(timer);
   }, [beatIndex, playing, reducedMotion, step.transition.cues, total]);
 
-  useEffect(() => {
-    if (!reducedMotion) return;
-    setPaused(true);
-  }, [reducedMotion]);
+  const selectPreset = (nextPresetId: ShowcasePresetId): void => {
+    setPresetId(nextPresetId);
+    setBeatIndex(0);
+    setPlaybackId((current) => current + 1);
+    setPaused(reducedMotion);
+    setComplete(false);
+  };
 
   const chooseBeat = (index: number): void => {
     setBeatIndex(index);
@@ -201,6 +355,14 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
       setPlaybackId((current) => current + 1);
       setComplete(false);
       setPaused(reducedMotion);
+      return;
+    }
+    if (reducedMotion) {
+      const next = Math.min(beatIndex + 1, total - 1);
+      setBeatIndex(next);
+      setPlaybackId((current) => current + 1);
+      setComplete(next === total - 1);
+      setPaused(true);
       return;
     }
     setPaused((current) => !current);
@@ -228,7 +390,13 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
     frame.style.setProperty('--showcase-light-y', '36%');
   };
 
-  const controlLabel = complete ? copy.replay : paused || reducedMotion ? copy.play : copy.pause;
+  const controlLabel = complete
+    ? copy.replay
+    : reducedMotion
+      ? copy.next
+      : paused
+        ? copy.play
+        : copy.pause;
   const ControlIcon = complete ? RotateCcw : paused || reducedMotion ? Play : Pause;
   const beatTitle = beat.lessonStep.title[locale];
   const sceneLabel = `${copy.aria}: ${compiled.story.title[locale]}. ${beatTitle}`;
@@ -239,6 +407,7 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
       className="home-showcase"
       aria-label={sceneLabel}
       data-play-state={complete ? 'complete' : playing ? 'playing' : 'paused'}
+      data-preset={presetId}
       onPointerMove={updateTilt}
       onPointerLeave={resetTilt}
       onPointerDown={() => setPaused(true)}
@@ -250,7 +419,7 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
             aria-label={sceneLabel}
             step={step}
             playback={{
-              stepKey: `home-showcase:${compiled.story.id}:${beat.beat.id}`,
+              stepKey: `home-showcase:${presetId}:${compiled.story.id}:${beat.beat.id}:${viewportClass}`,
               playbackId,
               transition: step.transition,
             }}
@@ -279,12 +448,32 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
           <i aria-hidden="true">WEBGL / {step.view.view.toUpperCase()}</i>
         </header>
 
+        <nav className="showcase-playground" aria-label={copy.playground}>
+          {presetOrder.map((id) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={id === presetId}
+              title={copy.presets[id].caption}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                selectPreset(id);
+              }}
+            >
+              <PresetIcon id={id} />
+              <span>{copy.presets[id].label}</span>
+            </button>
+          ))}
+        </nav>
+
         <div className="showcase-readout" aria-live="off">
           <span>
-            {copy.story} · {compiled.story.priority}
+            {copy.scenario} · {presetCopy.label}
           </span>
-          <h2>{compiled.story.title[locale]}</h2>
+          <div className="showcase-readout__title">{compiled.story.title[locale]}</div>
           <p>{beatTitle}</p>
+          <em>{presetCopy.caption}</em>
           <small>{complete ? copy.complete : copy.beat(beatIndex + 1, total)}</small>
         </div>
 
@@ -295,8 +484,8 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
         </div>
 
         <nav className="showcase-timeline" aria-label={copy.timeline}>
-          <ol>
-            {compiled.beats.map((item, index) => (
+          <ol style={{ gridTemplateColumns: `repeat(${total}, minmax(0, 1fr))` }}>
+            {presetBeats.map((item, index) => (
               <li key={item.beat.id}>
                 <button
                   type="button"
@@ -322,19 +511,30 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
             <Sparkles size={14} aria-hidden="true" />
             {copy.hint}
           </span>
-          <button
-            type="button"
-            aria-label={controlLabel}
-            title={copy.controls}
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => {
-              event.stopPropagation();
-              togglePlayback();
-            }}
-          >
-            <ControlIcon size={16} aria-hidden="true" />
-            <span>{controlLabel}</span>
-          </button>
+          <div className="showcase-controls__actions">
+            <Link
+              className="showcase-learn-link"
+              to={`/stories/${preset.storyId}/${compiledBeatIndex}`}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <BookOpen size={15} aria-hidden="true" />
+              <span>{copy.explain}</span>
+            </Link>
+            <button
+              type="button"
+              aria-label={controlLabel}
+              title={copy.controls}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                togglePlayback();
+              }}
+            >
+              <ControlIcon size={16} aria-hidden="true" />
+              <span>{controlLabel}</span>
+            </button>
+          </div>
         </footer>
       </div>
     </section>
