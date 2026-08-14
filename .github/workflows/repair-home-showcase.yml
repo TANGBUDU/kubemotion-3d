@@ -48,9 +48,18 @@ jobs:
                   "      readonly play: string;\n      readonly replay: string;\n",
                   "      readonly play: string;\n      readonly next: string;\n      readonly replay: string;\n",
               ),
-              ("    play: 'Resume sequence',\n    replay: 'Replay sequence',\n", "    play: 'Resume sequence',\n    next: 'Advance sequence',\n    replay: 'Replay sequence',\n"),
-              ("    play: 'シーケンスを再開',\n    replay: 'シーケンスを再生し直す',\n", "    play: 'シーケンスを再開',\n    next: '次の Beat へ',\n    replay: 'シーケンスを再生し直す',\n"),
-              ("    play: '继续序列',\n    replay: '重新播放序列',\n", "    play: '继续序列',\n    next: '下一阶段',\n    replay: '重新播放序列',\n"),
+              (
+                  "    play: 'Resume sequence',\n    replay: 'Replay sequence',\n",
+                  "    play: 'Resume sequence',\n    next: 'Advance sequence',\n    replay: 'Replay sequence',\n",
+              ),
+              (
+                  "    play: 'シーケンスを再開',\n    replay: 'シーケンスを再生し直す',\n",
+                  "    play: 'シーケンスを再開',\n    next: '次の Beat へ',\n    replay: 'シーケンスを再生し直す',\n",
+              ),
+              (
+                  "    play: '继续序列',\n    replay: '重新播放序列',\n",
+                  "    play: '继续序列',\n    next: '下一阶段',\n    replay: '重新播放序列',\n",
+              ),
               ("  const previousViewportClass = useRef(viewportClass);\n", ""),
               (
                   "  useEffect(() => {\n    if (previousViewportClass.current === viewportClass) return;\n    previousViewportClass.current = viewportClass;\n    setPlaybackId((current) => current + 1);\n  }, [viewportClass]);\n\n",
@@ -85,7 +94,24 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm content:validate
-      - run: pnpm test:unit --run
+      - name: Run unit tests and preserve full diagnostics
+        id: unit
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test:unit --run --reporter=verbose 2>&1 | tee unit-test.log
+      - name: Upload unit test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: homepage-unit-test-diagnostics
+          path: unit-test.log
+          if-no-files-found: error
+          retention-days: 1
+      - name: Stop when unit tests fail
+        if: steps.unit.outcome == 'failure'
+        run: exit 1
       - run: pnpm build
       - name: Remove this one-shot workflow
         run: rm .github/workflows/repair-home-showcase.yml
