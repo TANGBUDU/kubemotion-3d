@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
-async function openCleanHome(page: Parameters<typeof test>[0]['page']) {
+async function openCleanHome(page: Page) {
   await page.addInitScript(() => {
     localStorage.clear();
   });
