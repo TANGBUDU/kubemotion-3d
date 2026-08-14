@@ -54,3 +54,47 @@ new = "    if (reducedMotion || event.pointerType === 'touch') return;\n"
 if old not in text:
     raise SystemExit('pointer capability gate not found')
 path.write_text(text.replace(old, new, 1), 'utf-8')
+
+# GitHub's Actions token is intentionally unable to modify workflow files during a self-push.
+# Keep docker.yml identical to the branch base here; the connected GitHub client applies the
+# notification-hygiene workflow change only after the visual source has passed every check.
+Path('.github/workflows/docker.yml').write_text('''name: Container image
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  release:
+    types: [published]
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'release'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/kubemotion-3d
+          tags: |
+            type=semver,pattern={{version}}
+            type=sha
+            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'release' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: mode=max
+          sbom: true
+''', 'utf-8')
