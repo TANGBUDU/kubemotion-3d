@@ -1,11 +1,10 @@
 import { ArrowRight, Boxes, GitBranch, ShieldCheck } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { ui } from '../app/i18n';
 import type { Locale } from '../app/types';
-import { SceneViewport } from '../components/SceneViewport';
-import { compiledFlowStories, course, lessonById, scenarioById } from '../content/loader';
-import { courseEngine } from '../course/CourseEngine';
+import { HomeShowcase } from '../components/HomeShowcase';
+import { compiledFlowStories, course, lessonById } from '../content/loader';
 import { orderedAvailableLessons, resolveLessonEntry, useAppStore } from '../state/appStore';
 import '../styles/home.css';
 
@@ -28,10 +27,6 @@ const homeCopy: Record<
     exploreCompleted: string;
     revisitOrientation: string;
     continueHome: string;
-    lessonPreviewLabel: string;
-    showcasePreviewLabel: string;
-    lessonSceneCaption: string;
-    showcaseSceneCaption: string;
     benefitsLabel: string;
     benefitDescriptions: readonly [string, string, string];
     flowEyebrow: string;
@@ -39,14 +34,17 @@ const homeCopy: Record<
     flowDescription: string;
     openFlow: string;
     beatCount: (count: number) => string;
+    lessonsMetric: string;
+    storiesMetric: string;
+    languagesMetric: string;
   }
 > = {
   en: {
-    eyebrow: 'WORLD STATE · VERIFIED TIMELINE · INTERACTIVE 3D',
-    headlineLead: 'Why Kubernetes?',
-    headlineEmphasis: 'Start with the problem, not the jargon.',
+    eyebrow: 'LIVE WORLD STATE · VERIFIED CAUSALITY · INTERACTIVE 3D',
+    headlineLead: 'Watch desired state',
+    headlineEmphasis: 'become reality.',
     description:
-      'A container can run one app by itself. Kubernetes becomes useful when you need several copies, automatic recovery, placement, networking, and safe change. This course shows the problem first, then the Kubernetes concept that solves it.',
+      'KubeMotion turns Kubernetes API changes, reconciliation, scheduling, networking, and local runtime work into verified 3D causal stories. See the system move first; learn each responsibility at your own pace.',
     orientationLabel: 'Quick orientation',
     orientationTime: '20–30 seconds',
     orientationTitle: 'Three things to know before lesson 1',
@@ -61,10 +59,6 @@ const homeCopy: Record<
     exploreCompleted: 'Explore completed lessons',
     revisitOrientation: 'View orientation again',
     continueHome: 'Continue without review',
-    lessonPreviewLabel: 'Interactive lesson preview',
-    showcasePreviewLabel: 'Showcase preview',
-    lessonSceneCaption: 'Current lesson',
-    showcaseSceneCaption: 'Showcase',
     benefitsLabel: 'KubeMotion benefits',
     benefitDescriptions: [
       'See why each Kubernetes object exists before you are asked to remember its name.',
@@ -77,13 +71,16 @@ const homeCopy: Record<
       'Each story reuses ordered lesson state and keeps its evidence routes visible before and after tokens move.',
     openFlow: 'Open story',
     beatCount: (count) => `${count} beats`,
+    lessonsMetric: 'verified lessons',
+    storiesMetric: 'causal stories',
+    languagesMetric: 'languages',
   },
   ja: {
-    eyebrow: 'WORLD STATE · 検証済みタイムライン · インタラクティブ 3D',
-    headlineLead: 'なぜ Kubernetes？',
-    headlineEmphasis: '用語ではなく、問題から学ぶ。',
+    eyebrow: 'LIVE WORLD STATE · 検証済み因果 · インタラクティブ 3D',
+    headlineLead: 'desired state が',
+    headlineEmphasis: '現実になる瞬間を見る。',
     description:
-      '1つのアプリならコンテナだけでも動かせます。複数コピー、自動復旧、配置、ネットワーク、安全な変更が必要になったとき Kubernetes が役立ちます。このコースは、先に問題を見せ、その後で解決する Kubernetes の概念を紹介します。',
+      'KubeMotion は Kubernetes API の変更、reconciliation、scheduling、networking、Node 内の runtime 処理を、検証済みの 3D 因果ストーリーとして可視化します。まず動きを見て、その後に各責務を自分のペースで学べます。',
     orientationLabel: 'クイックガイド',
     orientationTime: '20〜30 秒',
     orientationTitle: '第1課の前に知る 3 つのこと',
@@ -98,10 +95,6 @@ const homeCopy: Record<
     exploreCompleted: '完了したレッスンを探索する',
     revisitOrientation: 'ガイドをもう一度見る',
     continueHome: '確認せずに続ける',
-    lessonPreviewLabel: 'インタラクティブなレッスンプレビュー',
-    showcasePreviewLabel: 'ショーケースプレビュー',
-    lessonSceneCaption: '現在のレッスン',
-    showcaseSceneCaption: 'ショーケース',
     benefitsLabel: 'KubeMotion の特長',
     benefitDescriptions: [
       '名前を覚える前に、それぞれの Kubernetes オブジェクトがなぜ必要なのかを理解します。',
@@ -114,13 +107,16 @@ const homeCopy: Record<
       '各 story は順序付き lesson state を再利用し、token の移動前後も証拠 route を表示し続けます。',
     openFlow: 'Story を開く',
     beatCount: (count) => `${count} ステップ`,
+    lessonsMetric: '検証済みレッスン',
+    storiesMetric: '因果ストーリー',
+    languagesMetric: '対応言語',
   },
   'zh-CN': {
-    eyebrow: 'WORLD STATE · 已验证时间线 · 交互式 3D',
-    headlineLead: '为什么需要 Kubernetes？',
-    headlineEmphasis: '先讲问题，再讲名词。',
+    eyebrow: 'LIVE WORLD STATE · 已验证因果 · 交互式 3D',
+    headlineLead: '看期望状态',
+    headlineEmphasis: '如何变成现实。',
     description:
-      '一个应用，用容器自己就能跑。真正需要 Kubernetes，是当你开始面对多副本、自动恢复、放置、网络和安全变更。本课程先把问题讲清楚，再介绍解决它的 Kubernetes 概念。',
+      'KubeMotion 把 Kubernetes API 变更、协调、调度、网络与 Node 内运行时处理，呈现为经过验证的 3D 因果故事。先看系统真正动起来，再按自己的节奏理解每一层职责。',
     orientationLabel: '快速导览',
     orientationTime: '20–30 秒',
     orientationTitle: '第一课前只记住这三件事',
@@ -135,10 +131,6 @@ const homeCopy: Record<
     exploreCompleted: '探索已完成课程',
     revisitOrientation: '再次查看导览',
     continueHome: '跳过回顾并继续',
-    lessonPreviewLabel: '交互式课程预览',
-    showcasePreviewLabel: '展示预览',
-    lessonSceneCaption: '当前课程',
-    showcaseSceneCaption: '展示',
     benefitsLabel: 'KubeMotion 的优势',
     benefitDescriptions: [
       '先理解每个 Kubernetes 对象为什么存在，再记它叫什么。',
@@ -150,6 +142,9 @@ const homeCopy: Record<
     flowDescription: '每条故事都复用按顺序编译的课程状态，并让证据路线在动画前后持续可见。',
     openFlow: '打开故事',
     beatCount: (count) => `${count} 个步骤`,
+    lessonsMetric: '已验证课程',
+    storiesMetric: '因果故事',
+    languagesMetric: '语言',
   },
 };
 
@@ -162,7 +157,6 @@ export function HomePage() {
   const completedLessonIds = useAppStore((state) => state.completedLessonIds);
   const setOrientationSeen = useAppStore((state) => state.setOrientationSeen);
   const [orientationOpen, setOrientationOpen] = useState(() => !orientationSeen);
-  const [sceneViewportClass, setSceneViewportClass] = useState<'mobile' | 'desktop'>('desktop');
   const revisitButtonRef = useRef<HTMLButtonElement>(null);
   const orientationHeadingRef = useRef<HTMLHeadingElement>(null);
   const pendingFocus = useRef<'orientation' | 'revisit' | null>(null);
@@ -173,18 +167,6 @@ export function HomePage() {
     stepIndex: savedStepIndex,
     completedLessonIds,
   });
-  const previewLessonId = entry?.lessonId ?? 'container-restart-vs-pod-replacement';
-  const previewLesson = lessonById.get(previewLessonId);
-  const previewScenario = previewLesson ? scenarioById.get(previewLesson.scenarioId) : undefined;
-  const step = useMemo(
-    () =>
-      previewLesson && previewScenario
-        ? courseEngine.compileLesson(previewLesson, previewScenario, {
-            viewport: sceneViewportClass,
-          }).steps[0]
-        : undefined,
-    [previewLesson, previewScenario, sceneViewportClass],
-  );
 
   useEffect(() => {
     if (pendingFocus.current === 'orientation' && orientationOpen) {
@@ -197,18 +179,13 @@ export function HomePage() {
     }
   }, [orientationOpen]);
 
-  if (!previewLesson) throw new Error(`Preview lesson is missing: ${previewLessonId}`);
-  if (!previewScenario) {
-    throw new Error(`Preview scenario is missing: ${previewLesson.scenarioId}`);
-  }
   if (availableLessons.length === 0) throw new Error('No verified lesson is available');
-  if (!step) return null;
 
   const hasValidProgress = Boolean(
     entry &&
-    savedLessonId &&
-    entry.lessonId === savedLessonId &&
-    entry.stepIndex === savedStepIndex,
+      savedLessonId &&
+      entry.lessonId === savedLessonId &&
+      entry.stepIndex === savedStepIndex,
   );
   const lessonPath = entry ? `/learn/${entry.lessonId}/${entry.stepIndex}` : '/explore';
   const lessonAction = entry
@@ -216,9 +193,6 @@ export function HomePage() {
       ? copy.continueLesson
       : copy.startLesson
     : copy.exploreCompleted;
-  const localizedPreviewTitle = previewLesson.title[locale];
-  const previewLabel = `${entry ? copy.lessonPreviewLabel : copy.showcasePreviewLabel}: ${localizedPreviewTitle}`;
-  const sceneCaption = `${entry ? copy.lessonSceneCaption : copy.showcaseSceneCaption} · ${localizedPreviewTitle}`;
 
   const rememberOrientation = () => setOrientationSeen(true);
   const closeOrientation = () => {
@@ -241,6 +215,21 @@ export function HomePage() {
             <span>{copy.headlineEmphasis}</span>
           </h1>
           <p>{copy.description}</p>
+
+          <dl className="hero-proof" aria-label="KubeMotion course scope">
+            <div>
+              <dd>14</dd>
+              <dt>{copy.lessonsMetric}</dt>
+            </div>
+            <div>
+              <dd>8</dd>
+              <dt>{copy.storiesMetric}</dt>
+            </div>
+            <div>
+              <dd>3</dd>
+              <dt>{copy.languagesMetric}</dt>
+            </div>
+          </dl>
 
           {orientationOpen ? (
             <section
@@ -304,27 +293,10 @@ export function HomePage() {
             {t.private}
           </div>
         </div>
-        <div className="hero-scene">
-          <SceneViewport
-            role="img"
-            aria-label={previewLabel}
-            step={step}
-            playback={{
-              stepKey: `home-preview:${previewLesson.id}:0`,
-              playbackId: 0,
-              transition: { cues: [] },
-            }}
-            locale={locale}
-            reducedMotion={reducedMotion}
-            onViewportClassChange={setSceneViewportClass}
-            onSelectEntity={() => undefined}
-          />
-          <div className="scene-caption">
-            <span className="live-dot" />
-            {sceneCaption}
-          </div>
-        </div>
+
+        <HomeShowcase locale={locale} reducedMotion={reducedMotion} />
       </section>
+
       <section className="value-grid" aria-label={copy.benefitsLabel}>
         <article>
           <Boxes aria-hidden="true" />
@@ -342,6 +314,7 @@ export function HomePage() {
           <p>{copy.benefitDescriptions[2]}</p>
         </article>
       </section>
+
       <section className="flow-story-catalog" id="flow-stories" aria-labelledby="flow-story-title">
         <header>
           <span>{copy.flowEyebrow}</span>
@@ -349,11 +322,11 @@ export function HomePage() {
           <p>{copy.flowDescription}</p>
         </header>
         <div className="flow-story-grid">
-          {compiledFlowStories.map(({ story, beats }) => {
+          {compiledFlowStories.map(({ story, beats }, index) => {
             const firstBeat = beats[0];
             if (!firstBeat) throw new Error(`Flow story ${story.id} has no compiled beat`);
             return (
-              <article key={story.id} data-flow-story-id={story.id}>
+              <article key={story.id} data-flow-story-id={story.id} style={{ '--story-index': index + 1 } as CSSProperties}>
                 <div className="flow-story-meta">
                   <span data-priority={story.priority}>{story.priority}</span>
                   <span>{copy.beatCount(beats.length)}</span>

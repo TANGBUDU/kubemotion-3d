@@ -1,4 +1,4 @@
-import { RotateCcw } from 'lucide-react';
+import { Languages, RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import type { Locale } from '../app/types';
@@ -63,15 +63,19 @@ export function AppHeader() {
         <label className="sr-only" htmlFor="locale">
           {t.language}
         </label>
-        <select
-          id="locale"
-          value={locale}
-          onChange={(event) => setLocale(event.target.value as Locale)}
-        >
-          <option value="en">EN</option>
-          <option value="ja">日本語</option>
-          <option value="zh-CN">中文</option>
-        </select>
+        <div className="locale-control">
+          <Languages size={15} aria-hidden="true" />
+          <span>LANG</span>
+          <select
+            id="locale"
+            value={locale}
+            onChange={(event) => setLocale(event.target.value as Locale)}
+          >
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="zh-CN">中文</option>
+          </select>
+        </div>
         <button
           className="icon-button"
           type="button"

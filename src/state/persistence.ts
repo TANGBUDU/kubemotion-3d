@@ -43,7 +43,7 @@ export function localeFromNavigator(language: string): Locale {
 
 export function loadPreferences(storage: Pick<Storage, 'getItem'> = localStorage): Preferences {
   const fallback: Preferences = {
-    locale: localeFromNavigator(navigator.language),
+    locale: 'en',
     courseNavCollapsed: false,
     inspectorCollapsed: false,
     orientationSeen: false,
@@ -57,7 +57,10 @@ export function loadPreferences(storage: Pick<Storage, 'getItem'> = localStorage
     const locale = record.locale;
     if (locale !== 'en' && locale !== 'ja' && locale !== 'zh-CN') return fallback;
     return {
-      locale,
+      // Older builds inferred locale from the browser. Treat that legacy value as non-explicit so
+      // the public landing page migrates to English once. Every later manual choice is persisted
+      // with localeExplicit=true by savePreferences().
+      locale: record.localeExplicit === true ? locale : 'en',
       courseNavCollapsed: record.courseNavCollapsed === true,
       inspectorCollapsed: record.inspectorCollapsed === true,
       orientationSeen: record.orientationSeen === true,
@@ -71,7 +74,7 @@ export function savePreferences(
   preferences: Preferences,
   storage: Pick<Storage, 'setItem'> = localStorage,
 ): void {
-  storage.setItem(preferencesKey, JSON.stringify(preferences));
+  storage.setItem(preferencesKey, JSON.stringify({ ...preferences, localeExplicit: true }));
 }
 
 export function progressFromStorageValue(raw: string | null): Progress {

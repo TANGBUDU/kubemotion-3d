@@ -1,0 +1,198 @@
+.home-page {
+  max-width: none;
+  padding: 0;
+}
+
+.home-page .hero {
+  position: relative;
+  min-height: calc(100svh - var(--header-height));
+  display: grid;
+  grid-template-columns: minmax(360px, 0.76fr) minmax(600px, 1.24fr);
+  gap: clamp(34px, 4.5vw, 82px);
+  align-items: center;
+  max-width: 1720px;
+  margin: 0 auto;
+  padding: clamp(46px, 6vh, 82px) clamp(32px, 4vw, 72px) clamp(38px, 6vh, 72px);
+}
+
+.home-page .hero::before {
+  content: 'KUBERNETES / WORLD STATE / 01';
+  position: absolute;
+  top: 24px;
+  left: clamp(32px, 4vw, 72px);
+  color: rgb(157 190 218 / 33%);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  pointer-events: none;
+}
+
+.home-page .hero::after {
+  content: '';
+  position: absolute;
+  right: 2%;
+  bottom: -22%;
+  width: min(54vw, 900px);
+  aspect-ratio: 1;
+  border: 1px solid rgb(115 220 255 / 6%);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 110px rgb(115 220 255 / 1.6%),
+    0 0 0 220px rgb(115 220 255 / 1%);
+  pointer-events: none;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 3;
+  min-width: 0;
+}
+
+.hero-copy .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--award-cyan);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+
+.hero-copy .eyebrow::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border: 1px solid currentcolor;
+  border-radius: 50%;
+  box-shadow: 0 0 16px currentcolor;
+  animation: award-pulse 2.2s ease-in-out infinite;
+}
+
+.hero-copy h1 {
+  max-width: 760px;
+  margin: 22px 0 22px;
+  font-size: clamp(54px, 5.7vw, 96px);
+  line-height: 0.91;
+  letter-spacing: -0.07em;
+  text-wrap: balance;
+}
+
+.hero-copy h1 span {
+  color: transparent;
+  background: linear-gradient(98deg, #8ce8ff 0%, #68caff 42%, #9a8cff 82%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 10px 30px rgb(79 140 255 / 16%));
+}
+
+.hero-copy > p {
+  max-width: 690px;
+  color: rgb(196 216 233 / 72%);
+  font-size: clamp(15px, 1.25vw, 18px);
+  line-height: 1.72;
+  text-wrap: pretty;
+}
+
+.hero-proof {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 620px;
+  margin: 28px 0 0;
+  border-top: 1px solid var(--award-line);
+  border-bottom: 1px solid var(--award-line);
+}
+
+.hero-proof div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: end;
+  min-width: 0;
+  padding: 14px 12px 13px 0;
+}
+
+.hero-proof div + div {
+  padding-left: 18px;
+  border-left: 1px solid var(--award-line);
+}
+
+.hero-proof dd {
+  color: #eefbff;
+  font-size: clamp(25px, 2vw, 34px);
+  font-weight: 780;
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+}
+
+.hero-proof dt {
+  overflow: hidden;
+  color: rgb(154 187 213 / 58%);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 8px;
+  font-weight: 760;
+  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+
+.orientation-card {
+  max-width: 650px;
+  margin-top: 24px;
+  padding: 18px 19px 17px;
+  border: 1px solid rgb(115 220 255 / 23%);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 95% 0%, rgb(79 140 255 / 12%), transparent 42%),
+    linear-gradient(145deg, rgb(14 35 55 / 76%), rgb(7 19 32 / 84%));
+  box-shadow:
+    0 22px 65px rgb(0 0 0 / 22%),
+    inset 0 1px rgb(255 255 255 / 5%);
+  backdrop-filter: blur(18px);
+}
+
+.orientation-card-heading {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.orientation-card h2 {
+  margin-top: 11px;
+  font-size: clamp(19px, 1.7vw, 25px);
+}
+
+.orientation-card > p {
+  font-size: 12px;
+}
+
+.orientation-points {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 14px 0 16px;
+}
+
+.orientation-points li {
+  grid-template-columns: 22px minmax(0, 1fr);
+  min-height: 62px;
+  align-items: start;
+  padding: 9px;
+  border-color: rgb(120 178 220 / 14%);
+  background: rgb(4 14 24 / 42%);
+}
+
+.orientation-points strong {
+  font-size: 11px;
+  line-height: 1.42;
+}
+
+.orientation-actions,
+.home-entry-actions {
+  gap: 16px;
+}
+
+.trust-row {
+  color: rgb(172 205 227 / 58%);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+}

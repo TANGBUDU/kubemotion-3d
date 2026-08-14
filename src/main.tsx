@@ -6,6 +6,7 @@ import './styles/tokens.css';
 import './styles/global.css';
 import './styles/teaching-panel.css';
 import './styles/accessibility.css';
+import './styles/award.css';
 import { installDebugBridge } from './test-support/debugBridge';
 
 const root = document.getElementById('root');

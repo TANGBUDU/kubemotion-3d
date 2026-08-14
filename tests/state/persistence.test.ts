@@ -4,20 +4,29 @@ import {
   loadProgress,
   localeFromNavigator,
   readProgress,
+  savePreferences,
   saveProgress,
 } from '../../src/state/persistence';
 
 describe('persistence helpers', () => {
-  it('selects a locale from the browser language', () => {
+  it('still exposes browser-language classification for explicit locale tools', () => {
     expect(localeFromNavigator('ja-JP')).toBe('ja');
     expect(localeFromNavigator('zh-Hant')).toBe('zh-CN');
     expect(localeFromNavigator('fr-FR')).toBe('en');
   });
 
-  it('recovers from invalid storage', () => {
+  it('uses English for a new public visitor regardless of browser language', () => {
+    const empty = { getItem: () => null };
+    expect(loadPreferences(empty)).toMatchObject({
+      locale: 'en',
+      orientationSeen: false,
+    });
+  });
+
+  it('recovers from invalid storage in English', () => {
     const broken = { getItem: () => '{broken' };
     expect(loadPreferences(broken)).toMatchObject({
-      locale: expect.stringMatching(/en|ja|zh-CN/),
+      locale: 'en',
       orientationSeen: false,
     });
     expect(loadProgress(broken)).toEqual({ completedLessonIds: [], stepIndex: 0 });
@@ -35,28 +44,53 @@ describe('persistence helpers', () => {
     expect(() => readProgress(denied)).toThrow(error);
   });
 
-  it('migrates old preferences and persists the orientation flag', () => {
-    const oldPreferences = {
-      getItem: () =>
-        JSON.stringify({ locale: 'en', courseNavCollapsed: true, inspectorCollapsed: false }),
-    };
-    expect(loadPreferences(oldPreferences)).toEqual({
-      locale: 'en',
-      courseNavCollapsed: true,
-      inspectorCollapsed: false,
-      orientationSeen: false,
-    });
-
-    const seenPreferences = {
+  it('migrates inferred legacy locales to English but preserves an explicit language choice', () => {
+    const legacyChinese = {
       getItem: () =>
         JSON.stringify({
           locale: 'zh-CN',
+          courseNavCollapsed: true,
+          inspectorCollapsed: false,
+          orientationSeen: true,
+        }),
+    };
+    expect(loadPreferences(legacyChinese)).toEqual({
+      locale: 'en',
+      courseNavCollapsed: true,
+      inspectorCollapsed: false,
+      orientationSeen: true,
+    });
+
+    const explicitJapanese = {
+      getItem: () =>
+        JSON.stringify({
+          locale: 'ja',
+          localeExplicit: true,
           courseNavCollapsed: false,
           inspectorCollapsed: true,
           orientationSeen: true,
         }),
     };
-    expect(loadPreferences(seenPreferences).orientationSeen).toBe(true);
+    expect(loadPreferences(explicitJapanese)).toEqual({
+      locale: 'ja',
+      courseNavCollapsed: false,
+      inspectorCollapsed: true,
+      orientationSeen: true,
+    });
+  });
+
+  it('marks every newly saved locale as explicit', () => {
+    let saved = '';
+    savePreferences(
+      {
+        locale: 'zh-CN',
+        courseNavCollapsed: false,
+        inspectorCollapsed: true,
+        orientationSeen: true,
+      },
+      { setItem: (_key, value) => (saved = value) },
+    );
+    expect(JSON.parse(saved)).toMatchObject({ locale: 'zh-CN', localeExplicit: true });
   });
 
   it('deduplicates completed lessons when progress is loaded and saved', () => {

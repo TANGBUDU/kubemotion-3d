@@ -9,9 +9,11 @@ vi.mock('../../src/components/SceneViewport', () => ({
   SceneViewport: ({
     'aria-label': ariaLabel,
     step,
+    playback,
   }: {
     'aria-label'?: string;
     step: { lessonId: string; index: number };
+    playback: { playbackId: number; transition: { cues: readonly unknown[] } };
   }) => (
     <div
       role="img"
@@ -19,6 +21,8 @@ vi.mock('../../src/components/SceneViewport', () => ({
       data-testid="scene-preview"
       data-lesson-id={step.lessonId}
       data-step-index={step.index}
+      data-playback-id={playback.playbackId}
+      data-cue-count={playback.transition.cues.length}
     />
   ),
 }));
@@ -52,11 +56,12 @@ function renderHome() {
   );
 }
 
-describe('HomePage orientation', () => {
+describe('HomePage orientation and live showcase', () => {
   beforeEach(() => {
     localStorage.clear();
     useAppStore.setState({
       locale: 'en',
+      reducedMotion: false,
       orientationSeen: false,
       lessonId: undefined,
       stepIndex: 0,
@@ -64,7 +69,7 @@ describe('HomePage orientation', () => {
     });
   });
 
-  it('orients a first-time learner before offering one lesson action', () => {
+  it('shows a verified 3D causal sequence immediately while preserving one beginner action', () => {
     renderHome();
 
     expect(screen.getByTestId('orientation-card')).toBeVisible();
@@ -82,19 +87,19 @@ describe('HomePage orientation', () => {
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute(
       'data-lesson-id',
-      'why-kubernetes-exists',
+      'manifest-to-running-pod',
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
-    expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
-      'Interactive lesson preview: Why Kubernetes? From one container to self-healing',
+    expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-playback-id', '1');
+    expect(Number(screen.getByTestId('scene-preview').getAttribute('data-cue-count'))).toBeGreaterThan(
+      0,
     );
-    expect(
-      screen.getByText('Current lesson · Why Kubernetes? From one container to self-healing'),
-    ).toBeVisible();
-    expect(screen.queryByRole('link', { name: /explore/i })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'View orientation again' }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
+      'Live 3D Kubernetes demonstration: Manifest to running Pod. kubectl submits desired state to the API Server',
+    );
+    expect(screen.getByRole('heading', { name: 'Manifest to running Pod' })).toBeVisible();
+    expect(screen.getByText('kubectl submits desired state to the API Server')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Pause sequence' })).toBeVisible();
   });
 
   it('publishes eight first-class flow stories that deep-link to their first causal beat', () => {
@@ -113,6 +118,20 @@ describe('HomePage orientation', () => {
     expect(hpaStory?.querySelector('a')).toHaveAttribute('href', '/stories/hpa-scale-out/0');
   });
 
+  it('lets the viewer take control of the showreel from its beat rail', () => {
+    renderHome();
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Beat 3 \/ 8: A controller reconciles the replica deficit/i,
+      }),
+    );
+
+    expect(screen.getByText('A controller reconciles the replica deficit')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Resume sequence' })).toBeVisible();
+    expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-playback-id', '2');
+  });
+
   it('remembers orientation when the learner starts the lesson', () => {
     renderHome();
     fireEvent.click(screen.getByRole('link', { name: 'Start lesson' }));
@@ -121,6 +140,7 @@ describe('HomePage orientation', () => {
     expect(useAppStore.getState().orientationSeen).toBe(true);
     expect(JSON.parse(localStorage.getItem('kubemotion:v1:preferences') ?? '{}')).toMatchObject({
       orientationSeen: true,
+      localeExplicit: true,
     });
   });
 
@@ -143,7 +163,7 @@ describe('HomePage orientation', () => {
     );
   });
 
-  it('continues a valid saved lesson position and safely ignores invalid progress', () => {
+  it('continues valid learner progress without replacing the cinematic homepage sequence', () => {
     useAppStore.setState({
       orientationSeen: true,
       lessonId: 'container-restart-vs-pod-replacement',
@@ -157,11 +177,7 @@ describe('HomePage orientation', () => {
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute(
       'data-lesson-id',
-      'container-restart-vs-pod-replacement',
-    );
-    expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
-    expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
-      'Interactive lesson preview: Container restart is not Pod replacement',
+      'manifest-to-running-pod',
     );
 
     view.unmount();
@@ -189,11 +205,7 @@ describe('HomePage orientation', () => {
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute(
       'data-lesson-id',
-      'pod-and-container',
-    );
-    expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
-    expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
-      'Interactive lesson preview: Pod and Container',
+      'manifest-to-running-pod',
     );
   });
 
@@ -214,37 +226,36 @@ describe('HomePage orientation', () => {
     expect(screen.queryByRole('link', { name: 'Continue learning' })).not.toBeInTheDocument();
     expect(screen.getByTestId('scene-preview')).toHaveAttribute(
       'data-lesson-id',
-      'container-restart-vs-pod-replacement',
+      'manifest-to-running-pod',
     );
-    expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
-    expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
-      'Showcase preview: Container restart is not Pod replacement',
-    );
-    expect(screen.getByText('Showcase · Container restart is not Pod replacement')).toBeVisible();
   });
 
   it.each([
     [
       'en',
-      'Interactive lesson preview: Why Kubernetes? From one container to self-healing',
-      'Current lesson · Why Kubernetes? From one container to self-healing',
+      'Live 3D Kubernetes demonstration: Manifest to running Pod. kubectl submits desired state to the API Server',
+      'Manifest to running Pod',
+      'kubectl submits desired state to the API Server',
     ],
     [
       'ja',
-      'インタラクティブなレッスンプレビュー: なぜ Kubernetes が必要？ 1つのコンテナから自己修復まで',
-      '現在のレッスン · なぜ Kubernetes が必要？ 1つのコンテナから自己修復まで',
+      'Kubernetes のライブ 3D デモ: マニフェストから実行中の Pod まで. kubectl が desired state を API Server に送信する',
+      'マニフェストから実行中の Pod まで',
+      'kubectl が desired state を API Server に送信する',
     ],
     [
       'zh-CN',
-      '交互式课程预览: 为什么需要 Kubernetes？从一个容器到自动恢复',
-      '当前课程 · 为什么需要 Kubernetes？从一个容器到自动恢复',
+      'Kubernetes 实时 3D 演示: 从清单到运行中的 Pod. kubectl 向 API Server 提交期望状态',
+      '从清单到运行中的 Pod',
+      'kubectl 向 API Server 提交期望状态',
     ],
-  ] as const)('localizes the %s hero preview title', (locale, ariaLabel, caption) => {
+  ] as const)('localizes the %s live 3D showcase', (locale, ariaLabel, title, beatTitle) => {
     useAppStore.setState({ locale });
     renderHome();
 
     expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(ariaLabel);
-    expect(screen.getByText(caption)).toBeVisible();
+    expect(screen.getByRole('heading', { name: title })).toBeVisible();
+    expect(screen.getByText(beatTitle)).toBeVisible();
   });
 
   it('localizes the three orientation concepts', () => {
