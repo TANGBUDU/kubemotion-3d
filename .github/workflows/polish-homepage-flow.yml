@@ -47,6 +47,7 @@ jobs:
 
           record install pnpm install --frozen-lockfile
           if [ $failed -eq 0 ]; then record apply python .assistant/polish_homepage_flow.py; fi
+          if [ $failed -eq 0 ]; then record compatibility python .assistant/polish_homepage_flow_fix.py; fi
           if [ $failed -eq 0 ]; then record format pnpm format; fi
           if [ $failed -eq 0 ]; then record diff-check git diff --check; fi
           if [ $failed -eq 0 ]; then record format-check pnpm format:check; fi
