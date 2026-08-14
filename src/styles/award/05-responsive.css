@@ -23,7 +23,9 @@
 }
 
 @media (max-width: 1040px) {
-  :root { --header-height: 64px; }
+  :root {
+    --header-height: 64px;
+  }
 
   .app-header {
     gap: 14px;
@@ -92,7 +94,9 @@
 }
 
 @media (max-width: 720px) {
-  :root { --header-height: 60px; }
+  :root {
+    --header-height: 60px;
+  }
 
   .app-header {
     gap: 8px;
@@ -189,7 +193,9 @@
     scrollbar-width: none;
   }
 
-  .showcase-timeline::-webkit-scrollbar { display: none; }
+  .showcase-timeline::-webkit-scrollbar {
+    display: none;
+  }
 
   .showcase-timeline ol {
     width: max(100%, 520px);

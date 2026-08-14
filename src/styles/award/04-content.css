@@ -22,9 +22,11 @@
   border-radius: 18px;
   padding: 25px 24px 22px;
   background:
-    radial-gradient(circle at 100% 0%, rgb(115 220 255 / 8%), transparent 44%),
-    rgb(8 21 35 / 48%);
-  transition: transform 400ms var(--award-ease), border-color 220ms linear, background 260ms linear;
+    radial-gradient(circle at 100% 0%, rgb(115 220 255 / 8%), transparent 44%), rgb(8 21 35 / 48%);
+  transition:
+    transform 400ms var(--award-ease),
+    border-color 220ms linear,
+    background 260ms linear;
   backdrop-filter: blur(12px);
 }
 
@@ -104,7 +106,10 @@
   background:
     radial-gradient(circle at 90% 0%, rgb(115 220 255 / 7%), transparent 42%),
     linear-gradient(145deg, rgb(13 31 50 / 68%), rgb(5 15 27 / 86%));
-  transition: transform 440ms var(--award-ease), border-color 220ms linear, box-shadow 440ms var(--award-ease);
+  transition:
+    transform 440ms var(--award-ease),
+    border-color 220ms linear,
+    box-shadow 440ms var(--award-ease);
 }
 
 .flow-story-grid article::before {
@@ -171,7 +176,9 @@
   border: 1px solid rgb(115 220 255 / 20%);
   border-radius: 999px;
   background: rgb(7 22 36 / 52%);
-  transition: background 180ms linear, transform 300ms var(--award-ease);
+  transition:
+    background 180ms linear,
+    transform 300ms var(--award-ease);
 }
 
 .flow-story-grid a:hover {
@@ -180,9 +187,14 @@
 }
 
 @keyframes award-pulse {
-  50% { opacity: 0.38; transform: scale(0.72); }
+  50% {
+    opacity: 0.38;
+    transform: scale(0.72);
+  }
 }
 
 @keyframes showcase-scan {
-  to { transform: translateY(690%); }
+  to {
+    transform: translateY(690%);
+  }
 }

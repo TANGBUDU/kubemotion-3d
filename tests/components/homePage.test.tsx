@@ -91,9 +91,9 @@ describe('HomePage orientation and live showcase', () => {
     );
     expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-step-index', '0');
     expect(screen.getByTestId('scene-preview')).toHaveAttribute('data-playback-id', '1');
-    expect(Number(screen.getByTestId('scene-preview').getAttribute('data-cue-count'))).toBeGreaterThan(
-      0,
-    );
+    expect(
+      Number(screen.getByTestId('scene-preview').getAttribute('data-cue-count')),
+    ).toBeGreaterThan(0);
     expect(screen.getByTestId('scene-preview')).toHaveAccessibleName(
       'Live 3D Kubernetes demonstration: Manifest to running Pod. kubectl submits desired state to the API Server',
     );

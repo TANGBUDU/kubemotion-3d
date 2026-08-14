@@ -95,8 +95,13 @@ body {
   overflow: hidden;
   border: 1px solid rgb(115 220 255 / 55%);
   border-radius: 9px;
-  background:
-    conic-gradient(from 225deg, var(--award-cyan), var(--award-blue), var(--award-violet), var(--award-cyan));
+  background: conic-gradient(
+    from 225deg,
+    var(--award-cyan),
+    var(--award-blue),
+    var(--award-violet),
+    var(--award-cyan)
+  );
   box-shadow:
     0 0 28px rgb(79 140 255 / 22%),
     inset 0 0 0 6px rgb(5 16 27 / 88%);
@@ -148,7 +153,9 @@ body {
   background: linear-gradient(90deg, transparent, var(--award-cyan), transparent);
   opacity: 0;
   transform: scaleX(0.3);
-  transition: opacity 180ms linear, transform 320ms var(--award-ease);
+  transition:
+    opacity 180ms linear,
+    transform 320ms var(--award-ease);
 }
 
 .app-header nav a:hover,
@@ -216,7 +223,10 @@ body {
   border-color: rgb(132 182 220 / 18%);
   border-radius: 50%;
   background: rgb(7 20 34 / 68%);
-  transition: border-color 180ms linear, color 180ms linear, transform 300ms var(--award-ease);
+  transition:
+    border-color 180ms linear,
+    color 180ms linear,
+    transform 300ms var(--award-ease);
 }
 
 .icon-button:hover {
@@ -238,7 +248,9 @@ button.primary {
   box-shadow:
     0 16px 38px rgb(79 140 255 / 24%),
     inset 0 1px rgb(255 255 255 / 62%);
-  transition: transform 320ms var(--award-ease), box-shadow 320ms var(--award-ease);
+  transition:
+    transform 320ms var(--award-ease),
+    box-shadow 320ms var(--award-ease);
 }
 
 .button.primary::before,

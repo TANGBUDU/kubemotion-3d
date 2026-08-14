@@ -9,11 +9,7 @@ import {
 import type { Locale } from '../app/types';
 import { flowStoryById, lessonById, scenarioById, sources } from '../content/loader';
 import { flowStoryEngine } from '../course/FlowStoryEngine';
-import type {
-  CompiledFlowStoryBeat,
-  CompiledStep,
-  TransitionCue,
-} from '../course/types';
+import type { CompiledFlowStoryBeat, CompiledStep, TransitionCue } from '../course/types';
 import { SceneViewport } from './SceneViewport';
 
 interface HomeShowcaseProps {
@@ -172,15 +168,18 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
 
   useEffect(() => {
     if (!playing) return;
-    const timer = window.setTimeout(() => {
-      if (beatIndex >= total - 1) {
-        setComplete(true);
-        setPaused(true);
-        return;
-      }
-      setBeatIndex((current) => current + 1);
-      setPlaybackId((current) => current + 1);
-    }, playbackDuration(step.transition.cues, reducedMotion));
+    const timer = window.setTimeout(
+      () => {
+        if (beatIndex >= total - 1) {
+          setComplete(true);
+          setPaused(true);
+          return;
+        }
+        setBeatIndex((current) => current + 1);
+        setPlaybackId((current) => current + 1);
+      },
+      playbackDuration(step.transition.cues, reducedMotion),
+    );
     return () => window.clearTimeout(timer);
   }, [beatIndex, playing, reducedMotion, step.transition.cues, total]);
 

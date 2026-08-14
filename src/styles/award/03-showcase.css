@@ -16,7 +16,11 @@
   border: 1px solid rgb(124 204 255 / 30%);
   border-radius: clamp(22px, 2.2vw, 34px);
   background:
-    radial-gradient(circle at var(--showcase-light-x) var(--showcase-light-y), rgb(115 220 255 / 12%), transparent 24%),
+    radial-gradient(
+      circle at var(--showcase-light-x) var(--showcase-light-y),
+      rgb(115 220 255 / 12%),
+      transparent 24%
+    ),
     linear-gradient(145deg, #0a1a2c, #040a13 74%);
   box-shadow:
     0 46px 120px rgb(0 0 0 / 44%),
@@ -109,10 +113,30 @@
   border-width: 0;
 }
 
-.home-showcase__corners i:nth-child(1) { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
-.home-showcase__corners i:nth-child(2) { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
-.home-showcase__corners i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
-.home-showcase__corners i:nth-child(4) { right: 0; bottom: 0; border-right-width: 1px; border-bottom-width: 1px; }
+.home-showcase__corners i:nth-child(1) {
+  top: 0;
+  left: 0;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+.home-showcase__corners i:nth-child(2) {
+  top: 0;
+  right: 0;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+.home-showcase__corners i:nth-child(3) {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+.home-showcase__corners i:nth-child(4) {
+  right: 0;
+  bottom: 0;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+}
 
 .showcase-status {
   position: absolute;
@@ -256,7 +280,10 @@
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 8px;
   text-align: left;
-  transition: color 180ms linear, background 240ms linear, transform 320ms var(--award-ease);
+  transition:
+    color 180ms linear,
+    background 240ms linear,
+    transform 320ms var(--award-ease);
   backdrop-filter: blur(8px);
 }
 
@@ -342,7 +369,10 @@
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.06em;
-  transition: background 180ms linear, border-color 180ms linear, transform 280ms var(--award-ease);
+  transition:
+    background 180ms linear,
+    border-color 180ms linear,
+    transform 280ms var(--award-ease);
   backdrop-filter: blur(12px);
 }
 

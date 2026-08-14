@@ -183,9 +183,9 @@ export function HomePage() {
 
   const hasValidProgress = Boolean(
     entry &&
-      savedLessonId &&
-      entry.lessonId === savedLessonId &&
-      entry.stepIndex === savedStepIndex,
+    savedLessonId &&
+    entry.lessonId === savedLessonId &&
+    entry.stepIndex === savedStepIndex,
   );
   const lessonPath = entry ? `/learn/${entry.lessonId}/${entry.stepIndex}` : '/explore';
   const lessonAction = entry
@@ -326,7 +326,11 @@ export function HomePage() {
             const firstBeat = beats[0];
             if (!firstBeat) throw new Error(`Flow story ${story.id} has no compiled beat`);
             return (
-              <article key={story.id} data-flow-story-id={story.id} style={{ '--story-index': index + 1 } as CSSProperties}>
+              <article
+                key={story.id}
+                data-flow-story-id={story.id}
+                style={{ '--story-index': index + 1 } as CSSProperties}
+              >
                 <div className="flow-story-meta">
                   <span data-priority={story.priority}>{story.priority}</span>
                   <span>{copy.beatCount(beats.length)}</span>
