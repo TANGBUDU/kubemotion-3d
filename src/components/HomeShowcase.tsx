@@ -115,7 +115,8 @@ const showcaseCopy: Readonly<
     presets: {
       overview: {
         label: 'Overview',
-        caption: 'Desired state travels through the API, controllers, Scheduler, kubelet, and runtime.',
+        caption:
+          'Desired state travels through the API, controllers, Scheduler, kubelet, and runtime.',
       },
       request: {
         label: 'Request',
@@ -127,11 +128,13 @@ const showcaseCopy: Readonly<
       },
       replace: {
         label: 'Delete Pod',
-        caption: 'Delete the Pod and watch controller reconciliation create and schedule a replacement.',
+        caption:
+          'Delete the Pod and watch controller reconciliation create and schedule a replacement.',
       },
       scale: {
         label: 'Scale +',
-        caption: 'Raise desired replicas and watch controllers, Scheduler, kubelet, and traffic catch up.',
+        caption:
+          'Raise desired replicas and watch controllers, Scheduler, kubelet, and traffic catch up.',
       },
     },
   },
@@ -155,7 +158,8 @@ const showcaseCopy: Readonly<
     presets: {
       overview: {
         label: 'Overview',
-        caption: 'desired state が API、controller、Scheduler、kubelet、runtime を通る流れを追います。',
+        caption:
+          'desired state が API、controller、Scheduler、kubelet、runtime を通る流れを追います。',
       },
       request: {
         label: 'Request',
@@ -171,7 +175,8 @@ const showcaseCopy: Readonly<
       },
       scale: {
         label: 'Scale +',
-        caption: 'desired replicas を増やし、controller・Scheduler・kubelet・traffic が追従する流れを見ます。',
+        caption:
+          'desired replicas を増やし、controller・Scheduler・kubelet・traffic が追従する流れを見ます。',
       },
     },
   },
@@ -289,7 +294,10 @@ export function HomeShowcase({ locale, reducedMotion }: HomeShowcaseProps) {
   }, [preset.storyId, viewportClass]);
 
   const presetBeats = useMemo(() => {
-    const lastBeat = Math.min(preset.endBeat ?? compiled.beats.length - 1, compiled.beats.length - 1);
+    const lastBeat = Math.min(
+      preset.endBeat ?? compiled.beats.length - 1,
+      compiled.beats.length - 1,
+    );
     return compiled.beats.slice(preset.startBeat, lastBeat + 1);
   }, [compiled.beats, preset.endBeat, preset.startBeat]);
   const beat = presetBeats[beatIndex] ?? presetBeats[0];
