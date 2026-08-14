@@ -22,8 +22,12 @@ path.write_text(text.replace(old, new, 1), 'utf-8')
 
 path = Path('src/styles/award/05-responsive.css')
 text = path.read_text('utf-8')
-old = '    inset: 92px 10px 142px;\n'
+old = '''    inset: 92px 10px 142px;
+    border-radius: 12px;
+  }
+'''
 new = '''    inset: 92px 10px 196px;
+    border-radius: 12px;
   }
 
   .home-showcase .scene-label[data-emphasis='normal'] {
@@ -34,9 +38,10 @@ new = '''    inset: 92px 10px 196px;
     max-width: min(46vw, 180px) !important;
     padding: 2px 4px;
     font-size: 8px;
+  }
 '''
 if old not in text:
-    raise SystemExit('mobile showcase viewport inset not found')
+    raise SystemExit('mobile showcase viewport block not found')
 path.write_text(text.replace(old, new, 1), 'utf-8')
 
 # The scene projection can switch to a compact/mobile layout on a 1280px laptop because the hero
