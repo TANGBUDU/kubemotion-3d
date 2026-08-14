@@ -1,6 +1,6 @@
-import { Languages, RotateCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Languages, Menu, RotateCcw, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import type { Locale } from '../app/types';
 import { ui } from '../app/i18n';
 import { useAppStore } from '../state/appStore';
@@ -18,11 +18,35 @@ export function AppHeader() {
   const setReducedMotion = useAppStore((state) => state.setReducedMotion);
   const reset = useAppStore((state) => state.resetExperience);
   const [resetNotice, setResetNotice] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const { pathname } = useLocation();
+  const [menuPath, setMenuPath] = useState(pathname);
   const t = ui(locale);
 
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
+
+  // The compact header collapses the primary nav behind a disclosure button. Close it whenever the
+  // destination changes -- including browser history moves -- so the panel never covers the page the
+  // reader just chose. Adjusting during render keeps this out of an effect and avoids a frame where
+  // the open panel is drawn over the new route.
+  if (menuPath !== pathname) {
+    setMenuPath(pathname);
+    setMenuOpen(false);
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return;
+      setMenuOpen(false);
+      menuButtonRef.current?.focus();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!resetNotice) return;
@@ -42,7 +66,23 @@ export function AppHeader() {
         <span className="brand-mark">K</span>
         <span>KubeMotion</span>
       </NavLink>
-      <nav className="app-primary-nav" aria-label={t.primaryNavigation}>
+      <button
+        ref={menuButtonRef}
+        className="nav-menu-toggle"
+        type="button"
+        aria-expanded={menuOpen}
+        aria-controls="app-primary-nav"
+        aria-label={menuOpen ? t.closeMenu : t.openMenu}
+        onClick={() => setMenuOpen((open) => !open)}
+      >
+        {menuOpen ? <X size={18} aria-hidden="true" /> : <Menu size={18} aria-hidden="true" />}
+      </button>
+      <nav
+        id="app-primary-nav"
+        className="app-primary-nav"
+        aria-label={t.primaryNavigation}
+        data-open={menuOpen ? 'true' : 'false'}
+      >
         <NavLink to="/learn">{t.learn}</NavLink>
         <NavLink to="/stories">{storiesLabel[locale]}</NavLink>
         <NavLink to="/explore">

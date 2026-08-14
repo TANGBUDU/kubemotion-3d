@@ -43,6 +43,8 @@ const text = {
     inspector: 'Current world facts',
     unscheduled: 'Unscheduled',
     step: 'Step',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
   },
   ja: {
     home: 'ホーム',
@@ -86,6 +88,8 @@ const text = {
     inspector: '現在の world の事実',
     unscheduled: '未スケジュール',
     step: 'ステップ',
+    openMenu: 'メニューを開く',
+    closeMenu: 'メニューを閉じる',
   },
   'zh-CN': {
     home: '首页',
@@ -128,6 +132,8 @@ const text = {
     inspector: '当前世界事实',
     unscheduled: '尚未调度',
     step: '步骤',
+    openMenu: '打开菜单',
+    closeMenu: '关闭菜单',
   },
 } as const;
 

@@ -75,8 +75,51 @@
 }
 
 @media (max-width: 820px) {
-  .app-header nav {
+  /* The compact header cannot hold four destinations plus the actions row, so the primary nav
+     collapses behind a disclosure button. It must stay reachable: hiding it outright stranded
+     Explore and About on phones and tablets. */
+  .nav-menu-toggle {
+    display: inline-flex;
+  }
+
+  .app-header nav.app-primary-nav {
+    position: absolute;
+    z-index: 40;
+    top: calc(var(--header-height) - 4px);
+    right: max(12px, env(safe-area-inset-right));
+    left: max(12px, env(safe-area-inset-left));
     display: none;
+    /* The base header nav is a full-height flex row inside a named grid track. Neutralise all three
+       or the panel keeps the 56px row height and the track's width, and the links spill onto the
+       scene instead of sitting inside the sheet. */
+    width: auto;
+    height: auto;
+    grid-area: auto;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    /* Fully opaque: the panel sits over the live 3D scene, and even 2% bleed made the last link
+       hard to read against moving geometry. */
+    background: #091524;
+    box-shadow: var(--shadow-panel);
+    gap: 2px;
+  }
+
+  .app-header nav.app-primary-nav[data-open='true'] {
+    display: flex;
+  }
+
+  .app-header nav.app-primary-nav a {
+    justify-content: flex-start;
+    min-height: var(--touch-target);
+    padding: 0 12px;
+    border-radius: 8px;
+  }
+
+  .app-header nav.app-primary-nav a.active {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
   }
 
   .header-actions {
@@ -210,6 +253,14 @@
     overflow-x: auto;
     padding-bottom: 3px;
     scrollbar-width: none;
+    /* Same reason as the scenario row: the beat strip is 520px wide behind a hidden scrollbar, so
+       the fade is what tells the reader beats 06-08 are still there. */
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+    scroll-snap-type: x proximity;
+  }
+
+  .showcase-timeline li {
+    scroll-snap-align: start;
   }
 
   .showcase-timeline::-webkit-scrollbar {

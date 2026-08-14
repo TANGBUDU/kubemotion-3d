@@ -76,12 +76,30 @@ button:disabled {
 }
 .app-header nav a {
   position: relative;
-  display: grid;
-  place-items: center;
+  /* Flex, not grid: the Beta badge is a trailing sibling of the label. Under place-items it became
+     a second grid row and lifted "Explore" above the other destinations. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-width: 76px;
   color: var(--text-secondary);
   border-bottom: 2px solid transparent;
   font-size: 14px;
+}
+.nav-menu-toggle {
+  display: none;
+  width: var(--touch-target, 44px);
+  height: var(--touch-target, 44px);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text-secondary);
+}
+.nav-menu-toggle:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--text-primary);
 }
 .app-header nav a.active {
   color: var(--text-primary);

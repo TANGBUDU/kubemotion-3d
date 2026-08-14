@@ -49,6 +49,9 @@ interface LayoutGuideHandle {
   dispose(): void;
 }
 
+/** Ground context kept around a guide's visible occupants when framing the camera. */
+const GUIDE_CONTEXT_MARGIN = 0.9;
+
 const DEFAULT_VIEW: EntityViewState = Object.freeze({
   visible: true,
   emphasis: 'normal',
@@ -746,6 +749,7 @@ export class SceneRegistry {
   public occupiedGuideBounds(target: THREE.Box3 = new THREE.Box3()): THREE.Box3 {
     target.makeEmpty();
     const scratch = new THREE.Box3();
+    const occupantScratch = new THREE.Box3();
     const guides = [...this.guides.entries()].sort(([left], [right]) => left.localeCompare(right));
     for (const [, guide] of guides) {
       if (!guide.root.visible || guide.root.parent === null) continue;
@@ -766,7 +770,31 @@ export class SceneRegistry {
             )
           : visibleOccupants.length > 0;
       if (!occupied) continue;
-      target.union(layoutContainerFramingBounds(guide.container, scratch));
+
+      const framing = layoutContainerFramingBounds(guide.container, scratch).clone();
+      // A guide plate is sized for the whole lane, not for what this step reveals. Framing the full
+      // plate made one visible Pod drag a 20-unit-wide empty zone into the camera bounds, which is
+      // why sparse steps rendered a tiny subject on a mostly empty stage. Keep the plate as ground
+      // context, but only across the span its visible occupants actually use.
+      const occupantSpan = new THREE.Box3();
+      for (const handle of visibleOccupants) {
+        const bounds = handle.getWorldBounds
+          ? handle.getWorldBounds(occupantScratch)
+          : occupantScratch.setFromObject(handle.root, true);
+        if (bounds.isEmpty()) continue;
+        occupantSpan.union(bounds);
+      }
+      if (!occupantSpan.isEmpty()) {
+        occupantSpan.expandByScalar(GUIDE_CONTEXT_MARGIN);
+        framing.min.x = Math.max(framing.min.x, occupantSpan.min.x);
+        framing.max.x = Math.min(framing.max.x, occupantSpan.max.x);
+        framing.min.z = Math.max(framing.min.z, occupantSpan.min.z);
+        framing.max.z = Math.min(framing.max.z, occupantSpan.max.z);
+        if (framing.min.x > framing.max.x || framing.min.z > framing.max.z) {
+          layoutContainerFramingBounds(guide.container, framing);
+        }
+      }
+      target.union(framing);
     }
     return target;
   }

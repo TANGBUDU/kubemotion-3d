@@ -138,6 +138,15 @@
     overflow-x: auto;
     padding-bottom: 4px;
     scrollbar-width: none;
+    /* The scenario row scrolls with its scrollbar hidden, so without a fade the last control just
+       looks truncated ("Dele…"). The soft edge is the only cue that more scenarios exist. */
+    mask-image: linear-gradient(to right, #000 calc(100% - 34px), transparent 100%);
+    scroll-padding-inline: 16px;
+    scroll-snap-type: x proximity;
+  }
+
+  .showcase-playground button {
+    scroll-snap-align: start;
   }
 
   .showcase-playground::-webkit-scrollbar {
