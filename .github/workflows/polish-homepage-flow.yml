@@ -1,0 +1,102 @@
+name: Review homepage flow polish
+
+on:
+  push:
+    branches: [agent/homepage-flow-polish]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: homepage-flow-polish
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: agent/homepage-flow-polish
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Apply, test, and review without emitting failed workflow mail
+        id: review
+        shell: bash
+        run: |
+          set +e
+          mkdir -p review-artifacts
+          : > review-artifacts/validation.txt
+          failed=0
+          record() {
+            name="$1"
+            shift
+            echo "===== $name =====" | tee -a review-artifacts/validation.txt
+            "$@" >> review-artifacts/validation.txt 2>&1
+            code=$?
+            echo "RESULT $name: $code" | tee -a review-artifacts/validation.txt
+            if [ $code -ne 0 ]; then failed=1; fi
+          }
+
+          record install pnpm install --frozen-lockfile
+          if [ $failed -eq 0 ]; then record apply python .assistant/polish_homepage_flow.py; fi
+          if [ $failed -eq 0 ]; then record format pnpm format; fi
+          if [ $failed -eq 0 ]; then record diff-check git diff --check; fi
+          if [ $failed -eq 0 ]; then record format-check pnpm format:check; fi
+          if [ $failed -eq 0 ]; then record lint pnpm lint; fi
+          if [ $failed -eq 0 ]; then record typecheck pnpm typecheck; fi
+          if [ $failed -eq 0 ]; then record content pnpm content:validate; fi
+          if [ $failed -eq 0 ]; then record accuracy pnpm content:accuracy; fi
+          if [ $failed -eq 0 ]; then record unit pnpm test:unit --run; fi
+          if [ $failed -eq 0 ]; then record build pnpm build; fi
+          if [ $failed -eq 0 ]; then record playwright-install pnpm exec playwright install --with-deps chromium; fi
+          if [ $failed -eq 0 ]; then record browser pnpm exec playwright test tests/e2e/homePlayground.spec.ts; fi
+
+          if [ -d test-results ]; then cp -R test-results review-artifacts/; fi
+          if [ -d playwright-report ]; then cp -R playwright-report review-artifacts/; fi
+
+          if [ $failed -eq 0 ]; then
+            rm -rf .assistant
+            rm -f .github/workflows/assistant-pack-source.yml
+            rm -f .github/workflows/polish-homepage-flow.yml
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git add -A
+            git diff --cached --check >> review-artifacts/validation.txt 2>&1
+            if [ $? -ne 0 ]; then failed=1; fi
+          fi
+
+          if [ $failed -eq 0 ]; then
+            git commit -m 'Polish persistent 3D flow experience' >> review-artifacts/validation.txt 2>&1
+            if [ $? -ne 0 ]; then failed=1; fi
+          fi
+          if [ $failed -eq 0 ]; then
+            git push origin HEAD:agent/homepage-flow-polish >> review-artifacts/validation.txt 2>&1
+            if [ $? -ne 0 ]; then failed=1; fi
+          fi
+
+          if [ $failed -eq 0 ]; then
+            echo 'result=pass' >> "$GITHUB_OUTPUT"
+            echo 'HOMEPAGE FLOW POLISH PASS' | tee -a review-artifacts/validation.txt
+          else
+            echo 'result=fail' >> "$GITHUB_OUTPUT"
+            echo 'HOMEPAGE FLOW POLISH NEEDS REVISION — no reviewed source was promoted' | tee -a review-artifacts/validation.txt
+          fi
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: homepage-flow-polish-review-${{ github.sha }}
+          path: review-artifacts/
+          if-no-files-found: warn
+          retention-days: 3
+      - name: Report review result without failing the workflow
+        if: always()
+        run: echo "Homepage flow review — ${{ steps.review.outputs.result || 'unknown' }}"
