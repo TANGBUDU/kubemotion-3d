@@ -1,0 +1,56 @@
+name: Strict homepage playground QA
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: homepage-playground-qa
+  cancel-in-progress: true
+
+jobs:
+  browser-qa:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Run homepage playground across required viewports
+        run: pnpm exec playwright test tests/e2e/homePlayground.spec.ts
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: homepage-playground-browser-qa
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Remove one-shot QA workflow
+        if: success()
+        run: rm .github/workflows/home-playground-qa.yml
+      - name: Commit QA cleanup
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Complete homepage playground browser QA"
+          git push origin HEAD:main
