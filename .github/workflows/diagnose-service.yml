@@ -1,0 +1,52 @@
+name: Diagnose service lesson isolation
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Service lesson alone
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm vitest tests/course/serviceLesson.test.ts --run --reporter=verbose 2>&1 | tee service-alone.log
+      - name: Home and Service serially
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm vitest tests/components/homePage.test.tsx tests/course/serviceLesson.test.ts --run --reporter=verbose --no-file-parallelism 2>&1 | tee home-service-serial.log
+      - name: Service execution snapshot
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm vitest tests/course/serviceLesson.test.ts --run --reporter=json --outputFile=service-result.json 2>&1 | tee service-json.log
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: service-lesson-isolation
+          path: |
+            service-alone.log
+            home-service-serial.log
+            service-json.log
+            service-result.json
+          if-no-files-found: warn
+          retention-days: 1
