@@ -23,7 +23,18 @@ path.write_text(text.replace(old, new, 1), 'utf-8')
 path = Path('src/styles/award/05-responsive.css')
 text = path.read_text('utf-8')
 old = '    inset: 92px 10px 142px;\n'
-new = '    inset: 92px 10px 196px;\n'
+new = '''    inset: 92px 10px 196px;
+  }
+
+  .home-showcase .scene-label[data-emphasis='normal'] {
+    display: none;
+  }
+
+  .home-showcase .scene-route-label {
+    max-width: min(46vw, 180px) !important;
+    padding: 2px 4px;
+    font-size: 8px;
+'''
 if old not in text:
     raise SystemExit('mobile showcase viewport inset not found')
 path.write_text(text.replace(old, new, 1), 'utf-8')
