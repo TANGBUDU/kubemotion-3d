@@ -1,0 +1,116 @@
+{
+  "experiment": "M48",
+  "recent_runs": [
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-28T06:58:16Z",
+      "databaseId": 33149751405,
+      "displayTitle": "Start stdlib-only M48 score driver",
+      "headSha": "20c0ad120acafaddaf42faa16ff7d72467954cf6",
+      "name": "M48 stdlib-only score driver",
+      "status": "completed",
+      "updatedAt": "2026-08-28T06:59:11Z",
+      "url": "https://github.com/TANGBUDU/rsna-knee-control/actions/runs/33149751405"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-28T06:58:05Z",
+      "databaseId": 33149740115,
+      "displayTitle": "Add stdlib-only M48 score driver for self-hosted runner",
+      "headSha": "0a811c59c1e24d0fbd7051370189a5e24a0eeaaf",
+      "name": "Fixed controller CI",
+      "status": "completed",
+      "updatedAt": "2026-08-28T06:58:42Z",
+      "url": "https://github.com/TANGBUDU/rsna-knee-control/actions/runs/33149740115"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-28T06:33:21Z",
+      "databaseId": 33148314790,
+      "displayTitle": "Start corrected M48 submit and score watch",
+      "headSha": "19846ea6e24f901caeed92ee1f7bb07bfe0902dd",
+      "name": "M48 exactly-once submit and score watch v2",
+      "status": "completed",
+      "updatedAt": "2026-08-28T06:34:22Z",
+      "url": "https://github.com/TANGBUDU/rsna-knee-control/actions/runs/33148314790"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-28T06:33:10Z",
+      "databaseId": 33148304253,
+      "displayTitle": "Retry M48 after correcting Kaggle reset-day gate",
+      "headSha": "5e7902ff5e5d2b595a94013ae108937ce118d88d",
+      "name": "M48 fault-isolated dual-rank launch v2",
+      "status": "completed",
+      "updatedAt": "2026-08-28T06:33:53Z",
+      "url": "https://github.com/TANGBUDU/rsna-knee-control/actions/runs/33148304253"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-28T06:32:56Z",
+      "databaseId": 33148290173,
+      "displayTitle": "Correct M48 watcher to Kaggle UTC reset day",
+      "headSha": "aa84416c42309559cdb018e757e5d02b9734b030",
+      "name": "Fixed controller CI",
+      "status": "completed",
+      "updatedAt": "2026-08-28T06:33:19Z",
+      "url": "https://github.com/TANGBUDU/rsna-knee-control/actions/runs/33148290173"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-28T06:32:07Z",
+      "databaseId": 33148243052,
+      "displayTitle": "Correct M48 launch gate to Kaggle UTC reset day",
+      "headSha": "03b5d339ce52f7b89ff332ddd646211fc12dbc38",
+      "name": "Fixed controller CI",
+      "status": "completed",
+      "updatedAt": "2026-08-28T06:32:29Z",
+      "url": "https://github.com/TANGBUDU/rsna-knee-control/actions/runs/33148243052"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-28T06:27:14Z",
+      "databaseId": 33147964534,
+      "displayTitle": "Start M48 exactly-once submit and score watch",
+      "headSha": "855d84ff844856bd7f4c99a858826cefe472f3f4",
+      "name": "M48 exactly-once submit and score watch",
+      "status": "completed",
+      "updatedAt": "2026-08-28T06:27:50Z",
+      "url": "https://github.com/TANGBUDU/rsna-knee-control/actions/runs/33147964534"
+    },
+    {
+      "conclusion": "failure",
+      "createdAt": "2026-08-28T06:27:01Z",
+      "databaseId": 33147952468,
+      "displayTitle": "Launch bounded M48 fault-isolated dual-rank preflight",
+      "headSha": "0a822cb344723e2db7d8b7fa1d98a75632ceead3",
+      "name": "M48 fault-isolated dual-rank launch",
+      "sanitized_failure_tail": "launch\tEnforce exactly-once and quota gates\t\ufeff2026-08-28T06:27:12.3488513Z ##[group]Run set -euo pipefail\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3489700Z ^[[36;1mset -euo pipefail^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3490797Z ^[[36;1mtest -n \"${KAGGLE_API_TOKEN:-}\"^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3491865Z ^[[36;1mkaggle competitions submissions \"$COMPETITION\" -v > /tmp/submissions.csv^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3492856Z ^[[36;1mtest -s /tmp/submissions.csv^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3493813Z ^[[36;1mif grep -Fq \"$SUBMISSION_MESSAGE\" /tmp/submissions.csv; then^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3494896Z ^[[36;1m  echo 'Exact M48 description already exists; refusing duplicate.' >&2^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3495841Z ^[[36;1m  exit 2^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3496406Z ^[[36;1mfi^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3497234Z ^[[36;1mif kaggle kernels status \"$TARGET_REF\" >/tmp/existing.txt 2>&1; then^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3498182Z ^[[36;1m  cat /tmp/existing.txt^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3499121Z ^[[36;1m  echo 'Unique M48 target already exists; refusing a version increment.' >&2^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3500083Z ^[[36;1m  exit 3^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3501239Z ^[[36;1mfi^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3501983Z ^[[36;1mpython - <<'PY'^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3502670Z ^[[36;1mimport csv^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3503596Z ^[[36;1mfrom datetime import datetime, timezone, timedelta^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3504734Z ^[[36;1mfrom kaggle.api.kaggle_api_extended import KaggleApi^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3505666Z ^[[36;1m^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3506623Z ^[[36;1mrows=list(csv.DictReader(open('/tmp/submissions.csv', newline='', encoding='utf-8-sig')))^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3507787Z ^[[36;1mcutoff=datetime.now(timezone.utc)-timedelta(hours=24)^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3509463Z ^[[36;1mrecent=0^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3510075Z ^[[36;1mfor row in rows:^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3512469Z ^[[36;1m    raw=(row.get('date') or row.get('submittedAt') or '').strip()^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3513557Z ^[[36;1m    if not raw:^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3514205Z ^[[36;1m        continue^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3514856Z ^[[36;1m    try:^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3515606Z ^[[36;1m        dt=datetime.fromisoformat(raw.replace('Z','+00:00'))^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3516443Z ^[[36;1m    except Exception:^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3517077Z ^[[36;1m        continue^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3517706Z ^[[36;1m    if dt.tzinfo is None:^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3518502Z ^[[36;1m        dt=dt.replace(tzinfo=timezone.utc)^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3519336Z ^[[36;1m    if dt>=cutoff:^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3520057Z ^[[36;1m        recent += 1^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3520947Z ^[[36;1mprint('SUBMISSIONS_LAST_24H', recent)^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3521622Z ^[[36;1mif recent >= 4:^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3522490Z ^[[36;1m    raise SystemExit('submission reserve gate: four or more submissions in the last 24h')^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3523471Z ^[[36;1m^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3524008Z ^[[36;1mapi=KaggleApi(); api.authenticate()^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3524665Z ^[[36;1mq=api.quota_view().gpu_quota^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3525493Z ^[[36;1mused=q.time_used.total_seconds()/3600 if q and q.time_used else 0.0^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3526593Z ^[[36;1mreserved=q.time_reserved.total_seconds()/3600 if q and q.time_reserved else 0.0^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3527886Z ^[[36;1mtotal=q.total_time_allowed.total_seconds()/3600 if q and q.total_time_allowed else 0.0^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3528903Z ^[[36;1mremaining=total-used-reserved^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3529947Z ^[[36;1mprint(f'GPU_QUOTA used={used:.4f} reserved={reserved:.4f} total={total:.4f} remaining={remaining:.4f}')^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3531269Z ^[[36;1mif reserved > 0:^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3532132Z ^[[36;1m    raise SystemExit('another accelerator reservation is active')^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3533118Z ^[[36;1mif remaining < 4.0:^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3557325Z ^[[36;1m    raise SystemExit('fixed GPU reserve would be violated')^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3558295Z ^[[36;1mPY^[[0m\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3611732Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3612725Z env:\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3614313Z   KAGGLE_API_TOKEN: ***\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3615025Z   COMPETITION: rsna-knee-abnormality-detection\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3616729Z   M42_REF: tangbudu19sd195/rsna-knee-m42-anvith-path-fixed-reproduction\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3617767Z   M47_REF: tangbudu19sd195/rsna-knee-m47-hidden-safe-dual-inference\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3618727Z   TARGET_REF: tangbudu19sd195/rsna-knee-m48-failsoft-dual-rank\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3619565Z   TARGET_TITLE: RSNA Knee M48 Failsoft Dual Rank\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3620652Z   SUBMISSION_MESSAGE: M48 fault-isolated M47 with verified M42 fallback\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3621684Z   pythonLocation: /opt/actions-runner/_work/_tool/Python/3.12.14/x64\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3622906Z   PKG_CONFIG_PATH: /opt/actions-runner/_work/_tool/Python/3.12.14/x64/lib/pkgconfig\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3624075Z   Python_ROOT_DIR: /opt/actions-runner/_work/_tool/Python/3.12.14/x64\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3625189Z   Python2_ROOT_DIR: /opt/actions-runner/_work/_tool/Python/3.12.14/x64\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3626260Z   Python3_ROOT_DIR: /opt/actions-runner/_work/_tool/Python/3.12.14/x64\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3627340Z   LD_LIBRARY_PATH: /opt/actions-runner/_work/_tool/Python/3.12.14/x64/lib\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:12.3628625Z ##[endgroup]\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:17.0154718Z submission reserve gate: four or more submissions in the last 24h\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:17.0171240Z SUBMISSIONS_LAST_24H 5\nlaunch\tEnforce exactly-once and quota gates\t2026-08-28T06:27:17.2025914Z ##[error]Process completed with exit code 1.",
+      "status": "completed",
+      "updatedAt": "2026-08-28T06:27:22Z",
+      "url": "https://github.com/TANGBUDU/rsna-knee-control/actions/runs/33147952468"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-28T06:26:38Z",
+      "databaseId": 33147931583,
+      "displayTitle": "Add M48 exactly-once submit and score watcher",
+      "headSha": "880562af97603ee75a18bf5370ca67c2ae21dfce",
+      "name": "Fixed controller CI",
+      "status": "completed",
+      "updatedAt": "2026-08-28T06:27:00Z",
+      "url": "https://github.com/TANGBUDU/rsna-knee-control/actions/runs/33147931583"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-08-28T06:25:18Z",
+      "databaseId": 33147859356,
+      "displayTitle": "Add M48 fault-isolated dual-rank launch",
+      "headSha": "a22669b1cccf34475bfd63163c130064bd743998",
+      "name": "Fixed controller CI",
+      "status": "completed",
+      "updatedAt": "2026-08-28T06:25:42Z",
+      "url": "https://github.com/TANGBUDU/rsna-knee-control/actions/runs/33147859356"
+    }
+  ]
+}
