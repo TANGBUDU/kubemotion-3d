@@ -1,0 +1,4 @@
+{
+  "error": "CalledProcessError(1, ['gh', 'api', 'repos/TANGBUDU/rsna-knee-control/contents/score_watch/current_rank.json?ref=main', '--jq', '.content'])",
+  "state": "rank_ledger_missing"
+}
