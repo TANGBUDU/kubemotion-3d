@@ -1,0 +1,13 @@
+{
+  "checked_at_utc": "2026-08-28T06:59:02.837160+00:00",
+  "error_description": "",
+  "experiment": "M48-fault-isolated-dual-rank",
+  "kernel_state": "ERROR",
+  "output_state": "NOT_CHECKED",
+  "public_score": "",
+  "rank_observation": "",
+  "submission_ref": "",
+  "submission_status": "",
+  "submit_state": "NOT_ATTEMPTED",
+  "verified_control_before_m48": 0.936
+}
