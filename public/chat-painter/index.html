@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chat Painter · Stroke Canvas</title>
+  <style>
+    :root{color-scheme:light;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}
+    body{margin:0;background:#171717;color:#f6f3ed;min-height:100vh;display:grid;place-items:center;padding:24px}
+    .app{width:min(900px,100%);display:grid;gap:14px}
+    .top{display:flex;gap:12px;align-items:end;justify-content:space-between;flex-wrap:wrap}
+    h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.01em}
+    .sub{font-size:12px;color:#aaa;margin-top:4px}
+    .live{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#b8b8b8}
+    .dot{width:8px;height:8px;border-radius:999px;background:#58d68d;box-shadow:0 0 0 4px rgba(88,214,141,.12)}
+    .frame{background:#262626;border:1px solid #353535;border-radius:18px;padding:14px}
+    .canvas-wrap{border-radius:12px;overflow:hidden;background:#f5efe4;line-height:0}
+    canvas{display:block;width:100%;height:auto;touch-action:none}
+    .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+    button{border:1px solid #444;background:#303030;color:#fff;border-radius:10px;padding:9px 13px;font-weight:650;cursor:pointer}
+    button:hover{background:#393939}
+    button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2px}
+    label{font-size:12px;color:#bbb;display:flex;align-items:center;gap:8px}
+    input[type=range]{width:150px}
+    .stat{margin-left:auto;font-variant-numeric:tabular-nums;font-size:12px;color:#bbb}
+    .foot{font-size:12px;color:#8e8e8e;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    @media(max-width:560px){body{padding:12px}.frame{padding:9px}.stat{width:100%;margin-left:0}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="top">
+      <div>
+        <h1 id="title">Chat Painter</h1>
+        <div class="sub">ChatGPT → GitHub stroke data → online canvas</div>
+      </div>
+      <div class="live"><span class="dot"></span><span id="liveText">等待笔画数据</span></div>
+    </div>
+
+    <section class="frame">
+      <div class="canvas-wrap"><canvas id="paint" width="640" height="640" aria-label="逐笔绘制画布"></canvas></div>
+      <div class="bar">
+        <button id="toggle" type="button">暂停</button>
+        <button id="restart" type="button">重画</button>
+        <label>速度 <input id="speed" type="range" min="1" max="32" step="1" value="8"><span id="speedText">8×</span></label>
+        <div class="stat" id="stat">笔画 0 / 0</div>
+      </div>
+    </section>
+
+    <div class="foot">
+      <span>这个页面会定期检查我从聊天中提交的新笔画。</span>
+      <span id="version">version —</span>
+    </div>
+  </main>
+
+<script>
+(() => {
+  const canvas = document.getElementById('paint');
+  const ctx = canvas.getContext('2d');
+  const titleEl = document.getElementById('title');
+  const liveText = document.getElementById('liveText');
+  const stat = document.getElementById('stat');
+  const versionEl = document.getElementById('version');
+  const toggle = document.getElementById('toggle');
+  const restart = document.getElementById('restart');
+  const speed = document.getElementById('speed');
+  const speedText = document.getElementById('speedText');
+
+  let data = null;
+  let strokeIndex = 0;
+  let pointIndex = 1;
+  let playing = true;
+  let raf = 0;
+  let lastVersion = null;
+  let frameCounter = 0;
+
+  function setupCanvas() {
+    if (!data) return;
+    const w = data.canvas?.width || 640;
+    const h = data.canvas?.height || 640;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.aspectRatio = `${w}/${h}`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  }
+
+  function clearCanvas() {
+    if (!data) return;
+    const w = data.canvas?.width || 640;
+    const h = data.canvas?.height || 640;
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+    ctx.fillStyle = data.canvas?.background || '#fff';
+    ctx.fillRect(0,0,w,h);
+  }
+
+  function beginStroke(s) {
+    const pts = s.p || [];
+    if (!pts.length) return false;
+    ctx.strokeStyle = s.c || '#111';
+    ctx.globalAlpha = Math.max(0, Math.min(1, s.a ?? 1));
+    ctx.lineWidth = Math.max(0.5, s.w || 2);
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    return true;
+  }
+
+  function drawNextSegment() {
+    if (!data || strokeIndex >= data.strokes.length) return false;
+    const s = data.strokes[strokeIndex];
+    const pts = s.p || [];
+    if (pointIndex === 1) beginStroke(s);
+    if (pts.length <= 1) {
+      strokeIndex++;
+      pointIndex = 1;
+      return true;
+    }
+    const p = pts[pointIndex];
+    ctx.lineTo(p[0], p[1]);
+    ctx.stroke();
+    pointIndex++;
+    if (pointIndex >= pts.length) {
+      ctx.closePath();
+      ctx.globalAlpha = 1;
+      strokeIndex++;
+      pointIndex = 1;
+    }
+    return true;
+  }
+
+  function updateStatus() {
+    const total = data?.strokes?.length || 0;
+    stat.textContent = `笔画 ${Math.min(strokeIndex + (pointIndex > 1 ? 1 : 0), total)} / ${total}`;
+  }
+
+  function loop() {
+    cancelAnimationFrame(raf);
+    const tick = () => {
+      if (playing && data) {
+        frameCounter++;
+        const segments = Number(speed.value);
+        for (let i = 0; i < segments; i++) {
+          if (!drawNextSegment()) break;
+        }
+        updateStatus();
+        if (strokeIndex >= data.strokes.length) {
+          playing = false;
+          toggle.textContent = '播放';
+          liveText.textContent = '绘制完成 · 等待新笔画';
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+
+  function reset(andPlay = true) {
+    strokeIndex = 0;
+    pointIndex = 1;
+    playing = andPlay;
+    clearCanvas();
+    updateStatus();
+    toggle.textContent = playing ? '暂停' : '播放';
+    liveText.textContent = playing ? '正在逐笔绘制' : '已暂停';
+  }
+
+  async function loadData(force = false) {
+    try {
+      const res = await fetch(`strokes.json?t=${Date.now()}`, {cache:'no-store'});
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const next = await res.json();
+      if (!next || !Array.isArray(next.strokes)) throw new Error('bad stroke data');
+      if (force || next.version !== lastVersion) {
+        data = next;
+        lastVersion = next.version;
+        titleEl.textContent = next.title || 'Chat Painter';
+        versionEl.textContent = `version ${next.version}`;
+        setupCanvas();
+        reset(true);
+      }
+    } catch (err) {
+      liveText.textContent = '连接重试中';
+      console.error(err);
+    }
+  }
+
+  toggle.addEventListener('click', () => {
+    if (!data) return;
+    if (strokeIndex >= data.strokes.length) reset(true);
+    else {
+      playing = !playing;
+      toggle.textContent = playing ? '暂停' : '播放';
+      liveText.textContent = playing ? '正在逐笔绘制' : '已暂停';
+    }
+  });
+  restart.addEventListener('click', () => reset(true));
+  speed.addEventListener('input', () => speedText.textContent = `${speed.value}×`);
+
+  window.addEventListener('resize', () => {});
+  loadData(true).then(loop);
+  setInterval(() => loadData(false), 8000);
+})();
+</script>
+</body>
+</html>
